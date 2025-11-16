@@ -1,0 +1,1580 @@
+<!doctype html>
+<html lang="vi">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iPhone Shortcuts Hub</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: #0a0a0a;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            background-attachment: fixed;
+            min-height: 100%;
+            color: #ffffff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Advanced tech background with animated grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(120, 119, 198, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(120, 119, 198, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Floating tech particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .particle {
+            position: absolute;
+            background: linear-gradient(45deg, #7777c6, #ff77c6);
+            border-radius: 2px;
+            animation: techFloat 25s infinite linear;
+            opacity: 0.6;
+        }
+
+        .particle:nth-child(even) {
+            background: linear-gradient(45deg, #77dbff, #7777c6);
+            border-radius: 50%;
+        }
+
+        .particle:nth-child(3n) {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1px;
+            animation-duration: 30s;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 100px;
+            animation: fadeInUp 1.2s ease-out;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #7777c6, transparent);
+            animation: headerLineGlow 3s ease-in-out infinite;
+        }
+
+        .main-title {
+            font-size: 5.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, #7777c6 50%, #ff77c6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 24px;
+            text-shadow: 0 0 40px rgba(119, 119, 198, 0.3);
+            animation: titlePulse 4s ease-in-out infinite;
+            letter-spacing: -2px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            position: relative;
+        }
+
+        .main-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(119, 119, 198, 0.5), transparent);
+        }
+
+        .subtitle {
+            font-size: 1.6rem;
+            color: rgba(255,255,255,0.8);
+            font-weight: 400;
+            animation: subtitleGlow 6s ease-in-out infinite;
+            margin-bottom: 40px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            letter-spacing: 0.3px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Advanced Search and Filter Bar */
+        .controls-bar {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 24px;
+            margin-bottom: 80px;
+            animation: slideInFromTop 1s ease-out 0.5s both;
+            flex-wrap: wrap;
+        }
+
+        .search-container {
+            position: relative;
+            flex: 1;
+            max-width: 500px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 18px 60px 18px 24px;
+            border: none;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            color: white;
+            font-size: 1.1rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            font-weight: 400;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(119, 119, 198, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255,255,255,0.5);
+            font-weight: 300;
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: rgba(255,255,255,0.08);
+            border-color: #7777c6;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(119, 119, 198, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.6);
+            font-size: 1.3rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus + .search-icon {
+            color: #7777c6;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 12px;
+            background: rgba(255,255,255,0.03);
+            padding: 8px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(119, 119, 198, 0.1);
+        }
+
+        .filter-btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 14px;
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            font-size: 0.95rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .filter-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(119, 119, 198, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .filter-btn:hover::before {
+            left: 100%;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: linear-gradient(135deg, rgba(119, 119, 198, 0.2), rgba(255, 119, 198, 0.1));
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(119, 119, 198, 0.2);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #7777c6, #ff77c6);
+            color: white;
+            font-weight: 600;
+        }
+
+        .acknowledgment-text {
+            flex: 1;
+            max-width: 400px;
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(119, 119, 198, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-left: 20px;
+        }
+
+        .acknowledgment-text p {
+            margin: 0;
+            color: rgba(255,255,255,0.85);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            font-weight: 400;
+            text-align: left;
+        }
+
+        .acknowledgment-text strong {
+            color: #7777c6;
+            font-weight: 600;
+            text-shadow: 0 0 10px rgba(119, 119, 198, 0.3);
+        }
+
+        .section-title {
+            font-size: 3.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 0%, #7777c6 50%, #ff77c6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 60px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            letter-spacing: -1px;
+            position: relative;
+            animation: sectionTitleFloat 3s ease-in-out infinite;
+        }
+
+        .section-title::before {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #7777c6, transparent);
+            animation: titleUnderlineGlow 2s ease-in-out infinite;
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 32px;
+            margin-bottom: 100px;
+        }
+
+        .shortcut-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 20px;
+            padding: 32px;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(119, 119, 198, 0.15);
+            box-shadow: 
+                0 8px 32px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            animation: cardSlideIn 0.8s ease-out;
+        }
+
+        .shortcut-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(119, 119, 198, 0.1), transparent);
+            transition: left 0.8s ease;
+        }
+
+        .shortcut-card:hover::before {
+            left: 100%;
+        }
+
+        .shortcut-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(119, 119, 198, 0.05), rgba(255, 119, 198, 0.05));
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .shortcut-card:hover::after {
+            opacity: 1;
+        }
+
+        .shortcut-card:hover {
+            transform: translateY(-16px) scale(1.03);
+            box-shadow: 
+                0 32px 64px rgba(0,0,0,0.4),
+                0 0 0 1px rgba(119, 119, 198, 0.3),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(119, 119, 198, 0.4);
+        }
+
+        .shortcut-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .shortcut-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            margin-right: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .shortcut-card:hover .shortcut-icon {
+            transform: rotate(5deg) scale(1.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .shortcut-info h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+
+        .ios-requirement {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            font-weight: 500;
+        }
+
+        .ios-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            background: linear-gradient(135deg, #007AFF, #0056CC);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+        }
+
+        .shortcut-description {
+            color: rgba(255,255,255,0.85);
+            font-size: 1.1rem;
+            line-height: 1.7;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            font-weight: 400;
+            margin-top: 16px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .popularity-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+
+        /* Popup Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            animation: fadeIn 0.3s ease-out;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            position: relative;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ffffff;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 80vh;
+            animation: popupSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 40px auto;
+        }
+
+        .modal-header {
+            padding: 20px 20px 0 20px;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 16px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: #e5e5e5;
+            color: #333;
+        }
+
+        .modal-shortcut-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 12px;
+            text-align: left;
+            flex-direction: row;
+            gap: 12px;
+        }
+
+        .modal-shortcut-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+
+        .modal-shortcut-info h2 {
+            margin: 0 0 4px 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            letter-spacing: -0.3px;
+            text-align: left;
+        }
+
+        .modal-ios-requirement {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+        }
+
+        .modal-body {
+            padding: 0 20px 20px 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .info-section {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .info-section h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            letter-spacing: -0.2px;
+        }
+
+        .section-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f8ff;
+            border-radius: 4px;
+            color: #007AFF;
+        }
+
+        .info-content {
+            color: #555;
+            line-height: 1.5;
+            font-size: 0.9rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            font-weight: 400;
+            text-align: left;
+        }
+
+        .info-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+
+        .info-list li {
+            padding: 6px 0;
+            border-bottom: 1px solid #f5f5f5;
+            display: flex;
+            align-items: flex-start;
+            color: #555;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            font-weight: 400;
+            line-height: 1.4;
+            font-size: 0.85rem;
+        }
+
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+
+        .list-icon {
+            color: #007AFF;
+            margin-right: 6px;
+            margin-top: 1px;
+        }
+
+        .tutorial-image {
+            width: 100%;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 12px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.8rem;
+            border: 2px dashed #ddd;
+            min-height: 80px;
+        }
+
+        .tutorial-images-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tutorial-images-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            letter-spacing: -0.1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007AFF, #0056CC);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #e9ecef;
+            font-size: 0.85rem;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .suggestions {
+            margin-top: 24px;
+        }
+
+        .suggestions h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            letter-spacing: -0.1px;
+        }
+
+        .suggestion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .suggestion-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .suggestion-card:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .suggestion-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .suggestion-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .suggestion-name {
+            font-weight: 600;
+            color: #1a1a1a;
+            font-size: 0.95rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            letter-spacing: -0.1px;
+        }
+
+        /* Advanced Tech Animations */
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        @keyframes techFloat {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100px) rotate(180deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { 
+                text-shadow: 0 0 40px rgba(119, 119, 198, 0.3);
+                transform: scale(1);
+            }
+            50% { 
+                text-shadow: 0 0 60px rgba(119, 119, 198, 0.5), 0 0 80px rgba(255, 119, 198, 0.3);
+                transform: scale(1.01);
+            }
+        }
+
+        @keyframes subtitleGlow {
+            0%, 100% { 
+                color: rgba(255,255,255,0.8);
+                text-shadow: none;
+            }
+            50% { 
+                color: rgba(255,255,255,0.95);
+                text-shadow: 0 0 20px rgba(119, 119, 198, 0.3);
+            }
+        }
+
+        @keyframes sectionTitleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes headerLineGlow {
+            0%, 100% { 
+                opacity: 0.5;
+                transform: translateX(-50%) scaleX(1);
+            }
+            50% { 
+                opacity: 1;
+                transform: translateX(-50%) scaleX(1.2);
+            }
+        }
+
+        @keyframes titleUnderlineGlow {
+            0%, 100% { 
+                opacity: 0.6;
+                transform: translateX(-50%) scaleX(1);
+            }
+            50% { 
+                opacity: 1;
+                transform: translateX(-50%) scaleX(1.3);
+            }
+        }
+
+        @keyframes cardSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes slideInFromTop {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes popupSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .ripple-effect {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            pointer-events: none;
+            animation: ripple 0.6s ease-out;
+        }
+
+        .shortcut-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2.5rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .shortcuts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal {
+                padding: 15px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                max-width: none;
+                max-height: 85vh;
+            }
+            
+            .modal-header {
+                padding: 16px 16px 0 16px;
+            }
+            
+            .modal-body {
+                padding: 0 16px 16px 16px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .controls-bar {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .acknowledgment-text {
+                max-width: 100%;
+                margin-left: 0;
+                margin-top: 20px;
+                order: 3;
+            }
+
+            .search-container {
+                order: 1;
+                max-width: 100%;
+            }
+
+            .filter-buttons {
+                order: 2;
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="container"><!-- Floating particles background -->
+   <div class="particles" id="particles"></div>
+   <header class="header">
+    <h1 class="main-title" id="mainTitle">iPhone Shortcuts Hub</h1>
+    <p class="subtitle" id="subtitle">Khám phá những phím tắt mạnh mẽ cho iPhone của bạn</p><!-- Search and Filter Controls -->
+    <div class="controls-bar">
+     <div class="search-container"><input type="text" class="search-input" id="searchInput" placeholder="Tìm kiếm shortcuts..."> <span class="search-icon"><i data-lucide="search"></i></span>
+     </div>
+     <div class="filter-buttons"><button class="filter-btn active" data-filter="all">Tất cả</button> <button class="filter-btn" data-filter="popular">Phổ biến</button> <button class="filter-btn" data-filter="new">Mới nhất</button> <button class="filter-btn" data-filter="utility">Tiện ích</button>
+     </div>
+     <div class="acknowledgment-text">
+      <p>Bộ sưu tập phím tắt này được <strong>IPAVIET</strong> tổng hợp và chia sẻ 100% từ nguồn <strong>phimtat.vn</strong> với mục đích phi lợi nhuận, nhằm phục vụ cộng đồng; chân thành cảm ơn những cống hiến của <strong>phimtat.vn</strong> và cộng đồng <strong>PHÍM TẮT VN</strong>.</p>
+     </div>
+    </div>
+   </header>
+   <section>
+    <h2 class="section-title" id="sectionTitle">Phím Tắt Phổ Biến</h2>
+    <div class="shortcuts-grid" id="shortcutsGrid"><!-- Shortcuts will be populated by JavaScript -->
+    </div>
+   </section>
+  </div><!-- Modal -->
+  <div class="modal" id="shortcutModal">
+   <div class="modal-content">
+    <div class="modal-header"><button class="modal-close" onclick="closeModal()">×</button>
+     <div class="modal-shortcut-header">
+      <div class="modal-shortcut-icon" id="modalIcon"></div>
+      <div class="modal-shortcut-info">
+       <h2 id="modalTitle"></h2>
+       <div class="modal-ios-requirement">
+        <div class="ios-icon">
+         iOS
+        </div><span id="modalIosVersion"></span>
+       </div>
+      </div>
+     </div>
+    </div>
+    <div class="modal-body">
+     <div class="info-section">
+      <h3><span class="section-icon"><i data-lucide="zap"></i></span>Chức Năng Chính</h3>
+      <div class="info-content" id="modalMainFunction"></div>
+     </div>
+     <div class="info-section">
+      <h3><span class="section-icon"><i data-lucide="list"></i></span>Hướng Dẫn</h3>
+      <ul class="info-list" id="modalInstructions"></ul>
+     </div>
+     <div class="info-section">
+      <h3><span class="section-icon"><i data-lucide="alert-triangle"></i></span>Lỗi Thường Gặp</h3>
+      <ul class="info-list" id="modalCommonErrors"></ul>
+     </div>
+     <div class="info-section">
+      <h3><span class="section-icon"><i data-lucide="info"></i></span>Lưu Ý</h3>
+      <div class="info-content" id="modalNotes"></div>
+     </div>
+     <div class="info-section">
+      <h3><span class="section-icon"><i data-lucide="image"></i></span>Hình Ảnh Hướng Dẫn</h3>
+      <div class="tutorial-image" id="modalTutorialImage">
+       Nhấp để thêm hình ảnh hướng dẫn
+      </div>
+     </div>
+     <div class="action-buttons"><a href="#" class="btn btn-primary" id="getShortcutBtn"> <span id="getShortcutText">Nhận Phím Tắt</span> </a> <a href="#" class="btn btn-secondary" target="_blank" rel="noopener noreferrer"> <i data-lucide="play" style="width: 16px; height: 16px; margin-right: 8px;"></i> Xem Video Hướng Dẫn </a>
+     </div>
+     <div class="suggestions">
+      <h4>Đề Xuất Phím Tắt Khác</h4>
+      <div class="suggestion-grid" id="suggestionGrid"><!-- Suggestions will be populated by JavaScript -->
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+        // Configuration object for customization
+        const defaultConfig = {
+            main_title: "iPhone Shortcuts Hub",
+            subtitle: "Khám phá những phím tắt mạnh mẽ cho iPhone của bạn",
+            section_title: "Phím Tắt Phổ Biến",
+            get_shortcut_text: "Nhận Phím Tắt"
+        };
+
+        // Enhanced Shortcuts data with new features
+        const shortcutsData = [
+            {
+                id: 1,
+                name: "Snap Video",
+                iconUrl: "https://phimtat.vn/wp-content/uploads/2023/06/1.png",
+                icon: "video",
+                iconColor: "#FF6B6B",
+                iosVersion: "15.0+",
+                category: "utility",
+                popularity: "hot",
+                isNew: true,
+                rating: 4.9,
+                downloads: "85K+",
+                description: "Hỗ trợ tải video chất lượng cao",
+                mainFunction: "Hỗ trợ tải video chất lượng cao từ các nền tảng mạng xã hội với nhiều định dạng khác nhau.",
+                instructions: [
+                    "Vào video cần tải. Nhấn vào biểu tượng chia sẻ và kéo sang bên phải chọn biểu tượng Thêm",
+                    "Chọn phím tắt Snap Video và chọn định dạng cần tải (Video, Audio)"
+                ],
+                commonErrors: [
+                    "Video không tải được - Kiểm tra kết nối mạng",
+                    "Định dạng không hỗ trợ - Thử định dạng khác",
+                    "Lỗi quyền truy cập - Cho phép truy cập Photos"
+                ],
+                notes: "Hỗ trợ tải video từ nhiều nền tảng khác nhau. Chất lượng video được giữ nguyên theo bản gốc.",
+                shortcutUrl: "https://www.icloud.com/shortcuts/49017b1dae164a6ca55f4aaeba6810a0",
+                videoUrl: "https://youtube.com/watch?v=snap-video",
+                tutorialImages: [
+                    "https://phimtat.vn/wp-content/uploads/2023/06/2-snap-video.jpg",
+                    "https://phimtat.vn/wp-content/uploads/2023/06/3-snap-video-1.jpg"
+                ]
+            },
+            {
+                id: 2,
+                name: "Tuổi thọ pin",
+                iconUrl: "https://phimtat.vn/wp-content/uploads/2023/06/pin.png",
+                icon: "battery",
+                iconColor: "#34C759",
+                iosVersion: "13.0+",
+                category: "utility",
+                popularity: "popular",
+                isNew: false,
+                rating: 4.7,
+                downloads: "65K+",
+                description: "Xem tuổi thọ pin, dung lượng pin hiện tại (mAh), chu kỳ sạc, Battery Health",
+                mainFunction: "Xem tuổi thọ pin, xem dung lượng pin hiện tại (mAh), chu kỳ sạc, Battery Health thông qua dữ liệu phân tích của iPhone.",
+                instructions: [
+                    "Bước 1: Vào cài đặt và kéo xuống phần Quyền riêng tư & bảo mật",
+                    "Bước 2: Kéo xuống chọn Phân tích và cải tiến (Nếu Chia sẻ Phân tích iPhone đang tắt thì hãy bật lên và dùng trước vài ngày để iPhone lưu dữ liệu gần nhất nhé!)",
+                    "Bước 3: Nếu đã bật Chia sẻ Phân tích iPhone từ trước thì tiếp tục mở Dữ liệu Phân tích. Sau đó nhấn vào dữ liệu Analytics – Ngày mới nhất",
+                    "Bước 4: Bấm nút chia sẻ góc phải và chọn phím tắt Tuổi thọ pin",
+                    "Bước 5: Chọn iPhone bạn đang dùng để xem chi tiết tuổi thọ pin nhé!"
+                ],
+                commonErrors: [
+                    "Không có dữ liệu phân tích - Bật chia sẻ phân tích và chờ vài ngày",
+                    "Không tìm thấy file Analytics - Kiểm tra lại ngày gần nhất",
+                    "Thông tin không chính xác - Đảm bảo chọn đúng model iPhone"
+                ],
+                notes: "Cần bật tính năng Chia sẻ Phân tích iPhone trước và sử dụng máy vài ngày để có dữ liệu chính xác.",
+                shortcutUrl: "https://www.icloud.com/shortcuts/2e379ec6ef6b473a9efbe55ec891817e",
+                videoUrl: "https://youtube.com/watch?v=battery-health",
+                tutorialImages: []
+            },
+            {
+                id: 3,
+                name: "Locket Gold",
+                iconUrl: "https://phimtat.vn/wp-content/uploads/2024/08/Locket-Gold.png",
+                icon: "camera",
+                iconColor: "#FFD700",
+                iosVersion: "15.0+",
+                category: "social",
+                popularity: "hot",
+                isNew: true,
+                rating: 4.8,
+                downloads: "45K+",
+                description: "Sử dụng các tính năng Locket Gold miễn phí",
+                mainFunction: "Sử dụng các tính năng Locket Gold miễn phí: Tải lên video (có âm thanh khi bật chuông), Tải ảnh lên, Không giới hạn từ ngữ trong caption.",
+                instructions: [
+                    "Thiết lập nhập email và mật khẩu Locket của bạn. (Không nhập số điện thoại nhé!)",
+                    "Tài khoản và mật khẩu Locket của bạn sẽ được lưu ở trong app Phím tắt, chỉ dùng để xử lý trên máy chủ và hoàn toàn không được lưu trữ trên hệ thống",
+                    "Nhấn vào phím tắt để sử dụng",
+                    "Chọn Ảnh hoặc video để tải lên và nhập Caption (Không bắt buộc)",
+                    "Nếu Video quá 6MB thì bạn phải nén trước khi tải lên nhé"
+                ],
+                commonErrors: [
+                    "Đăng nhập thất bại - Kiểm tra lại email và mật khẩu",
+                    "Video quá lớn - Nén video xuống dưới 6MB",
+                    "Không tải được - Kiểm tra kết nối mạng"
+                ],
+                notes: "Tác giả: Tiến Sato x Phím tắt VN. Mọi thông tin cá nhân và hình ảnh của bạn sẽ được bảo mật tuyệt đối, không bị rò rỉ dưới bất kỳ hình thức nào.",
+                shortcutUrl: "https://www.icloud.com/shortcuts/ccc58ff671be4812bc62e2eda7960424",
+                videoUrl: "https://youtube.com/watch?v=locket-gold",
+                tutorialImages: []
+            }
+        ];
+
+        let currentShortcut = null;
+        let filteredShortcuts = [...shortcutsData];
+        let currentFilter = 'all';
+
+        // Initialize the app
+        function initApp() {
+            createParticles();
+            renderShortcuts();
+            setupEventListeners();
+        }
+
+        // Create advanced tech particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 80;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                
+                // Varied particle sizes for depth
+                const size = Math.random() * 6 + 1;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                // Staggered animation timing
+                particle.style.animationDelay = Math.random() * 25 + 's';
+                particle.style.animationDuration = (Math.random() * 15 + 20) + 's';
+                
+                // Add some particles with different shapes
+                if (i % 4 === 0) {
+                    particle.style.borderRadius = '0';
+                    particle.style.transform = 'rotate(45deg)';
+                }
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Filter shortcuts based on search and category
+        function filterShortcuts(searchTerm = '', category = 'all') {
+            filteredShortcuts = shortcutsData.filter(shortcut => {
+                const matchesSearch = shortcut.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                    shortcut.description.toLowerCase().includes(searchTerm.toLowerCase());
+                
+                let matchesCategory = true;
+                if (category !== 'all') {
+                    switch (category) {
+                        case 'popular':
+                            matchesCategory = shortcut.popularity === 'hot' || shortcut.popularity === 'popular';
+                            break;
+                        case 'new':
+                            matchesCategory = shortcut.isNew;
+                            break;
+                        case 'utility':
+                            matchesCategory = shortcut.category === 'utility';
+                            break;
+                    }
+                }
+                
+                return matchesSearch && matchesCategory;
+            });
+            
+            renderShortcuts();
+        }
+
+        // Render shortcuts grid with animation
+        function renderShortcuts() {
+            const grid = document.getElementById('shortcutsGrid');
+            grid.innerHTML = '';
+
+            filteredShortcuts.forEach((shortcut, index) => {
+                const card = createShortcutCard(shortcut);
+                card.style.animationDelay = (index * 0.1) + 's';
+                grid.appendChild(card);
+            });
+
+            // Update section title
+            const sectionTitle = document.getElementById('sectionTitle');
+            if (currentFilter === 'all') {
+                sectionTitle.textContent = 'Phím Tắt Phổ Biến';
+            } else if (currentFilter === 'popular') {
+                sectionTitle.textContent = 'Phím Tắt Phổ Biến Nhất';
+            } else if (currentFilter === 'new') {
+                sectionTitle.textContent = 'Phím Tắt Mới Nhất';
+            } else if (currentFilter === 'utility') {
+                sectionTitle.textContent = 'Phím Tắt Tiện Ích';
+            }
+        }
+
+        // Create enhanced shortcut card element
+        function createShortcutCard(shortcut) {
+            const card = document.createElement('div');
+            card.className = 'shortcut-card';
+            card.onclick = () => openModal(shortcut);
+
+            // Add ripple effect
+            card.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                ripple.classList.add('ripple-effect');
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+
+            // Popularity badge
+            let popularityBadge = '';
+            if (shortcut.popularity === 'hot') {
+                popularityBadge = '<div class="popularity-badge">● HOT</div>';
+            } else if (shortcut.isNew) {
+                popularityBadge = '<div class="popularity-badge" style="background: linear-gradient(135deg, #4ECDC4, #44A08D);">◆ MỚI</div>';
+            }
+
+            // Rating stars
+            const fullStars = Math.floor(shortcut.rating);
+            const hasHalfStar = shortcut.rating % 1 !== 0;
+            let starsHtml = '';
+            for (let i = 0; i < fullStars; i++) {
+                starsHtml += '★';
+            }
+            if (hasHalfStar) {
+                starsHtml += '★';
+            }
+
+            // Icon display - use iconUrl if available, otherwise use Lucide icon
+            let iconContent = '';
+            if (shortcut.iconUrl) {
+                iconContent = `<img src="${shortcut.iconUrl}" alt="${shortcut.name}" style="width: 32px; height: 32px; border-radius: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                              <i data-lucide="${shortcut.icon}" style="width: 32px; height: 32px; color: white; display: none;"></i>`;
+            } else {
+                iconContent = `<i data-lucide="${shortcut.icon}" style="width: 32px; height: 32px; color: white;"></i>`;
+            }
+
+            card.innerHTML = `
+                ${popularityBadge}
+                <div class="shortcut-header">
+                    <div class="shortcut-icon" style="background: ${shortcut.iconColor}">
+                        ${iconContent}
+                    </div>
+                    <div class="shortcut-info">
+                        <h3>${shortcut.name}</h3>
+                        <div class="ios-requirement">
+                            <div class="ios-icon">iOS</div>
+                            ${shortcut.iosVersion}
+                        </div>
+                        <div class="rating-info" style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                            <span style="font-size: 0.8rem;">${starsHtml}</span>
+                            <span style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">${shortcut.rating} • ${shortcut.downloads}</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="shortcut-description">${shortcut.description}</p>
+            `;
+
+            return card;
+        }
+
+        // Open modal with shortcut details
+        function openModal(shortcut) {
+            currentShortcut = shortcut;
+            
+            // Update modal content
+            document.getElementById('modalIcon').style.background = shortcut.iconColor;
+            
+            // Modal icon display - use iconUrl if available, otherwise use Lucide icon
+            let modalIconContent = '';
+            if (shortcut.iconUrl) {
+                modalIconContent = `<img src="${shortcut.iconUrl}" alt="${shortcut.name}" style="width: 36px; height: 36px; border-radius: 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                  <i data-lucide="${shortcut.icon}" style="width: 36px; height: 36px; color: white; display: none;"></i>`;
+            } else {
+                modalIconContent = `<i data-lucide="${shortcut.icon}" style="width: 36px; height: 36px; color: white;"></i>`;
+            }
+            
+            document.getElementById('modalIcon').innerHTML = modalIconContent;
+            document.getElementById('modalTitle').textContent = shortcut.name;
+            document.getElementById('modalIosVersion').textContent = shortcut.iosVersion;
+            document.getElementById('modalMainFunction').textContent = shortcut.mainFunction;
+            document.getElementById('modalNotes').textContent = shortcut.notes;
+            
+            // Update instructions
+            const instructionsList = document.getElementById('modalInstructions');
+            instructionsList.innerHTML = '';
+            shortcut.instructions.forEach(instruction => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="list-icon"><i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i></span>${instruction}`;
+                instructionsList.appendChild(li);
+            });
+
+            // Update common errors
+            const errorsList = document.getElementById('modalCommonErrors');
+            errorsList.innerHTML = '';
+            shortcut.commonErrors.forEach(error => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="list-icon"><i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i></span>${error}`;
+                errorsList.appendChild(li);
+            });
+
+            // Update tutorial images
+            const tutorialImage = document.getElementById('modalTutorialImage');
+            if (shortcut.tutorialImages && shortcut.tutorialImages.length > 0) {
+                let imagesHtml = '';
+                shortcut.tutorialImages.forEach((imageUrl, index) => {
+                    imagesHtml += `<img src="${imageUrl}" alt="Hướng dẫn ${index + 1}" onerror="this.style.display='none';">`;
+                });
+                tutorialImage.innerHTML = `<div class="tutorial-images-container">${imagesHtml}</div>`;
+            } else {
+                tutorialImage.innerHTML = 'Không có hình ảnh hướng dẫn';
+            }
+
+            // Update action buttons
+            document.getElementById('getShortcutBtn').href = shortcut.shortcutUrl;
+            document.querySelector('.btn-secondary').href = shortcut.videoUrl;
+
+            // Render suggestions (other shortcuts)
+            renderSuggestions(shortcut.id);
+
+            // Show modal
+            document.getElementById('shortcutModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            
+            // Refresh Lucide icons in modal
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 100);
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('shortcutModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            currentShortcut = null;
+        }
+
+        // Render suggestion shortcuts
+        function renderSuggestions(currentId) {
+            const suggestionGrid = document.getElementById('suggestionGrid');
+            suggestionGrid.innerHTML = '';
+
+            const suggestions = shortcutsData.filter(s => s.id !== currentId).slice(0, 4);
+            
+            suggestions.forEach(shortcut => {
+                const card = document.createElement('div');
+                card.className = 'suggestion-card';
+                card.onclick = () => openModal(shortcut);
+
+                // Suggestion icon display - use iconUrl if available, otherwise use Lucide icon
+                let suggestionIconContent = '';
+                if (shortcut.iconUrl) {
+                    suggestionIconContent = `<img src="${shortcut.iconUrl}" alt="${shortcut.name}" style="width: 16px; height: 16px; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                           <i data-lucide="${shortcut.icon}" style="width: 16px; height: 16px; color: white; display: none;"></i>`;
+                } else {
+                    suggestionIconContent = `<i data-lucide="${shortcut.icon}" style="width: 16px; height: 16px; color: white;"></i>`;
+                }
+
+                card.innerHTML = `
+                    <div class="suggestion-header">
+                        <div class="suggestion-icon" style="background: ${shortcut.iconColor}">
+                            ${suggestionIconContent}
+                        </div>
+                        <div class="suggestion-name">${shortcut.name}</div>
+                    </div>
+                `;
+
+                suggestionGrid.appendChild(card);
+            });
+        }
+
+        // Setup enhanced event listeners
+        function setupEventListeners() {
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                filterShortcuts(e.target.value, currentFilter);
+            });
+
+            // Filter buttons
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // Update active button
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    // Update filter
+                    currentFilter = e.target.dataset.filter;
+                    filterShortcuts(searchInput.value, currentFilter);
+                });
+            });
+
+            // Close modal when clicking outside
+            document.getElementById('shortcutModal').addEventListener('click', (e) => {
+                if (e.target.id === 'shortcutModal') {
+                    closeModal();
+                }
+            });
+
+            // Close modal with Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && currentShortcut) {
+                    closeModal();
+                }
+            });
+
+            // Tutorial image click handler with enhanced UI
+            document.getElementById('modalTutorialImage').addEventListener('click', () => {
+                if (currentShortcut) {
+                    // Create custom input modal instead of prompt
+                    const inputModal = document.createElement('div');
+                    inputModal.style.cssText = `
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.8); z-index: 2000; display: flex;
+                        align-items: center; justify-content: center;
+                    `;
+                    
+                    inputModal.innerHTML = `
+                        <div style="background: white; padding: 30px; border-radius: 20px; max-width: 500px; width: 90%;">
+                            <h3 style="margin: 0 0 20px 0; color: #333;">Thêm Hình Ảnh Hướng Dẫn</h3>
+                            <input type="url" id="imageUrlInput" placeholder="Nhập URL hình ảnh..." 
+                                   style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                <button onclick="this.closest('div').parentElement.remove()" 
+                                        style="padding: 10px 20px; border: none; background: #f5f5f5; border-radius: 8px; cursor: pointer;">Hủy</button>
+                                <button onclick="updateTutorialImage()" 
+                                        style="padding: 10px 20px; border: none; background: #007AFF; color: white; border-radius: 8px; cursor: pointer;">Cập nhật</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(inputModal);
+                    document.getElementById('imageUrlInput').focus();
+                }
+            });
+        }
+
+        // Update tutorial image function
+        function updateTutorialImage() {
+            const imageUrl = document.getElementById('imageUrlInput').value;
+            if (imageUrl && currentShortcut) {
+                currentShortcut.tutorialImage = imageUrl;
+                const tutorialImage = document.getElementById('modalTutorialImage');
+                tutorialImage.innerHTML = `<img src="${imageUrl}" alt="Tutorial" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
+            }
+            // Remove input modal
+            document.querySelector('div[style*="position: fixed"]').remove();
+        }
+
+        // Element SDK Configuration
+        async function onConfigChange(config) {
+            const mainTitle = config.main_title || defaultConfig.main_title;
+            const subtitle = config.subtitle || defaultConfig.subtitle;
+            const sectionTitle = config.section_title || defaultConfig.section_title;
+            const getShortcutText = config.get_shortcut_text || defaultConfig.get_shortcut_text;
+
+            document.getElementById('mainTitle').textContent = mainTitle;
+            document.getElementById('subtitle').textContent = subtitle;
+            document.getElementById('sectionTitle').textContent = sectionTitle;
+            document.getElementById('getShortcutText').textContent = getShortcutText;
+        }
+
+        function mapToCapabilities(config) {
+            return {
+                recolorables: [],
+                borderables: [],
+                fontEditable: undefined,
+                fontSizeable: undefined
+            };
+        }
+
+        function mapToEditPanelValues(config) {
+            return new Map([
+                ["main_title", config.main_title || defaultConfig.main_title],
+                ["subtitle", config.subtitle || defaultConfig.subtitle],
+                ["section_title", config.section_title || defaultConfig.section_title],
+                ["get_shortcut_text", config.get_shortcut_text || defaultConfig.get_shortcut_text]
+            ]);
+        }
+
+        // Initialize Element SDK
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig,
+                onConfigChange,
+                mapToCapabilities,
+                mapToEditPanelValues
+            });
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            // Initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99f9342d54186045',t:'MTc2MzMxOTMzOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
