@@ -665,7 +665,7 @@
        }
     }
 
-    // 👉 TUYỆT CHIÊU TẢI FREE BẢO MẬT (Base64 + Backend)
+        // 👉 TUYỆT CHIÊU TẢI FREE BẢO MẬT (Đã Fix lỗi chặn Tab mới)
     async function downloadFree(buttonElement) {
        const originalContent = buttonElement.innerHTML;
        buttonElement.innerHTML = `<div class="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div> <span class="ml-2">${t('creating_link')}</span>`;
@@ -679,16 +679,18 @@
        }
 
        try {
-           // Băm nát link thành Base64 để che mắt hacker dùng F12
+           // Băm nát link thành Base64
            const encodedLink = btoa(rawLink);
            
-           // Ném cục Base64 cho Google Script xử lý ngầm với Link4m
+           // Ném cục Base64 cho Google Script
            const fetchUrl = GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(encodedLink);
            const res = await fetch(fetchUrl);
            const data = await res.json();
 
            if(data.success && data.link) {
-               window.open(data.link, '_blank');
+               // ✅ FIX LỖI: Dùng window.location.href để chuyển trang trực tiếp, né hoàn toàn bộ lọc của Safari/Chrome
+               window.location.href = data.link;
+               return; // Dừng code tại đây, chờ trình duyệt chuyển trang
            } else {
                alert("Có lỗi xảy ra khi tạo link, vui lòng thử lại!");
            }
@@ -696,12 +698,12 @@
            alert(t('network_error'));
        }
 
+       // Nếu lỗi mới chạy xuống đây để khôi phục nút và đóng Modal
        buttonElement.innerHTML = originalContent; 
        buttonElement.disabled = false; 
        lucide.createIcons(); 
        closeModal('appModal');
     }
-
     function toggleTheme() {
        document.documentElement.classList.toggle('dark');
        localStorage.setItem('theme', document.documentElement.classList.contains('dark')?'dark':'light');
