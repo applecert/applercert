@@ -131,7 +131,7 @@
     </div>
   </header>
 
-  <main id="mainContainer" class="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-hide pt-[95px] pb-[100px] relative scroll-smooth">
+  <main id="mainContainer" class="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-hide pt-[95px] pb-[130px] relative scroll-smooth">
     <div class="max-w-6xl mx-auto px-5 md:px-6">
        <div id="dynamicContent" class="min-h-[500px]">
           <div class="py-32 flex flex-col items-center justify-center text-gray-400 opacity-60">
@@ -223,9 +223,6 @@
   </div>
 
   <script>
-    /* =========================================
-       TỪ ĐIỂN ĐA NGÔN NGỮ (VI/EN) (GIỮ NGUYÊN)
-    ========================================= */
     const TRANSLATIONS = {
         vi: {
             search_placeholder: "Tìm ứng dụng...", syncing: "Đang đồng bộ dữ liệu...",
@@ -287,7 +284,7 @@
     }
 
     /* =========================================
-       CẤU HÌNH API & LOGIC (GIỮ NGUYÊN)
+       CẤU HÌNH API & LOGIC
     ========================================= */
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
 
@@ -386,9 +383,6 @@
 
     function setFilter(filter) { STATE.currentFilter = filter; STATE.currentPage = 1; renderContent(); }
 
-    /* =========================================
-       NÂNG CẤP UI RENDER (iOS 26 Concept)
-    ========================================= */
     function renderContent() {
       const query = document.getElementById('searchInput').value.trim(); 
       const container = document.getElementById('dynamicContent');
@@ -431,7 +425,7 @@
           ${trendingApps.length ? `
           <div class="mb-10 animate-fluid-up delay-150">
              <div class="flex justify-between items-center mb-5">
-                <h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight">${t('trending')}</h3>
+                 <h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight">${t('trending')}</h3>
              </div>
              <div class="flex gap-5 overflow-x-auto snap-x-mandatory scrollbar-hide pb-4 -mx-5 px-5 md:mx-0 md:px-0">
                 ${trendingApps.map(i => createTrendingItem(i)).join('')}
@@ -441,7 +435,7 @@
           <div class="mt-4 animate-fluid-up delay-200">
              <div class="flex justify-between items-end mb-5 border-b border-gray-200 dark:border-white/10 pb-3">
                 <h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight">${t('new_update')}</h3>
-                <span class="text-brand text-sm font-bold active:opacity-70 cursor-pointer">Xem tất cả</span>
+                <span class="text-brand text-sm font-bold active:opacity-70 cursor-pointer" onclick="switchTab('ipa')">Xem tất cả</span>
              </div>
              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 ${recent.map((i, idx) => createGridItem(i, idx)).join('')}
@@ -596,7 +590,7 @@
     document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
 
     /* =========================================
-       MODAL & CHỨC NĂNG TẢI (GIỮ NGUYÊN LOGIC)
+       MODAL & CHỨC NĂNG TẢI (GIỮ NGUYÊN LOGIC VIP)
     ========================================= */
     function openModal(i) {
        STATE.currentItem = i;
@@ -671,22 +665,41 @@
        }
     }
 
+    // 👉 TUYỆT CHIÊU TẢI FREE BẢO MẬT (Base64 + Backend)
     async function downloadFree(buttonElement) {
        const originalContent = buttonElement.innerHTML;
        buttonElement.innerHTML = `<div class="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div> <span class="ml-2">${t('creating_link')}</span>`;
        buttonElement.disabled = true;
 
-       const link = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-       const apiToken = '691eb05d63b1b86d4a3bca1e';
-       const targetUrl = encodeURIComponent(link);
+       const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
+       
+       if (!rawLink) {
+           alert("Lỗi: Không tìm thấy link tải gốc!");
+           buttonElement.innerHTML = originalContent; buttonElement.disabled = false; return;
+       }
 
        try {
-           const res = await fetch(`https://api.allorigins.win/raw?url=` + encodeURIComponent(`https://link4m.co/api-shorten/v2?api=${apiToken}&url=${targetUrl}`));
+           // Băm nát link thành Base64 để che mắt hacker dùng F12
+           const encodedLink = btoa(rawLink);
+           
+           // Ném cục Base64 cho Google Script xử lý ngầm với Link4m
+           const fetchUrl = GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(encodedLink);
+           const res = await fetch(fetchUrl);
            const data = await res.json();
-           window.open((data.status === 'success' && data.shortenedUrl) ? data.shortenedUrl : `https://link4m.co/st?api=${apiToken}&url=${targetUrl}`, '_blank');
-       } catch (error) { window.open(`https://link4m.co/st?api=${apiToken}&url=${targetUrl}`, '_blank'); }
 
-       buttonElement.innerHTML = originalContent; buttonElement.disabled = false; lucide.createIcons(); closeModal('appModal');
+           if(data.success && data.link) {
+               window.open(data.link, '_blank');
+           } else {
+               alert("Có lỗi xảy ra khi tạo link, vui lòng thử lại!");
+           }
+       } catch (error) { 
+           alert(t('network_error'));
+       }
+
+       buttonElement.innerHTML = originalContent; 
+       buttonElement.disabled = false; 
+       lucide.createIcons(); 
+       closeModal('appModal');
     }
 
     function toggleTheme() {
