@@ -40,7 +40,6 @@
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Glass Effect */
     .glass-effect {
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
@@ -51,7 +50,6 @@
       border-color: rgba(255,255,255,0.1);
     }
 
-    /* Tab Buttons */
     .tab-btn {
       flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
       gap: 0.2rem; color: #999; transition: all 0.3s; background: none; border: none; cursor: pointer;
@@ -63,7 +61,6 @@
     .tab-btn.active i { transform: translateY(-3px) scale(1.1); stroke-width: 2.5; }
     .tab-btn.active span { opacity: 1; font-weight: 700; transform: translateY(-1px); }
 
-    /* Staggered Animations */
     .delay-50 { animation-delay: 50ms; opacity: 0; }
     .delay-100 { animation-delay: 100ms; opacity: 0; }
     .delay-150 { animation-delay: 150ms; opacity: 0; }
@@ -119,9 +116,9 @@
     <button onclick="switchTab('conf')" class="tab-btn" data-tab="conf">
       <i data-lucide="file-json"></i><span>Conf</span>
     </button>
-    <button onclick="switchTab('cert')" class="tab-btn" data-tab="cert">
-      <i data-lucide="shield-check"></i><span>Chứng Chỉ</span>
-    </button>
+    <a href="dichvu.html" class="tab-btn" style="text-decoration: none;">
+      <i data-lucide="shopping-cart"></i><span>Cửa hàng</span>
+    </a>
   </nav>
 
   <div id="appModal" class="fixed inset-0 z-[70] hidden flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm transition-all duration-400">
@@ -166,7 +163,7 @@
                    </button>
                 </div>
                 <div class="text-center mt-3 relative z-10">
-                   <a href="https://p12.vn/payment" target="_blank" class="font-bold text-red-500 hover:text-red-600 underline text-xs">Chưa có mã? Mua VIP ngay!</a>
+                   <a href="dichvu.html" class="font-bold text-red-500 hover:text-red-600 underline text-xs">Chưa có mã? Mua VIP Auto ngay!</a>
                 </div>
              </div>
           </div>
@@ -180,32 +177,33 @@
   </div>
 
   <script>
-    // --- KHAI BÁO DỮ LIỆU ---
+    /* =========================================
+       CẤU HÌNH CỦA BẠN (Đã nhập sẵn theo thông tin bạn gửi)
+    ========================================= */
+    const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
+    const MY_BANK_ID = 'ACB'; 
+    const MY_ACCOUNT_NO = '22703611'; 
+    const MY_ACCOUNT_NAME = 'TRAN NGUYEN MINH QUI'; 
+    /* ========================================= */
+
     const DB = { ipa: [], dylib: [], conf: [], cert_sign: [], cert_cert: [], cert_mod: [] };
     let KEYWORDS = { movie: [], social: [], photo: [], game: [] };
 
     const path = window.location.pathname;
-    let initialTab = path.includes('/signipa') ? 'cert' : 'home';
+    let initialTab = 'home';
     
-    const STATE = { 
-        currentTab: initialTab, 
-        currentPage: 1, 
-        itemsPerPage: 24, 
-        currentItem: null,
-        currentFilter: 'all'
-    };
+    const STATE = { currentTab: initialTab, currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
 
-    // --- HÀM HỖ TRỢ ---
     function checkKw(str, whitelist) {
         if (!str || !whitelist) return false;
-        const s = str.trim().toLowerCase();
-        return whitelist.some(k => k.trim().toLowerCase() === s);
+        const s = String(str).trim().toLowerCase();
+        return whitelist.some(k => String(k).trim().toLowerCase() === s);
     }
 
     function getUniqueApps(apps) {
         const map = new Map();
         apps.forEach(app => {
-            const key = (app.name || app.title || '').toLowerCase().trim();
+            const key = String(app.name || app.title || '').toLowerCase().trim();
             if (!map.has(key)) map.set(key, app);
         });
         return Array.from(map.values());
@@ -215,62 +213,75 @@
         return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0));
     }
 
-    // --- TÍCH HỢP DATA VÀ API APPTESTERS (CHỈ VÀO TAB IPA) ---
+    // TẢI DỮ LIỆU SIÊU CHỐNG LỖI
     async function loadData() {
       try {
-        const kwRes = await fetch('keywords.json?t=' + Date.now());
-        if(kwRes.ok) KEYWORDS = await kwRes.json();
-      } catch (err) {}
+          try {
+            const kwRes = await fetch('keywords.json?t=' + Date.now());
+            if(kwRes.ok) {
+                const data = await kwRes.json();
+                KEYWORDS = data;
+            }
+          } catch (e) {}
 
-      const endpoints = [
-        {k: 'ipa', u: 'data/ipa.json'},
-        {k: 'dylib', u: 'data/dylib.json'},
-        {k: 'conf', u: 'data/conf.json'}
-      ];
-      
-      await Promise.all(endpoints.map(async e => {
-        try {
-          const res = await fetch(`${e.u}?t=${Date.now()}`);
-          if(res.ok) {
-              const data = await res.json();
-              DB[e.k] = data.map(item => ({...item, source: 'IPAVIET'}));
-          }
-        } catch(err) { }
-      }));
-
-      try {
-          const extRes = await fetch('https://raw.githubusercontent.com/apptesters-org/AppTesters_Repo/main/apps.json');
-          if (extRes.ok) {
-              const extData = await extRes.json();
-              if (extData && extData.apps) {
-                  const mappedApps = extData.apps.map(app => ({
-                      name: app.name,
-                      title: app.name,
-                      icon: app.iconURL || 'https://placehold.co/100',
-                      iconUrl: app.iconURL,
-                      desc: app.localizedDescription || app.subtitle || 'Bản Mod/Hack IPA',
-                      description: app.localizedDescription || app.subtitle,
-                      fileLink: app.downloadURL,
-                      downloadUrl: app.downloadURL,
-                      version: app.version,
-                      developer: app.developerName || 'AppTesters',
-                      date: app.versionDate || new Date().toISOString(),
-                      lastSync: app.versionDate,
-                      source: 'AppTesters',
-                      _type: 'IPA'
-                  }));
-                  DB.ipa = [...DB.ipa, ...mappedApps];
+          const endpoints = [
+            {k: 'ipa', u: 'data/ipa.json'},
+            {k: 'dylib', u: 'data/dylib.json'},
+            {k: 'conf', u: 'data/conf.json'}
+          ];
+          
+          await Promise.all(endpoints.map(async e => {
+            try {
+              const res = await fetch(`${e.u}?t=${Date.now()}`);
+              if(res.ok) {
+                  const text = await res.text();
+                  const data = JSON.parse(text); 
+                  if(Array.isArray(data)) {
+                      DB[e.k] = data.map(item => ({...item, source: 'IPAVIET'}));
+                  }
               }
+            } catch(err) { console.log("Bỏ qua lỗi file cục bộ: " + e.k); }
+          }));
+
+          try {
+              const extRes = await fetch('https://raw.githubusercontent.com/apptesters-org/AppTesters_Repo/main/apps.json');
+              if (extRes.ok) {
+                  const extData = await extRes.json();
+                  if (extData && Array.isArray(extData.apps)) {
+                      const mappedApps = extData.apps.map(app => ({
+                          name: app.name,
+                          title: app.name,
+                          icon: app.iconURL || 'https://placehold.co/100',
+                          iconUrl: app.iconURL,
+                          desc: app.localizedDescription || app.subtitle || 'Bản Mod/Hack IPA',
+                          description: app.localizedDescription || app.subtitle,
+                          fileLink: app.downloadURL,
+                          downloadUrl: app.downloadURL,
+                          version: app.version,
+                          developer: app.developerName || 'AppTesters',
+                          date: app.versionDate || new Date().toISOString(),
+                          lastSync: app.versionDate,
+                          source: 'AppTesters',
+                          _type: 'IPA'
+                      }));
+                      DB.ipa = [...DB.ipa, ...mappedApps];
+                  }
+              }
+          } catch (err) { console.log("Bỏ qua lỗi API AppTesters"); }
+          
+      } catch (fatalError) {
+          console.error("Lỗi chí mạng:", fatalError);
+      } finally {
+          try {
+              DB.ipa = sortItemsByDate(getUniqueApps(DB.ipa));
+              switchTab(STATE.currentTab);
+          } catch(e) {
+              document.getElementById('dynamicContent').innerHTML = '<div class="text-center p-10 text-red-500 font-bold">Hệ thống đang bảo trì dữ liệu. Vui lòng quay lại sau!</div>';
+              lucide.createIcons();
           }
-      } catch (err) {
-          console.warn("Lỗi tải API AppTesters, sử dụng Data có sẵn.", err);
       }
-      
-      DB.ipa = sortItemsByDate(getUniqueApps(DB.ipa));
-      switchTab(STATE.currentTab);
     }
 
-    // --- NAVIGATION ---
     function switchTab(tabId) {
       STATE.currentTab = tabId;
       STATE.currentPage = 1;
@@ -306,7 +317,6 @@
         renderContent(document.getElementById('searchInput').value);
     }
 
-    // --- RENDER CONTENT ---
     function renderContent(query = '') {
       const container = document.getElementById('dynamicContent');
       let html = '';
@@ -377,9 +387,6 @@
           </div>
         `;
       } 
-      else if (tab === 'cert') {
-          html = '<iframe src="signipa.html" class="w-full h-[85vh] border-none rounded-2xl bg-white dark:bg-cardDark" sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-top-navigation"></iframe>';
-      } 
       else {
         let items = tab === 'ipa' ? DB.ipa : (tab === 'dylib' ? DB.dylib : DB.conf);
         
@@ -390,7 +397,7 @@
 
         if (STATE.currentFilter !== 'all') {
             items = items.filter(i => {
-                const s = (i.name + " " + (i.desc||"")).toLowerCase();
+                const s = String(i.name + " " + (i.desc||"")).toLowerCase();
                 if(STATE.currentFilter === 'game') return s.includes('game') || s.includes('hack') || checkKw(i.name, KEYWORDS.game);
                 if(STATE.currentFilter === 'social') return checkKw(i.name, KEYWORDS.social) || s.includes('facebook') || s.includes('tiktok') || s.includes('plus');
                 return true;
@@ -434,7 +441,6 @@
       lucide.createIcons();
     }
 
-    // --- HTML GENERATORS ---
     function createBigHero(i, index) {
        return `
          <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="animate-slide-up snap-center shrink-0 w-[85%] md:w-[26rem] h-[16rem] relative rounded-[2rem] overflow-hidden shadow-xl group cursor-pointer border border-black/5 dark:border-white/10" style="animation-delay: ${index*50}ms">
@@ -480,8 +486,8 @@
        const desc = i.desc || i.description || i.certname || 'Nhấn để xem chi tiết';
        
        const sourceBadge = i.source === 'AppTesters' 
-            ? `<span class="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[9px] px-1.5 py-0.5 rounded ml-2 border border-purple-200 dark:border-purple-800">AppTesters</span>`
-            : `<span class="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[9px] px-1.5 py-0.5 rounded ml-2 border border-blue-200 dark:border-blue-800">IPAVIET</span>`;
+            ? `<span class="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[9px] px-1.5 py-0.5 rounded ml-2 border border-purple-200 dark:border-purple-800 shrink-0">AppTesters</span>`
+            : `<span class="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[9px] px-1.5 py-0.5 rounded ml-2 border border-blue-200 dark:border-blue-800 shrink-0">IPAVIET</span>`;
 
        return `
          <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="animate-slide-up flex items-center gap-4 p-4 rounded-[1.5rem] bg-cardLight dark:bg-cardDark border border-black/5 dark:border-white/5 hover:shadow-lg transition-all cursor-pointer group" style="animation-delay: ${index*30}ms">
@@ -587,7 +593,7 @@
         document.querySelector('#appModalPanel button[onclick*="showVipInput()"]').classList.add('hidden');
     }
 
-    // --- XỬ LÝ TẢI VIP ---
+    // --- XÁC NHẬN KEY TỪ GOOGLE SHEETS ---
     async function verifyKey() {
        const k = document.getElementById('vipKey').value;
        if(k.length < 5) return alert('Vui lòng nhập đúng định dạng mã VIP');
@@ -598,7 +604,8 @@
        btn.disabled = true;
        
        try {
-          const res = await fetch('/api/keys/verify', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key:k}) });
+          const fetchUrl = GOOGLE_API_URL + '?action=verify_key&key=' + encodeURIComponent(k);
+          const res = await fetch(fetchUrl);
           const d = await res.json();
           
           if(d.success) {
@@ -612,16 +619,18 @@
              msg.classList.add('text-red-500');
              msg.innerText = d.error || "Mã không hợp lệ hoặc đã hết hạn";
              btn.disabled = false;
-             btn.innerHTML = "THỬ LẠI";
+             btn.innerHTML = "XÁC NHẬN & TẢI";
           }
        } catch(e) { 
-           // Nếu chưa có backend, giả lập nhảy qua link gốc để test UI
-           const link = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-           window.open(link, '_blank');
+           msg.classList.remove('hidden');
+           msg.classList.add('text-red-500');
+           msg.innerText = "Lỗi mạng. Vui lòng thử lại!"; 
+           btn.disabled = false;
+           btn.innerHTML = "THỬ LẠI";
        }
     }
 
-    // --- TÍCH HỢP LINK4M API V2 CHO TẢI MIỄN PHÍ ---
+    // --- TẢI LINK4M API V2 MIỄN PHÍ ---
     async function downloadFree(buttonElement) {
        const originalContent = buttonElement.innerHTML;
        buttonElement.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Đang tạo link...`;
@@ -629,25 +638,20 @@
        lucide.createIcons();
 
        const link = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-       const apiToken = '691eb05d63b1b86d4a3bca1e';
+       const apiToken = '691eb05d63b1b86d4a3bca1e'; // MÃ TOKEN CỦA BẠN
        const targetUrl = encodeURIComponent(link);
 
        try {
-           // Gọi API v2 thông qua proxy AllOrigins để tránh bị chặn CORS trên Client
            const apiUrl = `https://api.allorigins.win/raw?url=` + encodeURIComponent(`https://link4m.co/api-shorten/v2?api=${apiToken}&url=${targetUrl}`);
            const response = await fetch(apiUrl);
            const data = await response.json();
 
            if(data.status === 'success' && data.shortenedUrl) {
-               // Rút gọn thành công -> Nhảy sang link rút gọn
                window.open(data.shortenedUrl, '_blank');
            } else {
-               // Lỗi từ phía API -> dùng fallback quick link
                window.open(`https://link4m.co/st?api=${apiToken}&url=${targetUrl}`, '_blank');
            }
        } catch (error) {
-           console.warn("Lỗi tạo link rút gọn, tự động dùng link dự phòng.");
-           // Lỗi mạng hoặc block -> Fallback thẳng luôn bằng quick link redirect
            window.open(`https://link4m.co/st?api=${apiToken}&url=${targetUrl}`, '_blank');
        }
 
@@ -676,7 +680,7 @@
       e.target.value = f;
     });
 
-    // Bắt đầu chạy logic kéo data
+    // BẮT ĐẦU CHẠY
     loadData();
 
   </script>
