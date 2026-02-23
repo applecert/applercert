@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="antialiased">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>IPAVIET - Kho App VIP</title>
+  <title>IPAVIET - Kho App VIP (iOS 26 Style)</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -14,20 +16,27 @@
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          fontFamily: { 
+              sans: ['"Inter"', '"Plus Jakarta Sans"', 'sans-serif'] 
+          },
           colors: { 
             brand: '#007aff', 
-            brandDark: '#0056b3',
+            brandDark: '#0A84FF',
             bgLight: '#f2f2f7', 
             bgDark: '#000000',
             cardLight: '#ffffff',
-            cardDark: '#1c1c1e'
+            cardDark: '#1c1c1e',
+            iosGray: '#8E8E93',
+            iosGlassLight: 'rgba(255, 255, 255, 0.75)',
+            iosGlassDark: 'rgba(28, 28, 30, 0.75)'
           },
           animation: {
-            'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'slide-up': 'slideUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards',
+            'fluid-up': 'fluidUp 0.7s cubic-bezier(0.19, 1, 0.22, 1) forwards',
           },
           keyframes: {
             slideUp: { '0%': { transform: 'translateY(30px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+            fluidUp: { '0%': { transform: 'translateY(40px) scale(0.95)', opacity: '0' }, '100%': { transform: 'translateY(0) scale(1)', opacity: '1' } },
           }
         }
       }
@@ -40,137 +49,174 @@
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
+    /* iOS 26 Glass Effect */
     .glass-effect {
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-      border-color: rgba(0,0,0,0.05);
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(35px) saturate(200%); -webkit-backdrop-filter: blur(35px) saturate(200%);
+      border-color: rgba(0,0,0,0.08);
     }
     .dark .glass-effect {
-      background: rgba(28, 28, 30, 0.85);
+      background: rgba(28, 28, 30, 0.65);
       border-color: rgba(255,255,255,0.1);
     }
 
+    /* Đổ bóng không gian (Spatial Shadow) */
+    .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.15); }
+    .dark .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6); }
+
+    /* Floating Tab Bar */
+    .floating-nav {
+        margin: 0 auto 24px auto;
+        border-radius: 35px;
+        width: calc(100% - 32px);
+        max-width: 500px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .dark .floating-nav { box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+
     .tab-btn {
       flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 0.2rem; color: #999; transition: all 0.3s; background: none; border: none; cursor: pointer;
+      gap: 0.15rem; color: #8E8E93; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: none; border: none; cursor: pointer;
     }
-    .tab-btn i { width: 24px; height: 24px; transition: all 0.3s; } 
-    .tab-btn span { font-size: 0.65rem; font-weight: 600; opacity: 0.8; }
+    .tab-btn i { width: 22px; height: 22px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); } 
+    .tab-btn span { font-size: 0.6rem; font-weight: 700; opacity: 0.8; }
+    
     .tab-btn.active { color: #007aff; }
-    .dark .tab-btn.active { color: #0a84ff; }
-    .tab-btn.active i { transform: translateY(-3px) scale(1.1); stroke-width: 2.5; }
-    .tab-btn.active span { opacity: 1; font-weight: 700; transform: translateY(-1px); }
+    .dark .tab-btn.active { color: #0A84FF; }
+    .tab-btn.active i { transform: translateY(-4px) scale(1.15); filter: drop-shadow(0 4px 6px rgba(0,122,255,0.4)); }
+    .tab-btn.active span { opacity: 1; font-weight: 800; transform: translateY(-2px); }
+
+    /* Apple Squircle Mask */
+    .squircle { clip-path: url(#squirclePath); }
 
     .delay-50 { animation-delay: 50ms; opacity: 0; }
     .delay-100 { animation-delay: 100ms; opacity: 0; }
     .delay-150 { animation-delay: 150ms; opacity: 0; }
   </style>
 </head>
-<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-300 font-sans h-[100dvh] flex flex-col overflow-hidden">
+<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
 
-  <header class="glass-effect fixed top-0 w-full z-40 h-[72px] border-b flex items-center px-5 transition-all duration-300">
+  <svg width="0" height="0" class="absolute">
+    <defs>
+      <clipPath id="squirclePath" clipPathUnits="objectBoundingBox">
+        <path d="M .5,0 C .1,0 0,.1 0,.5 0,.9 .1,1 .5,1 .9,1 1,.9 1,.5 1,.1 .9,0 .5,0 Z" />
+      </clipPath>
+    </defs>
+  </svg>
+
+  <header class="glass-effect fixed top-0 w-full z-40 h-[80px] border-b flex items-center px-6 transition-all duration-300">
     <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-between">
-      <div class="font-black text-2xl flex items-center gap-3 cursor-pointer shrink-0" onclick="switchTab('home');">
-        <div class="w-10 h-10 rounded-[12px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg active:scale-95 transition">
+      <div class="font-black text-[22px] tracking-tight flex items-center gap-3 cursor-pointer shrink-0" onclick="switchTab('home');">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-brand to-indigo-600 flex items-center justify-center text-white spatial-shadow active:scale-90 transition-transform">
            <i data-lucide="zap" class="w-5 h-5 fill-white"></i>
         </div>
-        <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 tracking-tight">IPAVIET</span>
+        <span>IPAVIET</span>
       </div>
 
-      <div id="searchContainer" class="flex-1 flex justify-end ml-4 transition-all duration-300 opacity-0 pointer-events-none scale-95" style="display: none;">
+      <div id="searchContainer" class="flex-1 flex justify-end ml-4 transition-all duration-500 opacity-0 scale-95" style="display: none;">
          <div class="relative group w-full max-w-[280px]">
-            <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-            <input type="text" id="searchInput" placeholder="Tìm ứng dụng IPA..." class="w-full h-10 pl-11 pr-4 bg-black/5 dark:bg-white/10 text-sm font-medium rounded-full outline-none focus:ring-2 focus:ring-brand/50 transition-all placeholder-gray-500 text-gray-700 dark:text-gray-200">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"></i>
+            <input type="text" id="searchInput" data-i18n="search_placeholder" placeholder="Tìm ứng dụng IPA..." class="w-full h-11 pl-11 pr-4 bg-gray-200/50 dark:bg-white/10 text-sm font-semibold rounded-2xl outline-none focus:ring-2 focus:ring-brand/50 transition-all placeholder-gray-500 text-gray-800 dark:text-gray-100 backdrop-blur-md">
          </div>
       </div>
 
-      <div class="flex items-center gap-3 ml-auto shrink-0">
-        <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center active:scale-90 transition">
+      <div class="flex items-center gap-2 ml-auto shrink-0">
+        <button id="langToggle" onclick="toggleLanguage()" class="w-10 h-10 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-gray-700 dark:text-gray-200 active:scale-75 transition-transform duration-300 backdrop-blur-md">
+          EN
+        </button>
+        <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center active:scale-75 transition-transform duration-300 backdrop-blur-md">
           <i data-lucide="moon" class="w-5 h-5 dark:text-yellow-400 dark:fill-yellow-400"></i>
         </button>
       </div>
     </div>
   </header>
 
-  <main id="mainContainer" class="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-hide pt-[85px] pb-24 md:pb-10 relative scroll-smooth">
-    <div class="max-w-6xl mx-auto px-4 md:px-6">
+  <main id="mainContainer" class="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-hide pt-[95px] pb-[100px] relative scroll-smooth">
+    <div class="max-w-6xl mx-auto px-5 md:px-6">
        <div id="dynamicContent" class="min-h-[500px]">
-          <div class="py-20 flex flex-col items-center justify-center text-gray-400">
-             <i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-3"></i>
-             <p class="text-sm font-bold animate-pulse">Đang đồng bộ dữ liệu...</p>
+          <div class="py-32 flex flex-col items-center justify-center text-gray-400 opacity-60">
+             <div class="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mb-4"></div>
+             <p class="text-sm font-bold animate-pulse tracking-wide" data-i18n="syncing">Đang đồng bộ dữ liệu...</p>
           </div>
        </div>
     </div>
   </main>
 
-  <nav class="glass-effect fixed bottom-0 left-0 right-0 h-[85px] border-t flex justify-evenly items-start pt-2 pb-5 z-50">
-    <button onclick="switchTab('home')" class="tab-btn active" data-tab="home">
-      <i data-lucide="layout-grid"></i><span>Home</span>
-    </button>
-    <button onclick="switchTab('dylib')" class="tab-btn" data-tab="dylib">
-      <i data-lucide="cpu"></i><span>Dylib</span>
-    </button>
-    <button onclick="switchTab('ipa')" class="tab-btn" data-tab="ipa">
-      <i data-lucide="smartphone"></i><span>Kho IPA</span>
-    </button>
-    <button onclick="switchTab('conf')" class="tab-btn" data-tab="conf">
-      <i data-lucide="file-json"></i><span>Conf</span>
-    </button>
-    <a href="dichvu.html" class="tab-btn" style="text-decoration: none;">
-      <i data-lucide="shopping-cart"></i><span>Cửa hàng</span>
-    </a>
-  </nav>
+  <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-6">
+    <nav class="glass-effect floating-nav h-[74px] flex justify-evenly items-center pointer-events-auto px-2">
+      <button onclick="switchTab('home')" class="tab-btn active" data-tab="home">
+        <i data-lucide="sparkles"></i><span data-i18n="home">Home</span>
+      </button>
+      <button onclick="switchTab('dylib')" class="tab-btn" data-tab="dylib">
+        <i data-lucide="cpu"></i><span data-i18n="dylib">Dylib</span>
+      </button>
+      <button onclick="switchTab('ipa')" class="tab-btn" data-tab="ipa">
+        <i data-lucide="smartphone"></i><span data-i18n="ipa_store">Kho IPA</span>
+      </button>
+      <button onclick="switchTab('conf')" class="tab-btn" data-tab="conf">
+        <i data-lucide="file-code-2"></i><span data-i18n="conf">Conf</span>
+      </button>
+      <a href="dichvu.html" class="tab-btn" style="text-decoration: none;">
+        <i data-lucide="shopping-bag"></i><span data-i18n="store">Cửa hàng</span>
+      </a>
+    </nav>
+  </div>
 
-  <div id="appModal" class="fixed inset-0 z-[70] hidden flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm transition-all duration-400">
-    <div class="absolute inset-0" onclick="closeModal('appModal')"></div>
-    <div id="appModalPanel" class="bg-cardLight dark:bg-cardDark w-full sm:max-w-md rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl relative flex flex-col max-h-[90vh] sm:max-h-[85vh] transition-all transform translate-y-full opacity-0">
+  <div id="appModal" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center transition-all duration-500">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity duration-500 opacity-0" id="modalOverlay" onclick="closeModal('appModal')"></div>
+    <div id="appModalPanel" class="bg-cardLight dark:bg-cardDark w-full sm:max-w-[480px] rounded-t-[36px] sm:rounded-[36px] spatial-shadow relative flex flex-col max-h-[92vh] sm:max-h-[85vh] transition-transform duration-500 transform translate-y-full overflow-hidden">
        
-       <div class="w-full flex justify-center pt-3 pb-1 sm:hidden">
+       <div class="w-full flex justify-center py-4 sticky top-0 z-10 bg-inherit sm:hidden">
           <div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
        </div>
-       <div class="absolute top-4 right-4 z-10 hidden sm:block">
-          <button onclick="closeModal('appModal')" class="bg-black/5 dark:bg-white/10 p-2 rounded-full hover:scale-110 active:scale-95 transition">
+       <div class="absolute top-5 right-5 z-20 hidden sm:block">
+          <button onclick="closeModal('appModal')" class="bg-gray-200 dark:bg-white/10 p-2.5 rounded-full hover:scale-110 active:scale-95 transition-all">
              <i data-lucide="x" class="w-5 h-5 text-gray-600 dark:text-gray-300"></i>
           </button>
        </div>
        
-       <div class="overflow-y-auto p-6 pt-4 sm:pt-6 scrollbar-hide">
-          <div class="flex gap-5 mb-6 items-center">
-             <img id="mIcon" class="w-24 h-24 rounded-[22px] shadow-lg object-cover ring-1 ring-black/5 dark:ring-white/10 bg-gray-100 dark:bg-gray-800">
-             <div class="flex-1">
-                <h2 id="mTitle" class="text-2xl font-black leading-tight mb-1 text-gray-900 dark:text-white">Tên Ứng Dụng</h2>
-                <p id="mSub" class="text-sm text-gray-500 dark:text-gray-400 mb-3 font-medium">Version • Nguồn</p>
-                <button onclick="showVipInput()" class="bg-brand text-white py-2 px-6 rounded-full font-bold text-sm shadow-lg shadow-brand/30 hover:scale-105 active:scale-95 transition">
-                   TẢI FILE IPA
+       <div class="overflow-y-auto px-6 pb-12 pt-2 scrollbar-hide">
+          <div class="flex gap-6 mb-8 items-start">
+             <div class="w-28 h-28 shrink-0 relative spatial-shadow">
+                <img id="mIcon" class="w-full h-full object-cover squircle bg-gray-100 dark:bg-gray-800 ring-1 ring-black/5 dark:ring-white/10">
+             </div>
+             <div class="flex-1 pt-1">
+                <h2 id="mTitle" class="text-[22px] font-black leading-tight mb-1 text-gray-900 dark:text-white line-clamp-2">Tên Ứng Dụng</h2>
+                <p id="mSub" class="text-[13px] text-brand font-semibold mb-4">Version • Nguồn</p>
+                <button onclick="showVipInput()" data-i18n="download_ipa" class="bg-brand text-white py-2.5 px-8 rounded-full font-bold text-sm shadow-lg shadow-brand/30 active:scale-95 transition-transform duration-300 w-fit">
+                   NHẬN
                 </button>
              </div>
           </div>
 
-          <div id="vipArea" class="hidden mb-6 animate-slide-up">
-             <div class="bg-blue-50 dark:bg-blue-900/10 p-5 rounded-2xl border border-blue-100 dark:border-blue-800/30 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-20 h-20 bg-brand/10 rounded-full blur-2xl"></div>
-                <p class="text-center text-xs font-bold text-brand uppercase mb-3 relative z-10">Nhập mã VIP để tải tốc độ cao</p>
-                <input type="text" id="vipKey" placeholder="MÃ VIP CỦA BẠN" class="w-full bg-white dark:bg-black/50 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3 text-center font-mono text-sm uppercase outline-none focus:border-brand transition mb-3 relative z-10 shadow-sm">
+          <div id="vipArea" class="hidden mb-8 animate-fluid-up">
+             <div class="bg-blue-50/50 dark:bg-brand/10 p-6 rounded-[28px] border border-brand/20 relative overflow-hidden backdrop-blur-sm">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-brand/20 rounded-full blur-3xl pointer-events-none"></div>
+                <p class="text-center text-[11px] font-bold text-brand uppercase tracking-widest mb-4 relative z-10" data-i18n="vip_title">Xác thực để tải tốc độ cao</p>
                 
-                <button onclick="verifyKey()" id="verifyBtn" class="w-full bg-brand text-white font-bold py-3 rounded-xl text-sm shadow-md hover:bg-brandDark active:scale-95 transition relative z-10">
+                <input type="text" id="vipKey" data-i18n="vip_placeholder" placeholder="MÃ VIP CỦA BẠN" class="w-full bg-white dark:bg-black/40 border-2 border-transparent focus:border-brand rounded-2xl px-4 py-3.5 text-center font-bold tracking-widest text-sm uppercase outline-none transition-all mb-3 relative z-10 shadow-sm">
+                
+                <button onclick="verifyKey()" id="verifyBtn" class="w-full bg-brand text-white font-bold py-3.5 rounded-2xl text-sm spatial-shadow active:scale-95 transition-transform relative z-10" data-i18n="verify_btn">
                    XÁC NHẬN & TẢI
                 </button>
-                <p id="vipMsg" class="text-center text-xs mt-3 font-semibold hidden"></p>
+                <p id="vipMsg" class="text-center text-sm mt-3 font-semibold hidden relative z-10"></p>
                 
-                <div class="mt-4 pt-3 border-t border-blue-200/50 dark:border-blue-800/50 relative z-10">
-                   <button onclick="downloadFree(this)" class="w-full py-2.5 rounded-xl bg-black/5 dark:bg-white/5 text-gray-700 dark:text-gray-300 font-bold text-sm hover:bg-black/10 dark:hover:bg-white/10 transition flex items-center justify-center gap-2">
-                      <i data-lucide="download-cloud" class="w-4 h-4"></i> Tải link có quảng cáo
+                <div class="mt-5 pt-4 border-t border-brand/10 relative z-10">
+                   <button onclick="downloadFree(this)" class="w-full py-3 rounded-2xl bg-gray-200/50 dark:bg-white/5 text-gray-700 dark:text-gray-300 font-bold text-xs hover:bg-gray-200 dark:hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-2">
+                      <i data-lucide="cloud-lightning" class="w-4 h-4"></i> <span data-i18n="free_btn">Tải link có quảng cáo</span>
                    </button>
                 </div>
-                <div class="text-center mt-3 relative z-10">
-                   <a href="dichvu.html" class="font-bold text-red-500 hover:text-red-600 underline text-xs">Chưa có mã? Mua VIP Auto ngay!</a>
+                <div class="text-center mt-4 relative z-10">
+                   <a href="dichvu.html" class="font-bold text-brand hover:opacity-80 text-xs tracking-wide" data-i18n="buy_vip">Chưa có mã? Mua VIP Auto ngay!</a>
                 </div>
              </div>
           </div>
 
           <div class="prose dark:prose-invert max-w-none">
-             <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white border-b border-gray-100 dark:border-white/10 pb-2">Thông tin ứng dụng</h3>
-             <p id="mDesc" class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line mt-3"></p>
+             <h3 class="font-bold text-[17px] mb-3 text-gray-900 dark:text-white" data-i18n="app_info">Có gì mới</h3>
+             <div class="bg-gray-100/50 dark:bg-white/5 p-5 rounded-[24px]">
+                 <p id="mDesc" class="text-[14px] text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line"></p>
+             </div>
           </div>
        </div>
     </div>
@@ -178,21 +224,76 @@
 
   <script>
     /* =========================================
-       CẤU HÌNH CỦA BẠN (Đã nhập sẵn theo thông tin bạn gửi)
+       TỪ ĐIỂN ĐA NGÔN NGỮ (VI/EN) (GIỮ NGUYÊN)
+    ========================================= */
+    const TRANSLATIONS = {
+        vi: {
+            search_placeholder: "Tìm ứng dụng...", syncing: "Đang đồng bộ dữ liệu...",
+            home: "Khám phá", dylib: "Dylib", ipa_store: "Kho IPA", conf: "Cấu hình", store: "Cửa hàng",
+            morning: "Chào buổi sáng", afternoon: "Chào buổi chiều", evening: "Chào buổi tối",
+            cat_game: "Game Hack", cat_photo: "Chụp Ảnh", cat_movie: "Xem Phim", cat_social: "Mạng XH",
+            trending: "Xu hướng", new_update: "Mới cập nhật",
+            all_files: "Tất cả file", all: "Tất cả", game: "Game", social: "Social",
+            click_detail: "Nhấn để xem chi tiết", no_app: "Không tìm thấy ứng dụng nào",
+            download_ipa: "NHẬN", vip_title: "Xác thực để tải tốc độ cao",
+            vip_placeholder: "MÃ VIP CỦA BẠN", verify_btn: "XÁC NHẬN & TẢI",
+            free_btn: "Tải link có quảng cáo", buy_vip: "Chưa có mã? Đăng ký VIP ngay!",
+            app_info: "Có gì mới", no_desc: "Ứng dụng này chưa có mô tả chi tiết.",
+            auto_api: "API TỰ ĐỘNG", latest: "MỚI NHẤT", creating_link: "Đang tạo link...",
+            verify_success: "✅ Xác nhận thành công! Đang tải...", downloading: "Đang tải",
+            you_have: "Bạn còn", turns: "lượt", invalid_code: "Mã không hợp lệ hoặc đã hết hạn",
+            network_error: "Lỗi mạng. Vui lòng thử lại!", invalid_format: "Vui lòng nhập đúng định dạng mã VIP", try_again: "THỬ LẠI"
+        },
+        en: {
+            search_placeholder: "Search apps...", syncing: "Syncing data...",
+            home: "Discover", dylib: "Dylib", ipa_store: "IPA Store", conf: "Conf", store: "Store",
+            morning: "Good morning", afternoon: "Good afternoon", evening: "Good evening",
+            cat_game: "Games", cat_photo: "Photo", cat_movie: "Movies", cat_social: "Social",
+            trending: "Trending", new_update: "New Updates",
+            all_files: "All files", all: "All", game: "Games", social: "Social",
+            click_detail: "Tap for details", no_app: "No apps found",
+            download_ipa: "GET", vip_title: "Authenticate for high speed",
+            vip_placeholder: "YOUR VIP KEY", verify_btn: "VERIFY & DOWNLOAD",
+            free_btn: "Download with Ads", buy_vip: "No key? Get VIP Auto now!",
+            app_info: "What's New", no_desc: "No detailed description available.",
+            auto_api: "AUTO API", latest: "LATEST", creating_link: "Generating link...",
+            verify_success: "✅ Verified! Downloading...", downloading: "Downloading",
+            you_have: "You have", turns: "turns left", invalid_code: "Invalid or expired key",
+            network_error: "Network error. Try again!", invalid_format: "Please enter a valid VIP format", try_again: "RETRY"
+        }
+    };
+
+    let currentLang = localStorage.getItem('appLang') || 'vi';
+    function t(key) { return TRANSLATIONS[currentLang][key] || key; }
+
+    function applyLanguage() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const k = el.getAttribute('data-i18n');
+            if(el.tagName === 'INPUT') el.placeholder = t(k);
+            else el.innerText = t(k);
+        });
+        const btn = document.getElementById('langToggle');
+        if(btn) btn.innerText = currentLang === 'vi' ? 'EN' : 'VI';
+        
+        const searchInput = document.getElementById('searchInput');
+        if (STATE.currentTab !== 'home') searchInput.placeholder = t('search_placeholder') + ` ${STATE.currentTab.toUpperCase()}...`;
+    }
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'vi' ? 'en' : 'vi';
+        localStorage.setItem('appLang', currentLang);
+        applyLanguage();
+        renderContent(); 
+    }
+
+    /* =========================================
+       CẤU HÌNH API & LOGIC (GIỮ NGUYÊN)
     ========================================= */
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
-    const MY_BANK_ID = 'ACB'; 
-    const MY_ACCOUNT_NO = '22703611'; 
-    const MY_ACCOUNT_NAME = 'TRAN NGUYEN MINH QUI'; 
-    /* ========================================= */
 
     const DB = { ipa: [], dylib: [], conf: [], cert_sign: [], cert_cert: [], cert_mod: [] };
     let KEYWORDS = { movie: [], social: [], photo: [], game: [] };
-
-    const path = window.location.pathname;
-    let initialTab = 'home';
-    
-    const STATE = { currentTab: initialTab, currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
+    const STATE = { currentTab: 'home', currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
 
     function checkKw(str, whitelist) {
         if (!str || !whitelist) return false;
@@ -213,34 +314,24 @@
         return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0));
     }
 
-    // TẢI DỮ LIỆU SIÊU CHỐNG LỖI
     async function loadData() {
+      applyLanguage(); 
       try {
           try {
             const kwRes = await fetch('keywords.json?t=' + Date.now());
-            if(kwRes.ok) {
-                const data = await kwRes.json();
-                KEYWORDS = data;
-            }
+            if(kwRes.ok) { KEYWORDS = await kwRes.json(); }
           } catch (e) {}
 
-          const endpoints = [
-            {k: 'ipa', u: 'data/ipa.json'},
-            {k: 'dylib', u: 'data/dylib.json'},
-            {k: 'conf', u: 'data/conf.json'}
-          ];
+          const endpoints = [ {k: 'ipa', u: 'data/ipa.json'}, {k: 'dylib', u: 'data/dylib.json'}, {k: 'conf', u: 'data/conf.json'} ];
           
           await Promise.all(endpoints.map(async e => {
             try {
               const res = await fetch(`${e.u}?t=${Date.now()}`);
               if(res.ok) {
-                  const text = await res.text();
-                  const data = JSON.parse(text); 
-                  if(Array.isArray(data)) {
-                      DB[e.k] = data.map(item => ({...item, source: 'IPAVIET'}));
-                  }
+                  const data = JSON.parse(await res.text()); 
+                  if(Array.isArray(data)) DB[e.k] = data.map(item => ({...item, source: 'IPAVIET'}));
               }
-            } catch(err) { console.log("Bỏ qua lỗi file cục bộ: " + e.k); }
+            } catch(err) { console.log("Bỏ qua lỗi file cục bộ"); }
           }));
 
           try {
@@ -249,75 +340,57 @@
                   const extData = await extRes.json();
                   if (extData && Array.isArray(extData.apps)) {
                       const mappedApps = extData.apps.map(app => ({
-                          name: app.name,
-                          title: app.name,
-                          icon: app.iconURL || 'https://placehold.co/100',
-                          iconUrl: app.iconURL,
-                          desc: app.localizedDescription || app.subtitle || 'Bản Mod/Hack IPA',
-                          description: app.localizedDescription || app.subtitle,
-                          fileLink: app.downloadURL,
-                          downloadUrl: app.downloadURL,
-                          version: app.version,
-                          developer: app.developerName || 'AppTesters',
-                          date: app.versionDate || new Date().toISOString(),
-                          lastSync: app.versionDate,
-                          source: 'AppTesters',
-                          _type: 'IPA'
+                          name: app.name, title: app.name, icon: app.iconURL || 'https://placehold.co/100', iconUrl: app.iconURL,
+                          desc: app.localizedDescription || app.subtitle || 'Bản Mod/Hack IPA', description: app.localizedDescription || app.subtitle,
+                          fileLink: app.downloadURL, downloadUrl: app.downloadURL, version: app.version,
+                          developer: app.developerName || 'AppTesters', date: app.versionDate || new Date().toISOString(),
+                          lastSync: app.versionDate, source: 'AppTesters', _type: 'IPA'
                       }));
                       DB.ipa = [...DB.ipa, ...mappedApps];
                   }
               }
           } catch (err) { console.log("Bỏ qua lỗi API AppTesters"); }
           
-      } catch (fatalError) {
-          console.error("Lỗi chí mạng:", fatalError);
-      } finally {
+      } catch (fatalError) { } 
+      finally {
           try {
               DB.ipa = sortItemsByDate(getUniqueApps(DB.ipa));
               switchTab(STATE.currentTab);
           } catch(e) {
-              document.getElementById('dynamicContent').innerHTML = '<div class="text-center p-10 text-red-500 font-bold">Hệ thống đang bảo trì dữ liệu. Vui lòng quay lại sau!</div>';
-              lucide.createIcons();
+              document.getElementById('dynamicContent').innerHTML = '<div class="text-center p-10 text-red-500 font-bold">Hệ thống bảo trì!</div>';
           }
       }
     }
 
     function switchTab(tabId) {
-      STATE.currentTab = tabId;
-      STATE.currentPage = 1;
-      STATE.currentFilter = 'all';
+      STATE.currentTab = tabId; STATE.currentPage = 1; STATE.currentFilter = 'all';
       
-      document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.tab === tabId);
-      });
-
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
       const searchContainer = document.getElementById('searchContainer');
       const searchInput = document.getElementById('searchInput');
       
       if (tabId === 'home') {
-          searchContainer.style.display = 'none';
           searchContainer.style.opacity = '0';
+          searchContainer.classList.add('scale-95');
+          setTimeout(() => { if(STATE.currentTab === 'home') searchContainer.style.display = 'none'; }, 300);
+          searchInput.value = '';
       } else {
           searchContainer.style.display = 'flex';
-          setTimeout(() => {
-              searchContainer.style.opacity = '1';
-              searchContainer.classList.remove('scale-95');
-          }, 10);
+          setTimeout(() => { searchContainer.style.opacity = '1'; searchContainer.classList.remove('scale-95'); }, 10);
           searchInput.value = '';
-          searchInput.placeholder = `Tìm trong ${tabId.toUpperCase()}...`;
+          searchInput.placeholder = t('search_placeholder') + ` ${tabId.toUpperCase()}...`;
       }
-      
       renderContent();
       document.getElementById('mainContainer').scrollTop = 0;
     }
 
-    function setFilter(filter) {
-        STATE.currentFilter = filter;
-        STATE.currentPage = 1;
-        renderContent(document.getElementById('searchInput').value);
-    }
+    function setFilter(filter) { STATE.currentFilter = filter; STATE.currentPage = 1; renderContent(); }
 
-    function renderContent(query = '') {
+    /* =========================================
+       NÂNG CẤP UI RENDER (iOS 26 Concept)
+    ========================================= */
+    function renderContent() {
+      const query = document.getElementById('searchInput').value.trim(); 
       const container = document.getElementById('dynamicContent');
       let html = '';
       const tab = STATE.currentTab;
@@ -328,73 +401,62 @@
 
         const trendingList = ['YouTube','Facebook','TikTok','Messenger','Instagram','Spotify','Netflix','CapCut','Zalo'];
         const trendingApps = uniqueApps.filter(i => checkKw(i.name, trendingList)).slice(0, 10);
-
         const featured = uniqueApps.slice(0, 5);
         const recent = uniqueApps.slice(5, 17);
-        
         const hour = new Date().getHours();
-        let greeting = hour >= 18 ? "Chào buổi tối" : hour >= 12 ? "Chào buổi chiều" : "Chào buổi sáng";
+        let greeting = hour >= 18 ? t('evening') : hour >= 12 ? t('afternoon') : t('morning');
 
         html = `
-          <div class="mb-5 animate-slide-up">
-              <p class="text-xs font-bold text-brand uppercase tracking-wide mb-1">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'numeric', month:'long'})}</p>
-              <div class="flex justify-between items-center">
-                  <h1 class="text-3xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                      ${greeting}
-                  </h1>
-                  <div class="w-10 h-10 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center cursor-pointer active:scale-90 transition">
-                      <i data-lucide="bell" class="w-5 h-5"></i>
+          <div class="mb-6 animate-fluid-up">
+              <p class="text-[11px] font-bold text-iosGray uppercase tracking-widest mb-1">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'numeric', month:'long'})}</p>
+              <div class="flex justify-between items-end">
+                  <h1 class="text-[34px] font-black tracking-tight text-gray-900 dark:text-white">${greeting}</h1>
+                  <div class="w-10 h-10 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center cursor-pointer active:scale-90 transition-transform mb-1">
+                      <i data-lucide="user" class="w-5 h-5"></i>
                   </div>
               </div>
           </div>
           
-          <div class="flex gap-4 overflow-x-auto snap-x-mandatory scrollbar-hide pb-6 -mx-4 px-4 md:mx-0 md:px-0">
+          <div class="flex gap-5 overflow-x-auto snap-x-mandatory scrollbar-hide pb-8 -mx-5 px-5 md:mx-0 md:px-0">
               ${featured.map((i, idx) => createBigHero(i, idx)).join('')}
           </div>
 
-          <div class="grid grid-cols-4 gap-3 mb-8 animate-slide-up delay-100">
-              ${createQuickCat('Game Hack', 'sword', 'from-red-500 to-orange-500', 'game')}
-              ${createQuickCat('Chụp Ảnh', 'camera', 'from-blue-500 to-cyan-500', 'photo')}
-              ${createQuickCat('Xem Phim', 'clapperboard', 'from-purple-500 to-pink-500', 'movie')}
-              ${createQuickCat('Mạng XH', 'globe', 'from-indigo-500 to-blue-500', 'social')}
+          <div class="grid grid-cols-4 gap-3 mb-10 animate-fluid-up delay-100">
+              ${createQuickCat(t('cat_game'), 'gamepad-2', 'from-rose-500 to-pink-600', 'game')}
+              ${createQuickCat(t('cat_photo'), 'aperture', 'from-blue-500 to-cyan-500', 'photo')}
+              ${createQuickCat(t('cat_movie'), 'film', 'from-violet-500 to-purple-600', 'movie')}
+              ${createQuickCat(t('cat_social'), 'message-circle', 'from-emerald-400 to-teal-500', 'social')}
           </div>
 
           ${trendingApps.length ? `
-          <div class="mb-8 animate-slide-up delay-150">
-             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                   <i data-lucide="flame" class="w-5 h-5 text-orange-500 fill-orange-500"></i> Xu hướng
-                </h3>
+          <div class="mb-10 animate-fluid-up delay-150">
+             <div class="flex justify-between items-center mb-5">
+                <h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight">${t('trending')}</h3>
              </div>
-             <div class="flex gap-4 overflow-x-auto snap-x-mandatory scrollbar-hide pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+             <div class="flex gap-5 overflow-x-auto snap-x-mandatory scrollbar-hide pb-4 -mx-5 px-5 md:mx-0 md:px-0">
                 ${trendingApps.map(i => createTrendingItem(i)).join('')}
              </div>
           </div>` : ''}
 
-          <div class="mt-4 animate-slide-up delay-200">
-             <div class="flex justify-between items-end mb-4 border-b border-gray-200 dark:border-white/10 pb-2">
-                <h3 class="text-xl font-extrabold text-gray-900 dark:text-white">Mới cập nhật</h3>
-                <span class="text-brand text-xs font-bold bg-brand/10 px-2 py-1 rounded-md">HOT</span>
+          <div class="mt-4 animate-fluid-up delay-200">
+             <div class="flex justify-between items-end mb-5 border-b border-gray-200 dark:border-white/10 pb-3">
+                <h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight">${t('new_update')}</h3>
+                <span class="text-brand text-sm font-bold active:opacity-70 cursor-pointer">Xem tất cả</span>
              </div>
              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 ${recent.map((i, idx) => createGridItem(i, idx)).join('')}
              </div>
           </div>
           
-          <div class="pb-10 pt-10 text-center flex flex-col items-center justify-center opacity-50">
-             <i data-lucide="sparkles" class="w-6 h-6 mb-2"></i>
-             <span class="text-xs font-bold">API Integration by IPAVIET</span>
+          <div class="pb-6 pt-12 text-center flex flex-col items-center justify-center text-gray-400">
+             <i data-lucide="apple" class="w-6 h-6 mb-2"></i>
+             <span class="text-[10px] font-bold uppercase tracking-widest">Designed for iOS 26</span>
           </div>
         `;
       } 
       else {
         let items = tab === 'ipa' ? DB.ipa : (tab === 'dylib' ? DB.dylib : DB.conf);
-        
-        if(query) {
-            const lower = query.toLowerCase();
-            items = items.filter(i => (i.name || i.title || i.filename || '').toLowerCase().includes(lower));
-        }
-
+        if(query) items = items.filter(i => (i.name || i.title || i.filename || '').toLowerCase().includes(query.toLowerCase()));
         if (STATE.currentFilter !== 'all') {
             items = items.filter(i => {
                 const s = String(i.name + " " + (i.desc||"")).toLowerCase();
@@ -410,49 +472,47 @@
         const pagedItems = items.slice(start, start + STATE.itemsPerPage);
 
         html = `
-           <h1 class="text-3xl font-black mb-6 text-gray-900 dark:text-white uppercase animate-slide-up">${tab} Store</h1>
+           <h1 class="text-[34px] font-black tracking-tight mb-8 text-gray-900 dark:text-white capitalize animate-fluid-up">${tab}</h1>
            
            ${!query && STATE.currentFilter === 'all' && featured.length ? `
-           <div class="mb-8 animate-slide-up delay-50">
-              <div class="flex gap-4 overflow-x-auto snap-x-mandatory scrollbar-hide pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+           <div class="mb-10 animate-fluid-up delay-50">
+              <div class="flex gap-5 overflow-x-auto snap-x-mandatory scrollbar-hide pb-6 -mx-5 px-5 md:mx-0 md:px-0">
                  ${featured.map((i, idx) => createSubPageHero(i, idx)).join('')}
               </div>
            </div>` : ''}
            
-           <div class="flex flex-col md:flex-row md:items-end justify-between mb-4 gap-3 animate-slide-up delay-100">
-              <div class="flex items-center gap-4 justify-between w-full">
-                  <h3 class="text-lg font-bold border-b-2 border-brand pb-1">Tất cả file ${tab.toUpperCase()}</h3>
+           <div class="flex flex-col mb-5 gap-4 animate-fluid-up delay-100">
+              <div class="flex items-center gap-4 justify-between w-full border-b border-gray-200 dark:border-white/10 pb-3">
+                  <h3 class="text-[22px] font-bold tracking-tight">${t('all_files')}</h3>
                   ${tab === 'ipa' ? `
-                  <div class="flex bg-black/5 dark:bg-white/5 rounded-lg p-1 gap-1">
-                      <button onclick="setFilter('all')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all ${STATE.currentFilter === 'all' ? 'bg-white dark:bg-gray-700 text-brand shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}">Tất cả</button>
-                      <button onclick="setFilter('game')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all ${STATE.currentFilter === 'game' ? 'bg-white dark:bg-gray-700 text-brand shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}">Game</button>
-                      <button onclick="setFilter('social')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all ${STATE.currentFilter === 'social' ? 'bg-white dark:bg-gray-700 text-brand shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}">Social</button>
+                  <div class="flex bg-gray-200/60 dark:bg-white/10 rounded-full p-1 gap-1">
+                      <button onclick="setFilter('all')" class="px-4 py-1.5 text-[13px] font-bold rounded-full transition-all ${STATE.currentFilter === 'all' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}">${t('all')}</button>
+                      <button onclick="setFilter('game')" class="px-4 py-1.5 text-[13px] font-bold rounded-full transition-all ${STATE.currentFilter === 'game' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}">${t('game')}</button>
+                      <button onclick="setFilter('social')" class="px-4 py-1.5 text-[13px] font-bold rounded-full transition-all ${STATE.currentFilter === 'social' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}">${t('social')}</button>
                   </div>` : ''}
               </div>
            </div>
 
-           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 animate-slide-up delay-150">
+           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-4 animate-fluid-up delay-150">
               ${pagedItems.length ? pagedItems.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}
            </div>
            ${items.length > STATE.itemsPerPage ? createPagination(totalPages) : ''}
         `;
       }
-      container.innerHTML = html;
-      lucide.createIcons();
+      container.innerHTML = html; lucide.createIcons();
     }
 
     function createBigHero(i, index) {
        return `
-         <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="animate-slide-up snap-center shrink-0 w-[85%] md:w-[26rem] h-[16rem] relative rounded-[2rem] overflow-hidden shadow-xl group cursor-pointer border border-black/5 dark:border-white/10" style="animation-delay: ${index*50}ms">
-            <img src="${i.icon || i.iconUrl}" class="absolute inset-0 w-full h-full object-cover opacity-60 blur-2xl scale-125 group-hover:scale-110 transition duration-700">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+         <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="animate-fluid-up snap-center shrink-0 w-[88%] md:w-[28rem] aspect-[4/5] md:aspect-video relative rounded-[32px] overflow-hidden spatial-shadow group cursor-pointer" style="animation-delay: ${index*50}ms">
+            <img src="${i.icon || i.iconUrl}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
             <div class="absolute bottom-0 left-0 w-full p-6 flex flex-col items-start gap-4">
-               <span class="bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase border border-white/20 shadow-sm">${i.source === 'AppTesters' ? 'API TỰ ĐỘNG' : 'MỚI NHẤT'}</span>
-               <div class="flex items-center gap-4 w-full">
-                  <img src="${i.icon || i.iconUrl}" class="w-16 h-16 rounded-[1.2rem] shadow-xl border border-white/20 bg-gray-800 object-cover group-hover:rotate-3 transition duration-300">
+               <span class="text-white/70 text-[10px] font-black uppercase tracking-widest">${i.source === 'AppTesters' ? t('auto_api') : t('latest')}</span>
+               <div class="flex items-start gap-4 w-full">
                   <div class="flex-1 min-w-0">
-                     <h2 class="text-2xl font-black text-white leading-tight truncate drop-shadow-md">${i.name || i.title}</h2>
-                     <p class="text-gray-300 text-sm line-clamp-1 mt-1 font-medium">${i.desc || 'Tải và trải nghiệm ngay'}</p>
+                     <h2 class="text-[28px] font-black text-white leading-tight truncate drop-shadow-md">${i.name || i.title}</h2>
+                     <p class="text-gray-300 text-[15px] line-clamp-2 mt-1 font-medium">${i.desc || t('click_detail')}</p>
                   </div>
                </div>
             </div>
@@ -461,18 +521,15 @@
     }
 
     function createSubPageHero(i, index) {
-       const title = i.name || i.title;
-       const icon = i.icon || i.iconUrl || 'https://placehold.co/100';
        return `
-         <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="animate-slide-up snap-center shrink-0 w-[18rem] h-[10rem] relative rounded-3xl overflow-hidden shadow-lg group cursor-pointer border border-black/5 dark:border-white/10" style="animation-delay: ${index*50}ms">
-            <img src="${icon}" class="absolute inset-0 w-full h-full object-cover blur-xl opacity-60 scale-125 group-hover:scale-110 transition duration-500">
-            <div class="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition"></div>
-            <div class="absolute inset-0 p-5 flex flex-col justify-end">
+         <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="animate-fluid-up snap-center shrink-0 w-[20rem] h-[12rem] relative rounded-[28px] overflow-hidden spatial-shadow group cursor-pointer bg-black" style="animation-delay: ${index*50}ms">
+            <img src="${i.icon || i.iconUrl}" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-40 transition-all duration-700 ease-out">
+            <div class="absolute inset-0 p-6 flex flex-col justify-end">
                 <div class="flex items-center gap-4">
-                  <img src="${icon}" class="w-14 h-14 rounded-2xl shadow-md border border-white/20 bg-black/20 backdrop-blur-md">
+                  <img src="${i.icon || i.iconUrl}" class="w-14 h-14 squircle shadow-md bg-white">
                   <div class="flex-1 min-w-0">
-                     <h4 class="font-black text-white text-xl truncate drop-shadow-md">${title}</h4>
-                     <p class="text-[10px] text-brand bg-brand/20 px-2 py-0.5 rounded uppercase font-bold tracking-wider w-fit mt-1">${i.source || 'IPAVIET'}</p>
+                     <h4 class="font-bold text-white text-xl truncate drop-shadow-md">${i.name || i.title}</h4>
+                     <p class="text-[12px] text-white/70 font-semibold mt-0.5">${i.source || 'IPAVIET'}</p>
                   </div>
                </div>
             </div>
@@ -481,26 +538,15 @@
     }
 
     function createGridItem(i, index) {
-       const title = i.name || i.title || i.filename || 'Unknown';
-       const icon = i.icon || i.iconUrl || 'https://placehold.co/100';
-       const desc = i.desc || i.description || i.certname || 'Nhấn để xem chi tiết';
-       
-       const sourceBadge = i.source === 'AppTesters' 
-            ? `<span class="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[9px] px-1.5 py-0.5 rounded ml-2 border border-purple-200 dark:border-purple-800 shrink-0">AppTesters</span>`
-            : `<span class="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[9px] px-1.5 py-0.5 rounded ml-2 border border-blue-200 dark:border-blue-800 shrink-0">IPAVIET</span>`;
-
        return `
-         <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="animate-slide-up flex items-center gap-4 p-4 rounded-[1.5rem] bg-cardLight dark:bg-cardDark border border-black/5 dark:border-white/5 hover:shadow-lg transition-all cursor-pointer group" style="animation-delay: ${index*30}ms">
-            <img src="${icon}" class="w-16 h-16 rounded-[14px] bg-gray-100 dark:bg-gray-800 object-cover shadow-sm group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/100'"/>
-            <div class="flex-1 min-w-0">
-               <div class="flex items-center mb-0.5">
-                  <h4 class="font-bold text-gray-900 dark:text-white truncate text-base">${title}</h4>
-                  ${sourceBadge}
-               </div>
-               <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 font-medium">${desc}</p>
+         <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="animate-fluid-up flex items-center gap-4 py-3 border-b border-gray-200/60 dark:border-white/10 last:border-0 hover:bg-gray-100/50 dark:hover:bg-white/5 px-2 rounded-2xl transition-colors cursor-pointer group" style="animation-delay: ${index*30}ms">
+            <img src="${i.icon || i.iconUrl}" class="w-[60px] h-[60px] squircle bg-gray-100 dark:bg-gray-800 object-cover shadow-sm group-hover:scale-95 transition-transform duration-300" onerror="this.src='https://placehold.co/100'"/>
+            <div class="flex-1 min-w-0 pt-1">
+               <h4 class="font-bold text-gray-900 dark:text-white truncate text-[16px] leading-tight">${i.name || i.title || i.filename}</h4>
+               <p class="text-[13px] text-iosGray line-clamp-1 font-medium mt-0.5">${i.desc || i.description || i.certname || t('click_detail')}</p>
             </div>
-            <button class="w-9 h-9 shrink-0 rounded-full bg-brand/10 dark:bg-brand/20 flex items-center justify-center text-brand group-hover:bg-brand group-hover:text-white transition-colors duration-300">
-               <i data-lucide="download" class="w-4 h-4"></i>
+            <button class="shrink-0 bg-gray-200/80 dark:bg-white/10 text-brand font-bold text-[13px] px-5 py-1.5 rounded-full active:scale-90 transition-transform">
+               NHẬN
             </button>
          </div>
        `;
@@ -508,12 +554,11 @@
 
     function createTrendingItem(i) {
        return `
-         <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="snap-center shrink-0 w-[4.5rem] flex flex-col items-center gap-2 cursor-pointer group">
-            <div class="w-[4.5rem] h-[4.5rem] rounded-[18px] overflow-hidden shadow-sm border border-black/5 dark:border-white/10 bg-white dark:bg-cardDark relative">
-               <img src="${i.icon || i.iconUrl}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-               ${i.source === 'AppTesters' ? `<div class="absolute bottom-0 right-0 bg-purple-500 w-3 h-3 rounded-tl-lg"></div>` : ''}
+         <div onclick='openModal(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="snap-center shrink-0 w-[72px] flex flex-col items-center gap-2 cursor-pointer group">
+            <div class="w-[72px] h-[72px] squircle overflow-hidden spatial-shadow bg-gray-100 dark:bg-cardDark relative">
+               <img src="${i.icon || i.iconUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
             </div>
-            <h4 class="font-semibold text-gray-700 dark:text-gray-300 text-[11px] truncate w-full text-center group-hover:text-brand transition">${i.name}</h4>
+            <h4 class="font-semibold text-gray-900 dark:text-gray-100 text-[11px] truncate w-full text-center group-hover:text-brand transition-colors">${i.name}</h4>
          </div>
        `;
     }
@@ -521,10 +566,10 @@
     function createQuickCat(name, icon, grad, type) {
         return `
         <button onclick="setFilter('${type}'); switchTab('ipa');" class="flex flex-col items-center gap-2 cursor-pointer group bg-transparent border-0">
-            <div class="w-14 h-14 rounded-[1.2rem] bg-gradient-to-br ${grad} flex items-center justify-center text-white shadow-md group-active:scale-95 transition hover:shadow-lg hover:-translate-y-1">
-                <i data-lucide="${icon}" class="w-6 h-6"></i>
+            <div class="w-16 h-16 rounded-[20px] bg-gradient-to-br ${grad} flex items-center justify-center text-white spatial-shadow active:scale-90 transition-transform">
+                <i data-lucide="${icon}" class="w-7 h-7"></i>
             </div>
-            <span class="text-[11px] font-bold text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition">${name}</span>
+            <span class="text-[12px] font-semibold text-gray-700 dark:text-gray-300 transition">${name}</span>
         </button>`;
     }
 
@@ -534,31 +579,31 @@
        let start = Math.max(1, STATE.currentPage - 2);
        let end = Math.min(total, start + 4);
        
-       btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-xl font-bold transition ${STATE.currentPage===1 ? 'text-gray-300 pointer-events-none' : 'bg-white dark:bg-cardDark text-gray-600 shadow-sm border border-black/5'}"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>`;
-       
+       btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===1 ? 'text-gray-300 pointer-events-none' : 'bg-gray-200/50 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>`;
        for(let p = start; p <= end; p++) {
-           const activeClass = p === STATE.currentPage ? 'bg-brand text-white shadow-md shadow-brand/30' : 'bg-white dark:bg-cardDark text-gray-600 dark:text-gray-300 border border-black/5 dark:border-white/10 hover:bg-gray-50';
-           btns += `<button onclick="changePage(${p})" class="w-10 h-10 flex items-center justify-center rounded-xl font-bold transition ${activeClass}">${p}</button>`;
+           const activeClass = p === STATE.currentPage ? 'bg-brand text-white shadow-md' : 'bg-gray-200/50 dark:bg-white/10 text-gray-700 dark:text-gray-200';
+           btns += `<button onclick="changePage(${p})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${activeClass}">${p}</button>`;
        }
-       
-       btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-xl font-bold transition ${STATE.currentPage===total ? 'text-gray-300 pointer-events-none' : 'bg-white dark:bg-cardDark text-gray-600 shadow-sm border border-black/5'}"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>`;
-       return `<div class="flex justify-center items-center gap-2 mt-8 w-full">${btns}</div>`;
+       btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===total ? 'text-gray-300 pointer-events-none' : 'bg-gray-200/50 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>`;
+       return `<div class="flex justify-center items-center gap-2 mt-10 w-full">${btns}</div>`;
     }
 
     function emptyState() {
-       return `<div class="col-span-full py-16 text-center text-gray-400 flex flex-col items-center"><i data-lucide="ghost" class="w-12 h-12 mb-3 opacity-50"></i><p class="text-sm font-medium">Không tìm thấy ứng dụng nào</p></div>`;
+       return `<div class="col-span-full py-20 text-center text-iosGray flex flex-col items-center"><i data-lucide="layout-grid" class="w-12 h-12 mb-3 opacity-30"></i><p class="text-[15px] font-medium">${t('no_app')}</p></div>`;
     }
 
     function changePage(p) { STATE.currentPage = p; renderContent(); document.getElementById('mainContainer').scrollTo({ top: 0, behavior: 'smooth' }); }
-    document.getElementById('searchInput').addEventListener('input', (e) => { STATE.currentPage = 1; renderContent(e.target.value); });
+    document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
 
-    // --- MODAL ---
+    /* =========================================
+       MODAL & CHỨC NĂNG TẢI (GIỮ NGUYÊN LOGIC)
+    ========================================= */
     function openModal(i) {
        STATE.currentItem = i;
        document.getElementById('mTitle').innerText = i.name || i.title || i.filename;
        document.getElementById('mSub').innerText = `${i.version ? 'v'+i.version : 'Mới nhất'} • ${i.source || 'IPAVIET'}`;
        document.getElementById('mIcon').src = i.icon || i.iconUrl || 'https://placehold.co/100';
-       document.getElementById('mDesc').innerText = i.desc || i.description || i.usage || 'Ứng dụng này chưa có mô tả chi tiết.';
+       document.getElementById('mDesc').innerText = i.desc || i.description || i.usage || t('no_desc');
        
        document.getElementById('vipArea').classList.add('hidden');
        document.getElementById('vipMsg').classList.add('hidden');
@@ -566,26 +611,29 @@
        document.querySelector('#appModalPanel button[onclick*="showVipInput()"]').classList.remove('hidden');
        
        const verifyBtn = document.getElementById('verifyBtn');
-       verifyBtn.disabled = false;
-       verifyBtn.innerHTML = "XÁC NHẬN & TẢI";
+       verifyBtn.disabled = false; verifyBtn.innerHTML = t('verify_btn');
 
        const modal = document.getElementById('appModal');
+       const overlay = document.getElementById('modalOverlay');
        const panel = document.getElementById('appModalPanel');
+       
        modal.classList.remove('hidden');
        
        requestAnimationFrame(() => {
-           panel.style.transform = 'translateY(0) scale(1)';
-           panel.style.opacity = '1';
+           overlay.classList.add('opacity-100');
+           panel.style.transform = window.innerWidth < 640 ? 'translateY(0)' : 'translateY(0) scale(1)';
        });
     }
 
     function closeModal(id) {
        const modal = document.getElementById(id);
+       const overlay = document.getElementById('modalOverlay');
        const panel = document.getElementById('appModalPanel');
        
-       panel.style.transform = window.innerWidth < 640 ? 'translateY(100%)' : 'translateY(100%) scale(0.9)';
-       panel.style.opacity = '0';
-       setTimeout(() => modal.classList.add('hidden'), 400);
+       overlay.classList.remove('opacity-100');
+       panel.style.transform = window.innerWidth < 640 ? 'translateY(100%)' : 'translateY(100%) scale(0.95)';
+       
+       setTimeout(() => modal.classList.add('hidden'), 500);
     }
 
     function showVipInput() {
@@ -593,103 +641,68 @@
         document.querySelector('#appModalPanel button[onclick*="showVipInput()"]').classList.add('hidden');
     }
 
-    // --- XÁC NHẬN KEY TỪ GOOGLE SHEETS ---
     async function verifyKey() {
        const k = document.getElementById('vipKey').value;
-       if(k.length < 5) return alert('Vui lòng nhập đúng định dạng mã VIP');
+       if(k.length < 5) return alert(t('invalid_format'));
        
        const btn = document.getElementById('verifyBtn');
        const msg = document.getElementById('vipMsg');
-       btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`;
+       btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`;
        btn.disabled = true;
        
        try {
-          const fetchUrl = GOOGLE_API_URL + '?action=verify_key&key=' + encodeURIComponent(k);
-          const res = await fetch(fetchUrl);
+          const res = await fetch(GOOGLE_API_URL + '?action=verify_key&key=' + encodeURIComponent(k));
           const d = await res.json();
           
-                  if(d.success) {
+          if(d.success) {
              const link = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-             msg.classList.remove('hidden', 'text-red-500');
-             msg.classList.add('text-green-500');
-             
-             // DÒNG MỚI ĐƯỢC THÊM VÀO: Báo cho khách biết số lượt
-             if (d.luot_con_lai < 1000) {
-                 msg.innerText = `✅ Đang tải... (Bạn còn ${d.luot_con_lai} lượt)`;
-             } else {
-                 msg.innerText = "✅ Xác nhận thành công! Đang tải...";
-             }
-             
+             msg.classList.remove('hidden', 'text-red-500'); msg.classList.add('text-brand');
+             msg.innerText = d.luot_con_lai < 1000 ? `✅ ${t('downloading')}... (${t('you_have')} ${d.luot_con_lai} ${t('turns')})` : t('verify_success');
              setTimeout(() => { window.location.href = link; }, 1200);
           } else {
-             msg.classList.remove('hidden', 'text-green-500');
-             msg.classList.add('text-red-500');
-             msg.innerText = d.error || "Mã không hợp lệ hoặc đã hết hạn";
-             btn.disabled = false;
-             btn.innerHTML = "XÁC NHẬN & TẢI";
+             msg.classList.remove('hidden', 'text-brand'); msg.classList.add('text-red-500');
+             msg.innerText = d.error || t('invalid_code');
+             btn.disabled = false; btn.innerHTML = t('verify_btn');
           }
        } catch(e) { 
-           msg.classList.remove('hidden');
-           msg.classList.add('text-red-500');
-           msg.innerText = "Lỗi mạng. Vui lòng thử lại!"; 
-           btn.disabled = false;
-           btn.innerHTML = "THỬ LẠI";
+           msg.classList.remove('hidden'); msg.classList.add('text-red-500');
+           msg.innerText = t('network_error'); 
+           btn.disabled = false; btn.innerHTML = t('try_again');
        }
     }
 
-    // --- TẢI LINK4M API V2 MIỄN PHÍ ---
     async function downloadFree(buttonElement) {
        const originalContent = buttonElement.innerHTML;
-       buttonElement.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Đang tạo link...`;
+       buttonElement.innerHTML = `<div class="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div> <span class="ml-2">${t('creating_link')}</span>`;
        buttonElement.disabled = true;
-       lucide.createIcons();
 
        const link = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-       const apiToken = '691eb05d63b1b86d4a3bca1e'; // MÃ TOKEN CỦA BẠN
+       const apiToken = '691eb05d63b1b86d4a3bca1e';
        const targetUrl = encodeURIComponent(link);
 
        try {
-           const apiUrl = `https://api.allorigins.win/raw?url=` + encodeURIComponent(`https://link4m.co/api-shorten/v2?api=${apiToken}&url=${targetUrl}`);
-           const response = await fetch(apiUrl);
-           const data = await response.json();
+           const res = await fetch(`https://api.allorigins.win/raw?url=` + encodeURIComponent(`https://link4m.co/api-shorten/v2?api=${apiToken}&url=${targetUrl}`));
+           const data = await res.json();
+           window.open((data.status === 'success' && data.shortenedUrl) ? data.shortenedUrl : `https://link4m.co/st?api=${apiToken}&url=${targetUrl}`, '_blank');
+       } catch (error) { window.open(`https://link4m.co/st?api=${apiToken}&url=${targetUrl}`, '_blank'); }
 
-           if(data.status === 'success' && data.shortenedUrl) {
-               window.open(data.shortenedUrl, '_blank');
-           } else {
-               window.open(`https://link4m.co/st?api=${apiToken}&url=${targetUrl}`, '_blank');
-           }
-       } catch (error) {
-           window.open(`https://link4m.co/st?api=${apiToken}&url=${targetUrl}`, '_blank');
-       }
-
-       buttonElement.innerHTML = originalContent;
-       buttonElement.disabled = false;
-       lucide.createIcons();
-       closeModal('appModal');
+       buttonElement.innerHTML = originalContent; buttonElement.disabled = false; lucide.createIcons(); closeModal('appModal');
     }
 
-    // --- THEME ---
     function toggleTheme() {
        document.documentElement.classList.toggle('dark');
        localStorage.setItem('theme', document.documentElement.classList.contains('dark')?'dark':'light');
     }
-    if(localStorage.getItem('theme')==='dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-    }
+    if(localStorage.getItem('theme')==='dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
 
     document.getElementById('vipKey').addEventListener('input', function(e) {
       let v = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
       let f = '';
-      for(let i=0; i<v.length && i<16; i++) {
-        if(i>0 && i%4===0) f+='-';
-        f+=v[i];
-      }
+      for(let i=0; i<v.length && i<16; i++) { if(i>0 && i%4===0) f+='-'; f+=v[i]; }
       e.target.value = f;
     });
 
-    // BẮT ĐẦU CHẠY
     loadData();
-
   </script>
 </body>
 </html>
