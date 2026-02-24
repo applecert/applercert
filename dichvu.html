@@ -108,7 +108,7 @@
                <i data-lucide="wallet" class="w-8 h-8 text-brand"></i>
            </div>
            <h1 class="text-[32px] font-black tracking-tight mb-2">Trung Tâm Nạp Xu</h1>
-           <p class="text-[15px] text-gray-500 dark:text-gray-400 font-medium">Lựa chọn gói nạp phù hợp với nhu cầu của bạn</p>
+           <p class="text-[15px] text-gray-500 dark:text-gray-400 font-medium">Lựa chọn gói nạp phù hợp với nhu cầu của bạn.</p>
        </div>
 
        <div class="segment-container w-full max-w-md mx-auto mb-8 animate-fade-in-up" style="animation-delay: 100ms;">
@@ -350,7 +350,7 @@
              <span id="payContentText" class="text-[20px] font-black tracking-widest text-gray-900 dark:text-white bg-white dark:bg-black/50 px-4 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 mt-2 inline-block select-all shadow-sm">...</span></p>
           </div>
           
-          <div id="btnCheckOrder" class="w-full bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 font-bold py-4 rounded-2xl text-[16px] flex items-center justify-center gap-3">
+          <div id="btnCheckOrder" class="w-full bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 font-bold py-4 rounded-2xl text-[16px] flex items-center justify-center gap-3 transition-colors">
               <div class="w-5 h-5 border-[3px] border-gray-400 dark:border-gray-500 border-t-transparent rounded-full animate-spin"></div>
               <span id="btnCheckText">Hệ thống đang kiểm tra tự động...</span>
           </div>
@@ -427,7 +427,7 @@
     }
 
     // ==========================================
-    // LOGIC 1: NẠP XU (QUÉT TỰ ĐỘNG CÓ FIX CACHE)
+    // LOGIC 1: NẠP XU (QUÉT TỰ ĐỘNG CÓ FIX CACHE VÀ LỖI VÍ TRỐNG)
     // ==========================================
     async function createOrder(amount, coins) {
         if(!currentUser) return;
@@ -454,7 +454,7 @@
         } catch(e) {}
     }
 
-    // 👉 HÀM QUÉT NGẦM ĐÃ FIX LỖI BỘ NHỚ TẠM (CACHE)
+    // 👉 HÀM QUÉT NGẦM ĐÃ FIX LỖI CACHE VÀ LỖI FIREBASE SET
     async function autoCheckPayment() {
         if(!currentOrder || !currentUser) return;
         try {
@@ -468,11 +468,13 @@
                 clearInterval(pollingInterval);
                 
                 try {
-                    await db.collection("users").doc(currentUser.uid).update({ 
+                    // DÙNG SET KÈM MERGE ĐỂ TRÁNH LỖI VÍ CHƯA TẠO
+                    await db.collection("users").doc(currentUser.uid).set({ 
                         coins: firebase.firestore.FieldValue.increment(data.coins) 
-                    });
+                    }, { merge: true });
                 } catch(firebaseErr) {
-                    alert("Lỗi Firebase: Vui lòng liên hệ Admin để nhận Xu thủ công.");
+                    console.error("Firebase Error:", firebaseErr);
+                    alert("Lỗi Firebase: Sếp nhớ đổi Rules thành allow read, write: if true; nhé!");
                     return;
                 }
                 
@@ -506,11 +508,14 @@
         if (confirm(`Xác nhận thanh toán ${priceInXu} Xu cho:\n[ ${itemName} ] ?`)) {
             try {
                 if (type === 'vip') {
-                    // MUA VIP (Trừ xu và set ngày)
-                    await db.collection("users").doc(currentUser.uid).update({ coins: firebase.firestore.FieldValue.increment(-priceInXu) });
+                    // MUA VIP (Trừ xu và set ngày bằng merge true)
+                    await db.collection("users").doc(currentUser.uid).set({ 
+                        coins: firebase.firestore.FieldValue.increment(-priceInXu) 
+                    }, { merge: true });
+                    
                     const days = extraData;
                     const docSnap = await db.collection("users").doc(currentUser.uid).get();
-                    const userData = docSnap.data();
+                    const userData = docSnap.data() || {};
                     
                     let newExpireDate = new Date();
                     if (userData.vipExpire && userData.vipExpire.toMillis() > Date.now()) {
@@ -518,30 +523,33 @@
                     }
                     newExpireDate.setDate(newExpireDate.getDate() + days);
 
-                    await db.collection("users").doc(currentUser.uid).update({ vipExpire: firebase.firestore.Timestamp.fromDate(newExpireDate) });
+                    await db.collection("users").doc(currentUser.uid).set({ 
+                        vipExpire: firebase.firestore.Timestamp.fromDate(newExpireDate) 
+                    }, { merge: true });
+                    
                     alert(`✅ Nâng cấp VIP thành công!\nBạn đã được cộng thêm ${days} ngày sử dụng tải ứng dụng không giới hạn.`);
                 } 
                 else if (type === 'account') {
                     // MUA TÀI KHOẢN PREMIUM (Lấy từ Sheet KhoTK)
-                    const accType = extraData; // Spotify, Netflix, CapCut
+                    const accType = extraData; 
                     alert(`Hệ thống đang trích xuất tài khoản ${accType} từ kho.\nVui lòng đợi vài giây và KHÔNG tắt trang web!`);
                     
-                    // Thêm Date.now() để phá cache khi lấy tài khoản
                     const res = await fetch(`${GOOGLE_API_URL}?action=get_account&type=${accType}&uid=${currentUser.uid}&t=${Date.now()}`);
                     const data = await res.json();
 
                     if (data.success) {
-                        // Lấy thành công -> Trừ xu
-                        await db.collection("users").doc(currentUser.uid).update({ coins: firebase.firestore.FieldValue.increment(-priceInXu) });
+                        // Lấy thành công -> Trừ xu (Dùng Set Merge true)
+                        await db.collection("users").doc(currentUser.uid).set({ 
+                            coins: firebase.firestore.FieldValue.increment(-priceInXu) 
+                        }, { merge: true });
                         
-                        // Hiển thị thông tin tk cho khách
                         alert(`🎉 GIAO DỊCH THÀNH CÔNG!\nĐã trừ ${priceInXu} Xu.\n\n👇 THÔNG TIN TÀI KHOẢN CỦA BẠN 👇\n\n${data.account}\n\n(Vui lòng chụp màn hình hoặc lưu lại thông tin này nhé)`);
                     } else {
-                        // Hết hàng -> Không trừ xu
                         alert("❌ " + data.error);
                     }
                 }
             } catch (error) {
+                console.error("Lỗi:", error);
                 alert("Đã xảy ra lỗi mạng. Vui lòng thử lại!");
             }
         }
