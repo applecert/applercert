@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi" class="antialiased bg-gray-50 text-gray-800">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Admin Dashboard - IPAVIET</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+  </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+  <div id="loginScreen" class="fixed inset-0 z-50 bg-gray-900 flex flex-col items-center justify-center text-white transition-opacity duration-500">
+      <i data-lucide="lock" class="w-16 h-16 text-brand mb-4"></i>
+      <h2 class="text-2xl font-black mb-2">KHU VỰC BẢO MẬT</h2>
+      <p class="text-gray-400 mb-6 text-sm">Hệ thống đang kiểm tra quyền truy cập...</p>
+      <div id="loginSpinner" class="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+      <div id="loginError" class="hidden mt-4 bg-red-500/20 text-red-400 px-4 py-2 rounded-lg text-sm text-center">
+          Tài khoản này không có quyền Quản trị!<br><a href="account.html" class="underline font-bold mt-1 inline-block">Về trang Đăng nhập</a>
+      </div>
+  </div>
+
+  <aside class="w-64 bg-gray-900 text-white flex flex-col shadow-2xl z-20">
+      <div class="h-20 flex items-center px-6 border-b border-gray-800">
+          <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+              <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+          </div>
+          <span class="font-black text-xl tracking-wide">IPAVIET<span class="text-brand">.OS</span></span>
+      </div>
+      
+      <nav class="flex-1 py-6 px-3 space-y-2">
+          <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center px-4 py-3 rounded-xl bg-brand text-white font-bold transition">
+              <i data-lucide="users" class="w-5 h-5 mr-3"></i> Quản lý Khách hàng
+          </button>
+          <button onclick="switchTab('accounts')" id="nav-accounts" class="w-full flex items-center px-4 py-3 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white font-bold transition">
+              <i data-lucide="box" class="w-5 h-5 mr-3"></i> Nhập Kho Tài Khoản
+          </button>
+      </nav>
+
+      <div class="p-4 border-t border-gray-800">
+          <button onclick="auth.signOut()" class="w-full flex items-center px-4 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 font-bold transition text-sm">
+              <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng xuất
+          </button>
+      </div>
+  </aside>
+
+  <main class="flex-1 bg-gray-50 flex flex-col h-screen overflow-hidden relative">
+      <header class="h-20 glass border-b border-gray-200 flex items-center px-8 justify-between shrink-0 z-10">
+          <h1 class="text-2xl font-black text-gray-800" id="pageTitle">Quản lý Khách Hàng</h1>
+          <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
+              <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span class="text-sm font-bold text-gray-600" id="adminEmailShow">...</span>
+          </div>
+      </header>
+
+      <div class="flex-1 overflow-y-auto p-8">
+          
+          <div id="tab-users" class="block max-w-6xl mx-auto">
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div class="p-5 border-b border-gray-200 bg-gray-50/50 flex justify-between items-center">
+                      <div class="relative w-72">
+                          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                          <input type="text" id="searchUser" onkeyup="filterUsers()" placeholder="Tìm theo Email hoặc UID..." class="w-full h-10 pl-9 pr-3 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand focus:border-brand outline-none">
+                      </div>
+                      <button onclick="fetchUsers()" class="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-brand transition"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Làm mới</button>
+                  </div>
+                  <div class="overflow-x-auto">
+                      <table class="w-full text-left border-collapse">
+                          <thead>
+                              <tr class="bg-gray-100 text-gray-600 text-xs uppercase tracking-wider">
+                                  <th class="p-4 font-bold border-b">Email / UID</th>
+                                  <th class="p-4 font-bold border-b">Số Xu</th>
+                                  <th class="p-4 font-bold border-b">Trạng thái VIP</th>
+                                  <th class="p-4 font-bold border-b text-right">Hành động</th>
+                              </tr>
+                          </thead>
+                          <tbody id="userTableBody" class="text-sm">
+                              <tr><td colspan="4" class="p-8 text-center text-gray-500"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div></td></tr>
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
+
+          <div id="tab-accounts" class="hidden max-w-3xl mx-auto">
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 relative overflow-hidden">
+                  <h2 class="text-xl font-black mb-1">Thêm Tài Khoản Vào Kho (Bảo Mật)</h2>
+                  <p class="text-sm text-gray-500 mb-8">Dữ liệu sẽ được đẩy lên Google Sheet.</p>
+
+                  <div class="space-y-5">
+                      <div>
+                          <label class="block text-sm font-bold text-gray-700 mb-1.5">Loại Tài Khoản</label>
+                          <select id="accType" class="w-full h-12 px-4 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none font-medium">
+                              <option value="Spotify">Spotify Premium</option>
+                              <option value="Netflix">Netflix Premium</option>
+                              <option value="CapCut">CapCut Pro</option>
+                          </select>
+                      </div>
+                      <div>
+                          <label class="block text-sm font-bold text-gray-700 mb-1.5">Thông tin đăng nhập</label>
+                          <textarea id="accInfo" rows="3" placeholder="Ví dụ: email_khach@gmail.com | matkhau123" class="w-full p-4 rounded-xl border border-gray-300 text-sm focus:ring-2 focus:ring-brand outline-none font-mono"></textarea>
+                      </div>
+                      
+                      <div class="bg-red-50 dark:bg-red-500/10 p-4 rounded-xl border border-red-100">
+                          <label class="block text-sm font-bold text-red-700 mb-1.5"><i data-lucide="key" class="w-4 h-4 inline mr-1"></i> Mật khẩu Admin (Google Script)</label>
+                          <input type="password" id="adminPassCode" placeholder="Nhập Pass bí mật để xác thực (Sếp đã cài là 200912aB)" class="w-full h-12 px-4 rounded-lg border border-red-300 text-sm focus:ring-2 focus:ring-red-500 outline-none">
+                      </div>
+
+                      <button onclick="pushToSheet()" id="btnAddAcc" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-4">
+                          <i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Vào Kho
+                      </button>
+                  </div>
+              </div>
+          </div>
+
+      </div>
+  </main>
+
+  <div id="editModal" class="fixed inset-0 z-[100] bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+      <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform scale-95 transition-transform duration-300 p-6" id="editPanel">
+          <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-black">Sửa Thông Tin</h3>
+              <button onclick="closeEditModal()" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-6 h-6"></i></button>
+          </div>
+          
+          <input type="hidden" id="editUid">
+          
+          <div class="mb-4">
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Email Khách</label>
+              <input type="text" id="editEmail" disabled class="w-full bg-gray-100 px-4 py-2.5 rounded-lg text-sm text-gray-500 border border-gray-200">
+          </div>
+          
+          <div class="mb-4">
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Số dư Xu</label>
+              <div class="relative">
+                  <i data-lucide="gem" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand"></i>
+                  <input type="number" id="editCoins" class="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-300 font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+              </div>
+          </div>
+
+          <div class="mb-8">
+              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Hạn Gói VIP (Bỏ trống để hủy VIP)</label>
+              <input type="date" id="editVipDate" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 font-bold focus:border-brand focus:ring-1 focus:ring-brand outline-none text-gray-700">
+          </div>
+
+          <button onclick="saveUserChanges()" id="btnSaveUser" class="w-full bg-brand text-white font-bold py-3 rounded-xl shadow-lg shadow-brand/30 active:scale-95 transition flex justify-center items-center">Lưu Thay Đổi</button>
+      </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // CẤU HÌNH BẢO MẬT ADMIN (Đã fix theo yêu cầu của Sếp)
+    // =========================================================
+    const ADMIN_EMAIL = "mquitran@gmail.com"; 
+    
+    // 👉 SẾP DÁN LINK GOOGLE SCRIPT MỚI VÀO DÒNG DƯỚI NÀY NHÉ 👈
+    const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+      authDomain: "ipaviet-st.firebaseapp.com",
+      projectId: "ipaviet-st",
+      storageBucket: "ipaviet-st.firebasestorage.app",
+      messagingSenderId: "127619650916",
+      appId: "1:127619650916:web:fc8904c99804eeb7539671"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let allUsersData = [];
+
+    // KIỂM TRA QUYỀN TRUY CẬP (FRONTEND LOCK)
+    auth.onAuthStateChanged(user => {
+        const screen = document.getElementById('loginScreen');
+        if (user && user.email === ADMIN_EMAIL) {
+            screen.classList.add('opacity-0');
+            setTimeout(() => screen.classList.add('hidden'), 500);
+            document.getElementById('adminEmailShow').innerText = user.email;
+            fetchUsers();
+        } else {
+            document.getElementById('loginSpinner').classList.add('hidden');
+            document.getElementById('loginError').classList.remove('hidden');
+        }
+    });
+
+    function switchTab(tab) {
+        document.getElementById('tab-users').classList.add('hidden');
+        document.getElementById('tab-accounts').classList.add('hidden');
+        document.getElementById('tab-' + tab).classList.remove('hidden');
+
+        document.getElementById('nav-users').className = "w-full flex items-center px-4 py-3 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white font-bold transition";
+        document.getElementById('nav-accounts').className = "w-full flex items-center px-4 py-3 rounded-xl text-gray-400 hover:bg-gray-800 hover:text-white font-bold transition";
+        
+        document.getElementById('nav-' + tab).className = "w-full flex items-center px-4 py-3 rounded-xl bg-brand text-white font-bold transition";
+        document.getElementById('pageTitle').innerText = tab === 'users' ? 'Quản lý Khách Hàng' : 'Kho Tài Khoản (Google)';
+    }
+
+    // ==========================================
+    // TÍNH NĂNG 1: QUẢN LÝ NGƯỜI DÙNG
+    // ==========================================
+    async function fetchUsers() {
+        const tbody = document.getElementById('userTableBody');
+        tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div></td></tr>`;
+        
+        try {
+            const snapshot = await db.collection("users").get();
+            allUsersData = [];
+            snapshot.forEach(doc => {
+                allUsersData.push({ uid: doc.id, ...doc.data() });
+            });
+            renderUserTable(allUsersData);
+        } catch (e) {
+            alert("Lỗi tải dữ liệu. Cảnh báo bảo mật: Bạn không có quyền lấy danh sách user từ Database!");
+            tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500 font-bold">Quyền truy cập bị từ chối bởi Firebase Rules.</td></tr>`;
+        }
+    }
+
+    function renderUserTable(users) {
+        const tbody = document.getElementById('userTableBody');
+        if(users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Không tìm thấy tài khoản nào.</td></tr>`;
+            return;
+        }
+
+        let html = '';
+        users.forEach(u => {
+            let vipStatus = `<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold">Nick Thường</span>`;
+            if(u.vipExpire && u.vipExpire.toMillis() > Date.now()) {
+                vipStatus = `<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold border border-yellow-200"><i data-lucide="crown" class="w-3 h-3 inline pb-0.5"></i> VIP tới ${new Date(u.vipExpire.toMillis()).toLocaleDateString('vi-VN')}</span>`;
+            }
+
+            html += `
+            <tr class="border-b border-gray-100 hover:bg-blue-50/50 transition">
+                <td class="p-4">
+                    <p class="font-bold text-gray-900">${u.email || 'N/A'}</p>
+                    <p class="text-[11px] text-gray-400 font-mono mt-0.5">UID: ${u.uid}</p>
+                </td>
+                <td class="p-4 font-black text-brand">${(u.coins || 0).toLocaleString()} <span class="text-xs text-gray-400 font-normal">Xu</span></td>
+                <td class="p-4">${vipStatus}</td>
+                <td class="p-4 text-right">
+                    <button onclick="openEditModal('${u.uid}')" class="bg-white border border-gray-200 text-gray-700 hover:text-brand hover:border-brand px-4 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">Chỉnh Sửa</button>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+        lucide.createIcons();
+    }
+
+    function filterUsers() {
+        const q = document.getElementById('searchUser').value.toLowerCase();
+        const filtered = allUsersData.filter(u => 
+            (u.email && u.email.toLowerCase().includes(q)) || 
+            (u.uid && u.uid.toLowerCase().includes(q))
+        );
+        renderUserTable(filtered);
+    }
+
+    function openEditModal(uid) {
+        const user = allUsersData.find(u => u.uid === uid);
+        if(!user) return;
+
+        document.getElementById('editUid').value = user.uid;
+        document.getElementById('editEmail').value = user.email || 'N/A';
+        document.getElementById('editCoins').value = user.coins || 0;
+        
+        if (user.vipExpire && user.vipExpire.toMillis() > Date.now()) {
+            const date = new Date(user.vipExpire.toMillis());
+            document.getElementById('editVipDate').value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        } else {
+            document.getElementById('editVipDate').value = '';
+        }
+
+        const m = document.getElementById('editModal');
+        const p = document.getElementById('editPanel');
+        m.classList.remove('hidden');
+        requestAnimationFrame(() => { m.classList.add('opacity-100'); p.classList.remove('scale-95'); });
+    }
+
+    function closeEditModal() {
+        const m = document.getElementById('editModal');
+        const p = document.getElementById('editPanel');
+        m.classList.remove('opacity-100'); p.classList.add('scale-95');
+        setTimeout(() => m.classList.add('hidden'), 300);
+    }
+
+    async function saveUserChanges() {
+        const uid = document.getElementById('editUid').value;
+        const newCoins = parseInt(document.getElementById('editCoins').value) || 0;
+        const newDateStr = document.getElementById('editVipDate').value;
+        const btn = document.getElementById('btnSaveUser');
+
+        btn.innerText = "Đang lưu..."; btn.disabled = true;
+
+        try {
+            let updateData = { coins: newCoins };
+            if (newDateStr) {
+                const targetDate = new Date(newDateStr);
+                targetDate.setHours(23, 59, 59); 
+                updateData.vipExpire = firebase.firestore.Timestamp.fromDate(targetDate);
+            } else {
+                updateData.vipExpire = firebase.firestore.FieldValue.delete();
+            }
+
+            await db.collection("users").doc(uid).set(updateData, { merge: true });
+            
+            alert("✅ Cập nhật tài khoản thành công!");
+            closeEditModal();
+            fetchUsers(); 
+        } catch(e) {
+            alert("❌ Lỗi khi lưu: " + e.message);
+        }
+        btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+    }
+
+    // ==========================================
+    // TÍNH NĂNG 2: THÊM TÀI KHOẢN KÈM MẬT KHẨU
+    // ==========================================
+    async function pushToSheet() {
+        const type = document.getElementById('accType').value;
+        const info = document.getElementById('accInfo').value.trim();
+        const passCode = document.getElementById('adminPassCode').value; // Bắt buộc nhập pass 200912aB
+        const btn = document.getElementById('btnAddAcc');
+
+        if(!info) { alert("Sếp chưa nhập thông tin tài khoản!"); return; }
+        if(!passCode) { alert("Thiếu Mật khẩu Admin! Google sẽ từ chối lưu dữ liệu."); return; }
+
+        btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang đẩy lên Sheet...`;
+        btn.disabled = true;
+
+        try {
+            // GỬI KÈM MẬT KHẨU VÀO LINK API
+            const res = await fetch(`${GOOGLE_API_URL}?action=add_account&type=${type}&info=${encodeURIComponent(info)}&pass=${encodeURIComponent(passCode)}&t=${Date.now()}`);
+            const data = await res.json();
+
+            if (data.success) {
+                alert(`✅ Đã thêm tài khoản ${type} vào kho thành công!`);
+                document.getElementById('accInfo').value = ''; 
+                document.getElementById('adminPassCode').value = ''; // Xóa pass đi cho an toàn
+            } else {
+                alert("❌ Lỗi từ Server: " + data.error);
+            }
+        } catch(e) {
+            alert("Lỗi mạng, không kết nối được tới Google Script.");
+        }
+
+        btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Vào Kho`;
+        btn.disabled = false;
+        lucide.createIcons();
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
