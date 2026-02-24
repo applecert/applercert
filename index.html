@@ -175,32 +175,7 @@
         </div>
 
         <div id="vVipArea" class="hidden px-5 mb-8 animate-fluid-up">
-           <div class="bg-blue-50 dark:bg-brand/10 border border-blue-200 dark:border-brand/20 p-6 rounded-[28px] backdrop-blur-md transition-colors relative spatial-shadow">
-              <div class="flex justify-between items-center border-b border-brand/10 pb-4 mb-4">
-                  <div>
-                     <p class="text-[12px] font-bold text-gray-500 tracking-widest uppercase">Phí tải App</p>
-                     <p class="text-[22px] font-black text-brand">10 Xu</p>
-                  </div>
-                  <div class="text-right">
-                     <p class="text-[12px] font-bold text-gray-500 tracking-widest uppercase">Số dư của bạn</p>
-                     <p class="text-[18px] font-bold text-gray-900 dark:text-white" id="modalCoinBalance">0 Xu</p>
-                  </div>
-              </div>
-              
-              <button onclick="buyAppWithCoins(this)" class="w-full bg-brand text-white font-bold py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2">
-                 <i data-lucide="zap" class="w-5 h-5"></i> THANH TOÁN & TẢI XUỐNG
-              </button>
-              
-              <div class="mt-4 pt-4 border-t border-blue-200/50 dark:border-white/5 relative z-10 flex gap-2">
-                 <button onclick="downloadFreeStore(this)" class="flex-1 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-300 font-bold text-xs hover:bg-black/10 dark:hover:bg-white/10 transition flex items-center justify-center gap-2">
-                    <i data-lucide="cloud-lightning" class="w-4 h-4"></i> Tải Free (Ads)
-                 </button>
-                 <a href="dichvu.html" class="flex-1 py-3 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold text-xs hover:bg-green-500/20 transition flex items-center justify-center gap-2 text-center decoration-transparent">
-                    <i data-lucide="wallet" class="w-4 h-4"></i> Nạp thêm Xu
-                 </a>
-              </div>
            </div>
-        </div>
 
         <div class="px-5 mb-8 mt-6">
            <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-2">What's New</h2>
@@ -235,7 +210,7 @@
 
   <script>
     // ======================================================================
-    // 🚀 1. FIREBASE & USER STATE
+    // 🚀 1. FIREBASE & NHẬN DIỆN KHÁCH VIP
     // ======================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
@@ -252,33 +227,47 @@
 
     let currentUser = null;
     let currentCoins = 0;
+    let isUserVip = false; // Biến kiểm tra VIP
 
     auth.onAuthStateChanged(user => {
         const headerBtn = document.getElementById('headerProfileBtn');
-        const modalCoinBalance = document.getElementById('modalCoinBalance');
 
         if (user) {
             currentUser = user;
             db.collection("users").doc(user.uid).onSnapshot(doc => {
                 if (doc.exists) {
-                    currentCoins = doc.data().coins || 0;
-                    headerBtn.innerHTML = `<i data-lucide="gem" class="w-4 h-4 mr-1"></i> ${currentCoins} Xu`;
-                    headerBtn.className = "h-10 px-4 rounded-full bg-blue-50 dark:bg-brand/20 border border-brand/20 flex items-center justify-center font-bold text-xs text-brand dark:text-blue-400 active:scale-95 transition-transform decoration-transparent";
-                    modalCoinBalance.innerText = currentCoins + " Xu";
+                    const data = doc.data();
+                    currentCoins = data.coins || 0;
+                    
+                    // 👉 QUÉT XEM KHÁCH CÓ VIP HAY KHÔNG
+                    if(data.vipExpire && data.vipExpire.toMillis() > Date.now()) {
+                        isUserVip = true;
+                    } else {
+                        isUserVip = false;
+                    }
+
+                    // Đổi nút UI góc phải dựa vào VIP
+                    if(isUserVip) {
+                        headerBtn.innerHTML = `<i data-lucide="crown" class="w-4 h-4 mr-1 text-yellow-500"></i> ${currentCoins} Xu`;
+                        headerBtn.className = "h-10 px-4 rounded-full bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 flex items-center justify-center font-bold text-xs text-yellow-600 dark:text-yellow-400 active:scale-95 transition-transform decoration-transparent";
+                    } else {
+                        headerBtn.innerHTML = `<i data-lucide="gem" class="w-4 h-4 mr-1"></i> ${currentCoins} Xu`;
+                        headerBtn.className = "h-10 px-4 rounded-full bg-blue-50 dark:bg-brand/20 border border-blue-200 dark:border-brand/30 flex items-center justify-center font-bold text-xs text-brand dark:text-blue-400 active:scale-95 transition-transform decoration-transparent";
+                    }
                     lucide.createIcons();
                 }
             });
         } else {
             currentUser = null;
             currentCoins = 0;
+            isUserVip = false;
             headerBtn.innerHTML = "Đăng Nhập";
             headerBtn.className = "h-10 px-4 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-brand dark:text-white active:scale-95 transition-transform backdrop-blur-md decoration-transparent";
-            modalCoinBalance.innerText = "0 Xu";
         }
     });
 
     // ======================================================================
-    // 🚀 2. HỆ THỐNG KHO APP & ID ĐỘNG
+    // 🚀 2. HỆ THỐNG KHO APP
     // ======================================================================
     window.allAppsMap = {}; 
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
@@ -403,7 +392,6 @@
       container.innerHTML = html; lucide.createIcons();
     }
 
-    // TRUYỀN ID VÀO HÀM (KHÔNG BỊ LỖI NGOẶC KÉP)
     function createBigHero(i, index) { return `<div onclick="openAppView('${i._id}')" class="animate-fluid-up snap-center shrink-0 w-[88%] md:w-[28rem] aspect-[4/5] md:aspect-video relative rounded-[32px] overflow-hidden spatial-shadow group cursor-pointer" style="animation-delay: ${index*50}ms"><img src="${i.icon || i.iconUrl}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"><div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div><div class="absolute bottom-0 left-0 w-full p-6 flex flex-col items-start gap-4"><span class="text-white/70 text-[10px] font-black uppercase tracking-widest">${i.source !== 'IPAVIET' ? 'API • ' + i.source : 'MỚI NHẤT'}</span><div class="flex items-start gap-4 w-full"><div class="flex-1 min-w-0"><h2 class="text-[28px] font-black text-white leading-tight truncate drop-shadow-md">${i.name || i.title}</h2><p class="text-gray-300 text-[15px] line-clamp-2 mt-1 font-medium">${i.desc || 'Nhấn để xem chi tiết'}</p></div></div></div></div>`; }
     function createSubPageHero(i, index) { return `<div onclick="openAppView('${i._id}')" class="animate-fluid-up snap-center shrink-0 w-[20rem] h-[12rem] relative rounded-[28px] overflow-hidden spatial-shadow group cursor-pointer bg-black" style="animation-delay: ${index*50}ms"><img src="${i.icon || i.iconUrl}" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-40 transition-all duration-700 ease-out"><div class="absolute inset-0 p-6 flex flex-col justify-end"><div class="flex items-center gap-4"><img src="${i.icon || i.iconUrl}" class="w-14 h-14 squircle shadow-md bg-white"><div class="flex-1 min-w-0"><h4 class="font-bold text-white text-xl truncate drop-shadow-md">${i.name || i.title}</h4><p class="text-[12px] text-white/70 font-semibold mt-0.5">${i.source || 'IPAVIET'}</p></div></div></div></div>`; }
     function createGridItem(i, index) { return `<div onclick="openAppView('${i._id}')" class="animate-fluid-up flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/10 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 px-2 rounded-2xl transition-colors cursor-pointer group" style="animation-delay: ${index*30}ms"><img src="${i.icon || i.iconUrl}" class="w-[60px] h-[60px] squircle bg-gray-100 dark:bg-gray-800 object-cover shadow-sm group-hover:scale-95 transition-transform duration-300" onerror="this.src='https://placehold.co/100'"/><div class="flex-1 min-w-0 pt-1"><h4 class="font-bold text-gray-900 dark:text-white truncate text-[16px] leading-tight">${i.name || i.title || i.filename}</h4><p class="text-[13px] text-iosGray line-clamp-1 font-medium mt-0.5">${i.desc || i.description || i.certname || 'Nhấn để xem'}</p></div><button class="shrink-0 bg-black/5 dark:bg-white/10 text-brand font-bold text-[13px] px-5 py-1.5 rounded-full active:scale-90 transition-transform">NHẬN</button></div>`; }
@@ -414,7 +402,7 @@
     document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
 
     // ======================================================================
-    // 🚀 3. LOGIC APP STORE & THANH TOÁN
+    // 🚀 3. LOGIC APP STORE & THANH TOÁN (VIP NHẬN DIỆN THÔNG MINH)
     // ======================================================================
     function openAppView(appId) {
        const i = window.allAppsMap[appId];
@@ -447,30 +435,106 @@
        setTimeout(() => view.classList.add('hidden'), 400);
     }
 
+    // NÚT BẤM CÀI ĐẶT
     function showDownloadAction() {
         if (!currentUser) {
-            // NẾU CHƯA ĐĂNG NHẬP, ĐÁ SANG TRANG TÀI KHOẢN
             window.location.href = 'account.html';
             return;
         }
-        document.getElementById('vVipArea').classList.remove('hidden');
-        document.getElementById('vVipArea').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        const vipArea = document.getElementById('vVipArea');
+        vipArea.classList.remove('hidden');
+
+        // KIỂM TRA QUYỀN VIP ĐỂ HIỂN THỊ GIAO DIỆN
+        if (isUserVip) {
+            vipArea.innerHTML = `
+               <div class="bg-gradient-to-br from-yellow-500/20 to-yellow-300/10 border border-yellow-500/30 p-6 rounded-[28px] backdrop-blur-md relative spatial-shadow">
+                  <div class="flex justify-between items-center border-b border-yellow-500/20 pb-4 mb-4">
+                      <div>
+                         <p class="text-[12px] font-bold text-yellow-600 dark:text-yellow-500 tracking-widest uppercase">Đặc quyền VIP</p>
+                         <p class="text-[22px] font-black text-gray-900 dark:text-white">Miễn phí</p>
+                      </div>
+                      <div class="text-right flex items-center gap-2">
+                         <i data-lucide="crown" class="w-8 h-8 text-yellow-500"></i>
+                      </div>
+                  </div>
+                  <button onclick="downloadVipApp(this)" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-400 text-black font-black py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-[0_10px_20px_-10px_rgba(234,179,8,0.5)]">
+                     <i data-lucide="zap" class="w-5 h-5"></i> TẢI XUỐNG NGAY
+                  </button>
+               </div>
+            `;
+        } else {
+            vipArea.innerHTML = `
+               <div class="bg-blue-50 dark:bg-brand/10 border border-blue-200 dark:border-brand/20 p-6 rounded-[28px] backdrop-blur-md transition-colors relative spatial-shadow">
+                  <div class="flex justify-between items-center border-b border-brand/10 pb-4 mb-4">
+                      <div>
+                         <p class="text-[12px] font-bold text-gray-500 tracking-widest uppercase">Phí tải App</p>
+                         <p class="text-[22px] font-black text-brand">10 Xu</p>
+                      </div>
+                      <div class="text-right">
+                         <p class="text-[12px] font-bold text-gray-500 tracking-widest uppercase">Số dư của bạn</p>
+                         <p class="text-[18px] font-bold text-gray-900 dark:text-white">${currentCoins} Xu</p>
+                      </div>
+                  </div>
+                  <button onclick="buyAppWithCoins(this)" class="w-full bg-brand text-white font-bold py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2">
+                     <i data-lucide="zap" class="w-5 h-5"></i> THANH TOÁN & TẢI XUỐNG
+                  </button>
+                  <div class="mt-4 pt-4 border-t border-blue-200/50 dark:border-white/5 relative z-10 flex gap-2">
+                     <button onclick="downloadFreeStore(this)" class="flex-1 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-300 font-bold text-[13px] hover:bg-black/10 dark:hover:bg-white/10 transition flex items-center justify-center gap-2">
+                        <i data-lucide="cloud-lightning" class="w-4 h-4"></i> Tải Free (Ads)
+                     </button>
+                     <a href="dichvu.html" class="flex-1 py-3 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold text-[13px] hover:bg-green-500/20 transition flex items-center justify-center gap-2 text-center decoration-transparent">
+                        <i data-lucide="wallet" class="w-4 h-4"></i> Nạp Xu
+                     </a>
+                  </div>
+               </div>
+            `;
+        }
+        lucide.createIcons();
+        vipArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // THANH TOÁN MUA APP BẰNG XU
+    // TẢI MIỄN PHÍ DÀNH CHO KHÁCH VIP
+    async function downloadVipApp(btnEl) {
+        const originalText = btnEl.innerHTML;
+        btnEl.innerHTML = `<div class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>`;
+        btnEl.disabled = true;
+
+        try {
+            const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
+            
+            // Xử lý giấu Token qua Google Script
+            const res = await fetch(GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(btoa(rawLink)));
+            const data = await res.json();
+
+            if(data.success && data.link) {
+                window.location.href = data.link; 
+            } else { alert("Lỗi lấy link. Vui lòng liên hệ Admin!"); }
+        } catch (error) { alert("Lỗi kết nối. Vui lòng thử lại!"); }
+
+        btnEl.innerHTML = originalText;
+        btnEl.disabled = false;
+    }
+
+    // THANH TOÁN MUA APP (CHO KHÁCH THƯỜNG)
     async function buyAppWithCoins(btnEl) {
         const APP_PRICE = 10; 
-        if (currentCoins < APP_PRICE) { alert("Bạn không đủ Xu để tải. Vui lòng nạp thêm!"); return; }
+        if (currentCoins < APP_PRICE) { 
+            alert("Bạn không đủ Xu để tải.\nVui lòng Nạp thêm Xu hoặc nâng cấp Gói VIP để tải tẹt ga nhé!"); 
+            window.location.href = 'dichvu.html';
+            return; 
+        }
 
         const originalText = btnEl.innerHTML;
         btnEl.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`;
         btnEl.disabled = true;
 
         try {
+            // Trừ Xu
             await db.collection("users").doc(currentUser.uid).update({ coins: firebase.firestore.FieldValue.increment(-APP_PRICE) });
-            const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
             
-            // Xử lý giấu Token qua Google Script
+            // Get link
+            const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
             const res = await fetch(GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(btoa(rawLink)));
             const data = await res.json();
 
