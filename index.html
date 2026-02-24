@@ -271,20 +271,21 @@
     function sortItemsByDate(items) { return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0)); }
 
     // ======================================================================
-    // 🚀 BỘ NÃO TẢI DỮ LIỆU CẬP NHẬT (NHỜ GOOGLE VƯỢT TƯỜNG LỬA)
+    // 🚀 BỘ NÃO TẢI DỮ LIỆU ĐA NĂNG (Dò Mìn 4 Lớp Proxy + Dò cấu trúc JSON)
     // ======================================================================
     async function loadData() {
       applyLanguage(); 
       
       const fetchT = async (url) => {
           const controller = new AbortController();
-          const id = setTimeout(() => controller.abort(), 7000); 
+          const id = setTimeout(() => controller.abort(), 8000); // Đợi tối đa 8s cho proxy
           try {
               const res = await fetch(url, { signal: controller.signal });
               clearTimeout(id); return res;
           } catch (e) { clearTimeout(id); throw e; }
       };
 
+      // 1. TẢI NHANH APP LOCAL
       try {
           try { const kwRes = await fetch('keywords.json?t=' + Date.now()); if(kwRes.ok) { KEYWORDS = await kwRes.json(); } } catch (e) {}
           const endpoints = [ {k: 'ipa', u: 'data/ipa.json'}, {k: 'dylib', u: 'data/dylib.json'}, {k: 'conf', u: 'data/conf.json'} ];
@@ -303,49 +304,79 @@
       DB.ipa = sortItemsByDate(getUniqueApps(DB.ipa)); 
       switchTab(STATE.currentTab);
 
+      // Cỗ máy xử lý JSON đa năng (Hỗ trợ cấu trúc AltStore, TrollStore, Esign...)
+      function processRepoData(data, sourceName) {
+          let appList = [];
+          if (Array.isArray(data)) appList = data;
+          else if (data && Array.isArray(data.apps)) appList = data.apps;
+          
+          if (appList.length > 0) {
+              const mapped = appList.map(app => ({
+                  name: app.name || app.title, 
+                  title: app.name || app.title, 
+                  icon: app.iconURL || app.icon || 'https://placehold.co/100', 
+                  iconUrl: app.iconURL || app.icon,
+                  desc: app.localizedDescription || app.subtitle || app.description || 'Bản Mod/Hack IPA', 
+                  description: app.localizedDescription || app.subtitle || app.description,
+                  fileLink: app.downloadURL || app.downloadUrl || app.link, 
+                  downloadUrl: app.downloadURL || app.downloadUrl || app.link, 
+                  version: app.version || '1.0',
+                  developer: app.developerName || app.developer || sourceName, 
+                  date: app.versionDate || app.date || new Date().toISOString(),
+                  lastSync: app.versionDate || app.date, 
+                  source: sourceName, _type: 'IPA'
+              })).filter(app => app.fileLink); // Phải có link tải mới lấy
+
+              if (mapped.length > 0) {
+                  DB.ipa = sortItemsByDate(getUniqueApps([...DB.ipa, ...mapped]));
+                  if(STATE.currentTab === 'home' || STATE.currentTab === 'ipa') renderContent();
+                  return true; // Báo hiệu lấy thành công
+              }
+          }
+          return false;
+      }
+
       const fetchPromises = [];
 
       // KHO 1: APPTESTERS
       fetchPromises.push(fetchT('https://raw.githubusercontent.com/apptesters-org/AppTesters_Repo/main/apps.json').then(async res => {
-          if(res.ok) {
-              const data = await res.json();
-              if (data && Array.isArray(data.apps)) {
-                  const mapped = data.apps.map(app => ({
-                      name: app.name, title: app.name, icon: app.iconURL || 'https://placehold.co/100', iconUrl: app.iconURL,
-                      desc: app.localizedDescription || app.subtitle || 'Bản Mod/Hack IPA', description: app.localizedDescription || app.subtitle,
-                      fileLink: app.downloadURL, downloadUrl: app.downloadURL, version: app.version,
-                      developer: app.developerName || 'AppTesters', date: app.versionDate || new Date().toISOString(),
-                      lastSync: app.versionDate, source: 'AppTesters', _type: 'IPA'
-                  }));
-                  DB.ipa = sortItemsByDate(getUniqueApps([...DB.ipa, ...mapped]));
-                  if(STATE.currentTab === 'home' || STATE.currentTab === 'ipa') renderContent();
-              }
-          }
+          if(res.ok) { processRepoData(await res.json(), 'AppTesters'); }
       }).catch(() => {}));
 
-      // KHO 2: IPA.IO.VN (Nhờ Google Script xuyên tường Cloudflare)
+      // KHO 2: IPA.IO.VN (THUẬT TOÁN 4 LỚP XUYÊN TƯỜNG)
       fetchPromises.push((async () => {
-          let targetUrl = 'https://ipa.io.vn/repo/apps.json';
-          try {
-              // Gọi qua cửa của Google Script
-              let proxyUrl = GOOGLE_API_URL + '?action=fetch_repo&url=' + encodeURIComponent(targetUrl);
-              let res = await fetchT(proxyUrl);
+          // Các cấu trúc URL phổ biến của Repo
+          const targetUrls = [
+              'https://ipa.io.vn/repo',
+              'https://ipa.io.vn/repo/apps.json',
+              'https://ipa.io.vn/apps.json'
+          ];
+          
+          for (let url of targetUrls) {
+              // 1. Cửa chính
+              try {
+                  let res1 = await fetchT(url);
+                  if (res1.ok && processRepoData(await res1.json(), 'IPA.IO.VN')) return;
+              } catch(e) {}
+
+              // 2. Google Script Proxy (Đã nâng cấp vượt Cloudflare)
+              try {
+                  let res2 = await fetchT(GOOGLE_API_URL + '?action=fetch_repo&url=' + encodeURIComponent(url));
+                  if (res2.ok && processRepoData(await res2.json(), 'IPA.IO.VN')) return;
+              } catch(e) {}
+
+              // 3. CorsProxy.io
+              try {
+                  let res3 = await fetchT('https://corsproxy.io/?' + encodeURIComponent(url));
+                  if (res3.ok && processRepoData(await res3.json(), 'IPA.IO.VN')) return;
+              } catch(e) {}
               
-              if (res.ok) {
-                  let data = await res.json();
-                  if (data && Array.isArray(data.apps)) {
-                      const mapped = data.apps.map(app => ({
-                          name: app.name, title: app.name, icon: app.iconURL || 'https://placehold.co/100', iconUrl: app.iconURL,
-                          desc: app.localizedDescription || app.subtitle || 'Bản Mod/Hack IPA', description: app.localizedDescription || app.subtitle,
-                          fileLink: app.downloadURL, downloadUrl: app.downloadURL, version: app.version,
-                          developer: app.developerName || 'IPA.IO.VN', date: app.versionDate || new Date().toISOString(),
-                          lastSync: app.versionDate, source: 'IPA.IO.VN', _type: 'IPA'
-                      }));
-                      DB.ipa = sortItemsByDate(getUniqueApps([...DB.ipa, ...mapped]));
-                      if(STATE.currentTab === 'home' || STATE.currentTab === 'ipa') renderContent();
-                  }
-              }
-          } catch(e) {} 
+              // 4. AllOrigins Proxy
+              try {
+                  let res4 = await fetchT('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+                  if (res4.ok && processRepoData(await res4.json(), 'IPA.IO.VN')) return;
+              } catch(e) {}
+          }
       })());
 
       Promise.allSettled(fetchPromises);
