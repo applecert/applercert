@@ -28,12 +28,22 @@
           <i data-lucide="shield-check" class="w-10 h-10 text-brand"></i>
       </div>
       <h2 class="text-3xl font-black mb-2 tracking-tight">WORKSPACE CẤP CAO</h2>
-      <p class="text-gray-400 mb-8 text-sm font-medium">Đang xác thực thẻ đặc quyền...</p>
+      <p class="text-gray-400 mb-8 text-sm font-medium" id="loginStatusText">Đang xác thực thẻ đặc quyền...</p>
+      
       <div id="loginSpinner" class="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+      
       <div id="loginError" class="hidden mt-4 bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-4 rounded-xl text-sm text-center shadow-lg">
           <i data-lucide="alert-triangle" class="w-6 h-6 mx-auto mb-2 text-red-500"></i>
           Quyền truy cập bị từ chối!<br><span class="text-xs text-red-500/70">Tài khoản hiện tại không thuộc nhóm Quản trị viên.</span><br>
           <a href="account.html" class="bg-red-500 text-white font-bold px-4 py-2 rounded-lg mt-4 inline-block hover:bg-red-600 transition">Đăng Nhập Lại</a>
+      </div>
+
+      <div id="step2Auth" class="hidden mt-2 bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm text-center">
+          <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"><i data-lucide="key" class="w-4 h-4 inline pb-1"></i> Nhập Mã PIN Máy Chủ</p>
+          <input type="password" id="serverPin" placeholder="Mật khẩu Backend..." class="w-full text-center font-black text-gray-900 px-4 py-3 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-brand">
+          <button onclick="verifyServerPin()" id="btnVerify" class="bg-brand text-white font-black px-6 py-3 rounded-xl w-full hover:bg-brandDark transition active:scale-95 shadow-lg shadow-brand/30">
+             MỞ KHÓA HỆ THỐNG
+          </button>
       </div>
   </div>
 
@@ -84,7 +94,6 @@
       <div class="flex-1 overflow-y-auto p-8 scrollbar-hide">
           
           <div id="tab-dashboard" class="block max-w-6xl mx-auto space-y-6">
-              
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div class="bg-white rounded-2xl p-6 border border-gray-100 stat-card shadow-sm">
                       <div class="flex justify-between items-start mb-4">
@@ -159,7 +168,7 @@
               <div class="lg:w-1/3 shrink-0">
                   <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-0">
                       <h2 class="text-lg font-black mb-1">Nhập Hàng Vào Kho</h2>
-                      <p class="text-xs text-gray-500 mb-6">Tài khoản sẽ được 암 (Mã hóa) lên Google Sheet.</p>
+                      <p class="text-xs text-gray-500 mb-6">Tài khoản sẽ được mã hóa đẩy lên Google.</p>
 
                       <div class="space-y-4">
                           <div>
@@ -173,10 +182,6 @@
                           <div>
                               <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tài Khoản | Mật Khẩu</label>
                               <textarea id="accInfo" rows="3" placeholder="vd: tung_mtp@gmail.com | pass123" class="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-mono"></textarea>
-                          </div>
-                          <div class="pt-2">
-                              <label class="block text-xs font-black text-red-500 uppercase tracking-wide mb-1.5"><i data-lucide="lock" class="w-3 h-3 inline"></i> Khóa Bảo Mật Google</label>
-                              <input type="password" id="adminPassCode" placeholder="Nhập Pass Sếp cài (200912aB)" class="w-full h-11 px-4 rounded-xl border border-red-200 bg-red-50 text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none font-mono text-red-700">
                           </div>
                           <button onclick="pushToSheet()" id="btnAddAcc" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-gray-900/20 active:scale-95">
                               <i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Lên Hệ Thống
@@ -255,13 +260,13 @@
 
   <script>
     // =========================================================
-    // ⚠️ ĐÃ ĐIỀN SẴN THÔNG TIN BẢO MẬT & API CỦA SẾP ⚠️
+    // KHÔNG CÒN MẬT KHẨU Ở ĐÂY NỮA, AN TOÀN 100%
     // =========================================================
     const ADMIN_EMAIL = "mquitran@gmail.com"; 
-    const SECRET_ADMIN_PASS = "200912aB"; 
-    
-    // ĐIỀN LINK GOOGLE SCRIPT MỚI NHẤT CỦA SẾP SAU KHI CẬP NHẬT CODE BÊN TRÊN
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec"; 
+
+    // Biến lưu trữ Session Pass (Chỉ nằm trong RAM khi gõ)
+    let authenticatedSessionPass = "";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
@@ -278,70 +283,96 @@
     let allUsersData = [];
     let googleData = { totalRevenue: 0, inventory: {}, transactions: [] };
 
-    // BẢO MẬT GIAO DIỆN
+    // BẢO MẬT VÒNG 1: QUÉT EMAIL FIREBASE
     auth.onAuthStateChanged(user => {
         const screen = document.getElementById('loginScreen');
         if (user && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-            screen.classList.add('opacity-0');
-            setTimeout(() => screen.classList.add('hidden'), 500);
+            // Qua được vòng 1 -> Hiện khung nhập Pass vòng 2
+            document.getElementById('loginSpinner').classList.add('hidden');
+            document.getElementById('loginStatusText').innerText = "Vui lòng nhập Mã PIN để vào hệ thống";
+            document.getElementById('step2Auth').classList.remove('hidden');
             document.getElementById('adminEmailShow').innerText = user.email;
-            
-            // Vào thành công thì tự động load mọi báo cáo
-            loadAllData();
         } else {
             document.getElementById('loginSpinner').classList.add('hidden');
             document.getElementById('loginError').classList.remove('hidden');
         }
     });
 
-    // LOAD TOÀN BỘ DATA (Firebase + Google)
+    // BẢO MẬT VÒNG 2: XÁC THỰC MÃ PIN VỚI GOOGLE
+    async function verifyServerPin() {
+        const pinInput = document.getElementById('serverPin').value;
+        const btn = document.getElementById('btnVerify');
+        
+        if (!pinInput) return alert("Vui lòng nhập mã PIN!");
+        
+        btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`;
+        btn.disabled = true;
+
+        try {
+            // Gửi thử lên Google lấy báo cáo. Nếu đúng Pass nó mới nhả Data.
+            const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pass=${encodeURIComponent(pinInput)}&t=${Date.now()}`);
+            const data = await res.json();
+
+            if (data.success) {
+                // ĐÚNG PASS -> LƯU VÀO RAM VÀ MỞ CỬA
+                authenticatedSessionPass = pinInput;
+                googleData = data.data;
+
+                const screen = document.getElementById('loginScreen');
+                screen.classList.add('opacity-0');
+                setTimeout(() => screen.classList.add('hidden'), 500);
+
+                // Render toàn bộ
+                fetchFirebaseUsers();
+                renderInventory(googleData.inventory);
+                renderTransactions(googleData.transactions);
+                updateDashboardCards();
+            } else {
+                alert("❌ SAI MÃ PIN! Hệ thống từ chối truy cập.");
+            }
+        } catch(e) {
+            alert("Lỗi kết nối đến máy chủ Google!");
+        }
+
+        btn.innerHTML = "MỞ KHÓA HỆ THỐNG";
+        btn.disabled = false;
+    }
+
+    // TẢI LẠI TOÀN BỘ DATA DÙNG SESSION PASS
     async function loadAllData() {
         const icon = document.getElementById('refreshIcon');
         icon.classList.add('animate-spin');
         
-        await Promise.all([
-            fetchFirebaseUsers(),
-            fetchGoogleStats()
-        ]);
+        await fetchFirebaseUsers();
         
-        updateDashboardCards();
-        setTimeout(() => icon.classList.remove('animate-spin'), 500);
-    }
-
-    // 1. DATA TỪ FIREBASE (Người dùng)
-    async function fetchFirebaseUsers() {
         try {
-            const snapshot = await db.collection("users").get();
-            allUsersData = [];
-            snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() }));
-            renderUserTable(allUsersData);
-        } catch (e) {
-            console.error("Firebase Rule chặn hoặc lỗi mạng", e);
-        }
-    }
-
-    // 2. DATA TỪ GOOGLE SCRIPT (Doanh thu, Tồn Kho, Lịch sử)
-    async function fetchGoogleStats() {
-        try {
-            const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pass=${encodeURIComponent(SECRET_ADMIN_PASS)}&t=${Date.now()}`);
+            const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pass=${encodeURIComponent(authenticatedSessionPass)}&t=${Date.now()}`);
             const data = await res.json();
             if(data.success) {
                 googleData = data.data;
                 renderInventory(googleData.inventory);
                 renderTransactions(googleData.transactions);
             }
-        } catch(e) {
-            console.log("Lỗi fetch google", e);
-        }
+        } catch(e) {}
+        
+        updateDashboardCards();
+        setTimeout(() => icon.classList.remove('animate-spin'), 500);
     }
 
-    // CẬP NHẬT CÁC THẺ THỐNG KÊ (DASHBOARD)
+    // FIREBASE USERS
+    async function fetchFirebaseUsers() {
+        try {
+            const snapshot = await db.collection("users").get();
+            allUsersData = [];
+            snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() }));
+            renderUserTable(allUsersData);
+        } catch (e) { console.error("Lỗi Firebase", e); }
+    }
+
+    // RENDER UI CHUNG
     function updateDashboardCards() {
-        // Đếm Firebase
         let totalUsers = allUsersData.length;
-        let totalVips = 0;
-        let totalCoins = 0;
-        
+        let totalVips = 0; let totalCoins = 0;
         allUsersData.forEach(u => {
             totalCoins += (u.coins || 0);
             if(u.vipExpire && u.vipExpire.toMillis() > Date.now()) totalVips++;
@@ -350,12 +381,9 @@
         document.getElementById('statUsers').innerText = totalUsers.toLocaleString();
         document.getElementById('statVips').innerText = totalVips.toLocaleString();
         document.getElementById('statTotalCoins').innerText = totalCoins.toLocaleString();
-        
-        // Đếm Doanh thu Google
         document.getElementById('statRevenue').innerText = (googleData.totalRevenue || 0).toLocaleString('vi-VN') + "đ";
     }
 
-    // RENDER BẢNG KHÁCH HÀNG
     function renderUserTable(users) {
         const tbody = document.getElementById('userTableBody');
         if(users.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Trống.</td></tr>`; return; }
@@ -369,15 +397,10 @@
 
             html += `
             <tr class="border-b border-gray-100 hover:bg-gray-50 transition group">
-                <td class="p-4">
-                    <p class="font-bold text-gray-900">${u.email || 'Ẩn danh'}</p>
-                    <p class="text-[10px] text-gray-400 font-mono mt-1 opacity-50 group-hover:opacity-100 transition">${u.uid}</p>
-                </td>
+                <td class="p-4"><p class="font-bold text-gray-900">${u.email || 'Ẩn danh'}</p><p class="text-[10px] text-gray-400 font-mono mt-1 opacity-50 group-hover:opacity-100 transition">${u.uid}</p></td>
                 <td class="p-4 font-black text-brand text-base">${(u.coins || 0).toLocaleString()}</td>
                 <td class="p-4">${vipBadge}</td>
-                <td class="p-4 text-right">
-                    <button onclick="openEditModal('${u.uid}')" class="bg-white border border-gray-200 text-gray-600 hover:text-brand hover:border-brand px-4 py-2 rounded-xl text-[12px] font-bold transition shadow-sm hover:shadow active:scale-95">Chỉnh Sửa</button>
-                </td>
+                <td class="p-4 text-right"><button onclick="openEditModal('${u.uid}')" class="bg-white border border-gray-200 text-gray-600 hover:text-brand hover:border-brand px-4 py-2 rounded-xl text-[12px] font-bold transition shadow-sm hover:shadow active:scale-95">Chỉnh Sửa</button></td>
             </tr>`;
         });
         tbody.innerHTML = html; lucide.createIcons();
@@ -388,11 +411,9 @@
         renderUserTable(allUsersData.filter(u => (u.email||"").toLowerCase().includes(q) || (u.uid||"").toLowerCase().includes(q)));
     }
 
-    // RENDER KHO HÀNG (Tab 1 Mini & Tab 3 Full)
     function renderInventory(inv) {
         let miniHtml = ''; let fullHtml = '';
-        
-        const types = ['Spotify', 'Netflix', 'CapCut']; // Định nghĩa màu sắc cho đẹp
+        const types = ['Spotify', 'Netflix', 'CapCut']; 
         const colors = { 'Spotify': 'green', 'Netflix': 'red', 'CapCut': 'gray' };
 
         types.forEach(t => {
@@ -400,38 +421,26 @@
             let c = colors[t];
             let percent = data.total > 0 ? Math.round((data.sold / data.total)*100) : 0;
 
-            // Dành cho Dashboard
             miniHtml += `
             <div class="border border-gray-100 rounded-xl p-4 bg-gray-50 relative overflow-hidden">
                 <div class="absolute right-0 top-0 w-1 h-full bg-${c}-500"></div>
                 <p class="text-xs font-bold text-gray-500 uppercase mb-1">${t}</p>
-                <div class="flex items-end gap-2">
-                    <span class="text-2xl font-black text-gray-900">${data.available}</span>
-                    <span class="text-xs font-bold text-green-600 mb-1">sẵn sàng</span>
-                </div>
+                <div class="flex items-end gap-2"><span class="text-2xl font-black text-gray-900">${data.available}</span><span class="text-xs font-bold text-green-600 mb-1">sẵn sàng</span></div>
             </div>`;
 
-            // Dành cho Tab Kho Hàng
             fullHtml += `
             <div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
                 <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 rounded-xl bg-${c}-50 flex items-center justify-center border border-${c}-100">
-                        <i data-lucide="box" class="w-7 h-7 text-${c}-500"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-black text-lg text-gray-900">${t} Premium</h3>
-                        <p class="text-xs text-gray-500 font-bold mt-1">Đã bán: ${data.sold} / Tổng nhập: ${data.total}</p>
-                    </div>
+                    <div class="w-14 h-14 rounded-xl bg-${c}-50 flex items-center justify-center border border-${c}-100"><i data-lucide="box" class="w-7 h-7 text-${c}-500"></i></div>
+                    <div><h3 class="font-black text-lg text-gray-900">${t} Premium</h3><p class="text-xs text-gray-500 font-bold mt-1">Đã bán: ${data.sold} / Tổng nhập: ${data.total}</p></div>
                 </div>
-                
                 <div class="flex items-center gap-6">
                     <div class="w-32">
                         <div class="flex justify-between text-[10px] font-bold text-gray-500 mb-1"><span>Tiêu thụ</span><span>${percent}%</span></div>
                         <div class="w-full bg-gray-100 rounded-full h-2"><div class="bg-${c}-500 h-2 rounded-full" style="width: ${percent}%"></div></div>
                     </div>
                     <div class="text-center bg-${c}-50 border border-${c}-100 px-4 py-2 rounded-xl min-w-[100px]">
-                        <p class="text-[10px] font-black text-${c}-600 uppercase">Tồn Kho</p>
-                        <p class="text-2xl font-black text-${c}-700 leading-none mt-1">${data.available}</p>
+                        <p class="text-[10px] font-black text-${c}-600 uppercase">Tồn Kho</p><p class="text-2xl font-black text-${c}-700 leading-none mt-1">${data.available}</p>
                     </div>
                 </div>
             </div>`;
@@ -441,7 +450,6 @@
         document.getElementById('inventoryFullList').innerHTML = fullHtml || `<p class="text-sm">Chưa có data.</p>`;
     }
 
-    // RENDER LỊCH SỬ NẠP TIỀN
     function renderTransactions(txs) {
         const tbody = document.getElementById('txTableBody');
         if(txs.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Chưa có khách nào nạp.</td></tr>`; return; }
@@ -450,45 +458,25 @@
         txs.forEach(t => {
             let timeStr = new Date(t.time).toLocaleString('vi-VN');
             let isPaid = t.status === 'PAID' || t.status === 'CLAIMED';
-            let statusBadge = isPaid 
-                ? `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-[10px] font-black border border-green-200"><i data-lucide="check" class="w-3 h-3 inline"></i> THÀNH CÔNG</span>`
-                : `<span class="bg-orange-50 text-orange-600 px-3 py-1 rounded-lg text-[10px] font-black border border-orange-200">ĐANG CHỜ</span>`;
-
+            let statusBadge = isPaid ? `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-[10px] font-black border border-green-200"><i data-lucide="check" class="w-3 h-3 inline"></i> THÀNH CÔNG</span>` : `<span class="bg-orange-50 text-orange-600 px-3 py-1 rounded-lg text-[10px] font-black border border-orange-200">ĐANG CHỜ</span>`;
+            
             html += `
             <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
                 <td class="p-4 text-xs font-bold text-gray-500">${timeStr}</td>
-                <td class="p-4">
-                    <p class="font-bold text-gray-900 text-sm">${t.orderId}</p>
-                    <p class="text-[10px] text-gray-400 font-mono mt-0.5 truncate w-32" title="${t.uid}">${t.uid}</p>
-                </td>
-                <td class="p-4">
-                    <p class="font-black text-red-500 text-sm">${(parseInt(t.amount)||0).toLocaleString()}đ</p>
-                    <p class="text-[11px] font-bold text-brand mt-0.5">+${t.coins} Xu</p>
-                </td>
+                <td class="p-4"><p class="font-bold text-gray-900 text-sm">${t.orderId}</p><p class="text-[10px] text-gray-400 font-mono mt-0.5 truncate w-32" title="${t.uid}">${t.uid}</p></td>
+                <td class="p-4"><p class="font-black text-red-500 text-sm">${(parseInt(t.amount)||0).toLocaleString()}đ</p><p class="text-[11px] font-bold text-brand mt-0.5">+${t.coins} Xu</p></td>
                 <td class="p-4 text-right">${statusBadge}</td>
             </tr>`;
         });
         tbody.innerHTML = html; lucide.createIcons();
     }
 
-    // ==========================================
     // THAO TÁC CỦA ADMIN
-    // ==========================================
-    
-    // Mở Popup Sửa User
     function openEditModal(uid) {
         const user = allUsersData.find(u => u.uid === uid);
         if(!user) return;
-
-        document.getElementById('editUid').value = user.uid;
-        document.getElementById('editEmail').value = user.email || 'N/A';
-        document.getElementById('editCoins').value = user.coins || 0;
-        
-        if (user.vipExpire && user.vipExpire.toMillis() > Date.now()) {
-            const d = new Date(user.vipExpire.toMillis());
-            document.getElementById('editVipDate').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        } else document.getElementById('editVipDate').value = '';
-
+        document.getElementById('editUid').value = user.uid; document.getElementById('editEmail').value = user.email || 'N/A'; document.getElementById('editCoins').value = user.coins || 0;
+        if (user.vipExpire && user.vipExpire.toMillis() > Date.now()) { const d = new Date(user.vipExpire.toMillis()); document.getElementById('editVipDate').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; } else document.getElementById('editVipDate').value = '';
         const m = document.getElementById('editModal'); const p = document.getElementById('editPanel');
         m.classList.remove('hidden'); requestAnimationFrame(() => { m.classList.add('opacity-100'); p.classList.remove('scale-95'); });
     }
@@ -498,71 +486,36 @@
         m.classList.remove('opacity-100'); p.classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300);
     }
 
-    // Lưu Sửa User
     async function saveUserChanges() {
-        const uid = document.getElementById('editUid').value;
-        const newCoins = parseInt(document.getElementById('editCoins').value) || 0;
-        const newDateStr = document.getElementById('editVipDate').value;
-        const btn = document.getElementById('btnSaveUser');
-
-        btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`; 
-        btn.disabled = true;
-
+        const uid = document.getElementById('editUid').value; const newCoins = parseInt(document.getElementById('editCoins').value) || 0; const newDateStr = document.getElementById('editVipDate').value; const btn = document.getElementById('btnSaveUser');
+        btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`; btn.disabled = true;
         try {
             let updateData = { coins: newCoins };
-            if (newDateStr) {
-                const targetDate = new Date(newDateStr); targetDate.setHours(23, 59, 59); 
-                updateData.vipExpire = firebase.firestore.Timestamp.fromDate(targetDate);
-            } else updateData.vipExpire = firebase.firestore.FieldValue.delete();
-
+            if (newDateStr) { const targetDate = new Date(newDateStr); targetDate.setHours(23, 59, 59); updateData.vipExpire = firebase.firestore.Timestamp.fromDate(targetDate); } else updateData.vipExpire = firebase.firestore.FieldValue.delete();
             await db.collection("users").doc(uid).set(updateData, { merge: true });
-            alert("✅ Cập nhật tài khoản thành công!");
-            closeEditModal(); loadAllData(); 
+            alert("✅ Cập nhật thành công!"); closeEditModal(); loadAllData(); 
         } catch(e) { alert("❌ Lỗi: " + e.message); }
-        
         btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> Áp Dụng Thay Đổi`; btn.disabled = false; lucide.createIcons();
     }
 
-    // Bơm Hàng Lên Sheet
+    // Bơm Hàng (Sử dụng mật khẩu trong RAM)
     async function pushToSheet() {
-        const type = document.getElementById('accType').value;
-        const info = document.getElementById('accInfo').value.trim();
-        const passCode = document.getElementById('adminPassCode').value; 
-        const btn = document.getElementById('btnAddAcc');
-
-        if(!info) { alert("Sếp chưa nhập thông tin tài khoản!"); return; }
-        if(!passCode) { alert("Phải nhập Mật khẩu Admin bảo mật!"); return; }
-
-        btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang mã hóa & Gửi...`;
-        btn.disabled = true;
-
+        const type = document.getElementById('accType').value; const info = document.getElementById('accInfo').value.trim(); const btn = document.getElementById('btnAddAcc');
+        if(!info) { alert("Chưa nhập tài khoản!"); return; }
+        btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang mã hóa...`; btn.disabled = true;
         try {
-            const res = await fetch(`${GOOGLE_API_URL}?action=add_account&type=${type}&info=${encodeURIComponent(info)}&pass=${encodeURIComponent(passCode)}&t=${Date.now()}`);
+            const res = await fetch(`${GOOGLE_API_URL}?action=add_account&type=${type}&info=${encodeURIComponent(info)}&pass=${encodeURIComponent(authenticatedSessionPass)}&t=${Date.now()}`);
             const data = await res.json();
-            if (data.success) {
-                alert(`✅ Thêm thành công vào kho ${type}!`);
-                document.getElementById('accInfo').value = ''; 
-                // Không xóa pass để Sếp nhập liên tục cho tiện
-                loadAllData(); // Load lại widget kho hàng
-            } else alert("❌ Google Script báo lỗi: " + data.error);
-        } catch(e) { alert("Lỗi mạng, không kết nối được tới Google Server."); }
-
-        btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Lên Hệ Thống`;
-        btn.disabled = false; lucide.createIcons();
+            if (data.success) { alert(`✅ Đã thêm ${type}!`); document.getElementById('accInfo').value = ''; loadAllData(); } 
+            else alert("❌ Lỗi từ Server: " + data.error);
+        } catch(e) { alert("Lỗi mạng!"); }
+        btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Lên Hệ Thống`; btn.disabled = false; lucide.createIcons();
     }
 
-    // Quản lý UI chuyển Tab
     function switchTab(tab) {
-        ['dashboard', 'users', 'inventory', 'transactions'].forEach(id => {
-            document.getElementById('tab-' + id).classList.add('hidden');
-            document.getElementById('nav-' + id).className = "w-full flex items-center px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition";
-        });
-        
-        document.getElementById('tab-' + tab).classList.remove('hidden');
-        document.getElementById('nav-' + tab).className = "w-full flex items-center px-4 py-3 rounded-xl bg-brand/10 text-brand font-bold transition";
-        
-        const titles = { 'dashboard': 'Tổng Quan Hệ Thống', 'users': 'Quản Lý Khách Hàng', 'inventory': 'Quản Trị Kho Hàng', 'transactions': 'Kiểm Soát Dòng Tiền' };
-        document.getElementById('pageTitle').innerText = titles[tab];
+        ['dashboard', 'users', 'inventory', 'transactions'].forEach(id => { document.getElementById('tab-' + id).classList.add('hidden'); document.getElementById('nav-' + id).className = "w-full flex items-center px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition"; });
+        document.getElementById('tab-' + tab).classList.remove('hidden'); document.getElementById('nav-' + tab).className = "w-full flex items-center px-4 py-3 rounded-xl bg-brand/10 text-brand font-bold transition";
+        const titles = { 'dashboard': 'Tổng Quan Hệ Thống', 'users': 'Quản Lý Khách Hàng', 'inventory': 'Quản Trị Kho Hàng', 'transactions': 'Kiểm Soát Dòng Tiền' }; document.getElementById('pageTitle').innerText = titles[tab];
     }
 
     lucide.createIcons();
