@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi" class="antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Tài Khoản - IPAVIET</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Inter"', '"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: { 
+            brand: '#007aff', brandDark: '#0A84FF',
+            bgLight: '#f2f2f7', bgDark: '#000000',
+            cardLight: '#ffffff', cardDark: '#1c1c1e',
+            iosGray: '#8E8E93'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+    .glass-effect { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(35px) saturate(200%); border-color: rgba(0,0,0,0.08); }
+    .dark .glass-effect { background: rgba(28, 28, 30, 0.65); border-color: rgba(255,255,255,0.1); }
+    .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.15); }
+    .dark .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6); }
+    .floating-nav { margin: 0 auto 24px auto; border-radius: 35px; width: calc(100% - 32px); max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .dark .floating-nav { box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; color: #8E8E93; transition: all 0.4s; background: none; border: none; cursor: pointer; text-decoration: none; }
+    .tab-btn i { width: 22px; height: 22px; transition: all 0.4s; } 
+    .tab-btn span { font-size: 0.6rem; font-weight: 700; opacity: 0.8; }
+    .tab-btn.active { color: #007aff; }
+    .dark .tab-btn.active { color: #0A84FF; }
+    .tab-btn.active i { transform: translateY(-4px) scale(1.15); filter: drop-shadow(0 4px 6px rgba(0,122,255,0.4)); }
+    .tab-btn.active span { opacity: 1; font-weight: 800; transform: translateY(-2px); }
+  </style>
+</head>
+<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
+
+  <header class="glass-effect fixed top-0 w-full z-40 h-[80px] border-b flex items-center px-6">
+    <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-center">
+      <h1 class="font-black text-[20px] tracking-tight text-center w-full">Tài Khoản</h1>
+    </div>
+  </header>
+
+  <main class="flex-1 h-full overflow-y-auto pt-[95px] pb-[130px] relative scroll-smooth px-5 md:px-6 max-w-md mx-auto w-full">
+    
+    <div id="authSection" class="hidden">
+        <div class="text-center mb-8 mt-2">
+            <h2 class="text-2xl font-black mb-2 flex items-center justify-center gap-2">
+                <i data-lucide="rocket" class="w-6 h-6 text-brand"></i> Chào mừng đến với IPAVIET
+            </h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Hãy đăng nhập để trải nghiệm kho ứng dụng một cách trọn vẹn nhất!</p>
+        </div>
+
+        <div class="bg-cardLight dark:bg-cardDark rounded-[28px] spatial-shadow p-6">
+            <div class="flex bg-gray-100 dark:bg-white/5 rounded-xl p-1 mb-6">
+                <button id="tabLoginBtn" onclick="setAuthMode('login')" class="flex-1 py-2.5 text-sm font-bold rounded-lg bg-white dark:bg-gray-700 text-brand shadow-sm transition-all">Đăng nhập</button>
+                <button id="tabRegBtn" onclick="setAuthMode('register')" class="flex-1 py-2.5 text-sm font-bold rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">Đăng ký</button>
+            </div>
+
+            <div id="formLogin" class="flex flex-col gap-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5"><i data-lucide="mail" class="w-3.5 h-3.5"></i> Email</label>
+                    <input type="email" id="logEmail" placeholder="Nhập email của bạn" class="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 focus:border-brand rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Mật khẩu</label>
+                    <input type="password" id="logPass" placeholder="Nhập mật khẩu" class="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 focus:border-brand rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all">
+                </div>
+                <p id="logError" class="text-red-500 text-xs font-bold hidden text-center"></p>
+                <button id="btnSubmitLogin" onclick="handleLogin()" class="w-full bg-brand text-white font-bold py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform mt-2 shadow-lg shadow-brand/30">
+                    <i data-lucide="log-in" class="w-4 h-4 inline-block align-text-bottom mr-1"></i> Đăng nhập
+                </button>
+            </div>
+
+            <div id="formRegister" class="flex flex-col gap-4 hidden">
+                <div>
+                    <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i> Tên đăng nhập</label>
+                    <input type="text" id="regUser" placeholder="Chọn tên đăng nhập" class="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 focus:border-brand rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5"><i data-lucide="mail" class="w-3.5 h-3.5"></i> Email</label>
+                    <input type="email" id="regEmail" placeholder="Nhập email của bạn" class="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 focus:border-brand rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Mật khẩu</label>
+                    <input type="password" id="regPass" placeholder="Tạo mật khẩu (từ 6 ký tự)" class="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 focus:border-brand rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Nhập lại mật khẩu</label>
+                    <input type="password" id="regPassConfirm" placeholder="Xác nhận mật khẩu" class="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 focus:border-brand rounded-xl px-4 py-3.5 text-sm font-medium outline-none transition-all">
+                </div>
+                
+                <label class="flex items-start gap-3 mt-1 cursor-pointer">
+                    <input type="checkbox" id="regAgree" class="w-4 h-4 mt-0.5 rounded border-gray-300 text-brand focus:ring-brand accent-brand">
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+                        Tôi đồng ý với <a href="privacy-policy.html" class="text-brand hover:underline font-bold">Chính Sách Bảo Mật</a> và <a href="terms-of-service.html" class="text-brand hover:underline font-bold">Điều Khoản Dịch Vụ</a> của IPAVIET Store.
+                    </span>
+                </label>
+
+                <p id="regError" class="text-red-500 text-xs font-bold hidden text-center mt-1"></p>
+                
+                <button id="btnSubmitReg" onclick="handleRegister()" class="w-full bg-brand text-white font-bold py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform mt-2 shadow-lg shadow-brand/30">
+                    <i data-lucide="user-plus" class="w-4 h-4 inline-block align-text-bottom mr-1"></i> Đăng ký tài khoản
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-[11px] text-gray-400 font-medium flex flex-col items-center gap-2">
+           <p>Copyright © 2024 IPAVIET. All rights reserved.</p>
+           <div class="flex items-center gap-3">
+              <a href="privacy-policy.html" class="flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-200 transition"><i data-lucide="shield-check" class="w-3 h-3"></i> Chính Sách Bảo Mật</a>
+              <span>•</span>
+              <a href="terms-of-service.html" class="flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-200 transition"><i data-lucide="file-text" class="w-3 h-3"></i> Điều Khoản</a>
+           </div>
+        </div>
+    </div>
+
+    <div id="profileSection" class="hidden h-full flex flex-col items-center pt-6">
+        <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-brand to-indigo-500 flex items-center justify-center spatial-shadow mb-4 relative">
+            <i data-lucide="user" class="w-12 h-12 text-white"></i>
+            <div class="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-2 border-white dark:border-cardDark rounded-full"></div>
+        </div>
+        <h2 class="text-2xl font-black text-gray-900 dark:text-white" id="proName">Loading...</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" id="proEmail">loading@email.com</p>
+
+        <div class="bg-cardLight dark:bg-cardDark rounded-[24px] spatial-shadow p-6 w-full mt-8 flex items-center justify-between">
+            <div class="flex flex-col">
+                <span class="text-xs font-bold text-gray-400 tracking-widest uppercase mb-1">Số dư Xu</span>
+                <span class="text-3xl font-black text-brand" id="proCoin">0</span>
+            </div>
+            <a href="dichvu.html" class="bg-brand/10 text-brand font-bold py-2.5 px-6 rounded-xl text-sm active:scale-95 transition text-center decoration-transparent">
+                Nạp Xu
+            </a>
+        </div>
+
+        <div class="bg-cardLight dark:bg-cardDark rounded-[24px] spatial-shadow w-full mt-6 overflow-hidden">
+            <a href="dichvu.html" class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5 transition text-inherit decoration-transparent">
+                <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center"><i data-lucide="shopping-cart" class="w-4 h-4 text-brand"></i></div><span class="font-semibold text-sm">Cửa hàng Dịch vụ</span></div>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+            </a>
+            <div onclick="logout()" class="flex items-center justify-between p-4 active:bg-gray-50 dark:active:bg-white/5 transition cursor-pointer">
+                <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center"><i data-lucide="log-out" class="w-4 h-4 text-red-500"></i></div><span class="font-semibold text-sm text-red-500">Đăng xuất</span></div>
+            </div>
+        </div>
+    </div>
+  </main>
+
+  <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-6">
+    <nav class="glass-effect floating-nav h-[74px] flex justify-evenly items-center pointer-events-auto px-2">
+      <a href="index.html" class="tab-btn"><i data-lucide="sparkles"></i><span>Home</span></a>
+      <a href="index.html" class="tab-btn"><i data-lucide="cpu"></i><span>Tweak</span></a>
+      <a href="index.html" class="tab-btn"><i data-lucide="smartphone"></i><span>Kho IPA</span></a>
+      <a href="account.html" class="tab-btn active"><i data-lucide="user-circle"></i><span>Tài khoản</span></a>
+      <a href="dichvu.html" class="tab-btn"><i data-lucide="shopping-bag"></i><span>Cửa hàng</span></a>
+    </nav>
+  </div>
+
+  <script>
+    // 🚀 KHỞI TẠO FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+      authDomain: "ipaviet-st.firebaseapp.com",
+      projectId: "ipaviet-st",
+      storageBucket: "ipaviet-st.firebasestorage.app",
+      messagingSenderId: "127619650916",
+      appId: "1:127619650916:web:fc8904c99804eeb7539671"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Theme (giữ nguyên nền Sáng/Tối theo thiết bị)
+    if(localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); }
+
+    // Kiểm tra trạng thái
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('profileSection').classList.remove('hidden');
+            
+            document.getElementById('proEmail').innerText = user.email;
+            
+            // Lấy Tên và Xu từ DB
+            db.collection("users").doc(user.uid).onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    document.getElementById('proName').innerText = data.username || "Người dùng";
+                    document.getElementById('proCoin').innerText = (data.coins || 0).toLocaleString();
+                }
+            });
+        } else {
+            document.getElementById('profileSection').classList.add('hidden');
+            document.getElementById('authSection').classList.remove('hidden');
+        }
+    });
+
+    // Chuyển tab Đăng nhập/Đăng ký
+    function setAuthMode(mode) {
+        const tLog = document.getElementById('tabLoginBtn');
+        const tReg = document.getElementById('tabRegBtn');
+        const fLog = document.getElementById('formLogin');
+        const fReg = document.getElementById('formRegister');
+        
+        document.getElementById('logError').classList.add('hidden');
+        document.getElementById('regError').classList.add('hidden');
+
+        if(mode === 'login') {
+            tLog.className = "flex-1 py-2.5 text-sm font-bold rounded-lg bg-white dark:bg-gray-700 text-brand shadow-sm transition-all";
+            tReg.className = "flex-1 py-2.5 text-sm font-bold rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all";
+            fLog.classList.remove('hidden'); fReg.classList.add('hidden');
+        } else {
+            tReg.className = "flex-1 py-2.5 text-sm font-bold rounded-lg bg-white dark:bg-gray-700 text-brand shadow-sm transition-all";
+            tLog.className = "flex-1 py-2.5 text-sm font-bold rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all";
+            fReg.classList.remove('hidden'); fLog.classList.add('hidden');
+        }
+    }
+
+    async function handleLogin() {
+        const email = document.getElementById('logEmail').value.trim();
+        const pass = document.getElementById('logPass').value;
+        const err = document.getElementById('logError');
+        const btn = document.getElementById('btnSubmitLogin');
+
+        if(!email || !pass) { err.innerText = "Vui lòng điền đủ thông tin!"; err.classList.remove('hidden'); return; }
+        
+        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`; btn.disabled = true; err.classList.add('hidden');
+
+        try { await auth.signInWithEmailAndPassword(email, pass); } 
+        catch (error) { err.innerText = "Sai tài khoản hoặc mật khẩu!"; err.classList.remove('hidden'); } 
+        finally { btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 inline-block align-text-bottom mr-1"></i> Đăng nhập`; btn.disabled = false; lucide.createIcons(); }
+    }
+
+    async function handleRegister() {
+        const user = document.getElementById('regUser').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const pass = document.getElementById('regPass').value;
+        const passConfirm = document.getElementById('regPassConfirm').value;
+        const agree = document.getElementById('regAgree').checked;
+        const err = document.getElementById('regError');
+        const btn = document.getElementById('btnSubmitReg');
+
+        if(!user || !email || !pass) { err.innerText = "Vui lòng điền đủ thông tin!"; err.classList.remove('hidden'); return; }
+        if(pass.length < 6) { err.innerText = "Mật khẩu phải từ 6 ký tự trở lên!"; err.classList.remove('hidden'); return; }
+        if(pass !== passConfirm) { err.innerText = "Mật khẩu nhập lại không khớp!"; err.classList.remove('hidden'); return; }
+        if(!agree) { err.innerText = "Bạn phải đồng ý với Điều Khoản Dịch Vụ!"; err.classList.remove('hidden'); return; }
+
+        btn.innerHTML = `<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`; btn.disabled = true; err.classList.add('hidden');
+
+        try {
+            const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+            await db.collection("users").doc(userCred.user.uid).set({
+                username: user, email: email, coins: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } 
+        catch (error) { 
+            err.innerText = error.code === 'auth/email-already-in-use' ? "Email này đã được sử dụng!" : "Lỗi tạo tài khoản. Vui lòng thử lại!";
+            err.classList.remove('hidden'); 
+        } 
+        finally { btn.innerHTML = `<i data-lucide="user-plus" class="w-4 h-4 inline-block align-text-bottom mr-1"></i> Đăng ký tài khoản`; btn.disabled = false; lucide.createIcons(); }
+    }
+
+    function logout() { auth.signOut(); }
+    lucide.createIcons();
+  </script>
+</body>
+</html>
