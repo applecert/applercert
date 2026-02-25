@@ -234,6 +234,7 @@
     let currentCoins = 0;
     let isUserVip = false; 
 
+    // 👉 LINK GOOGLE SCRIPT ĐÃ ĐƯỢC CHÈN SẴN
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
 
     auth.onAuthStateChanged(user => {
@@ -265,13 +266,12 @@
     });
 
     // ======================================================================
-    // 🚀 2. HỆ THỐNG KHO APP & FIX LỖI TÌM KIẾM
+    // 🚀 2. HỆ THỐNG KHO APP & TÌM KIẾM
     // ======================================================================
     window.allAppsMap = {}; 
     const DB = { ipa: [], dylib: [], conf: [] };
     const STATE = { currentTab: 'home', currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
 
-    // Đã Fix: Lọc trùng chính xác dựa trên cả name, title hoặc filename
     function getUniqueApps(apps) { 
         const map = new Map(); 
         apps.forEach(app => { 
@@ -307,7 +307,6 @@
       DB.ipa = sortItemsByDate(getUniqueApps(DB.ipa)); 
       switchTab(STATE.currentTab);
 
-      // Fetch AppTesters
       fetch('https://raw.githubusercontent.com/apptesters-org/AppTesters_Repo/main/apps.json').then(res => res.json()).then(data => {
           if (data && Array.isArray(data.apps)) {
               const mapped = data.apps.map(app => {
@@ -348,7 +347,6 @@
         let uniqueApps = getUniqueApps(sortItemsByDate(rawApps));
         if(query) uniqueApps = uniqueApps.filter(i => (i.name || i.title || i.filename || '').toLowerCase().includes(query));
 
-        // Đã Fix: Nếu đang tìm kiếm thì chỉ hiện dạng Grid, không hiện Banner to nữa
         if (query) {
             html = `<h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight mb-4 animate-fluid-up">Kết quả tìm kiếm</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fluid-up delay-50">
@@ -413,7 +411,7 @@
     document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
 
     // ======================================================================
-    // 🚀 3. LOGIC APP STORE & THANH TOÁN (TẢI TRỰC TIẾP & HIỂN THỊ THÔNG TIN)
+    // 🚀 3. LOGIC APP STORE & THANH TOÁN (TẢI TRỰC TIẾP & GHI LỊCH SỬ)
     // ======================================================================
     function openAppView(appId) {
        const i = window.allAppsMap[appId];
@@ -428,7 +426,6 @@
        document.getElementById('vAppVersion').innerText = i.version || '1.0';
        document.getElementById('vAppDesc').innerText = i.desc || i.description || i.usage || "Ứng dụng tuyệt vời được cung cấp bởi hệ thống IPAVIET.";
        
-       // Fill Info (Đã khôi phục)
        document.getElementById('vInfoDev').innerText = i.developer || i.source || 'IPAVIET Studio';
        document.getElementById('vInfoCat').innerText = i.category || (STATE.currentTab === 'dylib' ? 'Tweak / Hack' : 'Tiện ích');
        document.getElementById('vInfoSize').innerText = i.size || (Math.random() * 200 + 50).toFixed(1) + ' MB';
@@ -512,19 +509,14 @@
 
         try {
             const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-            if(rawLink) {
-                window.location.href = rawLink; 
-            } else {
-                alert("Không tìm thấy link tải gốc. Vui lòng liên hệ Admin!");
-            }
-        } catch (error) { 
-            alert("Lỗi kết nối. Vui lòng thử lại!"); 
-        }
+            if(rawLink) { window.location.href = rawLink; } 
+            else { alert("Không tìm thấy link tải gốc. Vui lòng liên hệ Admin!"); }
+        } catch (error) { alert("Lỗi kết nối. Vui lòng thử lại!"); }
 
         setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
     }
 
-    // 🚀 KHÁCH THƯỜNG: TRỪ 10 XU VÀ TẢI THẲNG LINK GỐC (ĐÃ FIX LỖI VÍ BẰNG SET MERGE)
+    // 🚀 KHÁCH THƯỜNG: TRỪ XU, GHI SỔ GIAO DỊCH, TẢI THẲNG LINK
     async function buyAppWithCoins(btnEl) {
         const APP_PRICE = 10; 
         if (currentCoins < APP_PRICE) { 
@@ -539,12 +531,21 @@
 
         try {
             const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
+            const appName = STATE.currentItem.name || STATE.currentItem.title || STATE.currentItem.filename || "Ứng dụng VIP";
             
             if(rawLink) {
+                // 1. Trừ xu an toàn
                 await db.collection("users").doc(currentUser.uid).set({ 
                     coins: firebase.firestore.FieldValue.increment(-APP_PRICE) 
                 }, { merge: true });
                 
+                // 2. GHI VÀO LỊCH SỬ GIAO DỊCH CỦA KHÁCH TRÊN FIREBASE
+                await db.collection("users").doc(currentUser.uid).collection("transactions").add({
+                    amount: -APP_PRICE,
+                    desc: `Tải lẻ: ${appName}`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
                 alert(`✅ Đã thanh toán ${APP_PRICE} Xu.\nHệ thống đang bắt đầu tải xuống...`);
                 window.location.href = rawLink; 
             } else {
@@ -567,14 +568,9 @@
        try {
            const res = await fetch(GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(btoa(rawLink)));
            const data = await res.json();
-           if(data.success && data.link) { 
-               window.location.href = data.link; 
-           } else {
-               alert("Hệ thống rút gọn link đang quá tải. Hãy thử lại sau!");
-           }
-       } catch (error) {
-           alert("Lỗi kết nối máy chủ. Hãy thử lại!");
-       }
+           if(data.success && data.link) { window.location.href = data.link; } 
+           else { alert("Hệ thống rút gọn link đang quá tải. Hãy thử lại sau!"); }
+       } catch (error) { alert("Lỗi kết nối máy chủ. Hãy thử lại!"); }
        btnEl.innerHTML = originalText; btnEl.disabled = false; 
     }
 
