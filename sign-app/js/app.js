@@ -7,13 +7,17 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- FIREBASE CONFIGURATION ---
-const firebaseConfig = {
-    apiKey: "AIzaSyBeKh-_VbiM9F9S4iRdGllx3ypze0Gp4hw",
-    authDomain: "ioscert-signer.firebaseapp.com",
-    projectId: "ioscert-signer",
-    storageBucket: "ioscert-signer.firebasestorage.app"
-};
-if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+try {
+    const firebaseConfig = {
+        apiKey: "AIzaSyBeKh-_VbiM9F9S4iRdGllx3ypze0Gp4hw",
+        authDomain: "ioscert-signer.firebaseapp.com",
+        projectId: "ioscert-signer",
+        storageBucket: "ioscert-signer.firebasestorage.app"
+    };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+} catch (error) {
+    console.warn("Firebase Init Error:", error);
+}
 const db = firebase.firestore();
 
 function generateShortId() {
@@ -23,7 +27,7 @@ function generateShortId() {
 
 // --- VUE APP LOGIC ---
 new Vue({
-    el: '#app-vip', // Quan trọng: Gắn vào ID mới để tránh xung đột
+    el: '#app', // Quay về đúng id="app" nguyên bản
     data: {
         showStep1: true, showStep2: false, showStep3: false, showStep4: false, showDirectDownload: false,
         progressBar: 0, uploadDetails: '', statusText: '', logText: '', jobId: '',
@@ -78,13 +82,17 @@ new Vue({
             const file = e.target.files[0];
             if (file && file.name.toLowerCase().endsWith('.zip')) {
                 this.certZip = file; this.certZipText = file.name;
-                const zip = new JSZip(); const content = await zip.loadAsync(file);
-                this.p12 = null; this.mobileprovision = null;
-                for (const [name, f] of Object.entries(content.files)) {
-                    if (name.toLowerCase().endsWith('.p12')) this.p12 = new File([await f.async('blob')], name);
-                    if (name.toLowerCase().endsWith('.mobileprovision')) this.mobileprovision = new File([await f.async('blob')], name);
+                try {
+                    const zip = new JSZip(); const content = await zip.loadAsync(file);
+                    this.p12 = null; this.mobileprovision = null;
+                    for (const [name, f] of Object.entries(content.files)) {
+                        if (name.toLowerCase().endsWith('.p12')) this.p12 = new File([await f.async('blob')], name);
+                        if (name.toLowerCase().endsWith('.mobileprovision')) this.mobileprovision = new File([await f.async('blob')], name);
+                    }
+                    if (!this.p12 || !this.mobileprovision) { alert('ZIP thiếu file P12 hoặc Mobileprovision!'); this.certZip = null; this.certZipText = 'Chọn file ZIP'; }
+                } catch (error) {
+                    alert('Lỗi đọc file ZIP!');
                 }
-                if (!this.p12 || !this.mobileprovision) { alert('ZIP thiếu file P12 hoặc Mobileprovision!'); this.certZip = null; this.certZipText = 'Chọn file ZIP'; }
             }
         },
 
@@ -97,7 +105,7 @@ new Vue({
         selectPassword(p) { this.password = p; this.showPasswordSuggestions = false; },
         hidePasswordSuggestions() { setTimeout(() => this.showPasswordSuggestions = false, 200); },
 
-        // --- GỌI API GỐC BẰNG AXIOS Y HỆT HỆ THỐNG GỐC ĐỂ BYPASS CORS ---
+        // --- GỌI API AN TOÀN BẰNG AXIOS Y HỆT BẢN GỐC ---
         async upload() {
             if (!this.canSign) return;
             this.savePwd(this.password);
@@ -111,8 +119,9 @@ new Vue({
             fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
 
             try {
-                // Dùng thư viện axios kết hợp biến SignUrl gốc của họ để lách luật
-                const resp = await axios.post(SignUrl, fd, {
+                // Dùng biến SignUrl đã được cấu hình từ file gốc (index.js)
+                const apiURL = typeof SignUrl !== 'undefined' ? SignUrl : 'https://api.ipasign.cc/sign';
+                const resp = await axios.post(apiURL, fd, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                     onUploadProgress: e => {
                         if (e.lengthComputable) {
@@ -127,6 +136,7 @@ new Vue({
                 this.showStep3 = true; 
                 this.pollStatus();
             } catch (e) {
+                console.error(e);
                 alert('Lỗi mạng! Không thể kết nối tới Server Ký.');
                 this.resetToStep1();
             }
@@ -137,8 +147,8 @@ new Vue({
             this.logText = 'Khởi tạo môi trường...';
             const timer = setInterval(async () => {
                 try {
-                    // Dùng biến StatusUrl gốc
-                    const res = await axios.get(`${StatusUrl}/${this.jobId}`);
+                    const statusApi = typeof StatusUrl !== 'undefined' ? StatusUrl : 'https://api.ipasign.cc/status';
+                    const res = await axios.get(`${statusApi}/${this.jobId}`);
                     const d = res.data;
                     this.statusText = d.status || 'Processing...'; 
                     this.logText = d.msg || 'Đang biên dịch...';
@@ -146,10 +156,10 @@ new Vue({
                     if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
                         clearInterval(timer);
                         
-                        // Dùng biến DownloadUrl gốc
-                        this.download = `${DownloadUrl}/${this.jobId}`;
+                        const downApi = typeof DownloadUrl !== 'undefined' ? DownloadUrl : 'https://api.ipasign.cc/download';
+                        this.download = `${downApi}/${this.jobId}`;
                         
-                        // Mã hóa link Plist cực chuẩn để qua mặt iTunes Safari block
+                        // Mã hóa link Plist để lách iOS Safari
                         const plistUrl = this.download.replace('/download', '/plist');
                         this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
                         
@@ -167,7 +177,6 @@ new Vue({
             }, 3000);
         },
 
-        // --- CHECK MÁY TÍNH KHI BẤM CÀI ---
         checkDevice(e) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
@@ -192,9 +201,11 @@ new Vue({
             } catch(e) {}
         },
         async saveToFirestore(url) {
-            const shortId = generateShortId();
-            await db.collection('signed_apps').doc(shortId).set({ download_url: url, created_at: firebase.firestore.FieldValue.serverTimestamp() });
-            this.shareUrl = `${window.location.origin}${window.location.pathname}?download=${shortId}`;
+            try {
+                const shortId = generateShortId();
+                await db.collection('signed_apps').doc(shortId).set({ download_url: url, created_at: firebase.firestore.FieldValue.serverTimestamp() });
+                this.shareUrl = `${window.location.origin}${window.location.pathname}?download=${shortId}`;
+            } catch (error) { console.warn('Lỗi tạo link Firebase'); }
         },
         copyShareUrl() {
             this.$refs.shareUrlInput.select(); document.execCommand('copy');
