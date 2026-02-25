@@ -1,4 +1,4 @@
-// --- PROTECT.JS (Chống F12 cơ bản) ---
+// --- PROTECT.JS ---
 document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
     document.addEventListener('keydown', function(e) {
@@ -36,7 +36,7 @@ new Vue({
             'sca': 'https://tight-water-fabbipa-proxy.tlvdzreal.workers.dev/scarlet'
         },
         appNames: { 'esign': 'ESign', 'gbox': 'GBox', 'sca': 'Scarlet' },
-        download: '', directInstallLink: '', shareUrl: '', copySuccess: false
+        download: '', directInstallLink: 'javascript:void(0)', shareUrl: '', copySuccess: false
     },
     computed: {
         canSign() { return (this.ipa && this.ipa.size > 0 && this.certZip && this.password && this.p12 && this.mobileprovision); },
@@ -88,7 +88,6 @@ new Vue({
             }
         },
 
-        // --- PASSWORD HISTORY ---
         loadPasswordSuggestions() { const s = localStorage.getItem('ipa_pwd'); if (s) this.passwordSuggestions = JSON.parse(s); },
         savePwd(pwd) {
             let arr = this.passwordSuggestions.filter(p => p !== pwd);
@@ -98,7 +97,6 @@ new Vue({
         selectPassword(p) { this.password = p; this.showPasswordSuggestions = false; },
         hidePasswordSuggestions() { setTimeout(() => this.showPasswordSuggestions = false, 200); },
 
-        // --- MAIN UPLOAD & SIGN ---
         async upload() {
             if (!this.canSign) return;
             this.savePwd(this.password);
@@ -119,7 +117,6 @@ new Vue({
                 };
                 xhr.onerror = () => { alert('Lỗi mạng!'); this.resetToStep1(); };
                 
-                // An toàn gọi API gốc
                 const apiSignUrl = typeof SignUrl !== 'undefined' ? SignUrl : 'https://api.ipasign.cc/sign';
                 xhr.open('POST', apiSignUrl); xhr.send(fd);
             } catch (e) { alert('Lỗi hệ thống!'); this.resetToStep1(); }
@@ -140,14 +137,13 @@ new Vue({
                         const apiDownloadUrl = typeof DownloadUrl !== 'undefined' ? DownloadUrl : 'https://api.ipasign.cc/download';
                         this.download = `${apiDownloadUrl}/${this.jobId}`;
                         
+                        // Lấy link Plist và mã hóa chuẩn (Bắt buộc để Safari hiểu)
                         const plistUrl = this.download.replace('/download', '/plist');
                         this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
                         
                         this.showStep3 = false; this.showStep4 = true;
                         
-                        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-                            setTimeout(() => { window.location.href = this.directInstallLink; }, 1000);
-                        }
+                        // ĐÃ BỎ HÀM AUTO-REDIRECT ĐỂ TRÁNH LỖI BẢO MẬT CỦA SAFARI
                         
                         setTimeout(() => { new QRCode(document.getElementById('qrcode'), { width: 140, height: 140 }).makeCode(this.download); }, 100);
                         this.saveToFirestore(this.download);
@@ -156,17 +152,16 @@ new Vue({
             }, 3000);
         },
 
-        // --- DIRECT INSTALL BUTTON ---
-        triggerInstall() {
+        // HÀM KIỂM TRA MÁY TÍNH KHI BẤM NÚT CÀI ĐẶT
+        checkDevice(e) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
-                alert('TÍNH NĂNG NÀY CHỈ DÀNH CHO iPHONE/iPAD!\n\nNếu bạn đang dùng máy tính (Windows/Mac) hoặc Android, vui lòng dùng ứng dụng Camera của iPhone quét mã QR bên dưới để cài đặt.');
-            } else {
-                window.location.href = this.directInstallLink;
+                e.preventDefault(); // Chặn tải link nếu không phải iOS
+                alert('TÍNH NĂNG NÀY CHỈ DÀNH CHO iPHONE/iPAD!\n\nVui lòng dùng ứng dụng Camera của iPhone quét mã QR bên dưới để cài đặt.');
             }
+            // Nếu là iOS, Safari tự động nhận link href và mở popup Cài đặt ngay lập tức!
         },
 
-        // --- CHIA SẺ VÀ DATABASE ---
         checkDirectDownload() { 
             const id = new URLSearchParams(window.location.search).get('download'); 
             if (id) this.loadFromFirestore(id); 
@@ -178,7 +173,6 @@ new Vue({
                     const url = doc.data().download_url;
                     this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(url.replace('/download', '/plist'))}`;
                     this.showStep1 = false; this.showDirectDownload = true;
-                    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) { setTimeout(() => window.location.href = this.directInstallLink, 1000); }
                     setTimeout(() => new QRCode(document.getElementById('directQrcode'), { width: 140, height: 140 }).makeCode(url), 100);
                 }
             } catch(e) {}
