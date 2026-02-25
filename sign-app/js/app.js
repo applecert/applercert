@@ -38,6 +38,7 @@ new Vue({
         progressBar: 0, uploadStep: 1, certZip: null, certZipCss: 'invalid', certZipText: 'Chọn file .zip...',
         p12: null, mobileprovision: null, password: '', pwdCss: 'invalid', jobId: '', statusText: '', logText: '',
         download: '', download_ipa: '', shareUrl: '', directDownloadUrl: '', firestoreDocId: '',
+        directInstallLink: '', // BIẾN MỚI CHO LINK CÀI ĐẶT TRỰC TIẾP
         showPasswordSuggestions: false, passwordSuggestions: [], copySuccess: false, isExtractingZip: false, uploadDetails: '',
         selectedApp: '', ipa: null, customIpaFile: null, appStatusText: '', appStatusClass: '', appStatusIcon: '', isIpaLoading: false,
         ipaUrlMap: {
@@ -110,17 +111,33 @@ new Vue({
         },
         selectPassword(pwd) { this.password = pwd; this.showPasswordSuggestions = false; },
         hidePasswordSuggestions() { setTimeout(() => { this.showPasswordSuggestions = false; }, 200); },
+        
+        // --- XỬ LÝ KHÁCH MỞ QUA LINK CHIA SẺ ---
         checkDirectDownload() { const id = new URLSearchParams(window.location.search).get('download'); if (id) this.loadFromFirestore(id); },
         async loadFromFirestore(docId) {
             try {
                 const doc = await db.collection('signed_apps').doc(docId).get();
                 if (doc.exists) {
                     this.directDownloadUrl = doc.data().download_url;
+                    
+                    // Tạo link itms-services để tự động tải qua link chia sẻ
+                    const plistUrl = this.directDownloadUrl.replace('/download', '/plist');
+                    this.directInstallLink = `itms-services://?action=download-manifest&url=${plistUrl}`;
+                    
                     this.showDirectDownload = true; this.showStep1 = this.showStep2 = this.showStep3 = this.showStep4 = false;
+                    
+                    // Tự động gọi thông báo cài đặt nếu là iOS
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    if (isIOS) {
+                        setTimeout(() => { window.location.href = this.directInstallLink; }, 1500);
+                    }
+                    
+                    // Tạo QR Code cho màn hình PC
                     setTimeout(() => { new QRCode(document.getElementById('directQrcode'), { width: 160, height: 160, colorDark: "#000000", colorLight: "#ffffff" }).makeCode(this.directDownloadUrl); }, 100);
                 } else alert('Link tải không tồn tại hoặc đã hết hạn!');
             } catch (e) { alert('Có lỗi xảy ra khi tải dữ liệu!'); }
         },
+        
         async saveToFirestore(url) {
             try {
                 const shortId = generateShortId();
@@ -207,6 +224,8 @@ new Vue({
                 xhr.open('POST', SignUrl); xhr.send(fd);
             } catch (err) { clearInterval(progressInterval); alert('Exception: ' + err.message); this.showStep1 = true; this.showStep2 = false; }
         },
+        
+        // --- AUTO INSTALL SAU KHI KÝ XONG ---
         async pollStatus() {
             this.statusText = 'Injecting Certificate...'; this.logText = 'Đang biên dịch P12...';
             const timer = setInterval(async () => {
@@ -219,13 +238,30 @@ new Vue({
                     this.statusText = d.status || 'Đang xử lý...'; this.logText = d.msg || 'Đang chạy script ký iOS...';
                     
                     if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
-                        this.download = this.download_ipa = `${DownloadUrl}/${this.jobId}`; clearInterval(timer);
+                        // 1. Tạo link URL download chuẩn
+                        this.download = this.download_ipa = `${DownloadUrl}/${this.jobId}`;
+                        
+                        // 2. Chuyển đổi thành link itms-services để cài đặt trực tiếp
+                        const plistUrl = this.download.replace('/download', '/plist');
+                        this.directInstallLink = `itms-services://?action=download-manifest&url=${plistUrl}`;
+                        
+                        clearInterval(timer);
+                        
+                        // Chuyển sang màn hình 4
+                        this.showStep3 = false; this.showStep4 = true;
+                        
+                        // 3. Tự động bật popup tải về trên thiết bị iOS
+                        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                        if (isIOS) {
+                            setTimeout(() => { window.location.href = this.directInstallLink; }, 1500);
+                        }
+                        
+                        // 4. Lưu lại database để chia sẻ & Tạo QR PC
                         const docId = await this.saveToFirestore(this.download);
                         if (docId) {
-                            this.showStep3 = false; this.showStep4 = true;
                             setTimeout(() => { 
                                 const qc = document.getElementById('qrcode'); if(qc) qc.innerHTML = '';
-                                new QRCode(document.getElementById('qrcode'), { width: 150, height: 150, colorDark: "#000000", colorLight: "#ffffff" }).makeCode(this.download); 
+                                new QRCode(document.getElementById('qrcode'), { width: 160, height: 160, colorDark: "#000000", colorLight: "#ffffff" }).makeCode(this.download); 
                             }, 100);
                         }
                     } else if (d.status === 'FAILURE' || d.status === 'ERROR') { clearInterval(timer); alert('Ký thất bại: ' + (d.msg||'')); this.index(); }
@@ -233,6 +269,7 @@ new Vue({
             }, 3000);
             setTimeout(() => { clearInterval(timer); if (this.showStep3) { alert('Hết thời gian chờ. Xin thử lại.'); this.index(); } }, 600000);
         },
+        
         copyShareUrl() {
             const inp = this.$refs.shareUrlInput; inp.select(); inp.setSelectionRange(0, 99999);
             try { navigator.clipboard.writeText(this.shareUrl).then(()=>this.showCopied()); } 
