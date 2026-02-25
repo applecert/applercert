@@ -118,7 +118,10 @@ new Vue({
                     } else { alert('Lỗi Server: ' + xhr.status); this.resetToStep1(); }
                 };
                 xhr.onerror = () => { alert('Lỗi mạng!'); this.resetToStep1(); };
-                xhr.open('POST', SignUrl || 'https://api.ipasign.cc/sign'); xhr.send(fd);
+                
+                // An toàn gọi API gốc
+                const apiSignUrl = typeof SignUrl !== 'undefined' ? SignUrl : 'https://api.ipasign.cc/sign';
+                xhr.open('POST', apiSignUrl); xhr.send(fd);
             } catch (e) { alert('Lỗi hệ thống!'); this.resetToStep1(); }
         },
 
@@ -126,21 +129,22 @@ new Vue({
             this.statusText = 'Injecting Certificate...'; this.logText = 'Khởi tạo môi trường...';
             const timer = setInterval(async () => {
                 try {
-                    const res = await fetch(`${StatusUrl || 'https://api.ipasign.cc/status'}/${this.jobId}`);
+                    const apiStatusUrl = typeof StatusUrl !== 'undefined' ? StatusUrl : 'https://api.ipasign.cc/status';
+                    const res = await fetch(`${apiStatusUrl}/${this.jobId}`);
                     const d = await res.json();
                     this.statusText = d.status || 'Processing...'; this.logText = d.msg || 'Đang biên dịch...';
                     
                     if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
                         clearInterval(timer);
-                        this.download = `${DownloadUrl || 'https://api.ipasign.cc/download'}/${this.jobId}`;
                         
-                        // LỖI MÀ BẠN GẶP Ở ĐÂY: Phải encodeURIComponent cho URL plist thì Safari mới hiểu lệnh itms-services
+                        const apiDownloadUrl = typeof DownloadUrl !== 'undefined' ? DownloadUrl : 'https://api.ipasign.cc/download';
+                        this.download = `${apiDownloadUrl}/${this.jobId}`;
+                        
                         const plistUrl = this.download.replace('/download', '/plist');
                         this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
                         
                         this.showStep3 = false; this.showStep4 = true;
                         
-                        // Tự mở Popup nếu là iOS
                         if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
                             setTimeout(() => { window.location.href = this.directInstallLink; }, 1000);
                         }
