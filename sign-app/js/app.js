@@ -6,15 +6,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// --- FIREBASE CONFIGURATION ĐẦY ĐỦ ---
+// --- FIREBASE CONFIGURATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyBeKh-_VbiM9F9S4iRdGllx3ypze0Gp4hw",
     authDomain: "ioscert-signer.firebaseapp.com",
     projectId: "ioscert-signer",
-    storageBucket: "ioscert-signer.firebasestorage.app",
-    messagingSenderId: "31766936132",
-    appId: "1:31766936132:web:acf88a5f88396033ac1a11",
-    measurementId: "G-7GYFBFWLHE"
+    storageBucket: "ioscert-signer.firebasestorage.app"
 };
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.firestore();
@@ -23,6 +20,11 @@ function generateShortId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = ''; for (let i = 0; i < 6; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); } return result;
 }
+
+// --- CẤU HÌNH API GỐC CỦA IPASIGN CHUẨN XÁC 100% ---
+const API_SIGN = 'https://sign.ipasign.cc/api/sign';
+const API_STATUS = 'https://sign.ipasign.cc/api/status';
+const API_DOWNLOAD = 'https://sign.ipasign.cc/api/download';
 
 // --- VUE APP LOGIC ---
 new Vue({
@@ -100,64 +102,93 @@ new Vue({
         selectPassword(p) { this.password = p; this.showPasswordSuggestions = false; },
         hidePasswordSuggestions() { setTimeout(() => this.showPasswordSuggestions = false, 200); },
 
+        // --- KHÚC FIX LỖI MẠNG LÀ CHỖ NÀY ---
         async upload() {
             if (!this.canSign) return;
             this.savePwd(this.password);
             this.showStep1 = false; this.showStep2 = true; this.progressBar = 0; this.uploadDetails = 'Đang đóng gói dữ liệu...';
 
             const fd = new FormData();
-            fd.append('ipa', this.ipa, this.ipa.name); fd.append('p12', this.p12, this.p12.name); fd.append('mp', this.mobileprovision, this.mobileprovision.name);
-            fd.append('password', this.password); fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
+            fd.append('ipa', this.ipa, this.ipa.name); 
+            fd.append('p12', this.p12, this.p12.name); 
+            fd.append('mp', this.mobileprovision, this.mobileprovision.name);
+            fd.append('password', this.password); 
+            fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
 
             try {
                 const xhr = new XMLHttpRequest();
-                xhr.upload.addEventListener('progress', e => { if (e.lengthComputable) { this.progressBar = Math.round((e.loaded / e.total) * 100); this.uploadDetails = 'Đang tải lên Server bảo mật...'; } });
+                xhr.upload.addEventListener('progress', e => { 
+                    if (e.lengthComputable) { 
+                        this.progressBar = Math.round((e.loaded / e.total) * 100); 
+                        this.uploadDetails = 'Đang tải lên Server bảo mật...'; 
+                    } 
+                });
                 xhr.onload = () => {
                     if (xhr.status === 200 || xhr.status === 202) {
-                        const res = JSON.parse(xhr.responseText || '{"task_id":"' + Date.now() + '"}');
-                        this.jobId = res.task_id; this.showStep2 = false; this.showStep3 = true; this.pollStatus();
-                    } else { alert('Lỗi Server: ' + xhr.status); this.resetToStep1(); }
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            this.jobId = res.task_id; 
+                            this.showStep2 = false; 
+                            this.showStep3 = true; 
+                            this.pollStatus();
+                        } catch (parseErr) {
+                            alert('Dữ liệu Server trả về không hợp lệ!');
+                            this.resetToStep1();
+                        }
+                    } else { 
+                        alert('Lỗi Server: ' + xhr.status); 
+                        this.resetToStep1(); 
+                    }
                 };
-                xhr.onerror = () => { alert('Lỗi mạng!'); this.resetToStep1(); };
+                xhr.onerror = () => { 
+                    alert('Lỗi mạng! Không thể kết nối đến máy chủ ký. Vui lòng kiểm tra Wifi/4G.'); 
+                    this.resetToStep1(); 
+                };
                 
-                // Trực tiếp xài API Gốc
-                xhr.open('POST', 'https://api.ipasign.cc/sign'); xhr.send(fd);
-            } catch (e) { alert('Lỗi hệ thống!'); this.resetToStep1(); }
+                // Gọi tới đúng API chuẩn của hệ thống gốc
+                xhr.open('POST', API_SIGN); 
+                xhr.send(fd);
+            } catch (e) { 
+                alert('Lỗi hệ thống nội bộ!'); 
+                this.resetToStep1(); 
+            }
         },
 
         async pollStatus() {
-            this.statusText = 'Injecting Certificate...'; this.logText = 'Khởi tạo môi trường...';
+            this.statusText = 'Injecting Certificate...'; 
+            this.logText = 'Khởi tạo môi trường...';
             const timer = setInterval(async () => {
                 try {
-                    const res = await fetch(`https://api.ipasign.cc/status/${this.jobId}`);
+                    const res = await fetch(`${API_STATUS}/${this.jobId}`);
                     const d = await res.json();
-                    this.statusText = d.status || 'Processing...'; this.logText = d.msg || 'Đang biên dịch...';
+                    this.statusText = d.status || 'Processing...'; 
+                    this.logText = d.msg || 'Đang biên dịch...';
                     
                     if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
                         clearInterval(timer);
                         
-                        this.download = `https://api.ipasign.cc/download/${this.jobId}`;
-                        
-                        // Lấy link Plist và mã hóa chuẩn để cài đặt
+                        this.download = `${API_DOWNLOAD}/${this.jobId}`;
                         const plistUrl = this.download.replace('/download', '/plist');
                         this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
                         
-                        this.showStep3 = false; this.showStep4 = true;
-                        
-                        // KHÔNG AUTO REDIRECT NỮA - Phải đợi khách bấm bằng tay để iOS duyệt quyền
+                        this.showStep3 = false; 
+                        this.showStep4 = true;
                         
                         setTimeout(() => { new QRCode(document.getElementById('qrcode'), { width: 140, height: 140 }).makeCode(this.download); }, 100);
                         this.saveToFirestore(this.download);
-                    } else if (d.status === 'FAILURE') { clearInterval(timer); alert('Ký thất bại: ' + (d.msg||'')); this.resetToStep1(); }
+                    } else if (d.status === 'FAILURE') { 
+                        clearInterval(timer); 
+                        alert('Ký thất bại: ' + (d.msg||'Chứng chỉ có thể bị sai hoặc thu hồi!')); 
+                        this.resetToStep1(); 
+                    }
                 } catch(e) {}
             }, 3000);
         },
 
-        // --- CHECK KHÁCH BẤM NÚT TRÊN PC HAY ĐIỆN THOẠI ---
         checkDevice(e) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
-                e.preventDefault(); // Nếu là PC/Android thì chặn link lại, chỉ iOS mới có quyền chạy
+                e.preventDefault(); 
                 alert('TÍNH NĂNG NÀY CHỈ DÀNH CHO iPHONE/iPAD!\n\nVui lòng dùng ứng dụng Camera của iPhone quét mã QR bên dưới để cài đặt.');
             }
         },
