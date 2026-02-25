@@ -6,7 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// --- FIREBASE CONFIGURATION ---
+// --- FIREBASE CONFIGURATION (Chống Crash) ---
+let db = null;
 try {
     const firebaseConfig = {
         apiKey: "AIzaSyBeKh-_VbiM9F9S4iRdGllx3ypze0Gp4hw",
@@ -15,10 +16,10 @@ try {
         storageBucket: "ioscert-signer.firebasestorage.app"
     };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    db = firebase.firestore();
 } catch (error) {
-    console.warn("Firebase Init Error:", error);
+    console.warn("Firebase không tải được, nhưng web vẫn tiếp tục chạy:", error);
 }
-const db = firebase.firestore();
 
 function generateShortId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -27,7 +28,7 @@ function generateShortId() {
 
 // --- VUE APP LOGIC ---
 new Vue({
-    el: '#app',
+    el: '#app-vip', // Trỏ thẳng vào giao diện VIP của chúng ta
     data: {
         showStep1: true, showStep2: false, showStep3: false, showStep4: false, showDirectDownload: false,
         progressBar: 0, uploadDetails: '', statusText: '', logText: '', jobId: '',
@@ -40,7 +41,7 @@ new Vue({
             'sca': 'https://tight-water-fabbipa-proxy.tlvdzreal.workers.dev/scarlet'
         },
         appNames: { 'esign': 'ESign', 'gbox': 'GBox', 'sca': 'Scarlet' },
-        download: '', directInstallLink: '', shareUrl: '', copySuccess: false
+        download: '', directInstallLink: 'javascript:void(0)', shareUrl: '', copySuccess: false
     },
     computed: {
         canSign() { return (this.ipa && this.ipa.size > 0 && this.certZip && this.password && this.p12 && this.mobileprovision); },
@@ -118,6 +119,7 @@ new Vue({
             fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
 
             try {
+                // Tận dụng biến SignUrl đã được khai báo âm thầm từ file index.js gốc
                 const apiURL = typeof SignUrl !== 'undefined' ? SignUrl : 'https://api.ipasign.cc/sign';
                 const resp = await axios.post(apiURL, fd, {
                     headers: { 'Content-Type': 'multipart/form-data' },
@@ -157,7 +159,7 @@ new Vue({
                         const downApi = typeof DownloadUrl !== 'undefined' ? DownloadUrl : 'https://api.ipasign.cc/download';
                         this.download = `${downApi}/${this.jobId}`;
                         
-                        // ĐÃ BỎ HÀM ENCODE CỦA BẢN LỖI, ĐỂ NGUYÊN BẢN CHO SERVER ĐỌC ĐƯỢC PLIST
+                        // Đã KHÔNG dùng hàm encode để Safari có thể đọc file Plist bình thường
                         const plistUrl = this.download.replace('/download', '/plist');
                         this.directInstallLink = `itms-services://?action=download-manifest&url=${plistUrl}`;
                         
@@ -175,25 +177,13 @@ new Vue({
             }, 3000);
         },
 
-        // --- HÀM ÉP CÀI ĐẶT THẦN THÁNH ---
-        triggerInstall() {
+        checkDevice(e) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
+                e.preventDefault(); 
                 alert('TÍNH NĂNG NÀY CHỈ DÀNH CHO iPHONE/iPAD!\n\nVui lòng dùng ứng dụng Camera của iPhone quét mã QR bên dưới để cài đặt.');
-                return;
             }
-
-            // Ép cài đặt mạnh nhất:
-            window.location.href = this.directInstallLink;
-            
-            // Backup bằng trick tạo click giả lập phòng trường hợp Safari từ chối
-            setTimeout(() => {
-                const a = document.createElement('a');
-                a.href = this.directInstallLink;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            }, 300);
+            // Nếu là iOS, Safari tự động nhận thẻ <a> và hiện popup cài đặt ngay!
         },
 
         checkDirectDownload() { 
@@ -202,11 +192,11 @@ new Vue({
         },
         async loadFromFirestore(id) {
             try {
+                if(!db) return;
                 const doc = await db.collection('signed_apps').doc(id).get();
                 if (doc.exists) {
                     const url = doc.data().download_url;
                     
-                    // Lấy link cho phần tải qua đường dẫn share
                     const plistUrl = url.replace('/download', '/plist');
                     this.directInstallLink = `itms-services://?action=download-manifest&url=${plistUrl}`;
                     
@@ -217,6 +207,7 @@ new Vue({
         },
         async saveToFirestore(url) {
             try {
+                if(!db) return;
                 const shortId = generateShortId();
                 await db.collection('signed_apps').doc(shortId).set({ download_url: url, created_at: firebase.firestore.FieldValue.serverTimestamp() });
                 this.shareUrl = `${window.location.origin}${window.location.pathname}?download=${shortId}`;
