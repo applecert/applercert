@@ -33,8 +33,11 @@
     .tab-btn.active span { opacity: 1; font-weight: 800; transform: translateY(-2px); }
     .tab-btn span { font-size: 0.6rem; font-weight: 700; opacity: 0.8; }
     
-    /* Ẩn hiện mượt mà cho form */
     .expand-anim { transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out; overflow: hidden; }
+    
+    /* Giao diện trượt cho các trang phụ */
+    .slide-page { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 60; }
+    .slide-page.open { transform: translateX(0); }
   </style>
 </head>
 <body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
@@ -92,6 +95,17 @@
           </div>
 
           <div class="space-y-3">
+              
+              <button onclick="openSubPage('inventoryPage')" class="w-full bg-cardLight dark:bg-cardDark p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-white/5 active:scale-95 transition-transform shadow-sm">
+                  <div class="flex items-center gap-4 font-bold text-gray-800 dark:text-gray-200"><i data-lucide="box" class="w-6 h-6 text-orange-500"></i> Tủ đồ Tài Khoản</div>
+                  <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+              </button>
+
+              <button onclick="openSubPage('historyPage')" class="w-full bg-cardLight dark:bg-cardDark p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-white/5 active:scale-95 transition-transform shadow-sm">
+                  <div class="flex items-center gap-4 font-bold text-gray-800 dark:text-gray-200"><i data-lucide="receipt" class="w-6 h-6 text-green-500"></i> Lịch sử Giao Dịch</div>
+                  <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+              </button>
+
               <button onclick="window.location.href='dichvu.html'" class="w-full bg-cardLight dark:bg-cardDark p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-white/5 active:scale-95 transition-transform shadow-sm">
                   <div class="flex items-center gap-4 font-bold text-gray-800 dark:text-gray-200"><i data-lucide="shopping-bag" class="w-6 h-6 text-blue-500"></i> Cửa hàng Dịch vụ</div>
                   <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
@@ -110,9 +124,7 @@
 
       <div id="authView" class="hidden animate-[fadeIn_0.4s_ease_forwards] pt-2 pb-10">
           <div class="text-center mb-8">
-              <div class="w-20 h-20 rounded-3xl bg-brand mx-auto flex items-center justify-center shadow-lg shadow-brand/40 mb-5">
-                  <i data-lucide="user" class="w-10 h-10 text-white"></i>
-              </div>
+              <div class="w-20 h-20 rounded-3xl bg-brand mx-auto flex items-center justify-center shadow-lg shadow-brand/40 mb-5"><i data-lucide="user" class="w-10 h-10 text-white"></i></div>
               <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight" id="authTitle">Đăng Nhập</h1>
               <p class="text-gray-500 font-medium mt-2">Truy cập để trải nghiệm dịch vụ Premium.</p>
           </div>
@@ -124,27 +136,22 @@
           </div>
 
           <form id="authForm" onsubmit="handleAuth(event)" class="space-y-4">
-              
               <div id="groupUsername" class="expand-anim max-h-0 opacity-0">
                   <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Tên hiển thị</label>
                   <input type="text" id="usernameInput" placeholder="VD: Tuấn Nguyễn" class="w-full h-14 px-5 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-all font-medium text-gray-900 dark:text-white">
               </div>
-
               <div>
                   <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Email</label>
                   <input type="email" id="emailInput" required placeholder="nhap_email@gmail.com" class="w-full h-14 px-5 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-all font-medium text-gray-900 dark:text-white">
               </div>
-
               <div>
                   <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Mật khẩu</label>
                   <input type="password" id="passInput" required placeholder="••••••••" class="w-full h-14 px-5 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-all font-medium text-gray-900 dark:text-white">
               </div>
-
               <div id="groupConfirmPass" class="expand-anim max-h-0 opacity-0">
                   <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Nhập lại Mật khẩu</label>
                   <input type="password" id="confirmPassInput" placeholder="••••••••" class="w-full h-14 px-5 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-all font-medium text-gray-900 dark:text-white">
               </div>
-
               <div id="groupTerms" class="expand-anim max-h-0 opacity-0">
                   <label class="flex items-start gap-3 mt-2 cursor-pointer group">
                       <div class="relative flex items-center justify-center mt-0.5">
@@ -173,7 +180,6 @@
              </div>
           </div>
       </div>
-
   </main>
 
   <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-6">
@@ -186,15 +192,47 @@
     </nav>
   </div>
 
+  <div id="inventoryPage" class="fixed inset-0 bg-bgLight dark:bg-bgDark slide-page flex flex-col overflow-hidden">
+     <div class="glass-effect h-[80px] w-full flex items-center px-4 shrink-0 border-b relative z-20">
+         <button onclick="closeSubPage('inventoryPage')" class="flex items-center gap-1 text-brand font-bold text-[17px] active:opacity-60 transition">
+             <i data-lucide="chevron-left" class="w-6 h-6"></i> Trở lại
+         </button>
+         <h1 class="absolute left-1/2 -translate-x-1/2 font-black text-lg">Tủ Đồ Cá Nhân</h1>
+     </div>
+     <div class="flex-1 overflow-y-auto px-5 py-6 pb-32">
+         <p class="text-sm text-gray-500 mb-6 text-center">Các tài khoản Premium bạn đã mua sẽ được lưu trữ an toàn tại đây.</p>
+         <div id="inventoryList" class="space-y-4">
+             <div class="py-10 text-center text-gray-400 flex flex-col items-center">
+                <i data-lucide="package-open" class="w-12 h-12 mb-3 opacity-30"></i>
+                <span class="text-sm">Chưa có tài khoản nào được lưu.</span>
+             </div>
+         </div>
+     </div>
+  </div>
+
+  <div id="historyPage" class="fixed inset-0 bg-bgLight dark:bg-bgDark slide-page flex flex-col overflow-hidden">
+     <div class="glass-effect h-[80px] w-full flex items-center px-4 shrink-0 border-b relative z-20">
+         <button onclick="closeSubPage('historyPage')" class="flex items-center gap-1 text-brand font-bold text-[17px] active:opacity-60 transition">
+             <i data-lucide="chevron-left" class="w-6 h-6"></i> Trở lại
+         </button>
+         <h1 class="absolute left-1/2 -translate-x-1/2 font-black text-lg">Lịch Sử Giao Dịch</h1>
+     </div>
+     <div class="flex-1 overflow-y-auto px-5 py-6 pb-32">
+         <div id="historyList" class="space-y-3">
+             <div class="py-10 text-center text-gray-400 flex flex-col items-center">
+                <i data-lucide="scroll-text" class="w-12 h-12 mb-3 opacity-30"></i>
+                <span class="text-sm">Chưa có giao dịch nào phát sinh.</span>
+             </div>
+         </div>
+     </div>
+  </div>
+
   <div id="logoutModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center px-4">
       <div class="absolute inset-0 bg-black/40 dark:bg-black/70 backdrop-blur-sm transition-opacity duration-300 opacity-0" id="logoutOverlay" onclick="closeLogoutModal()"></div>
       <div id="logoutPanel" class="bg-cardLight dark:bg-cardDark w-full max-w-[320px] rounded-[28px] shadow-2xl relative flex flex-col items-center p-6 transition-all duration-300 transform scale-95 opacity-0">
-         <div class="w-16 h-16 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-4 text-red-500">
-             <i data-lucide="log-out" class="w-8 h-8"></i>
-         </div>
+         <div class="w-16 h-16 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-4 text-red-500"><i data-lucide="log-out" class="w-8 h-8"></i></div>
          <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2">Đăng xuất?</h3>
          <p class="text-sm text-gray-500 text-center mb-6">Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này không?</p>
-         
          <div class="flex w-full gap-3">
              <button onclick="closeLogoutModal()" class="flex-1 py-3.5 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-white/10 active:scale-95 transition">Hủy</button>
              <button onclick="confirmLogout()" class="flex-1 py-3.5 rounded-xl font-bold text-white bg-red-500 active:scale-95 transition shadow-lg shadow-red-500/30">Đăng Xuất</button>
@@ -203,9 +241,6 @@
   </div>
 
   <script>
-    // ======================================================================
-    // 🚀 CẤU HÌNH FIREBASE
-    // ======================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
       authDomain: "ipaviet-st.firebaseapp.com",
@@ -218,14 +253,10 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Lưu LocalStorage
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.log(err));
 
     let authMode = 'login'; 
 
-    // ======================================================================
-    // 🚀 LẮNG NGHE TRẠNG THÁI
-    // ======================================================================
     auth.onAuthStateChanged(async (user) => {
         const loading = document.getElementById('loadingScreen');
         const pView = document.getElementById('profileView');
@@ -245,12 +276,7 @@
                 const userRef = db.collection("users").doc(user.uid);
                 const docSnap = await userRef.get();
                 if (!docSnap.exists) {
-                    await userRef.set({ 
-                        email: user.email, 
-                        username: "Người dùng mới",
-                        coins: 0, 
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp() 
-                    });
+                    await userRef.set({ email: user.email, username: "Thành viên", coins: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
                 }
 
                 userRef.onSnapshot(doc => {
@@ -271,6 +297,10 @@
                         } else {
                             vipShow.innerHTML = `<span class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold px-3 py-1 rounded-lg">Cơ bản</span>`;
                         }
+                        
+                        // Load ngầm dữ liệu Lịch sử và Tủ đồ
+                        loadUserPrivateData(user.uid);
+
                         lucide.createIcons();
                     }
                     loading.classList.add('opacity-0');
@@ -290,139 +320,139 @@
     });
 
     // ======================================================================
-    // 🚀 UI LOGIC
+    // 🚀 LOGIC LOAD TỦ ĐỒ VÀ SAO KÊ
     // ======================================================================
+    async function loadUserPrivateData(uid) {
+        // Load Tủ Đồ (Accounts)
+        db.collection("users").doc(uid).collection("inventory").orderBy("timestamp", "desc").onSnapshot(snap => {
+            const list = document.getElementById('inventoryList');
+            if (snap.empty) {
+                list.innerHTML = `<div class="py-10 text-center text-gray-400 flex flex-col items-center"><i data-lucide="package-open" class="w-12 h-12 mb-3 opacity-30"></i><span class="text-sm">Chưa có tài khoản nào được lưu.</span></div>`;
+            } else {
+                let html = '';
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const dateStr = data.timestamp ? new Date(data.timestamp.toMillis()).toLocaleString('vi-VN') : 'Mới đây';
+                    html += `
+                    <div class="bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 rounded-2xl p-4 shadow-sm relative overflow-hidden group">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-sm font-black text-gray-900 dark:text-white">${data.type} Premium</span>
+                            <span class="text-[10px] font-bold text-gray-400">${dateStr}</span>
+                        </div>
+                        <div class="bg-gray-100 dark:bg-gray-900 rounded-xl p-3 mb-3">
+                            <textarea readonly class="w-full bg-transparent text-gray-800 dark:text-gray-200 font-mono text-xs outline-none resize-none h-10" id="copy_${doc.id}">${data.accountInfo}</textarea>
+                        </div>
+                        <button onclick="copyToClip('copy_${doc.id}', this)" class="w-full py-2.5 rounded-xl bg-blue-50 dark:bg-brand/10 text-brand font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95">
+                            <i data-lucide="copy" class="w-4 h-4"></i> SAO CHÉP THÔNG TIN
+                        </button>
+                    </div>`;
+                });
+                list.innerHTML = html;
+                lucide.createIcons();
+            }
+        });
+
+        // Load Lịch Sử (Transactions)
+        db.collection("users").doc(uid).collection("transactions").orderBy("timestamp", "desc").limit(20).onSnapshot(snap => {
+            const list = document.getElementById('historyList');
+            if (snap.empty) {
+                list.innerHTML = `<div class="py-10 text-center text-gray-400 flex flex-col items-center"><i data-lucide="scroll-text" class="w-12 h-12 mb-3 opacity-30"></i><span class="text-sm">Chưa có giao dịch nào phát sinh.</span></div>`;
+            } else {
+                let html = '';
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const dateStr = data.timestamp ? new Date(data.timestamp.toMillis()).toLocaleString('vi-VN') : 'Mới đây';
+                    const isPlus = data.amount > 0;
+                    const amountColor = isPlus ? 'text-green-500' : 'text-red-500';
+                    const amountSign = isPlus ? '+' : '';
+                    const icon = isPlus ? 'arrow-down-left' : 'shopping-cart';
+
+                    html += `
+                    <div class="bg-cardLight dark:bg-cardDark border border-gray-100 dark:border-white/5 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+                        <div class="w-10 h-10 rounded-full ${isPlus ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-500'} flex items-center justify-center shrink-0">
+                            <i data-lucide="${icon}" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-gray-900 dark:text-white truncate">${data.desc}</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5">${dateStr}</p>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <p class="font-black ${amountColor} text-base">${amountSign}${data.amount}</p>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase">Xu</p>
+                        </div>
+                    </div>`;
+                });
+                list.innerHTML = html;
+                lucide.createIcons();
+            }
+        });
+    }
+
+    function copyToClip(elementId, btn) {
+        const text = document.getElementById(elementId).value;
+        navigator.clipboard.writeText(text);
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> ĐÃ SAO CHÉP`;
+        btn.classList.add('bg-green-100', 'text-green-600');
+        lucide.createIcons();
+        setTimeout(() => { 
+            btn.innerHTML = originalText; 
+            btn.classList.remove('bg-green-100', 'text-green-600');
+            lucide.createIcons();
+        }, 2000);
+    }
+
+    // Logic Đăng Nhập Đăng Ký
     function switchAuthMode(mode) {
         authMode = mode;
-        const slider = document.getElementById('authSlider');
-        const btnLog = document.getElementById('tabLoginBtn');
-        const btnReg = document.getElementById('tabRegBtn');
-        const submitBtn = document.getElementById('submitBtn');
-        const title = document.getElementById('authTitle');
-        const errBox = document.getElementById('authError');
-
-        // Khối mở rộng
-        const grpUser = document.getElementById('groupUsername');
-        const grpConfirm = document.getElementById('groupConfirmPass');
-        const grpTerms = document.getElementById('groupTerms');
-
+        const slider = document.getElementById('authSlider'); const btnLog = document.getElementById('tabLoginBtn'); const btnReg = document.getElementById('tabRegBtn'); const submitBtn = document.getElementById('submitBtn'); const title = document.getElementById('authTitle'); const errBox = document.getElementById('authError');
+        const grpUser = document.getElementById('groupUsername'); const grpConfirm = document.getElementById('groupConfirmPass'); const grpTerms = document.getElementById('groupTerms');
         errBox.classList.add('hidden');
-        
         if (mode === 'login') {
-            slider.style.transform = 'translateX(0)';
-            btnLog.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-900 dark:text-white transition-colors";
-            btnReg.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-500 dark:text-gray-400 transition-colors";
-            submitBtn.innerText = "ĐĂNG NHẬP VÀO HỆ THỐNG";
-            title.innerText = "Đăng Nhập";
-
-            grpUser.style.maxHeight = '0'; grpUser.style.opacity = '0';
-            grpConfirm.style.maxHeight = '0'; grpConfirm.style.opacity = '0';
-            grpTerms.style.maxHeight = '0'; grpTerms.style.opacity = '0';
+            slider.style.transform = 'translateX(0)'; btnLog.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-900 dark:text-white transition-colors"; btnReg.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-500 dark:text-gray-400 transition-colors"; submitBtn.innerText = "ĐĂNG NHẬP VÀO HỆ THỐNG"; title.innerText = "Đăng Nhập";
+            grpUser.style.maxHeight = '0'; grpUser.style.opacity = '0'; grpConfirm.style.maxHeight = '0'; grpConfirm.style.opacity = '0'; grpTerms.style.maxHeight = '0'; grpTerms.style.opacity = '0';
         } else {
-            slider.style.transform = 'translateX(100%)';
-            btnLog.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-500 dark:text-gray-400 transition-colors";
-            btnReg.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-900 dark:text-white transition-colors";
-            submitBtn.innerText = "ĐĂNG KÝ TÀI KHOẢN MỚI";
-            title.innerText = "Đăng Ký";
-
-            grpUser.style.maxHeight = '100px'; grpUser.style.opacity = '1';
-            grpConfirm.style.maxHeight = '100px'; grpConfirm.style.opacity = '1';
-            grpTerms.style.maxHeight = '100px'; grpTerms.style.opacity = '1';
+            slider.style.transform = 'translateX(100%)'; btnLog.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-500 dark:text-gray-400 transition-colors"; btnReg.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-900 dark:text-white transition-colors"; submitBtn.innerText = "ĐĂNG KÝ TÀI KHOẢN MỚI"; title.innerText = "Đăng Ký";
+            grpUser.style.maxHeight = '100px'; grpUser.style.opacity = '1'; grpConfirm.style.maxHeight = '100px'; grpConfirm.style.opacity = '1'; grpTerms.style.maxHeight = '100px'; grpTerms.style.opacity = '1';
         }
     }
 
     async function handleAuth(e) {
         e.preventDefault();
-        const email = document.getElementById('emailInput').value.trim();
-        const pass = document.getElementById('passInput').value;
-        const btn = document.getElementById('submitBtn');
-        const errBox = document.getElementById('authError');
+        const email = document.getElementById('emailInput').value.trim(); const pass = document.getElementById('passInput').value; const btn = document.getElementById('submitBtn'); const errBox = document.getElementById('authError');
 
-        // Validation nếu ở chế độ Đăng Ký
         if (authMode === 'register') {
-            const username = document.getElementById('usernameInput').value.trim();
-            const confirmPass = document.getElementById('confirmPassInput').value;
-            const termsChecked = document.getElementById('termsCheckbox').checked;
-
-            if(!username) { showError("Vui lòng nhập Tên hiển thị!"); return; }
-            if(pass !== confirmPass) { showError("Mật khẩu nhập lại không khớp!"); return; }
-            if(!termsChecked) { showError("Bạn phải đồng ý với Điều khoản Dịch vụ để tiếp tục!"); return; }
+            const username = document.getElementById('usernameInput').value.trim(); const confirmPass = document.getElementById('confirmPassInput').value; const termsChecked = document.getElementById('termsCheckbox').checked;
+            if(!username) { showError("Vui lòng nhập Tên hiển thị!"); return; } if(pass !== confirmPass) { showError("Mật khẩu nhập lại không khớp!"); return; } if(!termsChecked) { showError("Bạn phải đồng ý với Điều khoản Dịch vụ để tiếp tục!"); return; }
         }
 
-        btn.disabled = true;
-        btn.innerHTML = `<div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
-        errBox.classList.add('hidden');
+        btn.disabled = true; btn.innerHTML = `<div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`; errBox.classList.add('hidden');
 
         try {
-            if (authMode === 'login') {
-                await auth.signInWithEmailAndPassword(email, pass);
-            } else {
+            if (authMode === 'login') { await auth.signInWithEmailAndPassword(email, pass); } 
+            else {
                 const userCred = await auth.createUserWithEmailAndPassword(email, pass);
                 const username = document.getElementById('usernameInput').value.trim();
-                
-                await db.collection("users").doc(userCred.user.uid).set({
-                    email: email,
-                    username: username,
-                    coins: 0,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                await db.collection("users").doc(userCred.user.uid).set({ email: email, username: username, coins: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
             }
         } catch (error) {
-            if(error.code === 'auth/email-already-in-use') showError("Email này đã được sử dụng!");
-            else if(error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') showError("Sai tài khoản hoặc mật khẩu!");
-            else if(error.code === 'auth/weak-password') showError("Mật khẩu phải từ 6 ký tự trở lên!");
-            else showError("Lỗi kết nối. Vui lòng thử lại!");
-            
-            btn.disabled = false;
-            btn.innerText = authMode === 'login' ? "ĐĂNG NHẬP VÀO HỆ THỐNG" : "ĐĂNG KÝ TÀI KHOẢN MỚI";
+            if(error.code === 'auth/email-already-in-use') showError("Email này đã được sử dụng!"); else if(error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') showError("Sai tài khoản hoặc mật khẩu!"); else if(error.code === 'auth/weak-password') showError("Mật khẩu phải từ 6 ký tự trở lên!"); else showError("Lỗi kết nối. Vui lòng thử lại!");
+            btn.disabled = false; btn.innerText = authMode === 'login' ? "ĐĂNG NHẬP VÀO HỆ THỐNG" : "ĐĂNG KÝ TÀI KHOẢN MỚI";
         }
     }
 
-    function showError(msg) {
-        const errBox = document.getElementById('authError');
-        errBox.innerText = msg;
-        errBox.classList.remove('hidden');
-    }
+    function showError(msg) { const errBox = document.getElementById('authError'); errBox.innerText = msg; errBox.classList.remove('hidden'); }
 
-    // ======================================================================
-    // 🚀 MODAL ĐĂNG XUẤT CAO CẤP
-    // ======================================================================
-    function openLogoutModal() {
-        const m = document.getElementById('logoutModal');
-        const o = document.getElementById('logoutOverlay');
-        const p = document.getElementById('logoutPanel');
-        
-        m.classList.remove('hidden');
-        requestAnimationFrame(() => {
-            o.classList.add('opacity-100');
-            p.classList.remove('scale-95', 'opacity-0');
-        });
-    }
+    // UI Navigation Trang Phụ
+    function openSubPage(pageId) { document.getElementById(pageId).classList.remove('hidden'); requestAnimationFrame(() => { document.getElementById(pageId).classList.add('open'); }); }
+    function closeSubPage(pageId) { document.getElementById(pageId).classList.remove('open'); setTimeout(() => { document.getElementById(pageId).classList.add('hidden'); }, 400); }
 
-    function closeLogoutModal() {
-        const m = document.getElementById('logoutModal');
-        const o = document.getElementById('logoutOverlay');
-        const p = document.getElementById('logoutPanel');
-        
-        o.classList.remove('opacity-100');
-        p.classList.add('scale-95', 'opacity-0');
-        setTimeout(() => m.classList.add('hidden'), 300);
-    }
-
-    function confirmLogout() {
-        auth.signOut().then(() => { window.location.reload(); });
-    }
-
-    function copyUid() {
-        const uid = document.getElementById('userUidShow').innerText;
-        navigator.clipboard.writeText(uid);
-        alert("Đã copy UID: " + uid);
-    }
-
-    function toggleTheme() {
-       document.documentElement.classList.toggle('dark');
-       localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-    }
+    // Logout
+    function openLogoutModal() { const m = document.getElementById('logoutModal'); const o = document.getElementById('logoutOverlay'); const p = document.getElementById('logoutPanel'); m.classList.remove('hidden'); requestAnimationFrame(() => { o.classList.add('opacity-100'); p.classList.remove('scale-95', 'opacity-0'); }); }
+    function closeLogoutModal() { const m = document.getElementById('logoutModal'); const o = document.getElementById('logoutOverlay'); const p = document.getElementById('logoutPanel'); o.classList.remove('opacity-100'); p.classList.add('scale-95', 'opacity-0'); setTimeout(() => m.classList.add('hidden'), 300); }
+    function confirmLogout() { auth.signOut().then(() => { window.location.reload(); }); }
+    function copyUid() { const uid = document.getElementById('userUidShow').innerText; navigator.clipboard.writeText(uid); alert("Đã copy UID: " + uid); }
+    function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
     if(localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
 
     lucide.createIcons();
