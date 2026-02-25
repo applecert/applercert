@@ -27,7 +27,7 @@ function generateShortId() {
 
 // --- VUE APP LOGIC ---
 new Vue({
-    el: '#app', // Quay về đúng id="app" nguyên bản
+    el: '#app',
     data: {
         showStep1: true, showStep2: false, showStep3: false, showStep4: false, showDirectDownload: false,
         progressBar: 0, uploadDetails: '', statusText: '', logText: '', jobId: '',
@@ -40,7 +40,7 @@ new Vue({
             'sca': 'https://tight-water-fabbipa-proxy.tlvdzreal.workers.dev/scarlet'
         },
         appNames: { 'esign': 'ESign', 'gbox': 'GBox', 'sca': 'Scarlet' },
-        download: '', directInstallLink: 'javascript:void(0)', shareUrl: '', copySuccess: false
+        download: '', directInstallLink: '', shareUrl: '', copySuccess: false
     },
     computed: {
         canSign() { return (this.ipa && this.ipa.size > 0 && this.certZip && this.password && this.p12 && this.mobileprovision); },
@@ -105,7 +105,6 @@ new Vue({
         selectPassword(p) { this.password = p; this.showPasswordSuggestions = false; },
         hidePasswordSuggestions() { setTimeout(() => this.showPasswordSuggestions = false, 200); },
 
-        // --- GỌI API AN TOÀN BẰNG AXIOS Y HỆT BẢN GỐC ---
         async upload() {
             if (!this.canSign) return;
             this.savePwd(this.password);
@@ -119,7 +118,6 @@ new Vue({
             fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
 
             try {
-                // Dùng biến SignUrl đã được cấu hình từ file gốc (index.js)
                 const apiURL = typeof SignUrl !== 'undefined' ? SignUrl : 'https://api.ipasign.cc/sign';
                 const resp = await axios.post(apiURL, fd, {
                     headers: { 'Content-Type': 'multipart/form-data' },
@@ -159,9 +157,9 @@ new Vue({
                         const downApi = typeof DownloadUrl !== 'undefined' ? DownloadUrl : 'https://api.ipasign.cc/download';
                         this.download = `${downApi}/${this.jobId}`;
                         
-                        // Mã hóa link Plist để lách iOS Safari
+                        // ĐÃ BỎ HÀM ENCODE CỦA BẢN LỖI, ĐỂ NGUYÊN BẢN CHO SERVER ĐỌC ĐƯỢC PLIST
                         const plistUrl = this.download.replace('/download', '/plist');
-                        this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
+                        this.directInstallLink = `itms-services://?action=download-manifest&url=${plistUrl}`;
                         
                         this.showStep3 = false; 
                         this.showStep4 = true;
@@ -177,12 +175,25 @@ new Vue({
             }, 3000);
         },
 
-        checkDevice(e) {
+        // --- HÀM ÉP CÀI ĐẶT THẦN THÁNH ---
+        triggerInstall() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
-                e.preventDefault(); 
                 alert('TÍNH NĂNG NÀY CHỈ DÀNH CHO iPHONE/iPAD!\n\nVui lòng dùng ứng dụng Camera của iPhone quét mã QR bên dưới để cài đặt.');
+                return;
             }
+
+            // Ép cài đặt mạnh nhất:
+            window.location.href = this.directInstallLink;
+            
+            // Backup bằng trick tạo click giả lập phòng trường hợp Safari từ chối
+            setTimeout(() => {
+                const a = document.createElement('a');
+                a.href = this.directInstallLink;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }, 300);
         },
 
         checkDirectDownload() { 
@@ -194,7 +205,11 @@ new Vue({
                 const doc = await db.collection('signed_apps').doc(id).get();
                 if (doc.exists) {
                     const url = doc.data().download_url;
-                    this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(url.replace('/download', '/plist'))}`;
+                    
+                    // Lấy link cho phần tải qua đường dẫn share
+                    const plistUrl = url.replace('/download', '/plist');
+                    this.directInstallLink = `itms-services://?action=download-manifest&url=${plistUrl}`;
+                    
                     this.showStep1 = false; this.showDirectDownload = true;
                     setTimeout(() => new QRCode(document.getElementById('directQrcode'), { width: 140, height: 140 }).makeCode(url), 100);
                 }
