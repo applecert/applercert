@@ -21,14 +21,9 @@ function generateShortId() {
     let result = ''; for (let i = 0; i < 6; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); } return result;
 }
 
-// --- CẤU HÌNH API GỐC CỦA IPASIGN CHUẨN XÁC 100% ---
-const API_SIGN = 'https://sign.ipasign.cc/api/sign';
-const API_STATUS = 'https://sign.ipasign.cc/api/status';
-const API_DOWNLOAD = 'https://sign.ipasign.cc/api/download';
-
 // --- VUE APP LOGIC ---
 new Vue({
-    el: '#app',
+    el: '#app-vip', // Quan trọng: Gắn vào ID mới để tránh xung đột
     data: {
         showStep1: true, showStep2: false, showStep3: false, showStep4: false, showDirectDownload: false,
         progressBar: 0, uploadDetails: '', statusText: '', logText: '', jobId: '',
@@ -102,7 +97,7 @@ new Vue({
         selectPassword(p) { this.password = p; this.showPasswordSuggestions = false; },
         hidePasswordSuggestions() { setTimeout(() => this.showPasswordSuggestions = false, 200); },
 
-        // --- KHÚC FIX LỖI MẠNG LÀ CHỖ NÀY ---
+        // --- GỌI API GỐC BẰNG AXIOS Y HỆT HỆ THỐNG GỐC ĐỂ BYPASS CORS ---
         async upload() {
             if (!this.canSign) return;
             this.savePwd(this.password);
@@ -116,41 +111,24 @@ new Vue({
             fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
 
             try {
-                const xhr = new XMLHttpRequest();
-                xhr.upload.addEventListener('progress', e => { 
-                    if (e.lengthComputable) { 
-                        this.progressBar = Math.round((e.loaded / e.total) * 100); 
-                        this.uploadDetails = 'Đang tải lên Server bảo mật...'; 
-                    } 
-                });
-                xhr.onload = () => {
-                    if (xhr.status === 200 || xhr.status === 202) {
-                        try {
-                            const res = JSON.parse(xhr.responseText);
-                            this.jobId = res.task_id; 
-                            this.showStep2 = false; 
-                            this.showStep3 = true; 
-                            this.pollStatus();
-                        } catch (parseErr) {
-                            alert('Dữ liệu Server trả về không hợp lệ!');
-                            this.resetToStep1();
+                // Dùng thư viện axios kết hợp biến SignUrl gốc của họ để lách luật
+                const resp = await axios.post(SignUrl, fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    onUploadProgress: e => {
+                        if (e.lengthComputable) {
+                            this.progressBar = Math.round((e.loaded / e.total) * 100);
+                            this.uploadDetails = 'Đang tải lên Server bảo mật...';
                         }
-                    } else { 
-                        alert('Lỗi Server: ' + xhr.status); 
-                        this.resetToStep1(); 
                     }
-                };
-                xhr.onerror = () => { 
-                    alert('Lỗi mạng! Không thể kết nối đến máy chủ ký. Vui lòng kiểm tra Wifi/4G.'); 
-                    this.resetToStep1(); 
-                };
+                });
                 
-                // Gọi tới đúng API chuẩn của hệ thống gốc
-                xhr.open('POST', API_SIGN); 
-                xhr.send(fd);
-            } catch (e) { 
-                alert('Lỗi hệ thống nội bộ!'); 
-                this.resetToStep1(); 
+                this.jobId = resp.data.task_id || resp.data; 
+                this.showStep2 = false; 
+                this.showStep3 = true; 
+                this.pollStatus();
+            } catch (e) {
+                alert('Lỗi mạng! Không thể kết nối tới Server Ký.');
+                this.resetToStep1();
             }
         },
 
@@ -159,15 +137,19 @@ new Vue({
             this.logText = 'Khởi tạo môi trường...';
             const timer = setInterval(async () => {
                 try {
-                    const res = await fetch(`${API_STATUS}/${this.jobId}`);
-                    const d = await res.json();
+                    // Dùng biến StatusUrl gốc
+                    const res = await axios.get(`${StatusUrl}/${this.jobId}`);
+                    const d = res.data;
                     this.statusText = d.status || 'Processing...'; 
                     this.logText = d.msg || 'Đang biên dịch...';
                     
                     if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
                         clearInterval(timer);
                         
-                        this.download = `${API_DOWNLOAD}/${this.jobId}`;
+                        // Dùng biến DownloadUrl gốc
+                        this.download = `${DownloadUrl}/${this.jobId}`;
+                        
+                        // Mã hóa link Plist cực chuẩn để qua mặt iTunes Safari block
                         const plistUrl = this.download.replace('/download', '/plist');
                         this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
                         
@@ -185,6 +167,7 @@ new Vue({
             }, 3000);
         },
 
+        // --- CHECK MÁY TÍNH KHI BẤM CÀI ---
         checkDevice(e) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
