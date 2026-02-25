@@ -6,12 +6,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// --- FIREBASE CONFIGURATION ---
+// --- FIREBASE CONFIGURATION ĐẦY ĐỦ ---
 const firebaseConfig = {
     apiKey: "AIzaSyBeKh-_VbiM9F9S4iRdGllx3ypze0Gp4hw",
     authDomain: "ioscert-signer.firebaseapp.com",
     projectId: "ioscert-signer",
-    storageBucket: "ioscert-signer.firebasestorage.app"
+    storageBucket: "ioscert-signer.firebasestorage.app",
+    messagingSenderId: "31766936132",
+    appId: "1:31766936132:web:acf88a5f88396033ac1a11",
+    measurementId: "G-7GYFBFWLHE"
 };
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.firestore();
@@ -117,8 +120,8 @@ new Vue({
                 };
                 xhr.onerror = () => { alert('Lỗi mạng!'); this.resetToStep1(); };
                 
-                const apiSignUrl = typeof SignUrl !== 'undefined' ? SignUrl : 'https://api.ipasign.cc/sign';
-                xhr.open('POST', apiSignUrl); xhr.send(fd);
+                // Trực tiếp xài API Gốc
+                xhr.open('POST', 'https://api.ipasign.cc/sign'); xhr.send(fd);
             } catch (e) { alert('Lỗi hệ thống!'); this.resetToStep1(); }
         },
 
@@ -126,24 +129,22 @@ new Vue({
             this.statusText = 'Injecting Certificate...'; this.logText = 'Khởi tạo môi trường...';
             const timer = setInterval(async () => {
                 try {
-                    const apiStatusUrl = typeof StatusUrl !== 'undefined' ? StatusUrl : 'https://api.ipasign.cc/status';
-                    const res = await fetch(`${apiStatusUrl}/${this.jobId}`);
+                    const res = await fetch(`https://api.ipasign.cc/status/${this.jobId}`);
                     const d = await res.json();
                     this.statusText = d.status || 'Processing...'; this.logText = d.msg || 'Đang biên dịch...';
                     
                     if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
                         clearInterval(timer);
                         
-                        const apiDownloadUrl = typeof DownloadUrl !== 'undefined' ? DownloadUrl : 'https://api.ipasign.cc/download';
-                        this.download = `${apiDownloadUrl}/${this.jobId}`;
+                        this.download = `https://api.ipasign.cc/download/${this.jobId}`;
                         
-                        // Lấy link Plist và mã hóa chuẩn (Bắt buộc để Safari hiểu)
+                        // Lấy link Plist và mã hóa chuẩn để cài đặt
                         const plistUrl = this.download.replace('/download', '/plist');
                         this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
                         
                         this.showStep3 = false; this.showStep4 = true;
                         
-                        // ĐÃ BỎ HÀM AUTO-REDIRECT ĐỂ TRÁNH LỖI BẢO MẬT CỦA SAFARI
+                        // KHÔNG AUTO REDIRECT NỮA - Phải đợi khách bấm bằng tay để iOS duyệt quyền
                         
                         setTimeout(() => { new QRCode(document.getElementById('qrcode'), { width: 140, height: 140 }).makeCode(this.download); }, 100);
                         this.saveToFirestore(this.download);
@@ -152,14 +153,13 @@ new Vue({
             }, 3000);
         },
 
-        // HÀM KIỂM TRA MÁY TÍNH KHI BẤM NÚT CÀI ĐẶT
+        // --- CHECK KHÁCH BẤM NÚT TRÊN PC HAY ĐIỆN THOẠI ---
         checkDevice(e) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
-                e.preventDefault(); // Chặn tải link nếu không phải iOS
+                e.preventDefault(); // Nếu là PC/Android thì chặn link lại, chỉ iOS mới có quyền chạy
                 alert('TÍNH NĂNG NÀY CHỈ DÀNH CHO iPHONE/iPAD!\n\nVui lòng dùng ứng dụng Camera của iPhone quét mã QR bên dưới để cài đặt.');
             }
-            // Nếu là iOS, Safari tự động nhận link href và mở popup Cài đặt ngay lập tức!
         },
 
         checkDirectDownload() { 
