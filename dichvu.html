@@ -251,7 +251,7 @@
     const ACC_NO = "22703611"; 
     const ACC_NAME = "TRAN NGUYEN MINH QUI"; 
     
-    // 👉 ĐÃ THAY SẴN LINK SCRIPT MỚI CỦA SẾP
+    // 👉 LINK SCRIPT ĐÃ ĐƯỢC CHÈN SẴN
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
 
     const firebaseConfig = {
@@ -265,6 +265,9 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
+
+    // 👉 CHỐNG TREO SAFARI
+    db.settings({ experimentalForceLongPolling: true });
 
     let currentUser = null; let currentCoins = 0; let currentOrder = null; let pollingInterval = null; 
 
@@ -312,7 +315,7 @@
         } catch(e) {}
     }
 
-    // 🔥 GHI SỔ KHI NẠP XU THÀNH CÔNG
+    // 🔥 NẠP XU VÀ GHI VÀO LỊCH SỬ GIAO DỊCH (SAO KÊ)
     async function autoCheckPayment() {
         if(!currentOrder || !currentUser) return;
         try {
@@ -323,7 +326,7 @@
                 clearInterval(pollingInterval);
                 await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(data.coins) }, { merge: true });
                 
-                // Ghi sổ
+                // Lưu vào History
                 await db.collection("users").doc(currentUser.uid).collection("transactions").add({
                     amount: data.coins, desc: `Nạp Xu (Mã Đơn: ${currentOrder.id})`, timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -388,7 +391,7 @@
         renderStoreModal('confirm', 'Xác nhận thanh toán', `Thanh toán <b class="text-brand">${priceInXu} Xu</b> để mua <b class="text-gray-900 dark:text-white">${itemName}</b>?<br>Hệ thống sẽ trừ trực tiếp vào Ví hệ sinh thái.`, () => { executePurchase(itemName, priceInXu, type, extraData); }, 'Xác Nhận Mua');
     }
 
-    // 🔥 GHI SỔ VÀ LƯU TỦ ĐỒ KHI MUA HÀNG
+    // 🔥 MUA VIP/ACC, GHI SỔ VÀ LƯU VÀO TỦ ĐỒ CỦA KHÁCH
     async function executePurchase(itemName, priceInXu, type, extraData) {
         renderStoreModal('loading', 'Đang trích xuất', 'Vui lòng giữ nguyên trang web. Hệ thống đang kết nối kho dữ liệu...');
         try {
