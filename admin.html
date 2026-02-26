@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="vi" class="antialiased bg-gray-100 text-gray-800">
+<html lang="vi" class="antialiased bg-gray-50 text-gray-800">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Admin Workspace - IPAVIET</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -13,160 +13,198 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: { brand: '#007aff', brandDark: '#0A84FF' }
+        }
+      }
+    }
+  </script>
+
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .stat-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .stat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: default;}
+    .stat-card:active { transform: scale(0.98); }
+    
+    /* Animation cho Sidebar Mobile */
+    .sidebar-open { transform: translateX(0) !important; }
+    .overlay-open { opacity: 1 !important; pointer-events: auto !important; }
   </style>
 </head>
-<body class="h-screen flex overflow-hidden selection:bg-brand selection:text-white">
+<body class="h-[100dvh] flex overflow-hidden selection:bg-brand selection:text-white">
 
-  <div id="loginScreen" class="fixed inset-0 z-50 bg-[#0a0a0a] flex flex-col items-center justify-center text-white transition-opacity duration-500">
-      <div class="w-20 h-20 bg-gray-800 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(0,122,255,0.3)] border border-gray-700"><i data-lucide="shield-check" class="w-10 h-10 text-brand"></i></div>
-      <h2 class="text-3xl font-black mb-2 tracking-tight">WORKSPACE CẤP CAO</h2>
-      <p class="text-gray-400 mb-8 text-sm font-medium" id="loginStatusText">Đang xác thực thẻ đặc quyền...</p>
+  <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0a0a0a] flex flex-col items-center justify-center text-white transition-opacity duration-500 p-5">
+      <div class="w-20 h-20 bg-gray-800 rounded-3xl flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(0,122,255,0.3)] border border-gray-700"><i data-lucide="shield-check" class="w-10 h-10 text-brand"></i></div>
+      <h2 class="text-2xl md:text-3xl font-black mb-2 tracking-tight text-center">WORKSPACE CẤP CAO</h2>
+      <p class="text-gray-400 mb-8 text-sm font-medium text-center" id="loginStatusText">Đang xác thực thẻ đặc quyền...</p>
       <div id="loginSpinner" class="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
       
-      <div id="loginError" class="hidden mt-4 bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-4 rounded-xl text-sm text-center shadow-lg">
+      <div id="loginError" class="hidden mt-4 w-full max-w-sm bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-4 rounded-xl text-sm text-center shadow-lg">
           <i data-lucide="alert-triangle" class="w-6 h-6 mx-auto mb-2 text-red-500"></i>
           Quyền truy cập bị từ chối!<br><span class="text-xs text-red-500/70">Tài khoản hiện tại không thuộc nhóm Quản trị viên.</span><br>
-          <a href="account.html" class="bg-red-500 text-white font-bold px-4 py-2 rounded-lg mt-4 inline-block hover:bg-red-600 transition">Đăng Nhập Lại</a>
+          <a href="account.html" class="bg-red-500 text-white font-bold px-4 py-3 rounded-xl mt-4 inline-block hover:bg-red-600 transition w-full active:scale-95">Đăng Nhập Lại</a>
       </div>
       
-      <div id="step2Auth" class="hidden mt-2 bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-sm text-center">
+      <div id="step2Auth" class="hidden mt-2 bg-gray-900 border border-gray-800 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
           <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"><i data-lucide="key" class="w-4 h-4 inline pb-1"></i> Nhập Mã PIN Máy Chủ</p>
-          <input type="password" id="serverPin" placeholder="Mật khẩu Backend..." class="w-full text-center font-black text-gray-900 px-4 py-3 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-brand">
-          <button onclick="verifyServerPin()" id="btnVerify" class="bg-brand text-white font-black px-6 py-3 rounded-xl w-full hover:bg-brandDark transition active:scale-95 shadow-lg shadow-brand/30">MỞ KHÓA HỆ THỐNG</button>
+          <input type="password" id="serverPin" placeholder="Mật khẩu Backend..." class="w-full text-center font-black text-gray-900 px-4 py-4 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-brand text-lg tracking-widest">
+          <button onclick="verifyServerPin()" id="btnVerify" class="bg-brand text-white font-black px-6 py-4 rounded-xl w-full hover:bg-brandDark transition active:scale-95 shadow-lg shadow-brand/30">MỞ KHÓA HỆ THỐNG</button>
       </div>
   </div>
 
-  <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shrink-0">
-      <div class="h-20 flex items-center px-6 border-b border-gray-100">
-          <div class="w-8 h-8 bg-brand rounded-lg flex items-center justify-center mr-3 shadow-md shadow-brand/30"><i data-lucide="cpu" class="w-5 h-5 text-white"></i></div>
-          <span class="font-black text-xl tracking-tight text-gray-900">ADMIN<span class="text-brand">.OS</span></span>
+  <div id="mobileOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden backdrop-blur-sm"></div>
+
+  <aside id="sidebar" class="w-[280px] bg-white border-r border-gray-200 flex flex-col z-40 shrink-0 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
+      <div class="h-20 flex items-center justify-between px-6 border-b border-gray-100 shrink-0">
+          <div class="flex items-center">
+              <div class="w-8 h-8 bg-brand rounded-lg flex items-center justify-center mr-3 shadow-md shadow-brand/30"><i data-lucide="cpu" class="w-5 h-5 text-white"></i></div>
+              <span class="font-black text-xl tracking-tight text-gray-900">ADMIN<span class="text-brand">.OS</span></span>
+          </div>
+          <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-red-500 active:scale-90 transition p-2 bg-gray-50 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
+
       <nav class="flex-1 py-6 px-4 space-y-1.5 overflow-y-auto scrollbar-hide">
           <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3">Menu Chính</p>
-          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center px-4 py-3 rounded-xl bg-brand/10 text-brand font-bold transition"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Tổng Quan</button>
-          <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Khách Hàng</button>
-          <button onclick="switchTab('inventory')" id="nav-inventory" class="w-full flex items-center px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition"><i data-lucide="package" class="w-5 h-5 mr-3"></i> Kho Tài Khoản</button>
-          <button onclick="switchTab('transactions')" id="nav-transactions" class="w-full flex items-center px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition"><i data-lucide="receipt" class="w-5 h-5 mr-3"></i> Dòng Tiền (Nạp Xu)</button>
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center px-4 py-3.5 rounded-xl bg-brand/10 text-brand font-bold transition active:scale-95 text-[15px]"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Tổng Quan</button>
+          <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center px-4 py-3.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Khách Hàng</button>
+          <button onclick="switchTab('inventory')" id="nav-inventory" class="w-full flex items-center px-4 py-3.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="package" class="w-5 h-5 mr-3"></i> Kho Tài Khoản</button>
+          <button onclick="switchTab('transactions')" id="nav-transactions" class="w-full flex items-center px-4 py-3.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="receipt" class="w-5 h-5 mr-3"></i> Dòng Tiền (Nạp Xu)</button>
           
           <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3 mt-6">Marketing</p>
-          <button onclick="switchTab('giftcodes')" id="nav-giftcodes" class="w-full flex items-center px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition"><i data-lucide="ticket" class="w-5 h-5 mr-3"></i> Tạo Mã Khuyến Mãi</button>
+          <button onclick="switchTab('giftcodes')" id="nav-giftcodes" class="w-full flex items-center px-4 py-3.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="ticket" class="w-5 h-5 mr-3"></i> Tạo Mã Khuyến Mãi</button>
       </nav>
       
-      <div class="p-4 border-t border-gray-100 bg-gray-50/50">
-          <div class="flex items-center px-2 py-2 mb-2"><div class="w-2 h-2 rounded-full bg-green-500 animate-pulse mr-2"></div><span class="text-xs font-bold text-gray-600 truncate" id="adminEmailShow">...</span></div>
-          <button onclick="auth.signOut()" class="w-full flex items-center justify-center px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-bold transition text-sm"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Thoát</button>
+      <div class="p-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
+          <div class="flex items-center px-2 py-2 mb-2"><div class="w-2 h-2 rounded-full bg-green-500 animate-pulse mr-2 shrink-0"></div><span class="text-xs font-bold text-gray-600 truncate w-full" id="adminEmailShow">...</span></div>
+          <button onclick="auth.signOut()" class="w-full flex items-center justify-center px-4 py-3 rounded-xl border border-gray-200 text-gray-600 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-bold transition active:scale-95 text-sm shadow-sm"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng Xuất</button>
       </div>
   </aside>
 
-  <main class="flex-1 flex flex-col h-screen overflow-hidden relative bg-[#f8f9fa]">
-      <header class="h-20 glass flex items-center px-8 justify-between shrink-0 z-10">
-          <h1 class="text-[22px] font-black text-gray-900 tracking-tight" id="pageTitle">Tổng Quan Hệ Thống</h1>
+  <main class="flex-1 flex flex-col h-[100dvh] overflow-hidden relative bg-[#f8f9fa] w-full">
+      <header class="h-16 md:h-20 glass flex items-center px-4 md:px-8 justify-between shrink-0 z-10 sticky top-0 w-full">
           <div class="flex items-center gap-3">
-              <a href="index.html" class="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-full text-sm font-bold hover:bg-black transition shadow-sm active:scale-95"><i data-lucide="globe" class="w-4 h-4"></i> Về Website</a>
-              <button onclick="loadAllData()" class="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-full text-sm font-bold text-gray-600 hover:text-brand hover:border-brand transition shadow-sm active:scale-95"><i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i> Làm mới</button>
+              <button onclick="toggleSidebar()" class="md:hidden w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-600 active:scale-90 transition shadow-sm"><i data-lucide="menu" class="w-5 h-5"></i></button>
+              <h1 class="text-lg md:text-[22px] font-black text-gray-900 tracking-tight line-clamp-1" id="pageTitle">Tổng Quan</h1>
+          </div>
+          <div class="flex items-center gap-2 md:gap-3 shrink-0">
+              <a href="index.html" class="hidden md:flex items-center gap-2 bg-gray-900 text-white px-4 py-2.5 rounded-full text-sm font-bold hover:bg-black transition shadow-sm active:scale-95"><i data-lucide="globe" class="w-4 h-4"></i> Về Website</a>
+              <button onclick="loadAllData()" class="w-10 h-10 md:w-auto md:px-4 md:py-2.5 flex items-center justify-center gap-2 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-600 hover:text-brand hover:border-brand transition shadow-sm active:scale-95"><i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i> <span class="hidden md:inline">Làm mới</span></button>
           </div>
       </header>
 
-      <div class="flex-1 overflow-y-auto p-8 scrollbar-hide">
+      <div class="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-hide w-full pb-20">
           
-          <div id="tab-dashboard" class="block max-w-6xl mx-auto space-y-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div class="bg-white rounded-2xl p-6 border border-gray-100 stat-card shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-green-50 text-green-500 flex items-center justify-center"><i data-lucide="banknote" class="w-6 h-6"></i></div><span class="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded-full">+ Doanh thu</span></div><p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Tổng Tiền Nạp</p><h3 class="text-3xl font-black text-gray-900" id="statRevenue">...đ</h3></div>
-                  <div class="bg-white rounded-2xl p-6 border border-gray-100 stat-card shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-blue-50 text-brand flex items-center justify-center"><i data-lucide="users" class="w-6 h-6"></i></div></div><p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Tổng Người Dùng</p><h3 class="text-3xl font-black text-gray-900" id="statUsers">...</h3></div>
-                  <div class="bg-white rounded-2xl p-6 border border-gray-100 stat-card shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-yellow-50 text-yellow-500 flex items-center justify-center"><i data-lucide="crown" class="w-6 h-6"></i></div></div><p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Khách Đang Có VIP</p><h3 class="text-3xl font-black text-gray-900" id="statVips">...</h3></div>
-                  <div class="bg-white rounded-2xl p-6 border border-gray-100 stat-card shadow-sm relative overflow-hidden"><div class="absolute -right-4 -top-4 w-24 h-24 bg-purple-50 rounded-full z-0"></div><div class="flex justify-between items-start mb-4 relative z-10"><div class="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center"><i data-lucide="gem" class="w-6 h-6"></i></div></div><p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1 relative z-10">Tổng Xu Hệ Thống</p><h3 class="text-3xl font-black text-purple-600 relative z-10" id="statTotalCoins">...</h3></div>
+          <div id="tab-dashboard" class="block max-w-6xl mx-auto space-y-4 md:space-y-6">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                  <div class="bg-white rounded-[24px] p-5 md:p-6 border border-gray-100 stat-card shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-green-50 text-green-500 flex items-center justify-center"><i data-lucide="banknote" class="w-6 h-6"></i></div><span class="text-[10px] font-bold text-green-500 bg-green-50 px-2 py-1 rounded-full uppercase">Doanh thu</span></div><p class="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Tổng Tiền Nạp</p><h3 class="text-2xl md:text-3xl font-black text-gray-900 truncate" id="statRevenue">...đ</h3></div>
+                  <div class="bg-white rounded-[24px] p-5 md:p-6 border border-gray-100 stat-card shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-blue-50 text-brand flex items-center justify-center"><i data-lucide="users" class="w-6 h-6"></i></div></div><p class="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Người Dùng</p><h3 class="text-2xl md:text-3xl font-black text-gray-900" id="statUsers">...</h3></div>
+                  <div class="bg-white rounded-[24px] p-5 md:p-6 border border-gray-100 stat-card shadow-sm"><div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-full bg-yellow-50 text-yellow-500 flex items-center justify-center"><i data-lucide="crown" class="w-6 h-6"></i></div></div><p class="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Khách Có VIP</p><h3 class="text-2xl md:text-3xl font-black text-gray-900" id="statVips">...</h3></div>
+                  <div class="bg-white rounded-[24px] p-5 md:p-6 border border-gray-100 stat-card shadow-sm relative overflow-hidden"><div class="absolute -right-4 -top-4 w-24 h-24 bg-purple-50 rounded-full z-0 pointer-events-none"></div><div class="flex justify-between items-start mb-4 relative z-10"><div class="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center"><i data-lucide="gem" class="w-6 h-6"></i></div></div><p class="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-widest mb-1 relative z-10">Xu Hệ Thống</p><h3 class="text-2xl md:text-3xl font-black text-purple-600 relative z-10" id="statTotalCoins">...</h3></div>
               </div>
-              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"><h3 class="text-lg font-black text-gray-900 mb-6 flex items-center gap-2"><i data-lucide="pie-chart" class="w-5 h-5 text-brand"></i> Báo Cáo Kho Tài Khoản</h3><div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="inventoryMiniWidgets"><p class="text-gray-400 text-sm italic">Đang tải dữ liệu kho...</p></div></div>
+              <div class="bg-white rounded-[24px] border border-gray-100 shadow-sm p-5 md:p-6"><h3 class="text-lg font-black text-gray-900 mb-6 flex items-center gap-2"><i data-lucide="pie-chart" class="w-5 h-5 text-brand"></i> Báo Cáo Kho Tài Khoản</h3><div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" id="inventoryMiniWidgets"><p class="text-gray-400 text-sm italic col-span-full">Đang tải dữ liệu kho...</p></div></div>
           </div>
 
-          <div id="tab-users" class="hidden max-w-6xl mx-auto">
-              <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div class="p-5 border-b border-gray-100 bg-white flex justify-between items-center"><div class="relative w-80"><i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i><input type="text" id="searchUser" onkeyup="filterUsers()" placeholder="Tìm Email hoặc UID khách hàng..." class="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all font-medium"></div></div>
-                  <div class="overflow-x-auto">
-                      <table class="w-full text-left border-collapse">
-                          <thead><tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-widest"><th class="p-4 font-bold border-b border-gray-100">Thông tin Khách hàng</th><th class="p-4 font-bold border-b border-gray-100">Ví Xu</th><th class="p-4 font-bold border-b border-gray-100">Quyền lợi VIP</th><th class="p-4 font-bold border-b border-gray-100 text-right">Thao tác</th></tr></thead>
+          <div id="tab-users" class="hidden max-w-6xl mx-auto w-full">
+              <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full">
+                  <div class="p-4 md:p-5 border-b border-gray-100 bg-white flex flex-col sm:flex-row gap-3 justify-between items-center w-full">
+                      <div class="relative w-full sm:w-80 shrink-0">
+                          <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                          <input type="text" id="searchUser" onkeyup="filterUsers()" placeholder="Tìm Email hoặc UID..." class="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none transition-all font-medium">
+                      </div>
+                  </div>
+                  <div class="overflow-x-auto w-full scrollbar-hide">
+                      <table class="w-full text-left border-collapse min-w-[600px]">
+                          <thead><tr class="bg-gray-50 text-gray-500 text-[11px] md:text-xs uppercase tracking-widest"><th class="p-4 font-bold border-b border-gray-100 whitespace-nowrap">Thông tin Khách</th><th class="p-4 font-bold border-b border-gray-100">Ví Xu</th><th class="p-4 font-bold border-b border-gray-100">Trạng Thái VIP</th><th class="p-4 font-bold border-b border-gray-100 text-right">Thao tác</th></tr></thead>
                           <tbody id="userTableBody" class="text-sm"><tr><td colspan="4" class="p-10 text-center text-gray-400"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>Đang đồng bộ dữ liệu...</td></tr></tbody>
                       </table>
                   </div>
               </div>
           </div>
 
-          <div id="tab-inventory" class="hidden max-w-6xl mx-auto flex flex-col lg:flex-row gap-6">
-              <div class="lg:w-1/3 shrink-0"><div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-0"><h2 class="text-lg font-black mb-1">Nhập Hàng Vào Kho</h2><p class="text-xs text-gray-500 mb-6">Tài khoản sẽ được mã hóa đẩy lên Google.</p><div class="space-y-4"><div><label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Loại Dịch Vụ</label><select id="accType" class="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-bold text-gray-700"><option value="Spotify">🟢 Spotify Premium</option><option value="Netflix">🔴 Netflix Premium</option><option value="CapCut">⚫ CapCut Pro</option></select></div><div><label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tài Khoản | Mật Khẩu</label><textarea id="accInfo" rows="3" placeholder="vd: tung_mtp@gmail.com | pass123" class="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-mono"></textarea></div><button onclick="pushToSheet()" id="btnAddAcc" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-gray-900/20 active:scale-95"><i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Lên Hệ Thống</button></div></div></div>
-              <div class="lg:w-2/3 flex-1 flex flex-col gap-4" id="inventoryFullList"><div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-10 text-center text-gray-400"><i data-lucide="package-search" class="w-10 h-10 mx-auto mb-3 opacity-50"></i> Đang trích xuất dữ liệu kho...</div></div>
+          <div id="tab-inventory" class="hidden max-w-6xl mx-auto flex-col lg:flex-row gap-4 md:gap-6 w-full">
+              <div class="lg:w-1/3 shrink-0 w-full">
+                  <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 p-5 md:p-6 lg:sticky lg:top-0">
+                      <h2 class="text-lg font-black mb-1">Nhập Hàng Vào Kho</h2><p class="text-xs text-gray-500 mb-6">Tài khoản sẽ được mã hóa đẩy lên Google.</p>
+                      <div class="space-y-4">
+                          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Loại Dịch Vụ</label><select id="accType" class="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-[14px] focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-bold text-gray-700"><option value="Spotify">🟢 Spotify Premium</option><option value="Netflix">🔴 Netflix Premium</option><option value="CapCut">⚫ CapCut Pro</option></select></div>
+                          <div><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tài Khoản | Mật Khẩu</label><textarea id="accInfo" rows="3" placeholder="vd: tung_mtp@gmail.com | pass123" class="w-full p-4 rounded-xl border border-gray-200 bg-gray-50 text-[14px] focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-mono"></textarea></div>
+                          <button onclick="pushToSheet()" id="btnAddAcc" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-gray-900/20 active:scale-95 text-[15px]"><i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Lên Hệ Thống</button>
+                      </div>
+                  </div>
+              </div>
+              <div class="lg:w-2/3 flex-1 flex flex-col gap-4 w-full" id="inventoryFullList"><div class="bg-white rounded-[24px] shadow-sm border border-gray-200 p-10 text-center text-gray-400"><i data-lucide="package-search" class="w-10 h-10 mx-auto mb-3 opacity-50"></i> Đang trích xuất dữ liệu kho...</div></div>
           </div>
 
-          <div id="tab-transactions" class="hidden max-w-6xl mx-auto">
-              <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div class="p-5 border-b border-gray-100 bg-white"><h3 class="text-lg font-black text-gray-900">50 Giao Dịch Nạp Tiền Gần Nhất</h3></div>
-                  <div class="overflow-x-auto">
-                      <table class="w-full text-left border-collapse">
-                          <thead><tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-widest"><th class="p-4 font-bold border-b border-gray-100">Thời gian</th><th class="p-4 font-bold border-b border-gray-100">Mã Đơn / Khách</th><th class="p-4 font-bold border-b border-gray-100">Số Tiền & Xu</th><th class="p-4 font-bold border-b border-gray-100 text-right">Trạng thái</th></tr></thead>
+          <div id="tab-transactions" class="hidden max-w-6xl mx-auto w-full">
+              <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full">
+                  <div class="p-4 md:p-5 border-b border-gray-100 bg-white"><h3 class="text-lg font-black text-gray-900">50 Giao Dịch Gần Nhất</h3></div>
+                  <div class="overflow-x-auto w-full scrollbar-hide">
+                      <table class="w-full text-left border-collapse min-w-[600px]">
+                          <thead><tr class="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-widest"><th class="p-4 font-bold border-b border-gray-100 whitespace-nowrap">Thời gian</th><th class="p-4 font-bold border-b border-gray-100">Mã Đơn / Khách</th><th class="p-4 font-bold border-b border-gray-100">Số Tiền & Xu</th><th class="p-4 font-bold border-b border-gray-100 text-right whitespace-nowrap">Trạng thái</th></tr></thead>
                           <tbody id="txTableBody" class="text-sm"><tr><td colspan="4" class="p-10 text-center text-gray-400"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>Đang lấy dữ liệu từ ngân hàng...</td></tr></tbody>
                       </table>
                   </div>
               </div>
           </div>
           
-          <div id="tab-giftcodes" class="hidden max-w-6xl mx-auto flex flex-col lg:flex-row gap-6">
-              
-              <div class="lg:w-1/3 shrink-0">
-                  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-0">
-                      <h2 class="text-lg font-black mb-1">Tạo Mã Mới</h2>
-                      <p class="text-xs text-gray-500 mb-6">Mã sẽ được lưu trên Firebase và dùng được ngay.</p>
+          <div id="tab-giftcodes" class="hidden max-w-6xl mx-auto flex-col lg:flex-row gap-4 md:gap-6 w-full">
+              <div class="lg:w-1/3 shrink-0 w-full">
+                  <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 p-5 md:p-6 lg:sticky lg:top-0">
+                      <h2 class="text-lg font-black mb-1">Phát Hành Mã Quà Tặng</h2>
+                      <p class="text-xs text-gray-500 mb-6">Mã sẽ được lưu trên Firebase và khách dùng được ngay.</p>
                       
                       <div class="space-y-4">
                           <div>
-                              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tên Mã (Giftcode)</label>
-                              <input type="text" id="gcName" placeholder="VD: TANG50XU" class="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-bold text-gray-900 uppercase">
+                              <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Tên Mã (Giftcode)</label>
+                              <input type="text" id="gcName" placeholder="VD: TANG50XU" class="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-black text-gray-900 uppercase tracking-widest">
                           </div>
                           <div>
-                              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Loại Phần Thưởng</label>
-                              <select id="gcType" onchange="changeGcLabel()" class="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-bold text-gray-700">
+                              <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Loại Phần Thưởng</label>
+                              <select id="gcType" onchange="changeGcLabel()" class="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-bold text-gray-700">
                                   <option value="coins">💎 Tặng Xu Trực Tiếp</option>
                                   <option value="vip">👑 Tặng Ngày VIP</option>
-                                  <option value="discount">💰 Giảm Giá (VNĐ) khi nạp tiền</option>
+                                  <option value="discount">💰 Giảm Giá (VNĐ) Cửa Hàng</option>
                               </select>
                           </div>
                           <div>
-                              <label id="gcValueLabel" class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Giá trị (Số Xu)</label>
-                              <input type="number" id="gcValue" placeholder="VD: 50" class="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-bold text-gray-900">
+                              <label id="gcValueLabel" class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Giá trị (Số Xu tặng)</label>
+                              <input type="number" id="gcValue" placeholder="VD: 50" class="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-bold text-gray-900">
                           </div>
                           <div>
-                              <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Giới Hạn Lượt Dùng</label>
-                              <input type="number" id="gcLimit" placeholder="VD: 100 (Để 0 là vô hạn)" value="100" class="w-full h-11 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-bold text-gray-900">
+                              <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1.5">Giới Hạn Lượt Dùng (Nhập 0 là Vô hạn)</label>
+                              <input type="number" id="gcLimit" placeholder="VD: 100" value="100" class="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:ring-2 focus:ring-brand/20 focus:border-brand outline-none font-bold text-gray-900">
                           </div>
                           
-                          <button onclick="createNewGiftcode()" id="btnCreateGc" class="w-full bg-brand hover:bg-brandDark text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-brand/20 active:scale-95">
-                              <i data-lucide="ticket" class="w-5 h-5"></i> Phát Hành Mã Ngay
+                          <button onclick="createNewGiftcode()" id="btnCreateGc" class="w-full bg-brand hover:bg-brandDark text-white font-black py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 mt-4 shadow-lg shadow-brand/30 active:scale-95 text-[15px]">
+                              <i data-lucide="ticket" class="w-5 h-5"></i> TẠO MÃ MỚI
                           </button>
                       </div>
                   </div>
               </div>
               
-              <div class="lg:w-2/3 flex-1 flex flex-col">
-                  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                      <div class="p-5 border-b border-gray-100 bg-white flex justify-between items-center">
-                          <h3 class="text-lg font-black text-gray-900">Danh Sách Mã Đang Hoạt Động</h3>
+              <div class="lg:w-2/3 flex-1 flex flex-col w-full">
+                  <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full">
+                      <div class="p-4 md:p-5 border-b border-gray-100 bg-white flex justify-between items-center">
+                          <h3 class="text-lg font-black text-gray-900">Mã Đang Hoạt Động</h3>
                       </div>
-                      <div class="overflow-x-auto">
-                          <table class="w-full text-left border-collapse">
+                      <div class="overflow-x-auto w-full scrollbar-hide">
+                          <table class="w-full text-left border-collapse min-w-[500px]">
                               <thead>
-                                  <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-widest">
+                                  <tr class="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-widest">
                                       <th class="p-4 font-bold border-b border-gray-100">Mã Code</th>
                                       <th class="p-4 font-bold border-b border-gray-100">Phần Thưởng</th>
-                                      <th class="p-4 font-bold border-b border-gray-100">Lượt Dùng</th>
-                                      <th class="p-4 font-bold border-b border-gray-100 text-right">Xóa</th>
+                                      <th class="p-4 font-bold border-b border-gray-100">Đã Dùng</th>
+                                      <th class="p-4 font-bold border-b border-gray-100 text-right">Thao Tác</th>
                                   </tr>
                               </thead>
                               <tbody id="gcTableBody" class="text-sm">
-                                  <tr><td colspan="4" class="p-10 text-center text-gray-400"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>Đang tải danh sách...</td></tr>
+                                  <tr><td colspan="4" class="p-10 text-center text-gray-400"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>Đang tải dữ liệu...</td></tr>
                               </tbody>
                           </table>
                       </div>
@@ -177,15 +215,15 @@
       </div>
   </main>
 
-  <div id="editModal" class="fixed inset-0 z-[100] bg-gray-900/40 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-      <div class="bg-white w-full max-w-sm rounded-[24px] shadow-2xl transform scale-95 transition-transform duration-300 overflow-hidden" id="editPanel">
-          <div class="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center"><h3 class="text-lg font-black text-gray-800">Hiệu Chỉnh Tài Khoản</h3><button onclick="closeEditModal()" class="text-gray-400 hover:text-red-500 bg-white rounded-full p-1 border border-gray-200 transition"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+  <div id="editModal" class="fixed inset-0 z-[120] bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+      <div class="bg-white w-full max-w-sm rounded-[32px] shadow-2xl transform scale-95 transition-transform duration-300 overflow-hidden" id="editPanel">
+          <div class="bg-gray-50 px-6 py-5 border-b border-gray-100 flex justify-between items-center"><h3 class="text-[18px] font-black text-gray-800">Hiệu Chỉnh Khách Hàng</h3><button onclick="closeEditModal()" class="text-gray-400 hover:text-red-500 bg-white rounded-full p-1.5 border border-gray-200 transition active:scale-90"><i data-lucide="x" class="w-5 h-5"></i></button></div>
           <div class="p-6">
               <input type="hidden" id="editUid">
-              <div class="mb-4"><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Định danh khách</label><input type="text" id="editEmail" disabled class="w-full bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-500 border border-gray-200 outline-none"></div>
-              <div class="mb-4"><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Số dư Xu</label><div class="relative"><i data-lucide="gem" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand"></i><input type="number" id="editCoins" class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 font-black text-brand text-lg focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all"></div></div>
-              <div class="mb-6"><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Hạn VIP (Xóa để Hủy)</label><input type="date" id="editVipDate" class="w-full px-4 py-3 rounded-xl border border-gray-200 font-bold text-gray-700 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all uppercase"></div>
-              <button onclick="saveUserChanges()" id="btnSaveUser" class="w-full bg-brand hover:bg-brandDark text-white font-bold py-3.5 rounded-xl shadow-[0_8px_20px_-6px_rgba(0,122,255,0.6)] active:scale-95 transition-all flex justify-center items-center gap-2"><i data-lucide="save" class="w-5 h-5"></i> Áp Dụng Thay Đổi</button>
+              <div class="mb-4"><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Định danh (Email)</label><input type="text" id="editEmail" disabled class="w-full bg-gray-50 px-4 py-3 rounded-xl text-sm font-medium text-gray-500 border border-gray-200 outline-none"></div>
+              <div class="mb-4"><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Số dư Xu</label><div class="relative"><i data-lucide="gem" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand"></i><input type="number" id="editCoins" class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 font-black text-brand text-xl focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all shadow-inner"></div></div>
+              <div class="mb-6"><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Ngày Hết Hạn VIP (Xóa để Hủy)</label><input type="date" id="editVipDate" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 font-bold text-gray-700 focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all uppercase shadow-inner"></div>
+              <button onclick="saveUserChanges()" id="btnSaveUser" class="w-full bg-brand hover:bg-brandDark text-white font-black py-4 rounded-xl shadow-[0_10px_20px_-10px_rgba(0,122,255,0.6)] active:scale-95 transition-all flex justify-center items-center gap-2 text-[15px]"><i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI</button>
           </div>
       </div>
   </div>
@@ -211,6 +249,14 @@
 
     let allUsersData = []; let googleData = { totalRevenue: 0, inventory: {}, transactions: [] };
 
+    // MOBILE SIDEBAR TOGGLE
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        sidebar.classList.toggle('sidebar-open');
+        overlay.classList.toggle('overlay-open');
+    }
+
     auth.onAuthStateChanged(user => {
         const screen = document.getElementById('loginScreen');
         if (user && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
@@ -231,9 +277,9 @@
                 authenticatedSessionPass = pinInput; googleData = data.data;
                 const screen = document.getElementById('loginScreen'); screen.classList.add('opacity-0'); setTimeout(() => screen.classList.add('hidden'), 500);
                 
-                // Khởi động đồng loạt dữ liệu
+                // Fetch toàn bộ data
                 fetchFirebaseUsers(); 
-                fetchGiftcodes(); // Kéo dữ liệu Giftcode
+                fetchGiftcodes(); 
                 renderInventory(googleData.inventory); 
                 renderTransactions(googleData.transactions); 
                 updateDashboardCards();
@@ -251,9 +297,9 @@
     }
 
     // ==========================================
-    // TAB: QUẢN LÝ NGƯỜI DÙNG & TỔNG QUAN
+    // KHÁCH HÀNG & THỐNG KÊ
     // ==========================================
-    async function fetchFirebaseUsers() { try { const snapshot = await db.collection("users").get(); allUsersData = []; snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); renderUserTable(allUsersData); } catch (e) { console.error("Lỗi Firebase", e); } }
+    async function fetchFirebaseUsers() { try { const snapshot = await db.collection("users").get(); allUsersData = []; snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); renderUserTable(allUsersData); } catch (e) { console.error(e); } }
 
     function updateDashboardCards() {
         let totalUsers = allUsersData.length; let totalVips = 0; let totalCoins = 0;
@@ -266,16 +312,20 @@
         let html = '';
         users.forEach(u => {
             let isVip = u.vipExpire && u.vipExpire.toMillis() > Date.now();
-            let vipBadge = isVip ? `<span class="bg-yellow-50 text-yellow-700 px-2.5 py-1 rounded-lg text-[11px] font-black border border-yellow-200"><i data-lucide="crown" class="w-3 h-3 inline mb-0.5"></i> ${new Date(u.vipExpire.toMillis()).toLocaleDateString('vi-VN')}</span>` : `<span class="bg-gray-100 text-gray-500 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-gray-200">Nick Thường</span>`;
-            html += `<tr class="border-b border-gray-100 hover:bg-gray-50 transition group"><td class="p-4"><p class="font-bold text-gray-900">${u.email || 'Ẩn danh'}</p><p class="text-[10px] text-gray-400 font-mono mt-1 opacity-50 group-hover:opacity-100 transition">${u.uid}</p></td><td class="p-4 font-black text-brand text-base">${(u.coins || 0).toLocaleString()}</td><td class="p-4">${vipBadge}</td><td class="p-4 text-right"><button onclick="openEditModal('${u.uid}')" class="bg-white border border-gray-200 text-gray-600 hover:text-brand hover:border-brand px-4 py-2 rounded-xl text-[12px] font-bold transition shadow-sm hover:shadow active:scale-95">Chỉnh Sửa</button></td></tr>`;
+            let vipBadge = isVip ? `<span class="bg-yellow-50 text-yellow-700 px-2.5 py-1 rounded-lg text-[10px] md:text-[11px] font-black border border-yellow-200"><i data-lucide="crown" class="w-3 h-3 inline mb-0.5"></i> VIP ${new Date(u.vipExpire.toMillis()).toLocaleDateString('vi-VN')}</span>` : `<span class="bg-gray-100 text-gray-500 px-2.5 py-1 rounded-lg text-[10px] md:text-[11px] font-bold border border-gray-200">Thường</span>`;
+            html += `<tr class="border-b border-gray-100 hover:bg-gray-50 transition group"><td class="p-4"><p class="font-bold text-gray-900 text-sm md:text-base">${u.email || 'Ẩn danh'}</p><p class="text-[10px] text-gray-400 font-mono mt-0.5 md:opacity-50 group-hover:opacity-100 transition truncate w-32 md:w-auto">${u.uid}</p></td><td class="p-4 font-black text-brand text-sm md:text-base">${(u.coins || 0).toLocaleString()}</td><td class="p-4">${vipBadge}</td><td class="p-4 text-right"><button onclick="openEditModal('${u.uid}')" class="bg-white border border-gray-200 text-gray-600 hover:text-brand hover:border-brand px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-[11px] md:text-[12px] font-bold transition shadow-sm hover:shadow active:scale-95 whitespace-nowrap">Chỉnh Sửa</button></td></tr>`;
         });
         tbody.innerHTML = html; lucide.createIcons();
     }
 
     function filterUsers() { const q = document.getElementById('searchUser').value.toLowerCase(); renderUserTable(allUsersData.filter(u => (u.email||"").toLowerCase().includes(q) || (u.uid||"").toLowerCase().includes(q))); }
 
+    function openEditModal(uid) { const user = allUsersData.find(u => u.uid === uid); if(!user) return; document.getElementById('editUid').value = user.uid; document.getElementById('editEmail').value = user.email || 'N/A'; document.getElementById('editCoins').value = user.coins || 0; if (user.vipExpire && user.vipExpire.toMillis() > Date.now()) { const d = new Date(user.vipExpire.toMillis()); document.getElementById('editVipDate').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; } else document.getElementById('editVipDate').value = ''; const m = document.getElementById('editModal'); const p = document.getElementById('editPanel'); m.classList.remove('hidden'); requestAnimationFrame(() => { m.classList.add('opacity-100'); p.classList.remove('scale-95'); }); }
+    function closeEditModal() { const m = document.getElementById('editModal'); const p = document.getElementById('editPanel'); m.classList.remove('opacity-100'); p.classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); }
+    async function saveUserChanges() { const uid = document.getElementById('editUid').value; const newCoins = parseInt(document.getElementById('editCoins').value) || 0; const newDateStr = document.getElementById('editVipDate').value; const btn = document.getElementById('btnSaveUser'); btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`; btn.disabled = true; try { let updateData = { coins: newCoins }; if (newDateStr) { const targetDate = new Date(newDateStr); targetDate.setHours(23, 59, 59); updateData.vipExpire = firebase.firestore.Timestamp.fromDate(targetDate); } else updateData.vipExpire = firebase.firestore.FieldValue.delete(); await db.collection("users").doc(uid).set(updateData, { merge: true }); alert("✅ Cập nhật thành công!"); closeEditModal(); loadAllData(); } catch(e) { alert("❌ Lỗi: " + e.message); } btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI`; btn.disabled = false; lucide.createIcons(); }
+
     // ==========================================
-    // TAB: QUẢN LÝ GIFTCODE (FIRESTORE)
+    // QUẢN LÝ GIFTCODE (FIRESTORE)
     // ==========================================
     function changeGcLabel() {
         const type = document.getElementById('gcType').value;
@@ -294,118 +344,82 @@
             
             let html = '';
             snapshot.forEach(doc => {
-                const data = doc.data();
-                const code = doc.id;
-                
+                const data = doc.data(); const code = doc.id;
                 let typeBadge = '';
-                if(data.type === 'coins') typeBadge = `<span class="text-blue-600 font-bold"><i data-lucide="gem" class="w-3 h-3 inline"></i> Tặng ${data.value} Xu</span>`;
-                else if(data.type === 'vip') typeBadge = `<span class="text-yellow-600 font-bold"><i data-lucide="crown" class="w-3 h-3 inline"></i> VIP ${data.value} Ngày</span>`;
-                else if(data.type === 'discount') typeBadge = `<span class="text-green-600 font-bold"><i data-lucide="banknote" class="w-3 h-3 inline"></i> Giảm ${data.value.toLocaleString()}đ</span>`;
+                if(data.type === 'coins') typeBadge = `<span class="text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded"><i data-lucide="gem" class="w-3 h-3 inline"></i> Tặng ${data.value} Xu</span>`;
+                else if(data.type === 'vip') typeBadge = `<span class="text-yellow-600 font-bold bg-yellow-50 px-2 py-1 rounded"><i data-lucide="crown" class="w-3 h-3 inline"></i> VIP ${data.value} Ngày</span>`;
+                else if(data.type === 'discount') typeBadge = `<span class="text-green-600 font-bold bg-green-50 px-2 py-1 rounded"><i data-lucide="banknote" class="w-3 h-3 inline"></i> Giảm ${data.value.toLocaleString()}đ</span>`;
                 
                 let limitStr = data.maxUses > 0 ? `${data.usedCount} / ${data.maxUses}` : `${data.usedCount} / Vô hạn`;
                 let limitColor = (data.maxUses > 0 && data.usedCount >= data.maxUses) ? 'text-red-500' : 'text-gray-500';
 
-                html += `
-                <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                    <td class="p-4"><p class="font-black text-gray-900 tracking-wider">${code}</p></td>
-                    <td class="p-4 text-sm">${typeBadge}</td>
-                    <td class="p-4 font-bold ${limitColor} text-sm">${limitStr}</td>
-                    <td class="p-4 text-right">
-                        <button onclick="deleteGiftcode('${code}')" class="text-red-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
-                    </td>
-                </tr>`;
+                html += `<tr class="border-b border-gray-100 hover:bg-gray-50 transition"><td class="p-4"><p class="font-black text-gray-900 tracking-wider text-base">${code}</p></td><td class="p-4 text-xs whitespace-nowrap">${typeBadge}</td><td class="p-4 font-bold ${limitColor} text-sm">${limitStr}</td><td class="p-4 text-right"><button onclick="deleteGiftcode('${code}')" class="text-red-400 hover:text-red-600 p-2 rounded-xl bg-red-50 hover:bg-red-100 transition active:scale-90"><i data-lucide="trash-2" class="w-5 h-5"></i></button></td></tr>`;
             });
             tbody.innerHTML = html; lucide.createIcons();
         } catch(e) { console.error(e); }
     }
 
     async function createNewGiftcode() {
-        const code = document.getElementById('gcName').value.trim().toUpperCase();
-        const type = document.getElementById('gcType').value;
-        const value = parseInt(document.getElementById('gcValue').value);
-        const maxUses = parseInt(document.getElementById('gcLimit').value) || 0;
-        const btn = document.getElementById('btnCreateGc');
-
+        const code = document.getElementById('gcName').value.trim().toUpperCase(); const type = document.getElementById('gcType').value; const value = parseInt(document.getElementById('gcValue').value); const maxUses = parseInt(document.getElementById('gcLimit').value) || 0; const btn = document.getElementById('btnCreateGc');
         if (!code || isNaN(value)) { alert("Vui lòng điền đủ Tên Mã và Giá Trị!"); return; }
-
         btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`; btn.disabled = true;
-        
         try {
-            const docRef = db.collection("giftcodes").doc(code);
-            const doc = await docRef.get();
+            const docRef = db.collection("giftcodes").doc(code); const doc = await docRef.get();
             if (doc.exists) { alert("Tên mã này đã tồn tại! Vui lòng đặt tên khác."); }
-            else {
-                await docRef.set({
-                    type: type,
-                    value: value,
-                    maxUses: maxUses,
-                    usedCount: 0,
-                    usedBy: [], // Array chứa uid khách đã dùng
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                alert("✅ Tạo mã thành công!");
-                document.getElementById('gcName').value = '';
-                document.getElementById('gcValue').value = '';
-                fetchGiftcodes();
-            }
+            else { await docRef.set({ type: type, value: value, maxUses: maxUses, usedCount: 0, usedBy: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() }); alert("✅ Tạo mã thành công!"); document.getElementById('gcName').value = ''; document.getElementById('gcValue').value = ''; fetchGiftcodes(); }
         } catch (e) { alert("Lỗi khi tạo mã: " + e.message); }
-        
-        btn.innerHTML = `<i data-lucide="ticket" class="w-5 h-5"></i> Phát Hành Mã Ngay`; btn.disabled = false; lucide.createIcons();
+        btn.innerHTML = `<i data-lucide="ticket" class="w-5 h-5"></i> TẠO MÃ MỚI`; btn.disabled = false; lucide.createIcons();
     }
 
-    async function deleteGiftcode(code) {
-        if(confirm(`Bạn có chắc muốn xóa mã [${code}] vĩnh viễn?`)) {
-            await db.collection("giftcodes").doc(code).delete();
-            fetchGiftcodes();
-        }
-    }
-
+    async function deleteGiftcode(code) { if(confirm(`Xóa mã [${code}] vĩnh viễn?`)) { await db.collection("giftcodes").doc(code).delete(); fetchGiftcodes(); } }
 
     // ==========================================
-    // TAB: KHO TÀI KHOẢN (GOOGLE SHEET)
+    // KHO TÀI KHOẢN (GOOGLE SHEET)
     // ==========================================
     function renderInventory(inv) {
         let miniHtml = ''; let fullHtml = ''; const types = ['Spotify', 'Netflix', 'CapCut']; const colors = { 'Spotify': 'green', 'Netflix': 'red', 'CapCut': 'gray' };
         types.forEach(t => {
             let data = inv[t] || {total: 0, available: 0, sold: 0}; let c = colors[t]; let percent = data.total > 0 ? Math.round((data.sold / data.total)*100) : 0;
-            miniHtml += `<div class="border border-gray-100 rounded-xl p-4 bg-gray-50 relative overflow-hidden"><div class="absolute right-0 top-0 w-1 h-full bg-${c}-500"></div><p class="text-xs font-bold text-gray-500 uppercase mb-1">${t}</p><div class="flex items-end gap-2"><span class="text-2xl font-black text-gray-900">${data.available}</span><span class="text-xs font-bold text-green-600 mb-1">sẵn sàng</span></div></div>`;
-            fullHtml += `<div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm"><div class="flex items-center gap-4"><div class="w-14 h-14 rounded-xl bg-${c}-50 flex items-center justify-center border border-${c}-100"><i data-lucide="box" class="w-7 h-7 text-${c}-500"></i></div><div><h3 class="font-black text-lg text-gray-900">${t} Premium</h3><p class="text-xs text-gray-500 font-bold mt-1">Đã bán: ${data.sold} / Tổng nhập: ${data.total}</p></div></div><div class="flex items-center gap-6"><div class="w-32"><div class="flex justify-between text-[10px] font-bold text-gray-500 mb-1"><span>Tiêu thụ</span><span>${percent}%</span></div><div class="w-full bg-gray-100 rounded-full h-2"><div class="bg-${c}-500 h-2 rounded-full" style="width: ${percent}%"></div></div></div><div class="text-center bg-${c}-50 border border-${c}-100 px-4 py-2 rounded-xl min-w-[100px]"><p class="text-[10px] font-black text-${c}-600 uppercase">Tồn Kho</p><p class="text-2xl font-black text-${c}-700 leading-none mt-1">${data.available}</p></div></div></div>`;
+            miniHtml += `<div class="border border-gray-100 rounded-[20px] p-4 bg-gray-50 relative overflow-hidden"><div class="absolute right-0 top-0 w-1.5 h-full bg-${c}-500"></div><p class="text-[11px] font-bold text-gray-500 uppercase mb-1 tracking-widest">${t}</p><div class="flex items-end gap-2"><span class="text-3xl font-black text-gray-900 leading-none">${data.available}</span></div></div>`;
+            fullHtml += `<div class="bg-white rounded-[24px] border border-gray-200 p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm"><div class="flex items-center gap-4"><div class="w-14 h-14 rounded-[20px] bg-${c}-50 flex items-center justify-center border border-${c}-100 shrink-0"><i data-lucide="box" class="w-7 h-7 text-${c}-500"></i></div><div><h3 class="font-black text-lg text-gray-900">${t} Premium</h3><p class="text-xs text-gray-500 font-bold mt-1">Đã bán: ${data.sold} / Nhập: ${data.total}</p></div></div><div class="flex items-center gap-6"><div class="w-full md:w-40"><div class="flex justify-between text-[10px] font-bold text-gray-500 mb-1"><span>Tiêu thụ</span><span>${percent}%</span></div><div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden"><div class="bg-${c}-500 h-2.5 rounded-full" style="width: ${percent}%"></div></div></div><div class="text-center bg-${c}-50 border border-${c}-100 px-4 py-2.5 rounded-[16px] min-w-[100px] shrink-0"><p class="text-[10px] font-black text-${c}-600 uppercase">Tồn Kho</p><p class="text-2xl font-black text-${c}-700 leading-none mt-1">${data.available}</p></div></div></div>`;
         });
         document.getElementById('inventoryMiniWidgets').innerHTML = miniHtml || `<p class="text-sm">Chưa có data.</p>`; document.getElementById('inventoryFullList').innerHTML = fullHtml || `<p class="text-sm">Chưa có data.</p>`;
     }
 
-    async function pushToSheet() { const type = document.getElementById('accType').value; const info = document.getElementById('accInfo').value.trim(); const btn = document.getElementById('btnAddAcc'); if(!info) { alert("Chưa nhập tài khoản!"); return; } btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang mã hóa...`; btn.disabled = true; try { const res = await fetch(`${GOOGLE_API_URL}?action=add_account&type=${type}&info=${encodeURIComponent(info)}&pass=${encodeURIComponent(authenticatedSessionPass)}&t=${Date.now()}`); const data = await res.json(); if (data.success) { alert(`✅ Đã thêm ${type}!`); document.getElementById('accInfo').value = ''; loadAllData(); } else alert("❌ Lỗi: " + data.error); } catch(e) { alert("Lỗi mạng!"); } btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Lên Hệ Thống`; btn.disabled = false; lucide.createIcons(); }
+    async function pushToSheet() { const type = document.getElementById('accType').value; const info = document.getElementById('accInfo').value.trim(); const btn = document.getElementById('btnAddAcc'); if(!info) { alert("Chưa nhập thông tin tài khoản!"); return; } btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang mã hóa...`; btn.disabled = true; try { const res = await fetch(`${GOOGLE_API_URL}?action=add_account&type=${type}&info=${encodeURIComponent(info)}&pass=${encodeURIComponent(authenticatedSessionPass)}&t=${Date.now()}`); const data = await res.json(); if (data.success) { alert(`✅ Đã nạp tài khoản ${type} vào kho!`); document.getElementById('accInfo').value = ''; loadAllData(); } else alert("❌ Lỗi: " + data.error); } catch(e) { alert("Lỗi kết nối mạng!"); } btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Lên Hệ Thống`; btn.disabled = false; lucide.createIcons(); }
 
     // ==========================================
-    // TAB: DÒNG TIỀN NẠP XU (GOOGLE SHEET)
+    // DÒNG TIỀN NẠP XU (GOOGLE SHEET)
     // ==========================================
     function renderTransactions(txs) {
-        const tbody = document.getElementById('txTableBody'); if(txs.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Chưa có khách nào nạp.</td></tr>`; return; }
+        const tbody = document.getElementById('txTableBody'); if(txs.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Chưa có khách nào nạp tiền.</td></tr>`; return; }
         let html = '';
         txs.forEach(t => {
             let timeStr = new Date(t.time).toLocaleString('vi-VN'); let isPaid = t.status === 'PAID' || t.status === 'CLAIMED';
-            let statusBadge = isPaid ? `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-[10px] font-black border border-green-200"><i data-lucide="check" class="w-3 h-3 inline"></i> THÀNH CÔNG</span>` : `<span class="bg-orange-50 text-orange-600 px-3 py-1 rounded-lg text-[10px] font-black border border-orange-200">ĐANG CHỜ</span>`;
-            html += `<tr class="border-b border-gray-100 hover:bg-gray-50 transition"><td class="p-4 text-xs font-bold text-gray-500">${timeStr}</td><td class="p-4"><p class="font-bold text-gray-900 text-sm">${t.orderId}</p><p class="text-[10px] text-gray-400 font-mono mt-0.5 truncate w-32" title="${t.uid}">${t.uid}</p></td><td class="p-4"><p class="font-black text-red-500 text-sm">${(parseInt(t.amount)||0).toLocaleString()}đ</p><p class="text-[11px] font-bold text-brand mt-0.5">+${t.coins} Xu</p></td><td class="p-4 text-right">${statusBadge}</td></tr>`;
+            let statusBadge = isPaid ? `<span class="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-[10px] font-black border border-green-200 whitespace-nowrap"><i data-lucide="check" class="w-3 h-3 inline"></i> THÀNH CÔNG</span>` : `<span class="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg text-[10px] font-black border border-orange-200 whitespace-nowrap">ĐANG CHỜ</span>`;
+            html += `<tr class="border-b border-gray-100 hover:bg-gray-50 transition"><td class="p-4 text-[11px] font-bold text-gray-500 whitespace-nowrap">${timeStr}</td><td class="p-4"><p class="font-bold text-gray-900 text-sm md:text-base">${t.orderId}</p><p class="text-[10px] text-gray-400 font-mono mt-0.5 truncate w-24 md:w-32" title="${t.uid}">${t.uid}</p></td><td class="p-4"><p class="font-black text-red-500 text-sm md:text-base">${(parseInt(t.amount)||0).toLocaleString()}đ</p><p class="text-[11px] font-bold text-brand mt-0.5">+${t.coins} Xu</p></td><td class="p-4 text-right">${statusBadge}</td></tr>`;
         });
         tbody.innerHTML = html; lucide.createIcons();
     }
 
     // ==========================================
-    // UTILS
+    // CHUYỂN TAB VÀ ĐÓNG MỞ SIDEBAR
     // ==========================================
-    function openEditModal(uid) { const user = allUsersData.find(u => u.uid === uid); if(!user) return; document.getElementById('editUid').value = user.uid; document.getElementById('editEmail').value = user.email || 'N/A'; document.getElementById('editCoins').value = user.coins || 0; if (user.vipExpire && user.vipExpire.toMillis() > Date.now()) { const d = new Date(user.vipExpire.toMillis()); document.getElementById('editVipDate').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; } else document.getElementById('editVipDate').value = ''; const m = document.getElementById('editModal'); const p = document.getElementById('editPanel'); m.classList.remove('hidden'); requestAnimationFrame(() => { m.classList.add('opacity-100'); p.classList.remove('scale-95'); }); }
-    function closeEditModal() { const m = document.getElementById('editModal'); const p = document.getElementById('editPanel'); m.classList.remove('opacity-100'); p.classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); }
-    async function saveUserChanges() { const uid = document.getElementById('editUid').value; const newCoins = parseInt(document.getElementById('editCoins').value) || 0; const newDateStr = document.getElementById('editVipDate').value; const btn = document.getElementById('btnSaveUser'); btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`; btn.disabled = true; try { let updateData = { coins: newCoins }; if (newDateStr) { const targetDate = new Date(newDateStr); targetDate.setHours(23, 59, 59); updateData.vipExpire = firebase.firestore.Timestamp.fromDate(targetDate); } else updateData.vipExpire = firebase.firestore.FieldValue.delete(); await db.collection("users").doc(uid).set(updateData, { merge: true }); alert("✅ Cập nhật thành công!"); closeEditModal(); loadAllData(); } catch(e) { alert("❌ Lỗi: " + e.message); } btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> Áp Dụng Thay Đổi`; btn.disabled = false; lucide.createIcons(); }
-    
     function switchTab(tab) { 
         ['dashboard', 'users', 'inventory', 'transactions', 'giftcodes'].forEach(id => { 
             document.getElementById('tab-' + id).classList.add('hidden'); 
-            document.getElementById('nav-' + id).className = "w-full flex items-center px-4 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition"; 
+            document.getElementById('nav-' + id).className = "w-full flex items-center px-4 py-3.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"; 
         }); 
         document.getElementById('tab-' + tab).classList.remove('hidden'); 
-        document.getElementById('nav-' + tab).className = "w-full flex items-center px-4 py-3 rounded-xl bg-brand/10 text-brand font-bold transition"; 
-        const titles = { 'dashboard': 'Tổng Quan Hệ Thống', 'users': 'Quản Lý Khách Hàng', 'inventory': 'Quản Trị Kho Hàng', 'transactions': 'Kiểm Soát Dòng Tiền', 'giftcodes': 'Chiến Dịch Marketing' }; 
+        document.getElementById('nav-' + tab).className = "w-full flex items-center px-4 py-3.5 rounded-xl bg-brand/10 text-brand font-bold transition active:scale-95 text-[15px]"; 
+        const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng', 'inventory': 'Kho Tài Khoản', 'transactions': 'Dòng Tiền Nạp', 'giftcodes': 'Chiến Dịch Marketing' }; 
         document.getElementById('pageTitle').innerText = titles[tab]; 
+        
+        // Tự động đóng sidebar trên mobile khi chọn xong tab
+        if(window.innerWidth < 768) {
+            document.getElementById('sidebar').classList.remove('sidebar-open');
+            document.getElementById('mobileOverlay').classList.remove('overlay-open');
+        }
     }
     
     lucide.createIcons();
