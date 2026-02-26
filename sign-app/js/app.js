@@ -24,7 +24,6 @@ function generateShortId() {
     let result = ''; for (let i = 0; i < 6; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); } return result;
 }
 
-// HÀM CHUYỂN ĐỔI URL CHUẨN ĐỂ TRÁNH LỖI MẠNG 404
 function getAbsoluteUrl(url, defaultEndpoint) {
     if (!url) return defaultEndpoint;
     if (url.startsWith('http')) return url;
@@ -33,7 +32,7 @@ function getAbsoluteUrl(url, defaultEndpoint) {
 
 // --- VUE APP LOGIC ---
 new Vue({
-    el: '#app-vip', // Trỏ thẳng vào UI xịn của chúng ta
+    el: '#app-vip',
     data: {
         showStep1: true, showStep2: false, showStep3: false, showStep4: false, showDirectDownload: false,
         progressBar: 0, uploadDetails: '', statusText: '', logText: '', jobId: '',
@@ -46,7 +45,10 @@ new Vue({
             'sca': 'https://tight-water-fabbipa-proxy.tlvdzreal.workers.dev/scarlet'
         },
         appNames: { 'esign': 'ESign', 'gbox': 'GBox', 'sca': 'Scarlet' },
-        download: '', directInstallLink: '', shareUrl: '', copySuccess: false
+        download: '', directInstallLink: '', shareUrl: '', copySuccess: false,
+        
+        // BIẾN QUẢN LÝ NÚT DỰ PHÒNG
+        showFallback: false
     },
     computed: {
         canSign() { return (this.ipa && this.ipa.size > 0 && this.certZip && this.password && this.p12 && this.mobileprovision); },
@@ -113,6 +115,7 @@ new Vue({
             if (!this.canSign) return;
             this.savePwd(this.password);
             this.showStep1 = false; this.showStep2 = true; this.progressBar = 0; this.uploadDetails = 'Đang khởi tạo kết nối...';
+            this.showFallback = false; // Reset trạng thái nút dự phòng
 
             const fd = new FormData();
             fd.append('ipa', this.ipa, this.ipa.name); 
@@ -122,7 +125,6 @@ new Vue({
             fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
 
             try {
-                // Tận dụng biến hệ thống và gắn IP chuẩn để chống lỗi mạng
                 let targetUrl = typeof SignUrl !== 'undefined' ? SignUrl : 'https://sign.ipasign.cc/api/sign';
                 const apiURL = getAbsoluteUrl(targetUrl, 'https://sign.ipasign.cc/api/sign');
                 
@@ -165,26 +167,12 @@ new Vue({
                         
                         let dlUrl = typeof DownloadUrl !== 'undefined' ? DownloadUrl : 'https://sign.ipasign.cc/download';
                         const downApi = getAbsoluteUrl(dlUrl, 'https://sign.ipasign.cc/download');
+                        
                         this.download = `${downApi}/${this.jobId}`;
                         
-                        // BOT CÀO LINK: Lén truy cập vào trang trung gian để bắt link "itms-services" chuẩn 100%
-                        this.statusText = 'Đang trích xuất cấu hình tải...';
-                        try {
-                            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(this.download)}`;
-                            const htmlRes = await fetch(proxyUrl);
-                            const htmlData = await htmlRes.json();
-                            
-                            const match = htmlData.contents.match(/(itms-services:\/\/[^"']+)/);
-                            if (match) {
-                                this.directInstallLink = match[1].replace(/&amp;/g, '&');
-                            } else {
-                                const plistUrl = this.download.replace('/download', '/plist');
-                                this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`; 
-                            }
-                        } catch (err) {
-                            const plistUrl = this.download.replace('/download', '/plist');
-                            this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
-                        }
+                        // Mã hóa link itms-services. Nếu Cloudflare chặn, Fallback sẽ giải cứu ở bước ấn nút
+                        const plistUrl = this.download.replace('/download', '/plist');
+                        this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`; 
                         
                         this.showStep3 = false; 
                         this.showStep4 = true;
@@ -200,19 +188,35 @@ new Vue({
             }, 3000);
         },
 
-        triggerInstall() {
+        // --- HÀM XỬ LÝ CHỐNG "LIỆT" NÚT THẦN THÁNH ---
+        triggerInstall(e) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
                 alert('TÍNH NĂNG NÀY CHỈ DÀNH CHO iPHONE/iPAD!\n\nVui lòng dùng ứng dụng Camera của iPhone quét mã QR bên dưới để cài đặt.');
                 return;
             }
             
-            // Link xịn cào được từ Bot, iOS nhận 100%
+            // 1. Đổi giao diện nút thành Loading để khách biết là nút đã được ấn
+            const btn = e.currentTarget;
+            const textSpan = btn.querySelector('.btn-text');
+            const svgIcon = btn.querySelector('svg');
+            
+            if (textSpan) textSpan.innerText = 'ĐANG MỞ POPUP...';
+            if (svgIcon) svgIcon.classList.add('spinning');
+            btn.style.opacity = '0.7';
+            
+            // 2. Ép trình duyệt gọi link cài đặt ngầm
             window.location.href = this.directInstallLink;
+            
+            // 3. NẾU SAFARI CỨNG ĐẦU TỪ CHỐI (Không có popup nào hiện lên)
+            // Sau đúng 2.5 giây, Nút màu Đỏ cứu hộ sẽ hiện ra dẫn qua trang tải gốc!
+            setTimeout(() => {
+                this.showFallback = true;
+            }, 2500);
         },
 
         checkDirectDownload() { 
-            const id = newSearchParams(window.location.search).get('download'); 
+            const id = new URLSearchParams(window.location.search).get('download'); 
             if (id) this.loadFromFirestore(id); 
         },
         async loadFromFirestore(id) {
@@ -223,21 +227,8 @@ new Vue({
                     const url = doc.data().download_url;
                     this.download = url;
                     
-                    try {
-                        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-                        const htmlRes = await fetch(proxyUrl);
-                        const htmlData = await htmlRes.json();
-                        const match = htmlData.contents.match(/(itms-services:\/\/[^"']+)/);
-                        if (match) {
-                            this.directInstallLink = match[1].replace(/&amp;/g, '&');
-                        } else {
-                            const pUrl = url.replace('/download', '/plist');
-                            this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(pUrl)}`;
-                        }
-                    } catch (err) {
-                        const pUrl = url.replace('/download', '/plist');
-                        this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(pUrl)}`;
-                    }
+                    const plistUrl = url.replace('/download', '/plist');
+                    this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
                     
                     this.showStep1 = false; this.showDirectDownload = true;
                     setTimeout(() => new QRCode(document.getElementById('directQrcode'), { width: 140, height: 140 }).makeCode(url), 100);
