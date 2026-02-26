@@ -24,6 +24,11 @@ function generateShortId() {
     let result = ''; for (let i = 0; i < 6; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); } return result;
 }
 
+// --- KHAI BÁO CỨNG API (Không mượn từ file ngoài nữa) ---
+const SERVER_API_SIGN = 'https://api.ipasign.cc/sign';
+const SERVER_API_STATUS = 'https://api.ipasign.cc/status';
+const SERVER_API_DOWNLOAD = 'https://ipa.ipasign.cc/download';
+
 // --- VUE APP LOGIC ---
 new Vue({
     el: '#app',
@@ -102,6 +107,7 @@ new Vue({
         selectPassword(p) { this.password = p; this.showPasswordSuggestions = false; },
         hidePasswordSuggestions() { setTimeout(() => this.showPasswordSuggestions = false, 200); },
 
+        // --- GỌI API GỐC (Bản Không Lỗi) ---
         async upload() {
             if (!this.canSign) return;
             this.savePwd(this.password);
@@ -115,14 +121,13 @@ new Vue({
             fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
 
             try {
-                // Điền thẳng URL API gốc để loại bỏ hoàn toàn file index.js rác
-                const apiURL = 'https://sign.ipasign.cc/api/sign';
-                const resp = await axios.post(apiURL, fd, {
+                // Gọi thẳng tên miền API gốc, không qua trung gian
+                const resp = await axios.post(SERVER_API_SIGN, fd, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                     onUploadProgress: e => {
                         if (e.lengthComputable) {
                             this.progressBar = Math.round((e.loaded / e.total) * 100);
-                            this.uploadDetails = 'Đang tải lên Server bảo mật...';
+                            this.uploadDetails = 'Đang đẩy lên Server Bảo Mật...';
                         }
                     }
                 });
@@ -132,7 +137,8 @@ new Vue({
                 this.showStep3 = true; 
                 this.pollStatus();
             } catch (e) {
-                alert('Lỗi mạng! Không thể kết nối tới Server Ký.');
+                console.error(e);
+                alert('Lỗi mạng hoặc Server đang bảo trì! Vui lòng thử lại.');
                 this.resetToStep1();
             }
         },
@@ -142,8 +148,7 @@ new Vue({
             this.logText = 'Khởi tạo môi trường...';
             const timer = setInterval(async () => {
                 try {
-                    const statusApi = 'https://sign.ipasign.cc/api/status';
-                    const res = await axios.get(`${statusApi}/${this.jobId}`);
+                    const res = await axios.get(`${SERVER_API_STATUS}/${this.jobId}`);
                     const d = res.data;
                     this.statusText = d.status || 'Processing...'; 
                     this.logText = d.msg || 'Đang biên dịch...';
@@ -151,25 +156,24 @@ new Vue({
                     if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
                         clearInterval(timer);
                         
-                        this.download = `https://ipa.ipasign.cc/download/${this.jobId}`;
+                        this.download = `${SERVER_API_DOWNLOAD}/${this.jobId}`;
                         
-                        // --- ĐÂY LÀ PHÉP MÀU: CÀO LINK CÀI ĐẶT TRỰC TIẾP ---
-                        this.statusText = 'Đang trích xuất cấu hình...';
+                        // CÀO DỮ LIỆU ĐỂ BYPASS LỖI NÚT CÀI ĐẶT
+                        this.statusText = 'Đang trích xuất cấu hình tải...';
                         try {
-                            // Dùng Proxy trung gian để đọc trộm trang download và lấy link Plist chuẩn 100%
                             const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(this.download)}`;
                             const htmlRes = await fetch(proxyUrl);
                             const htmlData = await htmlRes.json();
                             
-                            // Lọc ra đúng cái link itms-services xịn
+                            // Lọc lấy đoạn itms-services xịn trong mã nguồn trang web đích
                             const match = htmlData.contents.match(/(itms-services:\/\/[^"']+)/);
                             if (match) {
                                 this.directInstallLink = match[1].replace(/&amp;/g, '&');
                             } else {
-                                this.directInstallLink = this.download; // Fallback
+                                this.directInstallLink = this.download; 
                             }
                         } catch (err) {
-                            this.directInstallLink = this.download; // Fallback nếu proxy nghẽn
+                            this.directInstallLink = this.download; 
                         }
                         
                         this.showStep3 = false; 
@@ -186,7 +190,7 @@ new Vue({
             }, 3000);
         },
 
-        // Hàm Cài Đặt 
+        // --- CÀI ĐẶT ---
         triggerInstall() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
@@ -194,7 +198,7 @@ new Vue({
                 return;
             }
             
-            // Nếu cào được link itms, chuyển hướng thẳng. Nếu không cào được, nhảy qua trang download
+            // Link xịn đã được cào, chuyển hướng luôn!
             window.location.href = this.directInstallLink;
         },
 
@@ -210,7 +214,6 @@ new Vue({
                     const url = doc.data().download_url;
                     this.download = url;
                     
-                    // Giống lúc Ký xong, cào link cài đặt cho khách truy cập
                     try {
                         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
                         const htmlRes = await fetch(proxyUrl);
