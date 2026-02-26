@@ -87,7 +87,7 @@
        <div id="dynamicContent" class="min-h-[500px]">
           <div class="py-32 flex flex-col items-center justify-center text-gray-400 opacity-60">
              <div class="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mb-4"></div>
-             <p class="text-sm font-bold animate-pulse tracking-wide">Đang đồng bộ kho dữ liệu...</p>
+             <p class="text-sm font-bold animate-pulse tracking-wide">Đang tải dữ liệu...</p>
           </div>
        </div>
     </div>
@@ -145,7 +145,6 @@
       messagingSenderId: "127619650916",
       appId: "1:127619650916:web:fc8904c99804eeb7539671"
     };
-    
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -161,8 +160,7 @@
             currentUser = user;
             db.collection("users").doc(user.uid).onSnapshot(doc => {
                 if (doc.exists) {
-                    const data = doc.data();
-                    currentCoins = data.coins || 0;
+                    const data = doc.data(); currentCoins = data.coins || 0;
                     if(data.vipExpire && data.vipExpire.toMillis() > Date.now()) {
                         isUserVip = true;
                         headerBtn.innerHTML = `<i data-lucide="crown" class="w-4 h-4 mr-1 text-yellow-500"></i> ${currentCoins} Xu`;
@@ -183,27 +181,22 @@
     });
 
     window.allAppsMap = {}; 
-    const DB = { ipa: [], vip: [] }; // 👉 ĐÃ SỬA LẠI ĐỂ ĐỌC FILE VIP
+    
+    // ĐÃ THÊM KHO VIP VÀ XÓA TWEAK (DYLIB/CONF)
+    const DB = { ipa: [], vip: [] }; 
     const STATE = { currentTab: 'home', currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
 
     function getUniqueApps(apps) { 
         const map = new Map(); 
-        apps.forEach(app => { 
-            const key = String(app.name || app.title || app.filename || Math.random()).toLowerCase().trim(); 
-            if (!map.has(key)) map.set(key, app); 
-        }); 
+        apps.forEach(app => { const key = String(app.name || app.title || app.filename || Math.random()).toLowerCase().trim(); if (!map.has(key)) map.set(key, app); }); 
         return Array.from(map.values()); 
     }
-    
     function sortItemsByDate(items) { return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0)); }
 
     async function loadData() {
         try {
-            // 👉 ĐỌC FILE KHO IPA GỐC VÀ FILE VIP SẾP MỚI TẠO
-            const endpoints = [ 
-                {k: 'ipa', u: 'data/ipa.json'}, 
-                {k: 'vip', u: 'data/vip.json'} // Đã thay bằng vip.json
-            ];
+            // LOAD FILE VIP.JSON MÀ SẾP ĐÃ TẠO
+            const endpoints = [ {k: 'ipa', u: 'data/ipa.json'}, {k: 'vip', u: 'data/vip.json'} ];
             await Promise.all(endpoints.map(async e => {
                 try { 
                     const res = await fetch(`${e.u}?t=${Date.now()}`); 
@@ -221,10 +214,9 @@
         } catch (fatalError) {} 
       
         DB.ipa = sortItemsByDate(getUniqueApps(DB.ipa)); 
-        DB.vip = sortItemsByDate(getUniqueApps(DB.vip)); // Sort cả file VIP
+        DB.vip = sortItemsByDate(getUniqueApps(DB.vip)); // Đảm bảo VIP cũng được lọc trùng và sắp xếp
         switchTab(STATE.currentTab);
 
-        // Kéo thêm API Apptesters
         fetch('https://raw.githubusercontent.com/apptesters-org/AppTesters_Repo/main/apps.json').then(res => res.json()).then(data => {
             if (data && Array.isArray(data.apps)) {
                 const mapped = data.apps.map(app => {
@@ -275,33 +267,19 @@
             }
         } 
         else {
-            // 👉 LẤY DATA CHO TAB TƯƠNG ỨNG (IPA HOẶC VIP)
+            // LẤY ĐÚNG DATA CHO TAB
             let items = tab === 'ipa' ? DB.ipa : (tab === 'vip' ? DB.vip : []);
+            
             if(query) items = items.filter(i => (i.name || i.title || i.filename || '').toLowerCase().includes(query));
             
             if (STATE.currentFilter !== 'all') { 
                 items = items.filter(i => { 
                     const nameDescCat = String(i.name + " " + (i.desc||"") + " " + (i.category||"")).toLowerCase(); 
-                    if(STATE.currentFilter === 'game') {
-                        const gameKw = ['game', 'trò chơi', 'hack', 'mod', 'rpg', 'moba', 'fps', 'action', 'simulator', 'bắn súng'];
-                        return gameKw.some(kw => nameDescCat.includes(kw));
-                    }
-                    if(STATE.currentFilter === 'social') {
-                        const socialKw = ['social', 'mạng xã hội', 'facebook', 'tiktok', 'insta', 'zalo', 'messenger', 'youtube', 'chat', 'nhắn tin'];
-                        return socialKw.some(kw => nameDescCat.includes(kw));
-                    }
-                    if(STATE.currentFilter === 'media') {
-                        const mediaKw = ['media', 'giải trí', 'phim', 'nhạc', 'music', 'video', 'netflix', 'spotify', 'mp3', 'player', 'stream'];
-                        return mediaKw.some(kw => nameDescCat.includes(kw));
-                    }
-                    if(STATE.currentFilter === 'edit') {
-                        const editKw = ['edit', 'chỉnh sửa', 'ảnh', 'video', 'photo', 'camera', 'capcut', 'picsart', 'lightroom', 'photoshop', 'maker'];
-                        return editKw.some(kw => nameDescCat.includes(kw));
-                    }
-                    if(STATE.currentFilter === 'utility') {
-                        const utilKw = ['utility', 'tiện ích', 'công cụ', 'tool', 'jailbreak', 'quản lý', 'adblock', 'trollstore', 'file', 'manager', 'cleaner', 'vpn'];
-                        return utilKw.some(kw => nameDescCat.includes(kw));
-                    }
+                    if(STATE.currentFilter === 'game') return ['game', 'trò chơi', 'hack', 'mod', 'rpg', 'moba', 'fps', 'action', 'simulator', 'bắn súng'].some(kw => nameDescCat.includes(kw));
+                    if(STATE.currentFilter === 'social') return ['social', 'mạng xã hội', 'facebook', 'tiktok', 'insta', 'zalo', 'messenger', 'youtube', 'chat', 'nhắn tin'].some(kw => nameDescCat.includes(kw));
+                    if(STATE.currentFilter === 'media') return ['media', 'giải trí', 'phim', 'nhạc', 'music', 'video', 'netflix', 'spotify', 'mp3', 'player', 'stream'].some(kw => nameDescCat.includes(kw));
+                    if(STATE.currentFilter === 'edit') return ['edit', 'chỉnh sửa', 'ảnh', 'video', 'photo', 'camera', 'capcut', 'picsart', 'lightroom', 'photoshop', 'maker'].some(kw => nameDescCat.includes(kw));
+                    if(STATE.currentFilter === 'utility') return ['utility', 'tiện ích', 'công cụ', 'tool', 'jailbreak', 'quản lý', 'adblock', 'trollstore', 'file', 'manager', 'cleaner', 'vpn'].some(kw => nameDescCat.includes(kw));
                     return true; 
                 }); 
             }
@@ -322,7 +300,6 @@
                     ? "bg-gray-900 text-white dark:bg-white dark:text-black shadow-lg shadow-black/20 dark:shadow-white/20" 
                     : "bg-white dark:bg-cardDark text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5";
                 const iconStyle = isActive ? "text-white dark:text-black" : "text-gray-400";
-                
                 return `<button onclick="setFilter('${f.id}')" class="${baseStyle} ${activeStyle}"><i data-lucide="${f.icon}" class="w-4 h-4 ${iconStyle}"></i>${f.name}</button>`;
             }).join('');
 
@@ -352,7 +329,6 @@
     }
 
     function createBigHero(i, index) { return `<div onclick="openAppView('${i._id}')" class="animate-fluid-up snap-center shrink-0 w-[88%] md:w-[28rem] aspect-[4/5] md:aspect-video relative rounded-[32px] overflow-hidden spatial-shadow group cursor-pointer" style="animation-delay: ${index*50}ms"><img src="${i.icon || i.iconUrl}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out" onerror="this.src='https://placehold.co/100'"><div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div><div class="absolute bottom-0 left-0 w-full p-6 flex flex-col items-start gap-4"><span class="text-white/70 text-[10px] font-black uppercase tracking-widest bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">IPAVIET • PREMIUM</span><div class="flex items-start gap-4 w-full"><div class="flex-1 min-w-0"><h2 class="text-[28px] font-black text-white leading-tight truncate drop-shadow-md">${i.name || i.title || i.filename}</h2><p class="text-gray-300 text-[15px] line-clamp-2 mt-1 font-medium">${i.desc || 'Nhấn để xem chi tiết'}</p></div></div></div></div>`; }
-    
     function createSubPageHero(i, index) { return `<div onclick="openAppView('${i._id}')" class="animate-fluid-up snap-center shrink-0 w-[20rem] h-[12rem] relative rounded-[28px] overflow-hidden spatial-shadow group cursor-pointer bg-black" style="animation-delay: ${index*50}ms"><img src="${i.icon || i.iconUrl}" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-40 transition-all duration-700 ease-out" onerror="this.src='https://placehold.co/100'"><div class="absolute inset-0 p-6 flex flex-col justify-end"><div class="flex items-center gap-4"><img src="${i.icon || i.iconUrl}" class="w-14 h-14 squircle shadow-md bg-white" onerror="this.src='https://placehold.co/100'"><div class="flex-1 min-w-0"><h4 class="font-bold text-white text-xl truncate drop-shadow-md">${i.name || i.title || i.filename}</h4><p class="text-[12px] text-white/70 font-semibold mt-0.5">${i.source || 'IPAVIET'}</p></div></div></div></div>`; }
     function createGridItem(i, index) { return `<div onclick="openAppView('${i._id}')" class="animate-fluid-up flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/10 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 px-2 rounded-2xl transition-colors cursor-pointer group" style="animation-delay: ${index*30}ms"><img src="${i.icon || i.iconUrl}" class="w-[60px] h-[60px] squircle bg-gray-100 dark:bg-gray-800 object-cover shadow-sm group-hover:scale-95 transition-transform duration-300" onerror="this.src='https://placehold.co/100'"/><div class="flex-1 min-w-0 pt-1"><h4 class="font-bold text-gray-900 dark:text-white truncate text-[16px] leading-tight">${i.name || i.title || i.filename}</h4><p class="text-[13px] text-iosGray line-clamp-1 font-medium mt-0.5">${i.desc || i.description || i.certname || 'Nhấn để xem'}</p></div><button class="shrink-0 bg-black/5 dark:bg-white/10 text-brand font-bold text-[13px] px-5 py-1.5 rounded-full active:scale-90 transition-transform">NHẬN</button></div>`; }
     function createPagination(total) { if (total <= 1) return ''; let btns = ''; let start = Math.max(1, STATE.currentPage - 2); let end = Math.min(total, start + 4); btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===1 ? 'text-gray-300 pointer-events-none' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>`; for(let p = start; p <= end; p++) { const activeClass = p === STATE.currentPage ? 'bg-brand text-white shadow-md' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'; btns += `<button onclick="changePage(${p})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${activeClass}">${p}</button>`; } btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===total ? 'text-gray-300 pointer-events-none' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>`; return `<div class="flex justify-center items-center gap-2 mt-10 w-full">${btns}</div>`; }
@@ -361,9 +337,6 @@
     
     document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
 
-    // ======================================================================
-    // 3. LOGIC APP STORE & THANH TOÁN
-    // ======================================================================
     function openAppView(appId) {
        const i = window.allAppsMap[appId]; if(!i) return; STATE.currentItem = i;
        document.getElementById('vAppBg').src = i.icon || i.iconUrl || 'https://placehold.co/100'; document.getElementById('vAppIcon').src = i.icon || i.iconUrl || 'https://placehold.co/100'; document.getElementById('vAppTitle').innerText = i.name || i.title || i.filename || 'Unknown App'; document.getElementById('vAppDev').innerText = i.developer || i.source || 'IPAVIET Studio'; document.getElementById('vAppDate').innerText = i.date ? new Date(i.date).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN'); document.getElementById('vAppVersion').innerText = i.version || '1.0'; document.getElementById('vAppDesc').innerText = i.desc || i.description || i.usage || "Ứng dụng tuyệt vời được cung cấp bởi hệ thống IPAVIET.";
