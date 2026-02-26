@@ -87,7 +87,7 @@
        <div id="dynamicContent" class="min-h-[500px]">
           <div class="py-32 flex flex-col items-center justify-center text-gray-400 opacity-60">
              <div class="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mb-4"></div>
-             <p class="text-sm font-bold animate-pulse tracking-wide">Đang tải dữ liệu...</p>
+             <p class="text-sm font-bold animate-pulse tracking-wide">Đang đồng bộ dữ liệu...</p>
           </div>
        </div>
     </div>
@@ -181,8 +181,6 @@
     });
 
     window.allAppsMap = {}; 
-    
-    // ĐÃ THÊM KHO VIP VÀ XÓA TWEAK (DYLIB/CONF)
     const DB = { ipa: [], vip: [] }; 
     const STATE = { currentTab: 'home', currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
 
@@ -191,12 +189,12 @@
         apps.forEach(app => { const key = String(app.name || app.title || app.filename || Math.random()).toLowerCase().trim(); if (!map.has(key)) map.set(key, app); }); 
         return Array.from(map.values()); 
     }
+    
     function sortItemsByDate(items) { return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0)); }
 
     async function loadData() {
         try {
-            // LOAD FILE VIP.JSON MÀ SẾP ĐÃ TẠO
-            const endpoints = [ {k: 'ipa', u: 'data/ipa.json'}, {k: 'vip', u: 'data/vip.json'} ];
+            const endpoints = [ {k: 'ipa', u: 'ipa.json'}, {k: 'vip', u: 'vip.json'} ];
             await Promise.all(endpoints.map(async e => {
                 try { 
                     const res = await fetch(`${e.u}?t=${Date.now()}`); 
@@ -214,7 +212,7 @@
         } catch (fatalError) {} 
       
         DB.ipa = sortItemsByDate(getUniqueApps(DB.ipa)); 
-        DB.vip = sortItemsByDate(getUniqueApps(DB.vip)); // Đảm bảo VIP cũng được lọc trùng và sắp xếp
+        DB.vip = sortItemsByDate(getUniqueApps(DB.vip)); 
         switchTab(STATE.currentTab);
 
         fetch('https://raw.githubusercontent.com/apptesters-org/AppTesters_Repo/main/apps.json').then(res => res.json()).then(data => {
@@ -267,9 +265,7 @@
             }
         } 
         else {
-            // LẤY ĐÚNG DATA CHO TAB
             let items = tab === 'ipa' ? DB.ipa : (tab === 'vip' ? DB.vip : []);
-            
             if(query) items = items.filter(i => (i.name || i.title || i.filename || '').toLowerCase().includes(query));
             
             if (STATE.currentFilter !== 'all') { 
@@ -284,6 +280,7 @@
                 }); 
             }
 
+            // GIAO DIỆN NÚT LỌC MỚI CỰC KỲ XỊN XÒ VÀ HIỆN ĐẠI
             const filtersDef = [
                 { id: 'all', name: 'Tất cả', icon: 'layers' },
                 { id: 'game', name: 'Trò chơi', icon: 'gamepad-2' },
