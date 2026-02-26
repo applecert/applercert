@@ -24,14 +24,16 @@ function generateShortId() {
     let result = ''; for (let i = 0; i < 6; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); } return result;
 }
 
-// --- KHAI BÁO CỨNG API (Không mượn từ file ngoài nữa) ---
-const SERVER_API_SIGN = 'https://api.ipasign.cc/sign';
-const SERVER_API_STATUS = 'https://api.ipasign.cc/status';
-const SERVER_API_DOWNLOAD = 'https://ipa.ipasign.cc/download';
+// HÀM CHUYỂN ĐỔI URL CHUẨN ĐỂ TRÁNH LỖI MẠNG 404
+function getAbsoluteUrl(url, defaultEndpoint) {
+    if (!url) return defaultEndpoint;
+    if (url.startsWith('http')) return url;
+    return 'https://sign.ipasign.cc' + (url.startsWith('/') ? '' : '/') + url;
+}
 
 // --- VUE APP LOGIC ---
 new Vue({
-    el: '#app',
+    el: '#app-vip', // Trỏ thẳng vào UI xịn của chúng ta
     data: {
         showStep1: true, showStep2: false, showStep3: false, showStep4: false, showDirectDownload: false,
         progressBar: 0, uploadDetails: '', statusText: '', logText: '', jobId: '',
@@ -107,11 +109,10 @@ new Vue({
         selectPassword(p) { this.password = p; this.showPasswordSuggestions = false; },
         hidePasswordSuggestions() { setTimeout(() => this.showPasswordSuggestions = false, 200); },
 
-        // --- GỌI API GỐC (Bản Không Lỗi) ---
         async upload() {
             if (!this.canSign) return;
             this.savePwd(this.password);
-            this.showStep1 = false; this.showStep2 = true; this.progressBar = 0; this.uploadDetails = 'Đang đóng gói dữ liệu...';
+            this.showStep1 = false; this.showStep2 = true; this.progressBar = 0; this.uploadDetails = 'Đang khởi tạo kết nối...';
 
             const fd = new FormData();
             fd.append('ipa', this.ipa, this.ipa.name); 
@@ -121,8 +122,11 @@ new Vue({
             fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
 
             try {
-                // Gọi thẳng tên miền API gốc, không qua trung gian
-                const resp = await axios.post(SERVER_API_SIGN, fd, {
+                // Tận dụng biến hệ thống và gắn IP chuẩn để chống lỗi mạng
+                let targetUrl = typeof SignUrl !== 'undefined' ? SignUrl : 'https://sign.ipasign.cc/api/sign';
+                const apiURL = getAbsoluteUrl(targetUrl, 'https://sign.ipasign.cc/api/sign');
+                
+                const resp = await axios.post(apiURL, fd, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                     onUploadProgress: e => {
                         if (e.lengthComputable) {
@@ -138,17 +142,20 @@ new Vue({
                 this.pollStatus();
             } catch (e) {
                 console.error(e);
-                alert('Lỗi mạng hoặc Server đang bảo trì! Vui lòng thử lại.');
+                alert('Lỗi mạng! Kiểm tra kết nối hoặc Server đang bận.');
                 this.resetToStep1();
             }
         },
 
         async pollStatus() {
-            this.statusText = 'Injecting Certificate...'; 
-            this.logText = 'Khởi tạo môi trường...';
+            this.statusText = 'Đang Injecting Certificate...'; 
+            this.logText = 'Server đang xác thực...';
             const timer = setInterval(async () => {
                 try {
-                    const res = await axios.get(`${SERVER_API_STATUS}/${this.jobId}`);
+                    let stUrl = typeof StatusUrl !== 'undefined' ? StatusUrl : 'https://sign.ipasign.cc/api/status';
+                    const statusApi = getAbsoluteUrl(stUrl, 'https://sign.ipasign.cc/api/status');
+                    
+                    const res = await axios.get(`${statusApi}/${this.jobId}`);
                     const d = res.data;
                     this.statusText = d.status || 'Processing...'; 
                     this.logText = d.msg || 'Đang biên dịch...';
@@ -156,24 +163,27 @@ new Vue({
                     if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
                         clearInterval(timer);
                         
-                        this.download = `${SERVER_API_DOWNLOAD}/${this.jobId}`;
+                        let dlUrl = typeof DownloadUrl !== 'undefined' ? DownloadUrl : 'https://sign.ipasign.cc/download';
+                        const downApi = getAbsoluteUrl(dlUrl, 'https://sign.ipasign.cc/download');
+                        this.download = `${downApi}/${this.jobId}`;
                         
-                        // CÀO DỮ LIỆU ĐỂ BYPASS LỖI NÚT CÀI ĐẶT
+                        // BOT CÀO LINK: Lén truy cập vào trang trung gian để bắt link "itms-services" chuẩn 100%
                         this.statusText = 'Đang trích xuất cấu hình tải...';
                         try {
                             const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(this.download)}`;
                             const htmlRes = await fetch(proxyUrl);
                             const htmlData = await htmlRes.json();
                             
-                            // Lọc lấy đoạn itms-services xịn trong mã nguồn trang web đích
                             const match = htmlData.contents.match(/(itms-services:\/\/[^"']+)/);
                             if (match) {
                                 this.directInstallLink = match[1].replace(/&amp;/g, '&');
                             } else {
-                                this.directInstallLink = this.download; 
+                                const plistUrl = this.download.replace('/download', '/plist');
+                                this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`; 
                             }
                         } catch (err) {
-                            this.directInstallLink = this.download; 
+                            const plistUrl = this.download.replace('/download', '/plist');
+                            this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
                         }
                         
                         this.showStep3 = false; 
@@ -190,7 +200,6 @@ new Vue({
             }, 3000);
         },
 
-        // --- CÀI ĐẶT ---
         triggerInstall() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
@@ -198,12 +207,12 @@ new Vue({
                 return;
             }
             
-            // Link xịn đã được cào, chuyển hướng luôn!
+            // Link xịn cào được từ Bot, iOS nhận 100%
             window.location.href = this.directInstallLink;
         },
 
         checkDirectDownload() { 
-            const id = new URLSearchParams(window.location.search).get('download'); 
+            const id = newSearchParams(window.location.search).get('download'); 
             if (id) this.loadFromFirestore(id); 
         },
         async loadFromFirestore(id) {
@@ -222,10 +231,12 @@ new Vue({
                         if (match) {
                             this.directInstallLink = match[1].replace(/&amp;/g, '&');
                         } else {
-                            this.directInstallLink = url;
+                            const pUrl = url.replace('/download', '/plist');
+                            this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(pUrl)}`;
                         }
                     } catch (err) {
-                        this.directInstallLink = url;
+                        const pUrl = url.replace('/download', '/plist');
+                        this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(pUrl)}`;
                     }
                     
                     this.showStep1 = false; this.showDirectDownload = true;
