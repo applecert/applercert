@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="vi" class="antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Kho VIP Độc Quyền - IPAVIET</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: { brand: '#007aff', brandDark: '#0A84FF', bgLight: '#f2f2f7', bgDark: '#000000', cardLight: '#ffffff', cardDark: '#1c1c1e', iosGray: '#8E8E93' },
+          animation: { 'fluid-up': 'fluidUp 0.7s cubic-bezier(0.19, 1, 0.22, 1) forwards' },
+          keyframes: { fluidUp: { '0%': { transform: 'translateY(40px) scale(0.95)', opacity: '0' }, '100%': { transform: 'translateY(0) scale(1)', opacity: '1' } } }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root { font-size: 16px; }
+    body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; user-select: none; overflow-x: hidden; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .glass-effect { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(35px) saturate(200%); border-color: rgba(0,0,0,0.08); }
+    .dark .glass-effect { background: rgba(28, 28, 30, 0.65); border-color: rgba(255,255,255,0.1); }
+    .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.15); }
+    .dark .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6); }
+    .floating-nav { margin: 0 auto 24px auto; border-radius: 35px; width: calc(100% - 32px); max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .dark .floating-nav { box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+    
+    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; color: #8E8E93; transition: all 0.4s; background: none; border: none; cursor: pointer; text-decoration: none;}
+    .tab-btn i { width: 22px; height: 22px; transition: all 0.4s; } 
+    .tab-btn span { font-size: 0.6rem; font-weight: 700; opacity: 0.8; }
+    .tab-btn.active { color: #eab308; } /* GIAO DIỆN VIP MÀU VÀNG */
+    .dark .tab-btn.active { color: #eab308; }
+    .tab-btn.active i { transform: translateY(-4px) scale(1.15); filter: drop-shadow(0 4px 6px rgba(234,179,8,0.4)); }
+    .tab-btn.active span { opacity: 1; font-weight: 800; transform: translateY(-2px); }
+    
+    .squircle { clip-path: url(#squirclePath); }
+    .slide-page { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 100; }
+    .slide-page.open { transform: translateX(0); }
+    .screenshot-img { height: 280px; width: auto; border-radius: 18px; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }
+    .dark .screenshot-img { border-color: rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+
+    /* ============================================================
+       🚀 WATERMARK RI-BĂNG ĐÃ FIX CHUẨN CẮT GÓC ICON
+    ============================================================ */
+    .ipaviet-watermark {
+        position: relative; 
+        overflow: hidden; /* BẮT BUỘC ĐỂ RI BĂNG KHÔNG LÒI RA NGOÀI GÓC BO TRÒN */
+    }
+    .ipaviet-watermark::after {
+        content: "IPAVIET.SITE"; 
+        position: absolute;
+        top: 8px;           
+        left: -30px;        
+        width: 110px;       
+        height: 16px;       
+        background: #ff3b30; /* Đỏ premium */
+        color: #ffffff; 
+        font-size: 7px;     
+        font-weight: 900;
+        text-align: center;
+        line-height: 16px;  
+        transform: rotate(-45deg); 
+        z-index: 50;        
+        pointer-events: none; 
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4); 
+    }
+  </style>
+</head>
+<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
+
+  <svg width="0" height="0" class="absolute">
+    <defs><clipPath id="squirclePath" clipPathUnits="objectBoundingBox"><path d="M .5,0 C .1,0 0,.1 0,.5 0,.9 .1,1 .5,1 .9,1 1,.9 1,.5 1,.1 .9,0 .5,0 Z" /></clipPath></defs>
+  </svg>
+
+  <header class="glass-effect fixed top-0 w-full z-40 h-[80px] border-b flex items-center px-6 transition-all duration-300">
+    <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-between">
+      <div class="font-black text-[22px] tracking-tight flex items-center gap-3 shrink-0">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-black spatial-shadow">
+           <i data-lucide="crown" class="w-5 h-5 fill-black"></i>
+        </div>
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-yellow-600">IPAVIET VIP</span>
+      </div>
+      <div class="flex items-center gap-2 ml-auto shrink-0">
+        <a href="account.html" id="headerProfileBtn" class="h-10 px-4 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-brand dark:text-white active:scale-95 transition-transform backdrop-blur-md decoration-transparent">
+          Đăng Nhập
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="mainContainer" class="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-hide pt-[95px] pb-[130px] relative scroll-smooth">
+    <div class="max-w-6xl mx-auto px-5 md:px-6">
+       
+       <div class="relative overflow-hidden rounded-[28px] p-6 mb-6 border border-yellow-500/30 bg-gradient-to-br from-gray-900 via-black to-[#2a2200] spatial-shadow group animate-fluid-up">
+           <div class="absolute -right-10 -top-10 w-40 h-40 bg-yellow-500/20 blur-3xl rounded-full pointer-events-none"></div>
+           <div class="relative z-10 flex flex-col md:flex-row md:items-center gap-4">
+               <div class="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(234,179,8,0.5)]">
+                   <i data-lucide="gem" class="w-7 h-7 text-black fill-black"></i>
+               </div>
+               <div>
+                   <h2 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500 mb-1 tracking-wide uppercase">Đặc Quyền Hội Viên</h2>
+                   <p class="text-[13px] text-gray-300 leading-relaxed font-medium">Kho IPA đẳng cấp nhất dành riêng cho tài khoản VIP. Tất cả ứng dụng tại đây đã được <span class="text-yellow-400 font-bold">Hack, Mod, Crack sẵn bản quyền, vô hạn tiền, mở khóa Premium.</span> Cài đặt trực tiếp 1 click. Tài khoản thường chỉ có quyền xem trước.</p>
+               </div>
+           </div>
+       </div>
+
+       <div class="relative group w-full mb-6 animate-fluid-up delay-50">
+          <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"></i>
+          <input type="text" id="searchInput" placeholder="Tìm tên App Hack/Mod..." class="w-full h-12 pl-12 pr-4 bg-gray-200/50 dark:bg-white/10 text-[15px] font-semibold rounded-2xl outline-none focus:ring-2 focus:ring-yellow-500/50 transition-all placeholder-gray-500 text-gray-900 dark:text-gray-100 backdrop-blur-md spatial-shadow">
+       </div>
+
+       <div id="dynamicContent" class="min-h-[500px]">
+          <div class="py-32 flex flex-col items-center justify-center text-gray-400 opacity-60">
+             <div class="w-10 h-10 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+             <p class="text-sm font-bold animate-pulse tracking-wide">Đang đồng bộ Kho VIP...</p>
+          </div>
+       </div>
+
+    </div>
+  </main>
+
+  <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-6">
+    <nav class="glass-effect floating-nav h-[74px] flex justify-evenly items-center pointer-events-auto px-2">
+      <a href="index.html" class="tab-btn"><i data-lucide="sparkles"></i><span>Home</span></a>
+      <button class="tab-btn active"><i data-lucide="crown"></i><span>App VIP</span></button>
+      <a href="index.html" class="tab-btn"><i data-lucide="smartphone"></i><span>Kho IPA</span></a>
+      <a href="account.html" class="tab-btn"><i data-lucide="user-circle"></i><span>Tài khoản</span></a>
+      <a href="dichvu.html" class="tab-btn"><i data-lucide="shopping-bag"></i><span>Cửa hàng</span></a>
+    </nav>
+  </div>
+
+  <div id="appStoreView" class="fixed inset-0 bg-bgLight dark:bg-bgDark slide-page flex flex-col overflow-hidden">
+     <div class="flex-1 overflow-y-auto scrollbar-hide relative pb-20">
+        <div class="sticky top-0 z-20 w-full flex items-center justify-between px-4 py-4 backdrop-blur-md bg-white/70 dark:bg-black/70 border-b border-black/5 dark:border-white/5 transition-colors">
+           <button onclick="closeAppView()" class="flex items-center gap-1 text-yellow-600 dark:text-yellow-500 font-semibold active:opacity-60 transition">
+              <i data-lucide="chevron-left" class="w-6 h-6"></i> <span class="text-[17px]">Trở lại</span>
+           </button>
+        </div>
+        <div class="absolute top-0 left-0 w-full h-[400px] overflow-hidden -z-10 opacity-30 dark:opacity-40 pointer-events-none">
+           <img id="vAppBg" class="w-full h-full object-cover blur-3xl scale-150">
+           <div class="absolute inset-0 bg-gradient-to-b from-transparent via-bgLight/80 to-bgLight dark:via-black/80 dark:to-black"></div>
+        </div>
+        
+        <div class="px-5 pt-6 pb-6 flex gap-5 relative z-10">
+           <div class="w-[110px] h-[110px] relative overflow-hidden squircle shadow-2xl bg-white dark:bg-gray-800 ring-1 ring-black/5 dark:ring-white/10 ipaviet-watermark shrink-0">
+             <img id="vAppIcon" class="w-full h-full object-cover">
+           </div>
+           
+           <div class="flex-1 pt-1 flex flex-col">
+              <h1 id="vAppTitle" class="text-[24px] font-black leading-tight text-gray-900 dark:text-white line-clamp-2">Tên Ứng Dụng</h1>
+              <p id="vAppDev" class="text-[15px] text-gray-500 dark:text-gray-400 font-medium mt-1">IPAVIET Studio</p>
+              <div class="mt-auto pt-4 flex gap-2">
+                 <button onclick="showDownloadAction()" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-1.5 px-6 rounded-full font-black text-[15px] active:scale-95 transition tracking-wide shadow-[0_4px_15px_rgba(234,179,8,0.4)] flex items-center">
+                    <i data-lucide="crown" class="w-4 h-4 mr-1.5"></i>TẢI VIP
+                 </button>
+              </div>
+           </div>
+        </div>
+        
+        <div class="flex items-center justify-between px-8 py-4 border-y border-black/5 dark:border-white/10 mx-5 mt-2 mb-6">
+           <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">ĐÁNH GIÁ</p><p class="text-[22px] font-bold text-gray-800 dark:text-gray-200">5.0</p><div class="flex gap-0.5 text-yellow-500 mt-1"><i data-lucide="star" class="w-3 h-3 fill-yellow-500"></i><i data-lucide="star" class="w-3 h-3 fill-yellow-500"></i><i data-lucide="star" class="w-3 h-3 fill-yellow-500"></i><i data-lucide="star" class="w-3 h-3 fill-yellow-500"></i><i data-lucide="star" class="w-3 h-3 fill-yellow-500"></i></div></div><div class="w-px h-10 bg-black/5 dark:bg-white/10"></div>
+           <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">CHỨNG NHẬN</p><i data-lucide="shield-check" class="w-5 h-5 text-green-500 mt-1"></i><p class="text-[12px] font-bold text-green-500 mt-1">Sạch 100%</p></div><div class="w-px h-10 bg-black/5 dark:bg-white/10"></div>
+           <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">TÍNH NĂNG</p><p class="text-[16px] font-bold text-gray-800 dark:text-gray-200 mt-1">MOD / HACK</p></div>
+        </div>
+
+        <div id="vVipArea" class="hidden px-5 mb-8 animate-fluid-up"></div>
+        
+        <div id="vScreenshotsArea" class="mb-8 hidden">
+            <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-4 px-5">Xem trước</h2>
+            <div class="flex gap-4 overflow-x-auto scrollbar-hide snap-x-mandatory px-5 pb-4" id="vScreenshotsList"></div>
+        </div>
+        
+        <div class="px-5 mb-8 mt-2">
+           <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-2">Thông tin & Tính năng Mod</h2>
+           <p class="text-[15px] text-yellow-600 dark:text-yellow-500 font-bold mb-1">Phiên bản <span id="vAppVersion" class="text-gray-900 dark:text-white"></span></p>
+           <p id="vAppDesc" class="text-[14px] text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line mt-3 opacity-90"></p>
+        </div>
+        <div class="px-5 mb-10">
+           <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-4">Dữ liệu tệp</h2>
+           <div class="flex flex-col">
+               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Nhà phát triển</span><span id="vInfoDev" class="text-gray-900 dark:text-white text-[15px] text-right font-medium">IPAVIET Studio</span></div>
+               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Thể loại</span><span id="vInfoCat" class="text-gray-900 dark:text-white text-[15px] text-right font-medium capitalize">App VIP</span></div>
+               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Kích thước</span><span id="vInfoSize" class="text-gray-900 dark:text-white text-[15px] text-right font-medium">184.9 MB</span></div>
+               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Bundle ID</span><span id="vInfoBundle" class="text-gray-900 dark:text-white text-[15px] text-right font-medium">com.ipaviet.app</span></div>
+           </div>
+        </div>
+     </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+      authDomain: "ipaviet-st.firebaseapp.com",
+      projectId: "ipaviet-st",
+      storageBucket: "ipaviet-st.firebasestorage.app",
+      messagingSenderId: "127619650916",
+      appId: "1:127619650916:web:fc8904c99804eeb7539671"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null; let isUserVip = false; 
+
+    auth.onAuthStateChanged(user => {
+        const headerBtn = document.getElementById('headerProfileBtn');
+        if (user) {
+            currentUser = user;
+            db.collection("users").doc(user.uid).onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data(); 
+                    if(data.vipExpire && data.vipExpire.toMillis() > Date.now()) {
+                        isUserVip = true;
+                        headerBtn.innerHTML = `<i data-lucide="crown" class="w-4 h-4 mr-1 text-yellow-500"></i> VIP MEMBER`;
+                        headerBtn.className = "h-10 px-4 rounded-full bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 flex items-center justify-center font-bold text-xs text-yellow-600 dark:text-yellow-400 decoration-transparent";
+                    } else {
+                        isUserVip = false;
+                        headerBtn.innerHTML = `Tài Khoản Thường`;
+                        headerBtn.className = "h-10 px-4 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-brand dark:text-white decoration-transparent opacity-60";
+                    }
+                    lucide.createIcons();
+                }
+            });
+        } else {
+            currentUser = null; isUserVip = false;
+            headerBtn.innerHTML = "Đăng Nhập";
+            headerBtn.className = "h-10 px-4 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-yellow-600 dark:text-yellow-500 decoration-transparent";
+        }
+    });
+
+    window.vipApps = []; 
+    const STATE = { currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
+
+    // VÌ CHUNG THƯ MỤC ROOT NÊN GỌI TRỰC TIẾP vip.json
+    async function loadData() {
+        try {
+            const res = await fetch(`vip.json?t=${Date.now()}`); 
+            if(res.ok) { 
+                const data = JSON.parse(await res.text()); 
+                if(Array.isArray(data)) {
+                    window.vipApps = data.map(item => {
+                        item._id = 'vip_' + Math.random().toString(36).substr(2, 9);
+                        return item;
+                    });
+                }
+            } 
+        } catch(err) {} 
+      
+        renderContent();
+    }
+
+    function setFilter(filter) { STATE.currentFilter = filter; STATE.currentPage = 1; renderContent(); }
+
+    function renderContent() {
+        const query = document.getElementById('searchInput').value.trim().toLowerCase(); 
+        const container = document.getElementById('dynamicContent'); 
+        
+        let items = window.vipApps;
+        if(query) items = items.filter(i => (i.name || i.title || "").toLowerCase().includes(query));
+        
+        if (STATE.currentFilter !== 'all') { 
+            items = items.filter(i => { 
+                const cat = String(i.category||"").toLowerCase(); 
+                if(STATE.currentFilter === 'game') return cat.includes('game');
+                if(STATE.currentFilter === 'social') return cat.includes('social');
+                if(STATE.currentFilter === 'media') return cat.includes('media');
+                if(STATE.currentFilter === 'edit') return cat.includes('edit');
+                if(STATE.currentFilter === 'utility') return cat.includes('utility');
+                return true; 
+            }); 
+        }
+
+        const filtersDef = [
+            { id: 'all', name: 'Tất cả VIP', icon: 'layers' }, { id: 'game', name: 'Game Hack', icon: 'gamepad-2' },
+            { id: 'social', name: 'Social Mod', icon: 'message-circle' }, { id: 'media', name: 'Media Pro', icon: 'play-square' },
+            { id: 'edit', name: 'Edit Mở Khóa', icon: 'wand-2' }, { id: 'utility', name: 'Tiện ích', icon: 'wrench' }
+        ];
+
+        let filterButtons = filtersDef.map(f => {
+            const isActive = STATE.currentFilter === f.id;
+            const baseStyle = "shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold rounded-full transition-all duration-300 active:scale-95";
+            const activeStyle = isActive ? "bg-yellow-500 text-black shadow-[0_0_15px_rgba(234,179,8,0.4)]" : "bg-white dark:bg-cardDark text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5";
+            const iconStyle = isActive ? "text-black" : "text-gray-400";
+            return `<button onclick="setFilter('${f.id}')" class="${baseStyle} ${activeStyle}"><i data-lucide="${f.icon}" class="w-4 h-4 ${iconStyle}"></i>${f.name}</button>`;
+        }).join('');
+
+        const totalPages = Math.ceil(items.length / STATE.itemsPerPage); 
+        const start = (STATE.currentPage - 1) * STATE.itemsPerPage; 
+        const pagedItems = items.slice(start, start + STATE.itemsPerPage);
+
+        let html = `
+            <div class="flex flex-col mb-4 animate-fluid-up delay-100">
+                <div class="flex items-center gap-4 justify-between w-full border-b border-black/5 dark:border-white/10 pb-3 mb-3">
+                    <h3 class="text-[22px] font-bold tracking-tight">Danh sách Ứng dụng</h3>
+                </div>
+                <div class="flex overflow-x-auto scrollbar-hide gap-2.5 w-full pb-4 pt-1 -mx-5 px-5 md:mx-0 md:px-0">
+                    ${filterButtons}
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-4 animate-fluid-up delay-150">${pagedItems.length ? pagedItems.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}</div>
+            ${items.length > STATE.itemsPerPage ? createPagination(totalPages) : ''}
+        `;
+        
+        container.innerHTML = html; lucide.createIcons();
+    }
+
+    function createGridItem(i, index) { 
+        return `<div onclick="openAppView('${i._id}')" class="animate-fluid-up flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/10 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 px-2 rounded-2xl transition-colors cursor-pointer group" style="animation-delay: ${index*20}ms">
+            <div class="w-[60px] h-[60px] relative overflow-hidden squircle shrink-0 shadow-md bg-gray-100 dark:bg-gray-800 object-cover group-hover:scale-95 transition-transform duration-300 ipaviet-watermark border border-white/5">
+                <img src="${i.icon}" class="w-full h-full object-cover"/>
+            </div>
+            <div class="flex-1 min-w-0 pt-1">
+                <h4 class="font-bold text-gray-900 dark:text-white truncate text-[16px] leading-tight">${i.name}</h4>
+                <p class="text-[12px] text-yellow-600 dark:text-yellow-500 line-clamp-1 font-bold mt-0.5"><i data-lucide="check-circle-2" class="w-3 h-3 inline-block mr-0.5 mb-0.5"></i>Đã Hack/Mod bản quyền</p>
+            </div>
+            <button class="shrink-0 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black text-[12px] px-5 py-2 rounded-full active:scale-90 transition-transform shadow-[0_4px_10px_rgba(234,179,8,0.3)]"><i data-lucide="download" class="w-3.5 h-3.5 inline-block"></i></button>
+        </div>`; 
+    }
+    
+    function createPagination(total) { if (total <= 1) return ''; let btns = ''; let start = Math.max(1, STATE.currentPage - 2); let end = Math.min(total, start + 4); btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===1 ? 'text-gray-300 pointer-events-none' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>`; for(let p = start; p <= end; p++) { const activeClass = p === STATE.currentPage ? 'bg-yellow-500 text-black shadow-[0_0_10px_rgba(234,179,8,0.4)]' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'; btns += `<button onclick="changePage(${p})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${activeClass}">${p}</button>`; } btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===total ? 'text-gray-300 pointer-events-none' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>`; return `<div class="flex justify-center items-center gap-2 mt-10 w-full">${btns}</div>`; }
+    function emptyState() { return `<div class="col-span-full py-20 text-center text-iosGray flex flex-col items-center"><i data-lucide="layout-grid" class="w-12 h-12 mb-3 opacity-30"></i><p class="text-[15px] font-medium">Không tìm thấy ứng dụng VIP này</p></div>`; }
+    function changePage(p) { STATE.currentPage = p; renderContent(); document.getElementById('mainContainer').scrollTo({ top: 0, behavior: 'smooth' }); }
+    
+    document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
+
+    function openAppView(appId) {
+       const i = window.vipApps.find(a => a._id === appId); if(!i) return; STATE.currentItem = i;
+       
+       document.getElementById('vAppBg').src = i.icon; 
+       document.getElementById('vAppIcon').src = i.icon; 
+       document.getElementById('vAppTitle').innerText = i.name; 
+       
+       document.getElementById('vAppDesc').innerText = "🔥 Ứng dụng này đã được can thiệp bẻ khóa (Hack/Mod/Crack) để mở khóa toàn bộ tính năng Premium. Bạn có thể sử dụng hoàn toàn miễn phí các tính năng trả phí.\n\n" + (i.fullDesc || i.desc || "");
+       document.getElementById('vAppVersion').innerText = i.version || 'Mới nhất'; 
+       
+       document.getElementById('vVipArea').classList.add('hidden');
+
+       const ssArea = document.getElementById('vScreenshotsArea');
+       const ssList = document.getElementById('vScreenshotsList');
+       if (i.screenshots && Array.isArray(i.screenshots) && i.screenshots.length > 0) {
+           let ssHtml = '';
+           i.screenshots.forEach(url => { ssHtml += `<img src="${url}" class="screenshot-img snap-center shrink-0">`; });
+           ssList.innerHTML = ssHtml; ssArea.classList.remove('hidden');
+       } else {
+           ssArea.classList.add('hidden'); ssList.innerHTML = '';
+       }
+
+       const view = document.getElementById('appStoreView'); 
+       view.classList.remove('hidden'); requestAnimationFrame(() => view.classList.add('open'));
+    }
+
+    function closeAppView() { const view = document.getElementById('appStoreView'); view.classList.remove('open'); setTimeout(() => view.classList.add('hidden'), 400); }
+
+    // CHẶN TẢI NẾU KHÔNG CÓ VIP
+    function showDownloadAction() {
+        if (!currentUser) { window.location.href = 'account.html'; return; }
+        const vipArea = document.getElementById('vVipArea'); vipArea.classList.remove('hidden');
+
+        if (isUserVip) {
+            vipArea.innerHTML = `
+            <div class="bg-gradient-to-br from-yellow-900/40 to-yellow-700/20 border border-yellow-500/40 p-6 rounded-[28px] backdrop-blur-md relative spatial-shadow">
+                <div class="absolute -right-5 -top-5 w-32 h-32 bg-yellow-500/20 blur-3xl rounded-full pointer-events-none"></div>
+                <div class="flex justify-between items-center border-b border-yellow-500/20 pb-4 mb-4 relative z-10">
+                    <div><p class="text-[12px] font-bold text-yellow-500 tracking-widest uppercase">Xác thực thành công</p><p class="text-[22px] font-black text-white">Hội Viên VIP</p></div>
+                    <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center"><i data-lucide="check-circle" class="w-6 h-6 text-yellow-400"></i></div>
+                </div>
+                <button onclick="downloadVipApp(this)" class="w-full relative z-10 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-black py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-[0_10px_20px_-10px_rgba(234,179,8,0.6)]"><i data-lucide="download-cloud" class="w-5 h-5"></i> CÀI ĐẶT ỨNG DỤNG</button>
+            </div>`;
+        } else {
+            vipArea.innerHTML = `
+            <div class="bg-gradient-to-br from-[#2a0808] to-black border border-red-500/30 p-6 rounded-[28px] backdrop-blur-md relative spatial-shadow">
+                <div class="flex items-center gap-3 border-b border-red-500/20 pb-4 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center"><i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i></div>
+                    <div><p class="text-[12px] font-bold text-red-400 tracking-widest uppercase">Truy cập bị từ chối</p><p class="text-[18px] font-black text-white">Chưa có Thẻ VIP</p></div>
+                </div>
+                <p class="text-sm text-gray-300 mb-5 leading-relaxed">Ứng dụng Hack/Mod này là tài sản đặc quyền. Bạn cần nâng cấp lên Hội Viên VIP để bẻ khóa giới hạn tải xuống.</p>
+                <a href="dichvu.html" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-black py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-[0_10px_20px_-10px_rgba(239,68,68,0.4)] decoration-transparent"><i data-lucide="zap" class="w-5 h-5"></i> NÂNG CẤP VIP NGAY</a>
+            </div>`;
+        }
+        lucide.createIcons(); vipArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function downloadVipApp(btnEl) {
+        const originalText = btnEl.innerHTML; btnEl.innerHTML = `<div class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>`; btnEl.disabled = true;
+        try { window.location.href = STATE.currentItem.url || STATE.currentItem.fileLink || STATE.currentItem.downloadUrl; } catch (error) { alert("Lỗi kết nối."); }
+        setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
+    }
+
+    // Luôn luôn là Dark Mode cho trang VIP
+    document.documentElement.classList.add('dark');
+    lucide.createIcons();
+    loadData();
+  </script>
+</body>
+</html>
