@@ -17,9 +17,7 @@ try {
     };
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     db = firebase.firestore();
-} catch (error) {
-    console.warn("Firebase Init Error:", error);
-}
+} catch (error) { console.warn("Firebase Init Error"); }
 
 function generateShortId() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -28,7 +26,7 @@ function generateShortId() {
 
 // --- VUE APP LOGIC ---
 new Vue({
-    el: '#app-vip',
+    el: '#app',
     data: {
         showStep1: true, showStep2: false, showStep3: false, showStep4: false, showDirectDownload: false,
         progressBar: 0, uploadDetails: '', statusText: '', logText: '', jobId: '',
@@ -41,7 +39,7 @@ new Vue({
             'sca': 'https://tight-water-fabbipa-proxy.tlvdzreal.workers.dev/scarlet'
         },
         appNames: { 'esign': 'ESign', 'gbox': 'GBox', 'sca': 'Scarlet' },
-        download: '', directInstallLink: 'javascript:void(0);', shareUrl: '', copySuccess: false
+        download: '', directInstallLink: '', shareUrl: '', copySuccess: false
     },
     computed: {
         canSign() { return (this.ipa && this.ipa.size > 0 && this.certZip && this.password && this.p12 && this.mobileprovision); },
@@ -91,9 +89,7 @@ new Vue({
                         if (name.toLowerCase().endsWith('.mobileprovision')) this.mobileprovision = new File([await f.async('blob')], name);
                     }
                     if (!this.p12 || !this.mobileprovision) { alert('ZIP thiếu file P12 hoặc Mobileprovision!'); this.certZip = null; this.certZipText = 'Chọn file ZIP'; }
-                } catch (error) {
-                    alert('Lỗi đọc file ZIP!');
-                }
+                } catch (error) { alert('Lỗi đọc file ZIP!'); }
             }
         },
 
@@ -119,7 +115,8 @@ new Vue({
             fd.append('app_name', this.appNames[this.selectedApp] || 'CustomApp');
 
             try {
-                const apiURL = typeof SignUrl !== 'undefined' ? SignUrl : 'https://api.ipasign.cc/sign';
+                // Điền thẳng URL API gốc để loại bỏ hoàn toàn file index.js rác
+                const apiURL = 'https://sign.ipasign.cc/api/sign';
                 const resp = await axios.post(apiURL, fd, {
                     headers: { 'Content-Type': 'multipart/form-data' },
                     onUploadProgress: e => {
@@ -145,7 +142,7 @@ new Vue({
             this.logText = 'Khởi tạo môi trường...';
             const timer = setInterval(async () => {
                 try {
-                    const statusApi = typeof StatusUrl !== 'undefined' ? StatusUrl : 'https://api.ipasign.cc/status';
+                    const statusApi = 'https://sign.ipasign.cc/api/status';
                     const res = await axios.get(`${statusApi}/${this.jobId}`);
                     const d = res.data;
                     this.statusText = d.status || 'Processing...'; 
@@ -154,14 +151,26 @@ new Vue({
                     if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
                         clearInterval(timer);
                         
-                        // FIX TẠI ĐÂY: Ép cứng Link Tuyệt Đối (Absolute URL) để iOS hiểu
-                        const absoluteDomain = 'https://ipa.ipasign.cc';
+                        this.download = `https://ipa.ipasign.cc/download/${this.jobId}`;
                         
-                        this.download = `${absoluteDomain}/download/${this.jobId}`;
-                        const plistUrl = `${absoluteDomain}/plist/${this.jobId}`;
-                        
-                        // Bọc encode chuẩn để Safari không ném lỗi
-                        this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
+                        // --- ĐÂY LÀ PHÉP MÀU: CÀO LINK CÀI ĐẶT TRỰC TIẾP ---
+                        this.statusText = 'Đang trích xuất cấu hình...';
+                        try {
+                            // Dùng Proxy trung gian để đọc trộm trang download và lấy link Plist chuẩn 100%
+                            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(this.download)}`;
+                            const htmlRes = await fetch(proxyUrl);
+                            const htmlData = await htmlRes.json();
+                            
+                            // Lọc ra đúng cái link itms-services xịn
+                            const match = htmlData.contents.match(/(itms-services:\/\/[^"']+)/);
+                            if (match) {
+                                this.directInstallLink = match[1].replace(/&amp;/g, '&');
+                            } else {
+                                this.directInstallLink = this.download; // Fallback
+                            }
+                        } catch (err) {
+                            this.directInstallLink = this.download; // Fallback nếu proxy nghẽn
+                        }
                         
                         this.showStep3 = false; 
                         this.showStep4 = true;
@@ -177,12 +186,16 @@ new Vue({
             }, 3000);
         },
 
-        checkDevice(e) {
+        // Hàm Cài Đặt 
+        triggerInstall() {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
-                e.preventDefault(); 
                 alert('TÍNH NĂNG NÀY CHỈ DÀNH CHO iPHONE/iPAD!\n\nVui lòng dùng ứng dụng Camera của iPhone quét mã QR bên dưới để cài đặt.');
+                return;
             }
+            
+            // Nếu cào được link itms, chuyển hướng thẳng. Nếu không cào được, nhảy qua trang download
+            window.location.href = this.directInstallLink;
         },
 
         checkDirectDownload() { 
@@ -195,10 +208,22 @@ new Vue({
                 const doc = await db.collection('signed_apps').doc(id).get();
                 if (doc.exists) {
                     const url = doc.data().download_url;
+                    this.download = url;
                     
-                    // Xử lý link tuyệt đối cho trang Share
-                    const plistUrl = url.replace('/download', '/plist');
-                    this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
+                    // Giống lúc Ký xong, cào link cài đặt cho khách truy cập
+                    try {
+                        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                        const htmlRes = await fetch(proxyUrl);
+                        const htmlData = await htmlRes.json();
+                        const match = htmlData.contents.match(/(itms-services:\/\/[^"']+)/);
+                        if (match) {
+                            this.directInstallLink = match[1].replace(/&amp;/g, '&');
+                        } else {
+                            this.directInstallLink = url;
+                        }
+                    } catch (err) {
+                        this.directInstallLink = url;
+                    }
                     
                     this.showStep1 = false; this.showDirectDownload = true;
                     setTimeout(() => new QRCode(document.getElementById('directQrcode'), { width: 140, height: 140 }).makeCode(url), 100);
