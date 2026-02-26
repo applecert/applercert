@@ -46,8 +46,6 @@ new Vue({
         },
         appNames: { 'esign': 'ESign', 'gbox': 'GBox', 'sca': 'Scarlet' },
         download: '', directInstallLink: '', shareUrl: '', copySuccess: false,
-        
-        // BIẾN QUẢN LÝ NÚT DỰ PHÒNG
         showFallback: false
     },
     computed: {
@@ -115,7 +113,7 @@ new Vue({
             if (!this.canSign) return;
             this.savePwd(this.password);
             this.showStep1 = false; this.showStep2 = true; this.progressBar = 0; this.uploadDetails = 'Đang khởi tạo kết nối...';
-            this.showFallback = false; // Reset trạng thái nút dự phòng
+            this.showFallback = false;
 
             const fd = new FormData();
             fd.append('ipa', this.ipa, this.ipa.name); 
@@ -170,7 +168,7 @@ new Vue({
                         
                         this.download = `${downApi}/${this.jobId}`;
                         
-                        // Mã hóa link itms-services. Nếu Cloudflare chặn, Fallback sẽ giải cứu ở bước ấn nút
+                        // Mã hóa an toàn Plist
                         const plistUrl = this.download.replace('/download', '/plist');
                         this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`; 
                         
@@ -188,7 +186,6 @@ new Vue({
             }, 3000);
         },
 
-        // --- HÀM XỬ LÝ CHỐNG "LIỆT" NÚT THẦN THÁNH ---
         triggerInstall(e) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isIOS) {
@@ -196,7 +193,6 @@ new Vue({
                 return;
             }
             
-            // 1. Đổi giao diện nút thành Loading để khách biết là nút đã được ấn
             const btn = e.currentTarget;
             const textSpan = btn.querySelector('.btn-text');
             const svgIcon = btn.querySelector('svg');
@@ -205,17 +201,16 @@ new Vue({
             if (svgIcon) svgIcon.classList.add('spinning');
             btn.style.opacity = '0.7';
             
-            // 2. Ép trình duyệt gọi link cài đặt ngầm
             window.location.href = this.directInstallLink;
             
-            // 3. NẾU SAFARI CỨNG ĐẦU TỪ CHỐI (Không có popup nào hiện lên)
-            // Sau đúng 2.5 giây, Nút màu Đỏ cứu hộ sẽ hiện ra dẫn qua trang tải gốc!
+            // Hiện nút cứu hộ sau 2.5 giây nếu nút xịn bị Safari block
             setTimeout(() => {
                 this.showFallback = true;
             }, 2500);
         },
 
         checkDirectDownload() { 
+            // ĐÃ SỬA LỖI ĐÁNH MÁY TYPO TẠI ĐÂY ("new URLSearchParams" CHUẨN XÁC)
             const id = new URLSearchParams(window.location.search).get('download'); 
             if (id) this.loadFromFirestore(id); 
         },
