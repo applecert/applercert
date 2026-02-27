@@ -16,12 +16,8 @@
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: '#007aff', bgLight: '#f4f5f9', bgDark: '#050505', cardLight: '#ffffff', cardDark: '#121212', } } } }
     
-    // 🔥 KHÔI PHỤC BỘ NHỚ CHẾ ĐỘ SÁNG/TỐI TỪ LÚC LOAD TRANG
-    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
+    // Khôi phục Theme Sáng/Tối
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); }
   </script>
 
   <style>
@@ -201,9 +197,7 @@
               </div>
 
               <div class="bg-white dark:bg-cardDark rounded-[24px] p-5 shadow-sm border border-gray-100 dark:border-white/5">
-                  <div class="flex items-center gap-2 mb-3 text-brand font-bold text-[14px]">
-                      <i data-lucide="tag" class="w-5 h-5"></i> Mã giảm giá nạp tiền
-                  </div>
+                  <div class="flex items-center gap-2 mb-3 text-brand font-bold text-[14px]"><i data-lucide="tag" class="w-5 h-5"></i> Mã giảm giá nạp tiền</div>
                   <div class="flex gap-2 relative">
                       <input type="text" id="discountInput" placeholder="Nhập mã giảm giá..." class="flex-1 h-12 px-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/50 outline-none focus:border-brand transition-colors text-[14px] font-bold uppercase placeholder:normal-case placeholder:font-normal">
                       <button onclick="applyDiscountCode()" id="btnApplyDiscount" class="h-12 px-5 bg-brand text-white font-bold rounded-xl active:scale-95 transition-transform shadow-md text-[14px] flex items-center gap-2 shrink-0">Áp dụng</button>
@@ -240,7 +234,7 @@
 
   <script>
     // ======================================================================
-    // 🛑 THAY LINK API CỦA SẾP VÀO ĐÂY (Link App Script đã Deploy mới nhất)
+    // 🛑 LINK API CỦA SẾP ĐÃ ĐƯỢC NỐI CHUẨN XÁC VÀO ĐÂY
     // ======================================================================
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
 
@@ -276,11 +270,7 @@
         const html = document.documentElement;
         html.classList.toggle('dark'); 
         const isDark = html.classList.contains('dark');
-        
-        // Lưu vào bộ nhớ
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        
-        // Đổi Icon Mặt Trăng / Mặt Trời
         const icon = document.getElementById('themeIcon');
         if (isDark) {
             icon.setAttribute('data-lucide', 'sun');
@@ -292,7 +282,6 @@
         lucide.createIcons();
     }
 
-    // Chuyển Tab Giao Diện
     function switchStoreTab(tabId, index) {
         document.getElementById('segment-slider').style.transform = `translateX(${index * 100}%)`;
         ['napxu', 'vip', 'premium', 'giftcode'].forEach(id => { 
@@ -338,19 +327,15 @@
         document.getElementById('chkFinalPriceRaw').innerText = currentOrder.finalAmount; 
         const img = document.getElementById('qrImage');
         
-        // Bật lớp mờ xịn sò lên
         document.getElementById('qrOverlay').classList.remove('hidden'); 
         document.getElementById('qrOverlay').classList.add('flex');
         
-        // Tắt vĩnh viễn cái vòng xoay lỗi thẩm mỹ đi
+        // Tắt vòng xoay Loading lỗi
         const badSpinner = document.getElementById('qrLoading');
         if(badSpinner) badSpinner.style.display = 'none';
         
         const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.png?amount=${currentOrder.finalAmount}&addInfo=${currentOrder.id}&accountName=${encodeURIComponent(ACC_NAME)}`;
-        img.onload = () => { 
-            document.getElementById('qrOverlay').classList.add('hidden'); 
-            img.classList.remove('hidden'); 
-        };
+        img.onload = () => { document.getElementById('qrOverlay').classList.add('hidden'); img.classList.remove('hidden'); };
         img.src = qrUrl;
     }
 
@@ -396,7 +381,7 @@
     }
 
     // ==========================================
-    // MODULE: MÃ GIẢM GIÁ (Thanh toán nạp xu)
+    // MODULE: MÃ GIẢM GIÁ
     // ==========================================
     async function applyDiscountCode() {
         const code = document.getElementById('discountInput').value.trim().toUpperCase();
@@ -437,7 +422,7 @@
     }
 
     // ==========================================
-    // MODULE: ĐỔI MÃ GIFTCODE CHÍNH (Tab Giftcode)
+    // MODULE: ĐỔI MÃ GIFTCODE CHÍNH
     // ==========================================
     async function applyMainGiftcode() {
         const codeInput = document.getElementById('mainGiftcodeInput');
@@ -462,7 +447,6 @@
             if (data.usedBy && data.usedBy.includes(currentUser.uid)) throw new Error("Bạn đã nhập mã này rồi!");
             if (data.maxUses && data.usedBy && data.usedBy.length >= data.maxUses) throw new Error("Mã đã hết lượt sử dụng!");
 
-            // Xử lý tặng quà (🔥 ĐÃ FIX LỖI NÚT ĐÓNG BỊ ĐƠ Ở ĐÂY SẾP NHÉ 🔥)
             if (data.type === 'coin') {
                 await db.collection('users').doc(currentUser.uid).update({ coins: firebase.firestore.FieldValue.increment(data.value) });
                 renderStoreModal('success', 'Nhận Quà Thành Công!', `Bạn vừa nhận được ${data.value} Xu.`, closeActionModal);
@@ -491,7 +475,7 @@
     }
 
     // ==========================================
-    // MODULE: MUA HÀNG BẰNG XU (VIP & Account) + BÁO CÁO BOT TELEGRAM
+    // MODULE: MUA HÀNG BẰNG XU (VIP & Account) + BÁO CÁO TELEGRAM
     // ==========================================
     function requestPurchase(itemName, priceInXu, type, extraData = null) {
         if (currentCoins < priceInXu) { 
@@ -538,7 +522,7 @@
     }
 
     // ==========================================
-    // HÀM GIAO DIỆN & TIỆN ÍCH CHUNG
+    // HÀM GIAO DIỆN CHUNG
     // ==========================================
     function renderStoreModal(type, title, desc, actionFn, btnText = 'Đóng') {
         const content = document.getElementById('actionModalContent');
@@ -549,7 +533,6 @@
         if(type==='confirm') html += `<div class="text-yellow-500 mb-2"><i data-lucide="help-circle" class="w-12 h-12 mx-auto"></i></div>`;
         
         const safeDesc = desc.replace(/\n/g, '<br>');
-        
         html += `<h3 class="font-black text-lg mb-2">${title}</h3><p class="text-sm text-gray-500 mb-6">${safeDesc}</p>`;
         if(type !== 'loading') html += `<button id="modalActionBtn" class="w-full py-3 bg-brand text-white rounded-xl font-bold">${btnText}</button></div>`;
         
@@ -561,7 +544,6 @@
     function closeActionModal() { document.getElementById('actionOverlay').classList.add('opacity-0'); document.getElementById('actionPanel').classList.add('scale-95', 'opacity-0'); setTimeout(() => { document.getElementById('actionModal').classList.add('hidden'); }, 300); }
     function copyCheckoutText(id, btn) { navigator.clipboard.writeText(document.getElementById(id).innerText); btn.innerHTML = "<span class='text-xs font-bold'>OK</span>"; setTimeout(()=>btn.innerHTML="<i data-lucide='copy' class='w-3.5 h-3.5'></i>", 1000); lucide.createIcons(); }
     
-    // Khởi tạo icon ban đầu (Cập nhật đúng icon nếu đang ở dark mode)
     if(document.documentElement.classList.contains('dark')) {
         const icon = document.getElementById('themeIcon');
         icon.setAttribute('data-lucide', 'sun');
