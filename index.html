@@ -39,7 +39,7 @@
     .floating-nav { margin: 0 auto 24px auto; border-radius: 35px; width: calc(100% - 32px); max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
     .dark .floating-nav { box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
     
-    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; color: #8E8E93; transition: all 0.4s; background: none; border: none; cursor: pointer; text-decoration: none;}
+    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; color: #8E8E93; transition: all 0.3s; background: none; border: none; cursor: pointer; text-decoration: none;}
     .tab-btn i { width: 22px; height: 22px; transition: all 0.4s; } 
     .tab-btn span { font-size: 0.6rem; font-weight: 700; opacity: 0.8; }
     .tab-btn.active { color: #007aff; }
@@ -53,12 +53,9 @@
     .screenshot-img { height: 280px; width: auto; border-radius: 18px; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }
     .dark .screenshot-img { border-color: rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
 
-    /* ============================================================
-       🚀 WATERMARK RI-BĂNG KÉP (CHUẨN TỈ LỆ KHÔNG BỊ CẮT LẸM)
-    ============================================================ */
+    /* WATERMARK KÉP CHUẨN GÓC */
     .ipaviet-watermark-sm, .ipaviet-watermark-lg { position: relative; overflow: hidden; }
     
-    /* Cho Icon 60x60 (Trang chủ) */
     .ipaviet-watermark-sm::after {
         content: "IPAVIET.SITE"; position: absolute; top: 6px; left: -22px; width: 80px; height: 12px;       
         background: #ff3b30; color: #ffffff; font-size: 5.5px; font-weight: 900;
@@ -67,7 +64,6 @@
         box-shadow: 0 1px 3px rgba(0,0,0,0.5); letter-spacing: 0.5px;
     }
     
-    /* Cho Icon 110x110 (Chi tiết App) */
     .ipaviet-watermark-lg::after {
         content: "IPAVIET.SITE"; position: absolute; top: 10px; left: -35px; width: 130px; height: 18px;       
         background: #ff3b30; color: #ffffff; font-size: 8px; font-weight: 900;
@@ -111,7 +107,7 @@
        <div id="dynamicContent" class="min-h-[500px]">
           <div class="py-32 flex flex-col items-center justify-center text-gray-400 opacity-60">
              <div class="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mb-4"></div>
-             <p class="text-sm font-bold animate-pulse tracking-wide">Đang tải dữ liệu...</p>
+             <p class="text-sm font-bold animate-pulse tracking-wide">Đang tải dữ liệu an toàn...</p>
           </div>
        </div>
     </div>
@@ -159,7 +155,7 @@
            <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">AGES</p><p class="text-[22px] font-bold text-gray-800 dark:text-gray-200">4+</p><p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Years Old</p></div>
         </div>
 
-        <div id="vVipArea" class="hidden px-5 mb-8"></div>
+        <div id="vVipArea" class="hidden px-5 mb-8 animate-fluid-up"></div>
 
         <div id="vScreenshotsArea" class="mb-8 hidden">
             <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-4 px-5">Xem trước</h2>
@@ -185,6 +181,8 @@
   </div>
 
   <script>
+    const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
+
     const firebaseConfig = {
       apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
       authDomain: "ipaviet-st.firebaseapp.com",
@@ -198,7 +196,6 @@
     const db = firebase.firestore();
 
     let currentUser = null; let currentCoins = 0; let isUserVip = false; 
-    const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
 
     auth.onAuthStateChanged(user => {
         const headerBtn = document.getElementById('headerProfileBtn');
@@ -239,31 +236,28 @@
     function sortItemsByDate(items) { return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0)); }
 
     // ======================================================================
-    // LẤY DỮ LIỆU ĐỒNG BỘ 100% ĐỂ TRÁNH LỖI RENDER
+    // 🚀 TẢI DATA AN TOÀN VỚI BACKEND PROXY MỚI
     // ======================================================================
     async function loadData() {
         try {
             const [vipRes, ipaRes] = await Promise.allSettled([
                 fetch(`vip.json?t=${Date.now()}`).then(r => r.text()),
-                fetch('https://raw.githubusercontent.com/apptesters-org/AppTesters_Repo/main/apps.json').then(r => r.json())
+                
+                // GIẤU LINK APPTESTERS, GỌI QUA GOOGLE SCRIPT CỦA SẾP
+                fetch(`${GOOGLE_API_URL}?action=get_ipa_data&t=${Date.now()}`).then(r => r.json())
             ]);
 
-            // Lấy data VIP để trang trí màn Khám phá
+            // Data VIP
             if (vipRes.status === 'fulfilled') {
                 try {
                     const vipData = JSON.parse(vipRes.value);
                     if(Array.isArray(vipData)){
-                        DB.vip = vipData.map(item => { 
-                            item._id = 'vip_' + Math.random().toString(36).substr(2, 9); 
-                            item._type = 'VIP'; 
-                            window.allAppsMap[item._id] = item; 
-                            return item; 
-                        });
+                        DB.vip = vipData.map(item => { item._id = 'vip_' + Math.random().toString(36).substr(2, 9); item._type = 'VIP'; window.allAppsMap[item._id] = item; return item; });
                     }
-                } catch(e) { console.log("Lỗi parse vip.json", e); }
+                } catch(e) { console.log("Lỗi parse vip.json"); }
             }
 
-            // Lấy data IPA Thường
+            // Data IPA từ Proxy
             if (ipaRes.status === 'fulfilled' && ipaRes.value && Array.isArray(ipaRes.value.apps)) {
                 const mapped = ipaRes.value.apps.map(app => {
                     let newItem = {
@@ -281,7 +275,6 @@
             }
         } catch(e) { console.error("Lỗi tổng", e); }
 
-        // Gọi hàm Render khi Data đã về kho đủ
         switchTab(STATE.currentTab);
     }
 
@@ -305,7 +298,6 @@
                 html = `<h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight mb-4 animate-fluid-up">Kết quả tìm kiếm</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fluid-up delay-50">${uniqueApps.length ? uniqueApps.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}</div>`;
             } else {
                 let featured = DB.vip.slice(0, 5); 
-                // Nếu VIP hỏng, dùng IPA làm app nổi bật
                 if(featured.length === 0) featured = uniqueApps.slice(0, 5); 
                 const recent = uniqueApps.slice(0, 15);
                 
@@ -359,9 +351,13 @@
 
             const totalPages = Math.ceil(items.length / STATE.itemsPerPage); const start = (STATE.currentPage - 1) * STATE.itemsPerPage; const pagedItems = items.slice(start, start + STATE.itemsPerPage);
 
+            const featured = items.slice(0, 5);
+
             html = `
                 <h1 class="text-[34px] font-black tracking-tight mb-8 text-gray-900 dark:text-white capitalize animate-fluid-up">Kho IPA Thường</h1>
                 
+                ${!query && STATE.currentFilter === 'all' && featured.length ? `<div class="mb-10 animate-fluid-up delay-50"><div class="flex gap-5 overflow-x-auto snap-x-mandatory scrollbar-hide pb-6 -mx-5 px-5 md:mx-0 md:px-0">${featured.map((i, idx) => createSubPageHero(i, idx)).join('')}</div></div>` : ''}
+
                 <div class="flex flex-col mb-4 animate-fluid-up delay-100">
                     <div class="flex items-center gap-4 justify-between w-full border-b border-black/5 dark:border-white/10 pb-3 mb-3">
                         <h3 class="text-[22px] font-bold tracking-tight">Tất cả File</h3>
@@ -376,7 +372,6 @@
         container.innerHTML = html; lucide.createIcons();
     }
 
-    // THẺ HERO SLIDER VỚI CHIỀU CAO CỐ ĐỊNH CHỐNG LỖI HIỂN THỊ
     function createBigHero(i, index) { 
         let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
         let safeName = i.name || i.title || 'Ứng dụng';
@@ -409,8 +404,27 @@
             </div>
         </div>`; 
     }
+
+    function createSubPageHero(i, index) { 
+        let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
+        let safeName = i.name || i.title || 'Ứng dụng';
+        return `
+        <div onclick="openAppView('${i._id}')" class="animate-fluid-up snap-center shrink-0 w-[20rem] h-[12rem] relative rounded-[28px] overflow-hidden spatial-shadow group cursor-pointer bg-black" style="animation-delay: ${index*50}ms">
+            <img src="${safeIcon}" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-40 transition-all duration-700 ease-out" onerror="this.src='https://placehold.co/100'">
+            <div class="absolute inset-0 p-6 flex flex-col justify-end">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 relative overflow-hidden squircle shadow-md bg-white ipaviet-watermark-sm shrink-0 border border-white/10">
+                        <img src="${safeIcon}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100'">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-white text-xl truncate drop-shadow-md">${safeName}</h4>
+                        <p class="text-[12px] text-white/70 font-semibold mt-0.5">${i.source || 'IPAVIET'}</p>
+                    </div>
+                </div>
+            </div>
+        </div>`; 
+    }
     
-    // THẺ GRID ITEM CÓ WATERMARK-SM
     function createGridItem(i, index) { 
         let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
         let safeName = i.name || i.title || 'Ứng dụng';
@@ -418,7 +432,7 @@
         
         return `
         <div onclick="openAppView('${i._id}')" class="animate-fluid-up flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/10 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 px-2 rounded-2xl transition-colors cursor-pointer group" style="animation-delay: ${index*30}ms">
-            <div class="w-[60px] h-[60px] relative overflow-hidden squircle shrink-0 shadow-sm bg-gray-100 dark:bg-gray-800 ipaviet-watermark-sm border border-black/5 dark:border-white/5">
+            <div class="w-[60px] h-[60px] relative overflow-hidden squircle shrink-0 shadow-sm bg-gray-100 dark:bg-gray-800 object-cover group-hover:scale-95 transition-transform duration-300 ipaviet-watermark-sm border border-black/5 dark:border-white/5">
                 <img src="${safeIcon}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100'"/>
             </div>
             <div class="flex-1 min-w-0 pt-1">
@@ -435,14 +449,13 @@
     
     document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
 
-    // HÀM MỞ CHI TIẾT APP ĐÃ ĐƯỢC BẢO MẬT & FULL CHỨC NĂNG SCREENSHOTS
     function openAppView(appId) {
        const i = window.allAppsMap[appId]; if(!i) return; STATE.currentItem = i;
        
-       document.getElementById('vAppBg').src = i.icon || i.iconUrl || 'https://placehold.co/100'; 
-       document.getElementById('vAppIcon').src = i.icon || i.iconUrl || 'https://placehold.co/100'; 
+       let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
+       document.getElementById('vAppBg').src = safeIcon; 
+       document.getElementById('vAppIcon').src = safeIcon; 
        
-       // Xử lý Icon To (Có watermark)
        const iconWrapper = document.getElementById('vAppIconWrapper');
        iconWrapper.className = "w-[110px] h-[110px] relative overflow-hidden squircle shadow-2xl bg-white dark:bg-gray-800 ring-1 ring-black/5 dark:ring-white/10 ipaviet-watermark-lg shrink-0";
 
@@ -460,7 +473,13 @@
        document.getElementById('vAwardText').innerText = i._type === 'VIP' ? 'Siêu Phẩm' : 'Khuyên Dùng';
        document.getElementById('vVipArea').classList.add('hidden');
 
-       // Xử lý Screenshots
+       const btnWrap = document.getElementById('vInstallBtnWrap');
+       if(i._type === 'VIP') {
+           btnWrap.innerHTML = `<button onclick="showDownloadAction()" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-1.5 px-6 rounded-full font-black text-[15px] active:scale-95 transition tracking-wide shadow-[0_4px_15px_rgba(234,179,8,0.4)] flex items-center"><i data-lucide="crown" class="w-4 h-4 mr-1.5"></i>TẢI VIP</button><button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-yellow-500"><i data-lucide="share" class="w-4 h-4"></i></button>`;
+       } else {
+           btnWrap.innerHTML = `<button onclick="showDownloadAction()" class="bg-brand text-white py-1.5 px-6 rounded-full font-bold text-[15px] active:scale-95 transition tracking-wide shadow-lg shadow-brand/30">CÀI ĐẶT</button><button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-brand"><i data-lucide="share" class="w-4 h-4"></i></button>`;
+       }
+
        const ssArea = document.getElementById('vScreenshotsArea');
        const ssList = document.getElementById('vScreenshotsList');
        if (i.screenshots && Array.isArray(i.screenshots) && i.screenshots.length > 0) {
@@ -469,14 +488,6 @@
            ssList.innerHTML = ssHtml; ssArea.classList.remove('hidden');
        } else {
            ssArea.classList.add('hidden'); ssList.innerHTML = '';
-       }
-
-       // Reset Nút Tải
-       const btnWrap = document.getElementById('vInstallBtnWrap');
-       if(i._type === 'VIP') {
-           btnWrap.innerHTML = `<button onclick="showDownloadAction()" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-1.5 px-6 rounded-full font-black text-[15px] active:scale-95 transition tracking-wide shadow-[0_4px_15px_rgba(234,179,8,0.4)] flex items-center"><i data-lucide="crown" class="w-4 h-4 mr-1.5"></i>TẢI VIP</button><button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-yellow-500"><i data-lucide="share" class="w-4 h-4"></i></button>`;
-       } else {
-           btnWrap.innerHTML = `<button onclick="showDownloadAction()" class="bg-brand text-white py-1.5 px-6 rounded-full font-bold text-[15px] active:scale-95 transition tracking-wide shadow-lg shadow-brand/30">CÀI ĐẶT</button><button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-brand"><i data-lucide="share" class="w-4 h-4"></i></button>`;
        }
 
        const view = document.getElementById('appStoreView'); 
@@ -505,7 +516,7 @@
 
     async function downloadVipApp(btnEl) {
         const originalText = btnEl.innerHTML; btnEl.innerHTML = `<div class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>`; btnEl.disabled = true;
-        try { window.location.href = STATE.currentItem.url || STATE.currentItem.fileLink || STATE.currentItem.downloadUrl; } catch (error) { alert("Lỗi kết nối."); }
+        try { const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link; if(rawLink) { window.location.href = rawLink; } else { alert("Không tìm thấy link tải gốc."); } } catch (error) { alert("Lỗi kết nối."); }
         setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
     }
 
