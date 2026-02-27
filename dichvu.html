@@ -240,7 +240,7 @@
 
   <script>
     // ======================================================================
-    // 🛑 THAY LINK API CỦA SẾP VÀO ĐÂY LÀ XONG
+    // 🛑 THAY LINK API CỦA SẾP VÀO ĐÂY (Link App Script đã Deploy mới nhất)
     // ======================================================================
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
 
@@ -333,7 +333,7 @@
         } catch(e) { alert("LỖI KẾT NỐI (CORS / Link Sai)\n\n1. Sếp kiểm tra GOOGLE_API_URL xem đúng chưa.\n2. Sếp phải up file này lên Hosting thật chạy (ipaviet.site) chứ chạy Localhost sẽ bị trình duyệt chặn."); }
     }
 
-        function renderPricesAndQR() {
+    function renderPricesAndQR() {
         document.getElementById('chkFinalPrice').innerText = currentOrder.finalAmount.toLocaleString('vi-VN') + "đ";
         document.getElementById('chkFinalPriceRaw').innerText = currentOrder.finalAmount; 
         const img = document.getElementById('qrImage');
@@ -462,7 +462,7 @@
             if (data.usedBy && data.usedBy.includes(currentUser.uid)) throw new Error("Bạn đã nhập mã này rồi!");
             if (data.maxUses && data.usedBy && data.usedBy.length >= data.maxUses) throw new Error("Mã đã hết lượt sử dụng!");
 
-            // Xử lý tặng quà (🔥 ĐÃ FIX LỖI NÚT ĐÓNG Ở ĐÂY SẾP NHÉ 🔥)
+            // Xử lý tặng quà (🔥 ĐÃ FIX LỖI NÚT ĐÓNG BỊ ĐƠ Ở ĐÂY SẾP NHÉ 🔥)
             if (data.type === 'coin') {
                 await db.collection('users').doc(currentUser.uid).update({ coins: firebase.firestore.FieldValue.increment(data.value) });
                 renderStoreModal('success', 'Nhận Quà Thành Công!', `Bạn vừa nhận được ${data.value} Xu.`, closeActionModal);
@@ -491,7 +491,7 @@
     }
 
     // ==========================================
-    // MODULE: MUA HÀNG BẰNG XU (VIP & Account)
+    // MODULE: MUA HÀNG BẰNG XU (VIP & Account) + BÁO CÁO BOT TELEGRAM
     // ==========================================
     function requestPurchase(itemName, priceInXu, type, extraData = null) {
         if (currentCoins < priceInXu) { 
@@ -510,6 +510,11 @@
                 if (userData.vipExpire && userData.vipExpire.toMillis() > Date.now()) exp = new Date(userData.vipExpire.toMillis());
                 exp.setDate(exp.getDate() + extraData);
                 await db.collection("users").doc(currentUser.uid).set({ vipExpire: firebase.firestore.Timestamp.fromDate(exp) }, { merge: true });
+                
+                // 🚀 BÁO CÁO TELEGRAM: KHÁCH MUA VIP
+                const msg = `👑 *CÓ KHÁCH CHỐT ĐƠN VIP!*\n👤 UID: \`${currentUser.uid}\`\n📦 Gói mua: *${itemName}*\n💎 Thanh toán: -${priceInXu} Xu\n⏰ Hạn dùng: +${extraData} ngày`;
+                fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
+
                 renderStoreModal('success', 'Thanh Toán Thành Công!', `Đã gia hạn gói ${itemName} cho tài khoản của bạn.`, closeActionModal);
             
             } else if (type === 'account') {
@@ -517,6 +522,11 @@
                 const data = await res.json();
                 if (data.success) {
                     await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-priceInXu) }, { merge: true });
+                    
+                    // 🚀 BÁO CÁO TELEGRAM: KHÁCH MUA TÀI KHOẢN
+                    const msg = `🛒 *CÓ KHÁCH MUA TÀI KHOẢN!*\n👤 UID: \`${currentUser.uid}\`\n📦 Loại Acc: *${itemName}*\n💎 Thanh toán: -${priceInXu} Xu\n🔑 Đã xuất kho: \`${data.account}\``;
+                    fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
+
                     renderStoreModal('success', 'Mua Tài Khoản Thành Công!', `Thông tin đăng nhập của bạn là:\n\n${data.account}`, closeActionModal, 'Đã Sao Chép');
                 } else { 
                     renderStoreModal('error', 'Hết hàng tạm thời', data.error, closeActionModal); 
