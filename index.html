@@ -236,14 +236,12 @@
     function sortItemsByDate(items) { return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0)); }
 
     // ======================================================================
-    // 🚀 TẢI DATA AN TOÀN VỚI BACKEND PROXY MỚI
+    // 🚀 TẢI DATA AN TOÀN VỚI BACKEND PROXY (SỬA LỖI PHÂN BIỆT JSON KEY)
     // ======================================================================
     async function loadData() {
         try {
             const [vipRes, ipaRes] = await Promise.allSettled([
                 fetch(`vip.json?t=${Date.now()}`).then(r => r.text()),
-                
-                // GIẤU LINK APPTESTERS, GỌI QUA GOOGLE SCRIPT CỦA SẾP
                 fetch(`${GOOGLE_API_URL}?action=get_ipa_data&t=${Date.now()}`).then(r => r.json())
             ]);
 
@@ -264,6 +262,10 @@
                         name: app.name, title: app.name, icon: app.iconURL || 'https://placehold.co/100', iconUrl: app.iconURL,
                         desc: app.localizedDescription || app.subtitle || 'Bản IPA Thường', description: app.localizedDescription || app.subtitle,
                         fullDesc: app.localizedDescription, 
+                        
+                        // 👉 FIX LỖI: BẮT ĐỦ 3 LOẠI KEY MÀ APPTESTERS HAY DÙNG CHO ẢNH
+                        screenshots: app.screenshotURLs || app.screenshotUrls || app.screenshots || [],
+
                         fileLink: app.downloadURL, downloadUrl: app.downloadURL, link: app.downloadURL, version: app.version,
                         developer: 'IPAVIET', date: app.versionDate || new Date().toISOString(),
                         lastSync: app.versionDate, source: 'IPAVIET', category: app.category || 'Tiện ích', 
@@ -350,7 +352,6 @@
             }).join('');
 
             const totalPages = Math.ceil(items.length / STATE.itemsPerPage); const start = (STATE.currentPage - 1) * STATE.itemsPerPage; const pagedItems = items.slice(start, start + STATE.itemsPerPage);
-
             const featured = items.slice(0, 5);
 
             html = `
@@ -449,6 +450,9 @@
     
     document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
 
+    // ======================================================================
+    // 🚀 LOGIC TỰ ĐỘNG TÌM KIẾM ẢNH MÔ TẢ TỪ APPLE STORE (NẾU KHÔNG CÓ SẴN)
+    // ======================================================================
     function openAppView(appId) {
        const i = window.allAppsMap[appId]; if(!i) return; STATE.currentItem = i;
        
@@ -480,14 +484,55 @@
            btnWrap.innerHTML = `<button onclick="showDownloadAction()" class="bg-brand text-white py-1.5 px-6 rounded-full font-bold text-[15px] active:scale-95 transition tracking-wide shadow-lg shadow-brand/30">CÀI ĐẶT</button><button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-brand"><i data-lucide="share" class="w-4 h-4"></i></button>`;
        }
 
+       // XỬ LÝ ẢNH SCREENSHOTS THÔNG MINH
        const ssArea = document.getElementById('vScreenshotsArea');
        const ssList = document.getElementById('vScreenshotsList');
-       if (i.screenshots && Array.isArray(i.screenshots) && i.screenshots.length > 0) {
+       
+       const renderSS = (urls) => {
            let ssHtml = '';
-           i.screenshots.forEach(url => { ssHtml += `<img src="${url}" class="screenshot-img snap-center shrink-0">`; });
-           ssList.innerHTML = ssHtml; ssArea.classList.remove('hidden');
+           urls.forEach(url => { ssHtml += `<img src="${url}" class="screenshot-img snap-center shrink-0">`; });
+           ssList.innerHTML = ssHtml; 
+           ssArea.classList.remove('hidden');
+       };
+
+       if (Array.isArray(i.screenshots) && i.screenshots.length > 0) {
+           renderSS(i.screenshots); // Có sẵn thì render luôn
        } else {
-           ssArea.classList.add('hidden'); ssList.innerHTML = '';
+           // Không có thì hiển thị Loading và tìm kiếm tự động
+           ssArea.classList.remove('hidden');
+           ssList.innerHTML = `<div class="w-full flex flex-col items-center justify-center py-10 opacity-50"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mb-2"></div><span class="text-[12px] font-bold text-gray-500">Đang tìm ảnh gốc từ Apple Store...</span></div>`;
+           
+           // Thuật toán bóc tách tên: Loại bỏ các từ khóa Mod/Hack để tìm bản gốc trên Store
+           let searchTerm = (i.name || "").replace(/hack|mod|crack|premium|pro|\+|vip|cheat/gi, '').trim();
+
+           // Tìm kiếm Đa quốc gia (Thử VN trước, nếu trượt qua Mỹ tìm)
+           async function fetchAppleScreenshots() {
+               try {
+                   // 1. Thử kho Việt Nam
+                   let resVN = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=software&limit=1&country=vn`);
+                   let dataVN = await resVN.json();
+                   if (dataVN.results && dataVN.results.length > 0 && dataVN.results[0].screenshotUrls) {
+                       return dataVN.results[0].screenshotUrls;
+                   }
+                   // 2. Thử kho Mỹ
+                   let resUS = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=software&limit=1&country=us`);
+                   let dataUS = await resUS.json();
+                   if (dataUS.results && dataUS.results.length > 0 && dataUS.results[0].screenshotUrls) {
+                       return dataUS.results[0].screenshotUrls;
+                   }
+                   return null;
+               } catch (e) { return null; }
+           }
+
+           fetchAppleScreenshots().then(urls => {
+               if (urls && urls.length > 0) {
+                   i.screenshots = urls.slice(0, 5); // Lưu lại vào cache để lần sau không tìm lại nữa
+                   renderSS(i.screenshots);
+               } else {
+                   ssArea.classList.add('hidden');
+                   ssList.innerHTML = '';
+               }
+           });
        }
 
        const view = document.getElementById('appStoreView'); 
