@@ -320,7 +320,7 @@
 
   <script>
     // ======================================================================
-    // THÔNG TIN NGÂN HÀNG (SẾP SỬA STK Ở ĐÂY NẾU CẦN)
+    // 🛡️ THÔNG TIN NGÂN HÀNG & API (BẢN CHỐT)
     // ======================================================================
     const BANK_ID = "ACB"; 
     const ACC_NO = "22703611"; 
@@ -343,6 +343,10 @@
 
     let currentUser = null; let currentCoins = 0; let pollingInterval = null; 
     let currentOrder = { id: "", originalAmount: 0, finalAmount: 0, coins: 0, name: "", isDiscountApplied: false };
+    
+    // --- BIẾN KIỂM SOÁT QUÉT ---
+    let checkCount = 0; 
+    const MAX_CHECKS = 50; // Quét 3.5 phút
 
     // BẮT ĐĂNG NHẬP
     auth.onAuthStateChanged(user => {
@@ -359,7 +363,6 @@
         }
     });
 
-    // CHUYỂN TAB CỬA HÀNG (4 Tab)
     function switchStoreTab(tabId, index) {
         document.getElementById('segment-slider').style.transform = `translateX(${index * 100}%)`;
         ['napxu', 'vip', 'premium', 'giftcode'].forEach(id => { 
@@ -368,304 +371,196 @@
         });
         document.getElementById('tab-' + tabId).classList.add('active'); 
         document.getElementById('section-' + tabId).classList.remove('hidden');
-        if(tabId === 'napxu') document.getElementById('hero-napxu').classList.remove('hidden'); 
-        else document.getElementById('hero-napxu').classList.add('hidden');
     }
 
     // ======================================================================
-    // 1. LOGIC THANH TOÁN ĐƠN HÀNG (FULL MÀN HÌNH)
+    // 1. LOGIC THANH TOÁN ĐƠN HÀNG
     // ======================================================================
 
-    function startOrder(amount, packageName, coins) {
-        if(!currentUser) {
-            alert("Đang xác thực hệ thống, vui lòng chờ...");
-            return;
-        }
+    async function startOrder(amount, packageName, coins) {
+        if(!currentUser) return;
+        
         const orderId = "IPA" + Math.floor(100000 + Math.random() * 900000); 
         currentOrder = { id: orderId, originalAmount: amount, finalAmount: amount, coins: coins, name: packageName, isDiscountApplied: false };
         
-        // Reset form discount checkout
-        document.getElementById('discountInput').value = '';
-        document.getElementById('discountMsg').classList.add('hidden');
-        document.getElementById('discountInput').disabled = false;
-        const btnGift = document.getElementById('btnApplyDiscount');
-        btnGift.disabled = false; btnGift.innerHTML = `Áp dụng`;
-        btnGift.classList.replace('bg-green-500', 'bg-brand');
-        
-        // Reset nút Xác nhận dưới đáy
-        const btnConfirm = document.getElementById('btnConfirmPay');
-        btnConfirm.innerHTML = `Xác nhận đã thanh toán`;
-        btnConfirm.classList.replace('bg-brand', 'bg-green-500');
-
-        // Gắn Data
+        // Hiện UI
         document.getElementById('chkPackageName').innerText = packageName;
         document.getElementById('chkOriginalPrice').innerText = amount.toLocaleString('vi-VN') + "đ";
         document.getElementById('chkContent').innerText = orderId;
-        
         renderPricesAndQR();
 
-        // Mở màn hình Checkout Trượt Ngang
         const page = document.getElementById('checkoutPage');
         page.classList.remove('hidden');
         page.classList.add('flex');
-        page.style.animation = 'slideInRight 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards';
 
-        // Đẩy đơn lên Google Sheet chờ check
+        // 🔥 GỬI LỆNH TẠO ĐƠN SANG GOOGLE SHEET (CÓ KIỂM TRA LỖI)
         try { 
-            fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${orderId}&uid=${currentUser.uid}&amount=${currentOrder.finalAmount}&coins=${coins}`); 
-            if(pollingInterval) clearInterval(pollingInterval);
-            pollingInterval = setInterval(autoCheckPayment, 4000); 
-        } catch(e) {}
+            const createRes = await fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${orderId}&uid=${currentUser.uid}&amount=${amount}&coins=${coins}`);
+            const createData = await createRes.json();
+            
+            if(createData.success) {
+                checkCount = 0; 
+                if(pollingInterval) clearInterval(pollingInterval);
+                pollingInterval = setInterval(autoCheckPayment, 4500); 
+            } else {
+                alert("Lỗi kết nối máy chủ nạp tiền. Vui lòng thử lại!");
+            }
+        } catch(e) {
+            alert("Không thể tạo đơn hàng. Vui lòng kiểm tra mạng!");
+        }
     }
 
     function renderPricesAndQR() {
         document.getElementById('chkFinalPrice').innerText = currentOrder.finalAmount.toLocaleString('vi-VN') + "đ";
         document.getElementById('chkFinalPriceRaw').innerText = currentOrder.finalAmount; 
-        
-        // Hiện overlay loading QR
         const img = document.getElementById('qrImage');
         document.getElementById('qrOverlay').classList.remove('hidden');
         document.getElementById('qrOverlay').classList.add('flex');
         
-        // Link VietQR chuẩn form mới của Sếp
         const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.png?amount=${currentOrder.finalAmount}&addInfo=${currentOrder.id}&accountName=${encodeURIComponent(ACC_NAME)}`;
-        
-        img.onload = () => { 
-            document.getElementById('qrOverlay').classList.add('hidden'); 
-            document.getElementById('qrOverlay').classList.remove('flex');
-            img.classList.remove('hidden');
-            document.getElementById('qrLoading').classList.add('hidden');
-        };
+        img.onload = () => { document.getElementById('qrOverlay').classList.add('hidden'); img.classList.remove('hidden'); };
         img.src = qrUrl;
     }
 
     function closeCheckout() {
         if(pollingInterval) clearInterval(pollingInterval);
-        const page = document.getElementById('checkoutPage');
-        page.style.transform = 'translateX(100%)';
-        setTimeout(() => { 
-            page.classList.add('hidden'); 
-            page.classList.remove('flex');
-            page.style.transform = 'translateX(0)'; 
-        }, 300);
-    }
-
-    function copyCheckoutText(elementId, btn) {
-        const text = document.getElementById(elementId).innerText; 
-        navigator.clipboard.writeText(text); 
-        const originalHtml = btn.innerHTML; 
-        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i>`; 
-        btn.classList.add('bg-green-100', 'text-green-600', 'dark:bg-green-500/20'); 
-        lucide.createIcons(); 
-        setTimeout(() => { 
-            btn.innerHTML = originalHtml; 
-            btn.classList.remove('bg-green-100', 'text-green-600', 'dark:bg-green-500/20'); 
-            lucide.createIcons(); 
-        }, 1500); 
+        document.getElementById('checkoutPage').classList.add('hidden');
     }
 
     function triggerManualCheck() {
         const btn = document.getElementById('btnConfirmPay');
         btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Đang xác minh...`;
-        btn.classList.replace('bg-green-500', 'bg-brand');
+        btn.classList.add('bg-brand');
         lucide.createIcons();
+        checkCount = 0; 
         autoCheckPayment(); 
     }
 
     // ======================================================================
-    // 2. LOGIC MÃ GIẢM GIÁ (TRONG LÚC THANH TOÁN)
-    // ======================================================================
-    async function applyDiscountCode() {
-        const codeInput = document.getElementById('discountInput');
-        const code = codeInput.value.trim().toUpperCase();
-        const msgEl = document.getElementById('discountMsg');
-        const btn = document.getElementById('btnApplyDiscount');
-        
-        if (!code) return;
-        if (currentOrder.isDiscountApplied) { showCheckoutMsg('Đã áp dụng 1 mã cho đơn này!', 'error'); return; }
-
-        const oriBtnText = btn.innerHTML;
-        btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>`;
-        btn.disabled = true; codeInput.disabled = true; msgEl.classList.add('hidden'); lucide.createIcons();
-
-        try {
-            const doc = await db.collection('giftcodes').doc(code).get();
-            if (!doc.exists) { showCheckoutMsg('Mã không hợp lệ!', 'error'); resetDiscountInput(btn, oriBtnText, codeInput); return; }
-            
-            const data = doc.data();
-            if (data.type !== 'discount') { showCheckoutMsg('Đây không phải mã giảm giá hóa đơn!', 'error'); resetDiscountInput(btn, oriBtnText, codeInput); return; }
-            if (data.maxUses > 0 && data.usedCount >= data.maxUses) { showCheckoutMsg('Mã đã hết lượt dùng!', 'error'); resetDiscountInput(btn, oriBtnText, codeInput); return; }
-            if ((data.usedBy || []).includes(currentUser.uid)) { showCheckoutMsg('Bạn đã sử dụng mã này rồi!', 'error'); resetDiscountInput(btn, oriBtnText, codeInput); return; }
-
-            let discountAmount = data.value; 
-            if (discountAmount >= currentOrder.finalAmount) { showCheckoutMsg('Đơn hàng không đủ điều kiện!', 'error'); resetDiscountInput(btn, oriBtnText, codeInput); return; }
-
-            // Áp dụng giảm giá
-            currentOrder.finalAmount -= discountAmount;
-            currentOrder.isDiscountApplied = true;
-            
-            await db.collection('giftcodes').doc(code).update({ 
-                usedCount: firebase.firestore.FieldValue.increment(1),
-                usedBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-            });
-
-            showCheckoutMsg(`✅ Giảm ${discountAmount.toLocaleString('vi-VN')}đ. Vui lòng quét mã QR mới!`, 'success');
-            btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Đã áp dụng`;
-            btn.classList.replace('bg-brand', 'bg-green-500');
-            
-            // CẬP NHẬT LẠI QR VÀ GỬI LÊN GOOGLE
-            renderPricesAndQR();
-            fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${currentOrder.id}&uid=${currentUser.uid}&amount=${currentOrder.finalAmount}&coins=${currentOrder.coins}`);
-
-        } catch (error) {
-            showCheckoutMsg('Lỗi máy chủ. Thử lại sau!', 'error'); resetDiscountInput(btn, oriBtnText, codeInput);
-        }
-        lucide.createIcons();
-    }
-
-    function showCheckoutMsg(text, type) {
-        const el = document.getElementById('discountMsg'); el.innerText = text;
-        el.className = `text-[12px] font-medium mt-2 block ${type === 'success' ? 'text-green-500' : 'text-red-500'}`; el.classList.remove('hidden');
-    }
-
-    function resetDiscountInput(btn, text, input) { btn.innerHTML = text; btn.disabled = false; input.disabled = false; input.value = ''; }
-
-    // ======================================================================
-    // 3. LOGIC GIFTCODE TẶNG QUÀ (Ở TAB BÊN NGOÀI)
-    // ======================================================================
-    async function applyMainGiftcode() {
-        const codeInput = document.getElementById('mainGiftcodeInput');
-        const code = codeInput.value.trim().toUpperCase();
-        const msgEl = document.getElementById('mainGiftcodeMsg');
-        const btn = document.getElementById('btnMainApplyGiftcode');
-        
-        if (!code) return;
-        const oriBtnText = btn.innerHTML;
-        btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> XỬ LÝ...`;
-        btn.disabled = true; codeInput.disabled = true; msgEl.classList.add('hidden'); lucide.createIcons();
-
-        try {
-            const doc = await db.collection('giftcodes').doc(code).get();
-            if (!doc.exists) { showMainCodeMsg('Mã không tồn tại hoặc đã hết hạn!', 'error'); resetMainInput(btn, oriBtnText, codeInput); return; }
-            
-            const data = doc.data();
-            if (data.type === 'discount') { showMainCodeMsg('Vui lòng dùng mã này trong lúc Nạp Xu!', 'error'); resetMainInput(btn, oriBtnText, codeInput); return; }
-            if (data.maxUses > 0 && data.usedCount >= data.maxUses) { showMainCodeMsg('Mã này đã đạt giới hạn sử dụng!', 'error'); resetMainInput(btn, oriBtnText, codeInput); return; }
-            if ((data.usedBy || []).includes(currentUser.uid)) { showMainCodeMsg('Bạn đã nhận quà từ mã này rồi!', 'error'); resetMainInput(btn, oriBtnText, codeInput); return; }
-
-            // Nhận quà (Xu / VIP)
-            let batch = db.batch();
-            let userRef = db.collection('users').doc(currentUser.uid);
-            
-            if (data.type === 'coins') {
-                batch.set(userRef, { coins: firebase.firestore.FieldValue.increment(data.value) }, { merge: true });
-            } else if (data.type === 'vip') {
-                const userSnap = await userRef.get(); const uData = userSnap.data();
-                let exp = new Date(); if (uData.vipExpire && uData.vipExpire.toMillis() > Date.now()) exp = new Date(uData.vipExpire.toMillis());
-                exp.setDate(exp.getDate() + data.value);
-                batch.set(userRef, { vipExpire: firebase.firestore.Timestamp.fromDate(exp) }, { merge: true });
-            }
-
-            batch.update(db.collection('giftcodes').doc(code), { usedCount: firebase.firestore.FieldValue.increment(1), usedBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
-            await batch.commit();
-
-            let rewardText = data.type === 'coins' ? `${data.value} Xu` : `${data.value} Ngày VIP`;
-            renderStoreModal('success', 'Đổi Quà Thành Công!', `Bạn đã nhận được ${rewardText} từ mã quà tặng.`, closeActionModal, 'Tuyệt vời');
-            codeInput.value = ''; btn.innerHTML = oriBtnText; btn.disabled = false; codeInput.disabled = false; lucide.createIcons();
-
-        } catch (error) {
-            showMainCodeMsg('Lỗi máy chủ. Vui lòng thử lại!', 'error'); resetMainInput(btn, oriBtnText, codeInput);
-        }
-    }
-
-    function showMainCodeMsg(text, type) {
-        const el = document.getElementById('mainGiftcodeMsg'); el.innerText = text;
-        el.className = `text-[13px] font-bold mt-4 block text-center ${type === 'success' ? 'text-green-500' : 'text-red-500'}`; el.classList.remove('hidden');
-    }
-    function resetMainInput(btn, text, input) { btn.innerHTML = text; btn.disabled = false; input.disabled = false; input.value = ''; lucide.createIcons();}
-
-    // ======================================================================
-    // KIỂM TRA NẠP XU TỰ ĐỘNG TỪ GOOGLE
+    // 2. KIỂM TRA THANH TOÁN (POLING + WEBHOOK CHECK)
     // ======================================================================
     async function autoCheckPayment() {
         if(!currentOrder || !currentUser) return;
+        checkCount++;
+
+        // Cầu chì 3 phút
+        if(checkCount > MAX_CHECKS) {
+            clearInterval(pollingInterval);
+            const btn = document.getElementById('btnConfirmPay');
+            btn.innerHTML = `Chưa nhận được tiền. LH Admin!`;
+            btn.classList.replace('bg-green-500', 'bg-red-500');
+            return;
+        }
+
         try {
-            const url = `${GOOGLE_API_URL}?action=claim_order&orderId=${currentOrder.id}&uid=${currentUser.uid}&t=${Date.now()}`;
-            const res = await fetch(url); const data = await res.json();
+            const url = `${GOOGLE_API_URL}?action=check_stc_payment&orderId=${currentOrder.id}&amount=${currentOrder.finalAmount}&t=${Date.now()}`;
+            const res = await fetch(url); 
+            const data = await res.json();
 
             if (data.success) {
                 clearInterval(pollingInterval);
-                await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(data.coins) }, { merge: true });
-                await db.collection("users").doc(currentUser.uid).collection("transactions").add({ amount: data.coins, desc: `Nạp thẻ (Mã: ${currentOrder.id})`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
                 
-                const btn = document.getElementById('btnConfirmPay');
-                btn.innerHTML = `Thanh toán thành công`; btn.classList.replace('bg-brand', 'bg-green-500');
+                // Cập nhật Firebase
+                await db.collection("users").doc(currentUser.uid).set({ 
+                    coins: firebase.firestore.FieldValue.increment(data.coins),
+                    totalDeposited: firebase.firestore.FieldValue.increment(currentOrder.finalAmount)
+                }, { merge: true });
+                
+                await db.collection("users").doc(currentUser.uid).collection("transactions").add({ 
+                    amount: data.coins, desc: `Nạp thẻ (${currentOrder.id})`, timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+                });
 
-                setTimeout(() => { closeCheckout(); renderStoreModal('success', 'Nạp Xu Thành Công!', `Đã cộng thêm ${data.coins} Xu vào ví.`, closeActionModal, 'Đóng'); }, 1000);
+                const btn = document.getElementById('btnConfirmPay');
+                btn.innerHTML = `Thanh toán thành công`; 
+                btn.classList.replace('bg-brand', 'bg-green-500');
+
+                setTimeout(() => { 
+                    closeCheckout(); 
+                    renderStoreModal('success', 'Nạp Xu Thành Công!', `Đã cộng ${data.coins} Xu.`, closeActionModal, 'Tuyệt vời'); 
+                }, 1500);
             }
         } catch(e) { }
     }
 
     // ======================================================================
-    // MUA VIP VÀ TÀI KHOẢN (BẰNG XU)
+    // 3. MÃ GIẢM GIÁ & GIFTCODE
     // ======================================================================
-    
-    // 🔥 HÀM RENDER MODAL THÔNG BÁO BỊ THIẾU ĐÃ ĐƯỢC THÊM LẠI
-    function renderStoreModal(type, title, desc, actionFn = closeActionModal, btnText = 'Đóng') {
-        const content = document.getElementById('actionModalContent'); let html = '';
-        if (type === 'confirm') {
-            html = `<div class="w-16 h-16 rounded-full bg-blue-50 dark:bg-brand/10 flex items-center justify-center mb-4 text-brand mx-auto"><i data-lucide="shopping-cart" class="w-8 h-8"></i></div><h3 class="text-xl font-black text-gray-900 dark:text-white mb-2 text-center">${title}</h3><p class="text-[15px] text-gray-600 dark:text-gray-300 text-center mb-6 leading-relaxed">${desc}</p><div class="flex w-full gap-3"><button onclick="closeActionModal()" class="flex-1 py-3.5 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-white/10 active:scale-95 transition">Hủy</button><button id="modalActionBtn" class="flex-1 py-3.5 rounded-xl font-bold text-white bg-brand active:scale-95 transition shadow-lg shadow-brand/30">${btnText}</button></div>`;
-        } else if (type === 'loading') {
-            html = `<div class="py-6 flex flex-col items-center justify-center"><div class="w-14 h-14 border-4 border-brand border-t-transparent rounded-full animate-spin mb-4"></div><h3 class="text-lg font-black text-gray-900 dark:text-white mb-1">${title}</h3><p class="text-sm text-gray-500">${desc}</p></div>`;
-        } else if (type === 'success') {
-            html = `<div class="w-16 h-16 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center mb-4 text-green-500 mx-auto animate-pop-in"><i data-lucide="check-circle-2" class="w-8 h-8"></i></div><h3 class="text-xl font-black text-gray-900 dark:text-white mb-2 text-center">${title}</h3><p class="text-[15px] text-gray-600 dark:text-gray-300 text-center mb-6 leading-relaxed">${desc}</p><button id="modalActionBtn" class="w-full py-3.5 rounded-xl font-bold text-white bg-green-500 active:scale-95 transition shadow-lg shadow-green-500/30">${btnText}</button>`;
-        } else if (type === 'error') {
-            html = `<div class="w-16 h-16 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-4 text-red-500 mx-auto animate-pop-in"><i data-lucide="alert-triangle" class="w-8 h-8"></i></div><h3 class="text-xl font-black text-gray-900 dark:text-white mb-2 text-center">${title}</h3><p class="text-[15px] text-gray-600 dark:text-gray-300 text-center mb-6 leading-relaxed">${desc}</p><button id="modalActionBtn" class="w-full py-3.5 rounded-xl font-bold text-white bg-gray-900 dark:bg-white dark:text-black active:scale-95 transition">${btnText}</button>`;
-        }
-        content.innerHTML = html; lucide.createIcons(); openActionModal();
-        const btn = document.getElementById('modalActionBtn'); if(btn) btn.onclick = actionFn;
+    async function applyDiscountCode() {
+        const code = document.getElementById('discountInput').value.trim().toUpperCase();
+        if (!code || currentOrder.isDiscountApplied) return;
+
+        const btn = document.getElementById('btnApplyDiscount');
+        btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i>`;
+        lucide.createIcons();
+
+        try {
+            const doc = await db.collection('giftcodes').doc(code).get();
+            if (!doc.exists) { alert('Mã sai!'); return; }
+            
+            const data = doc.data();
+            if (data.type === 'discount' && !(data.usedBy || []).includes(currentUser.uid)) {
+                currentOrder.finalAmount -= data.value;
+                currentOrder.isDiscountApplied = true;
+                renderPricesAndQR();
+                btn.innerHTML = `Đã dùng`;
+                btn.disabled = true;
+                // Cập nhật lại đơn lên Google Sheet
+                fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${currentOrder.id}&uid=${currentUser.uid}&amount=${currentOrder.finalAmount}&coins=${currentOrder.coins}`);
+            }
+        } catch (e) { alert('Lỗi!'); }
     }
 
+    // ======================================================================
+    // 4. MUA HÀNG (VIP / ACCOUNT)
+    // ======================================================================
     function requestPurchase(itemName, priceInXu, type, extraData = null) {
-        if (!currentUser) { alert("Hệ thống đang tải dữ liệu. Vui lòng đợi trong giây lát!"); return; }
-        if (currentCoins < priceInXu) { renderStoreModal('error', 'Số dư không đủ', `Bạn cần ${priceInXu} Xu để mua ${itemName}. Vui lòng nạp thêm Xu!`, () => { switchStoreTab('napxu', 0); closeActionModal(); }, 'Nạp Xu Ngay'); return; }
-        renderStoreModal('confirm', 'Xác nhận đổi Xu', `Thanh toán <b class="text-brand">${priceInXu} Xu</b> để mua <b class="text-gray-900 dark:text-white">${itemName}</b>?<br>Hệ thống sẽ trừ trực tiếp vào Ví hệ sinh thái.`, () => { executePurchase(itemName, priceInXu, type, extraData); }, 'Xác Nhận Mua');
+        if (currentCoins < priceInXu) { 
+            renderStoreModal('error', 'Số dư không đủ', `Cần ${priceInXu} Xu.`, () => { switchStoreTab('napxu', 0); closeActionModal(); }, 'Nạp Xu'); 
+            return; 
+        }
+        renderStoreModal('confirm', 'Xác nhận mua', `Thanh toán ${priceInXu} Xu cho ${itemName}?`, () => { executePurchase(itemName, priceInXu, type, extraData); }, 'Xác Nhận');
     }
 
     async function executePurchase(itemName, priceInXu, type, extraData) {
-        renderStoreModal('loading', 'Đang xử lý', 'Vui lòng giữ nguyên trang web. Hệ thống đang kết nối dữ liệu...');
+        renderStoreModal('loading', 'Đang xử lý', 'Vui lòng chờ...');
         try {
             if (type === 'vip') {
                 await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-priceInXu) }, { merge: true });
-                const days = extraData; const docSnap = await db.collection("users").doc(currentUser.uid).get(); const userData = docSnap.data() || {};
-                let newExpireDate = new Date(); if (userData.vipExpire && userData.vipExpire.toMillis() > Date.now()) { newExpireDate = new Date(userData.vipExpire.toMillis()); }
-                newExpireDate.setDate(newExpireDate.getDate() + days);
-                await db.collection("users").doc(currentUser.uid).set({ vipExpire: firebase.firestore.Timestamp.fromDate(newExpireDate) }, { merge: true });
-                
-                await db.collection("users").doc(currentUser.uid).collection("transactions").add({ amount: -priceInXu, desc: `Gia hạn VIP: ${itemName}`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                renderStoreModal('success', 'Nâng cấp thành công!', `Gói ${itemName} đã được kích hoạt. Bạn được cộng thêm ${days} ngày sử dụng.`, closeActionModal, 'Tuyệt vời');
-            } 
-            else if (type === 'account') {
-                const accType = extraData; 
-                const res = await fetch(`${GOOGLE_API_URL}?action=get_account&type=${accType}&uid=${currentUser.uid}&t=${Date.now()}`);
+                let exp = new Date(); 
+                const userData = (await db.collection("users").doc(currentUser.uid).get()).data();
+                if (userData.vipExpire && userData.vipExpire.toMillis() > Date.now()) exp = new Date(userData.vipExpire.toMillis());
+                exp.setDate(exp.getDate() + extraData);
+                await db.collection("users").doc(currentUser.uid).set({ vipExpire: firebase.firestore.Timestamp.fromDate(exp) }, { merge: true });
+                renderStoreModal('success', 'Thành công!', `Đã gia hạn gói ${itemName}.`, closeActionModal);
+            } else if (type === 'account') {
+                const res = await fetch(`${GOOGLE_API_URL}?action=get_account&type=${extraData}&uid=${currentUser.uid}`);
                 const data = await res.json();
                 if (data.success) {
                     await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-priceInXu) }, { merge: true });
-                    await db.collection("users").doc(currentUser.uid).collection("transactions").add({ amount: -priceInXu, desc: `Mua TK: ${itemName}`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                    await db.collection("users").doc(currentUser.uid).collection("inventory").add({ type: accType, accountInfo: data.account, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                    
-                    const content = document.getElementById('actionModalContent');
-                    content.innerHTML = `<div class="w-14 h-14 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center mb-3 text-green-500 mx-auto animate-pop-in"><i data-lucide="check-circle-2" class="w-7 h-7"></i></div><h3 class="text-xl font-black text-gray-900 dark:text-white text-center mb-1">Xuất kho thành công</h3><p class="text-sm text-gray-500 text-center mb-5">Đã mua: <b class="text-brand">${itemName}</b></p><div class="w-full bg-gray-900 rounded-2xl p-4 mb-5 relative overflow-hidden group"><div class="flex items-center gap-2 mb-2 opacity-70"><i data-lucide="key" class="w-4 h-4 text-white"></i><span class="text-[10px] font-bold text-white uppercase tracking-widest">Tài Khoản | Mật Khẩu</span></div><textarea id="accReceiptData" readonly class="w-full bg-transparent text-white font-mono text-sm outline-none resize-none h-14 selection:bg-brand/50">${data.account}</textarea></div><button onclick="navigator.clipboard.writeText(document.getElementById('accReceiptData').value); this.innerHTML='<i data-lucide=\\'check\\'></i> ĐÃ CHÉP'; lucide.createIcons(); setTimeout(closeActionModal, 1000);" class="w-full py-3.5 rounded-xl font-black text-white bg-brand active:scale-95 transition shadow-lg shadow-brand/30 flex items-center justify-center gap-2"><i data-lucide="copy" class="w-5 h-5"></i> SAO CHÉP & ĐÓNG</button>`;
-                    lucide.createIcons(); openActionModal();
-                } else { renderStoreModal('error', 'Tạm hết hàng', data.error, closeActionModal, 'Đóng'); }
+                    renderStoreModal('success', 'Đã mua!', `Tài khoản: ${data.account}`, closeActionModal);
+                } else {
+                    renderStoreModal('error', 'Hết hàng', data.error, closeActionModal);
+                }
             }
-        } catch (error) { renderStoreModal('error', 'Lỗi Kết Nối', 'Không thể kết nối đến máy chủ. Vui lòng thử lại!', closeActionModal, 'Đóng'); }
+        } catch (e) { renderStoreModal('error', 'Lỗi', 'Thử lại sau!', closeActionModal); }
     }
 
-    function openActionModal() { const m = document.getElementById('actionModal'); const o = document.getElementById('actionOverlay'); const p = document.getElementById('actionPanel'); m.classList.remove('hidden'); requestAnimationFrame(() => { o.classList.add('opacity-100'); p.classList.remove('scale-95', 'opacity-0'); }); }
-    function closeActionModal() { const m = document.getElementById('actionModal'); const o = document.getElementById('actionOverlay'); const p = document.getElementById('actionPanel'); o.classList.remove('opacity-100'); p.classList.add('scale-95', 'opacity-0'); setTimeout(() => { m.classList.add('hidden'); }, 300); }
-    function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
-    if(localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); }
+    // UI MODAL
+    function renderStoreModal(type, title, desc, actionFn, btnText = 'Đóng') {
+        const content = document.getElementById('actionModalContent');
+        let html = `<div class="text-center p-4">`;
+        if(type==='success') html += `<div class="text-green-500 mb-2"><i data-lucide="check-circle" class="w-12 h-12 mx-auto"></i></div>`;
+        if(type==='error') html += `<div class="text-red-500 mb-2"><i data-lucide="alert-circle" class="w-12 h-12 mx-auto"></i></div>`;
+        html += `<h3 class="font-black text-lg mb-2">${title}</h3><p class="text-sm text-gray-500 mb-6">${desc}</p>`;
+        html += `<button id="modalActionBtn" class="w-full py-3 bg-brand text-white rounded-xl font-bold">${btnText}</button></div>`;
+        content.innerHTML = html; lucide.createIcons(); openActionModal();
+        document.getElementById('modalActionBtn').onclick = actionFn;
+    }
+
+    function openActionModal() { document.getElementById('actionModal').classList.remove('hidden'); }
+    function closeActionModal() { document.getElementById('actionModal').classList.add('hidden'); }
+    function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+    function copyCheckoutText(id, btn) { navigator.clipboard.writeText(document.getElementById(id).innerText); btn.innerText = "OK"; setTimeout(()=>btn.innerText="", 1000); }
     lucide.createIcons();
   </script>
 </body>
