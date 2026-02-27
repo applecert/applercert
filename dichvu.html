@@ -15,8 +15,6 @@
   
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: '#007aff', bgLight: '#f4f5f9', bgDark: '#050505', cardLight: '#ffffff', cardDark: '#121212', } } } }
-    
-    // Khôi phục Theme Sáng/Tối
     if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); }
   </script>
 
@@ -233,26 +231,23 @@
   </div>
 
   <script>
-    // ======================================================================
-    // 🛑 LINK API CỦA SẾP ĐÃ ĐƯỢC NỐI CHUẨN XÁC VÀO ĐÂY
-    // ======================================================================
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
 
     const BANK_ID = "ACB"; 
     const ACC_NO = "22703611"; 
     const ACC_NAME = "TRAN NGUYEN MINH QUI"; 
 
-    // Firebase Init
     const firebaseConfig = { apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", authDomain: "ipaviet-st.firebaseapp.com", projectId: "ipaviet-st", storageBucket: "ipaviet-st.firebasestorage.app", messagingSenderId: "127619650916", appId: "1:127619650916:web:fc8904c99804eeb7539671" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.firestore();
     db.settings({ experimentalForceLongPolling: true });
 
     let currentUser = null; let currentCoins = 0; let pollingInterval = null; 
-    let currentOrder = { id: "", originalAmount: 0, finalAmount: 0, coins: 0, name: "", isDiscountApplied: false };
+    
+    // 🔥 THÊM 2 KHÓA CHỐNG SPAM: isChecking và isCredited
+    let currentOrder = { id: "", originalAmount: 0, finalAmount: 0, coins: 0, name: "", isDiscountApplied: false, isCredited: false, isChecking: false };
     let checkCount = 0; const MAX_CHECKS = 50; 
 
-    // Lắng nghe Đăng nhập
     auth.onAuthStateChanged(user => {
         if (!user) { window.location.href = 'account.html'; } 
         else {
@@ -263,9 +258,6 @@
         }
     });
 
-    // ==========================================
-    // MODULE: CHẾ ĐỘ SÁNG TỐI (THEME)
-    // ==========================================
     function toggleTheme() { 
         const html = document.documentElement;
         html.classList.toggle('dark'); 
@@ -291,12 +283,14 @@
     }
 
     // ==========================================
-    // MODULE: THANH TOÁN & AUTO QUÉT API
+    // MODULE: THANH TOÁN (CÓ KHÓA CHỐNG DOUBLE)
     // ==========================================
     async function startOrder(amount, packageName, coins) {
         if(!currentUser) return;
         const orderId = "IPA" + Math.floor(100000 + Math.random() * 900000); 
-        currentOrder = { id: orderId, originalAmount: amount, finalAmount: amount, coins: coins, name: packageName, isDiscountApplied: false };
+        
+        // Reset khóa khi tạo đơn mới
+        currentOrder = { id: orderId, originalAmount: amount, finalAmount: amount, coins: coins, name: packageName, isDiscountApplied: false, isCredited: false, isChecking: false };
         
         document.getElementById('chkPackageName').innerText = packageName;
         document.getElementById('chkOriginalPrice').innerText = amount.toLocaleString('vi-VN') + "đ";
@@ -310,16 +304,15 @@
             const finalUrl = `${GOOGLE_API_URL}?action=create_order&orderId=${orderId}&uid=${currentUser.uid}&amount=${amount}&coins=${coins}`;
             const createRes = await fetch(finalUrl);
             const textResponse = await createRes.text(); 
-            
             try {
                 const createData = JSON.parse(textResponse);
                 if(createData.success) {
                     checkCount = 0; 
                     if(pollingInterval) clearInterval(pollingInterval);
                     pollingInterval = setInterval(autoCheckPayment, 4500); 
-                } else { alert("Máy chủ từ chối: " + createData.error); }
-            } catch(err) { alert("LỖI CẤP QUYỀN APPS SCRIPT!\nScript trả về mã HTML chứ không phải JSON.\n\n-> Sếp vào Deploy lại, chọn [Ai có quyền truy cập: Bất kỳ ai (Anyone)] nhé!"); }
-        } catch(e) { alert("LỖI KẾT NỐI (CORS / Link Sai)\n\n1. Sếp kiểm tra GOOGLE_API_URL xem đúng chưa.\n2. Sếp phải up file này lên Hosting thật chạy (ipaviet.site) chứ chạy Localhost sẽ bị trình duyệt chặn."); }
+                }
+            } catch(err) {}
+        } catch(e) {}
     }
 
     function renderPricesAndQR() {
@@ -330,7 +323,6 @@
         document.getElementById('qrOverlay').classList.remove('hidden'); 
         document.getElementById('qrOverlay').classList.add('flex');
         
-        // Tắt vòng xoay Loading lỗi
         const badSpinner = document.getElementById('qrLoading');
         if(badSpinner) badSpinner.style.display = 'none';
         
@@ -344,21 +336,27 @@
         document.getElementById('checkoutPage').classList.add('hidden');
     }
 
+    // 🔥 NGĂN CHẶN SPAM CLICK
     function triggerManualCheck() {
+        if(currentOrder.isCredited || currentOrder.isChecking) return; 
         checkCount = 0; 
         if(!pollingInterval) pollingInterval = setInterval(autoCheckPayment, 4500);
         autoCheckPayment(); 
     }
 
     async function autoCheckPayment() {
-        if(!currentOrder || !currentUser) return;
+        // 🔥 NẾU ĐÃ CỘNG TIỀN RỒI HOẶC ĐANG CHECK THÌ KHÔNG LÀM GÌ CẢ
+        if(!currentOrder || !currentUser || currentOrder.isCredited || currentOrder.isChecking) return;
+        
+        currentOrder.isChecking = true; // Bật khóa đang xử lý
         checkCount++;
         const btn = document.getElementById('btnConfirmPay');
 
         if(checkCount > MAX_CHECKS) {
-            clearInterval(pollingInterval);
+            clearInterval(pollingInterval); pollingInterval = null;
             btn.innerHTML = `Chưa nhận được tiền. LH Admin!`;
             btn.classList.replace('bg-brand', 'bg-red-500');
+            currentOrder.isChecking = false; // Mở khóa
             return;
         }
 
@@ -367,22 +365,39 @@
             const res = await fetch(url); 
             const data = await res.json();
 
-            if (data.success) {
-                clearInterval(pollingInterval);
-                await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(data.coins), totalDeposited: firebase.firestore.FieldValue.increment(currentOrder.finalAmount) }, { merge: true });
-                await db.collection("users").doc(currentUser.uid).collection("transactions").add({ amount: data.coins, desc: `Nạp thẻ (${currentOrder.id})`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+            // CHỈ CỘNG NẾU SERVER BÁO THÀNH CÔNG VÀ CHƯA TỪNG CỘNG ĐƠN NÀY
+            if (data.success && !currentOrder.isCredited) {
+                currentOrder.isCredited = true; // Khóa vĩnh viễn đơn này trong phiên
+                clearInterval(pollingInterval); pollingInterval = null;
 
-                btn.innerHTML = `Thanh toán thành công`; 
-                btn.classList.replace('bg-brand', 'bg-green-500');
+                // 🔥 BỨC TƯỜNG THÉP FIREBASE: Bắt buộc lấy Mã Đơn làm tên tài liệu giao dịch (Không thể sinh trùng 2 lần)
+                const txRef = db.collection("users").doc(currentUser.uid).collection("transactions").doc(currentOrder.id);
+                const txSnap = await txRef.get();
 
-                setTimeout(() => { closeCheckout(); renderStoreModal('success', 'Nạp Xu Thành Công!', `Đã cộng ${data.coins} Xu.`, closeActionModal, 'Tuyệt vời'); }, 1500);
+                if (!txSnap.exists) { // Nếu giao dịch chưa tồn tại trên hệ thống thì mới cộng
+                    await db.collection("users").doc(currentUser.uid).set({ 
+                        coins: firebase.firestore.FieldValue.increment(data.coins), 
+                        totalDeposited: firebase.firestore.FieldValue.increment(currentOrder.finalAmount) 
+                    }, { merge: true });
+                    
+                    await txRef.set({ 
+                        amount: data.coins, 
+                        desc: `Nạp thẻ (${currentOrder.id})`, 
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+                    });
+
+                    btn.innerHTML = `Thanh toán thành công`; 
+                    btn.classList.replace('bg-brand', 'bg-green-500');
+
+                    setTimeout(() => { closeCheckout(); renderStoreModal('success', 'Nạp Xu Thành Công!', `Đã cộng ${data.coins} Xu.`, closeActionModal, 'Tuyệt vời'); }, 1500);
+                }
             }
-        } catch(e) { }
+        } catch(e) { 
+        } finally {
+            currentOrder.isChecking = false; // Trả khóa khi quét xong
+        }
     }
 
-    // ==========================================
-    // MODULE: MÃ GIẢM GIÁ
-    // ==========================================
     async function applyDiscountCode() {
         const code = document.getElementById('discountInput').value.trim().toUpperCase();
         const msg = document.getElementById('discountMsg');
@@ -421,9 +436,6 @@
         }
     }
 
-    // ==========================================
-    // MODULE: ĐỔI MÃ GIFTCODE CHÍNH
-    // ==========================================
     async function applyMainGiftcode() {
         const codeInput = document.getElementById('mainGiftcodeInput');
         const code = codeInput.value.trim().toUpperCase();
@@ -474,9 +486,6 @@
         }
     }
 
-    // ==========================================
-    // MODULE: MUA HÀNG BẰNG XU (VIP & Account) + BÁO CÁO TELEGRAM
-    // ==========================================
     function requestPurchase(itemName, priceInXu, type, extraData = null) {
         if (currentCoins < priceInXu) { 
             renderStoreModal('error', 'Số dư không đủ', `Cần ${priceInXu} Xu để mua ${itemName}.`, () => { switchStoreTab('napxu', 0); closeActionModal(); }, 'Đi Nạp Xu'); 
@@ -495,7 +504,6 @@
                 exp.setDate(exp.getDate() + extraData);
                 await db.collection("users").doc(currentUser.uid).set({ vipExpire: firebase.firestore.Timestamp.fromDate(exp) }, { merge: true });
                 
-                // 🚀 BÁO CÁO TELEGRAM: KHÁCH MUA VIP
                 const msg = `👑 *CÓ KHÁCH CHỐT ĐƠN VIP!*\n👤 UID: \`${currentUser.uid}\`\n📦 Gói mua: *${itemName}*\n💎 Thanh toán: -${priceInXu} Xu\n⏰ Hạn dùng: +${extraData} ngày`;
                 fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
 
@@ -507,7 +515,6 @@
                 if (data.success) {
                     await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-priceInXu) }, { merge: true });
                     
-                    // 🚀 BÁO CÁO TELEGRAM: KHÁCH MUA TÀI KHOẢN
                     const msg = `🛒 *CÓ KHÁCH MUA TÀI KHOẢN!*\n👤 UID: \`${currentUser.uid}\`\n📦 Loại Acc: *${itemName}*\n💎 Thanh toán: -${priceInXu} Xu\n🔑 Đã xuất kho: \`${data.account}\``;
                     fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
 
@@ -521,9 +528,6 @@
         }
     }
 
-    // ==========================================
-    // HÀM GIAO DIỆN CHUNG
-    // ==========================================
     function renderStoreModal(type, title, desc, actionFn, btnText = 'Đóng') {
         const content = document.getElementById('actionModalContent');
         let html = `<div class="text-center p-4">`;
