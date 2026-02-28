@@ -47,7 +47,7 @@
       
       <div id="loginError" class="hidden mt-4 w-full max-w-sm bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-4 rounded-xl text-sm text-center shadow-lg">
           <i data-lucide="alert-triangle" class="w-6 h-6 mx-auto mb-2 text-red-500"></i>
-          Quyền truy cập bị từ chối!<br><span class="text-xs text-red-500/70">Tài khoản hiện tại không thuộc nhóm Quản trị viên.</span><br>
+          <span id="errorMsgText">Quyền truy cập bị từ chối!<br><span class="text-xs text-red-500/70">Tài khoản hiện tại không thuộc nhóm Quản trị viên.</span></span><br>
           <a href="account.html" class="bg-red-500 text-white font-bold px-4 py-3 rounded-xl mt-4 inline-block hover:bg-red-600 transition w-full active:scale-95">Đăng Nhập Lại</a>
       </div>
       
@@ -82,7 +82,7 @@
       
       <div class="p-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
           <div class="flex items-center px-2 py-2 mb-2"><div class="w-2 h-2 rounded-full bg-green-500 animate-pulse mr-2 shrink-0"></div><span class="text-xs font-bold text-gray-600 truncate w-full" id="adminEmailShow">...</span></div>
-          <button onclick="auth.signOut()" class="w-full flex items-center justify-center px-4 py-3 rounded-xl border border-gray-200 text-gray-600 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-bold transition active:scale-95 text-sm shadow-sm"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng Xuất</button>
+          <button onclick="logoutAdmin()" class="w-full flex items-center justify-center px-4 py-3 rounded-xl border border-gray-200 text-gray-600 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-bold transition active:scale-95 text-sm shadow-sm"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng Xuất</button>
       </div>
   </aside>
 
@@ -138,16 +138,18 @@
                       </div>
                   </div>
               </div>
-              <div class="lg:w-2/3 flex-1 flex flex-col gap-4 w-full" id="inventoryFullList"><div class="bg-white rounded-[24px] shadow-sm border border-gray-200 p-10 text-center text-gray-400"><i data-lucide="package-search" class="w-10 h-10 mx-auto mb-3 opacity-50"></i> Đang trích xuất dữ liệu kho...</div></div>
+              <div class="lg:w-2/3 flex-1 flex flex-col gap-4 w-full" id="inventoryFullList">
+                  <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 p-10 text-center text-gray-400"><i data-lucide="package-search" class="w-10 h-10 mx-auto mb-3 opacity-50"></i> Đang trích xuất dữ liệu kho...</div>
+              </div>
           </div>
 
           <div id="tab-transactions" class="hidden max-w-6xl mx-auto w-full">
               <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full">
-                  <div class="p-4 md:p-5 border-b border-gray-100 bg-white"><h3 class="text-lg font-black text-gray-900">50 Giao Dịch Gần Nhất</h3></div>
+                  <div class="p-4 md:p-5 border-b border-gray-100 bg-white"><h3 class="text-lg font-black text-gray-900">Lịch Sử Nạp Tiền</h3></div>
                   <div class="overflow-x-auto w-full scrollbar-hide">
                       <table class="w-full text-left border-collapse min-w-[600px]">
                           <thead><tr class="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-widest"><th class="p-4 font-bold border-b border-gray-100 whitespace-nowrap">Thời gian</th><th class="p-4 font-bold border-b border-gray-100">Mã Đơn / Khách</th><th class="p-4 font-bold border-b border-gray-100">Số Tiền & Xu</th><th class="p-4 font-bold border-b border-gray-100 text-right whitespace-nowrap">Trạng thái</th></tr></thead>
-                          <tbody id="txTableBody" class="text-sm"><tr><td colspan="4" class="p-10 text-center text-gray-400"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>Đang lấy dữ liệu từ ngân hàng...</td></tr></tbody>
+                          <tbody id="txTableBody" class="text-sm"><tr><td colspan="4" class="p-10 text-center text-gray-400"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>Đang đồng bộ Sheet...</td></tr></tbody>
                       </table>
                   </div>
               </div>
@@ -229,10 +231,12 @@
   </div>
 
   <script>
-    const ADMIN_EMAIL = "mquitran@gmail.com"; 
+    // ======================================================================
+    // 🛑 GẮN LINK GOOGLE SCRIPT MỚI NHẤT CỦA SẾP VÀO ĐÂY
+    // ======================================================================
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec"; 
-    let authenticatedSessionPass = "";
-
+    
+    // Khởi tạo Firebase giữ nguyên của Sếp
     const firebaseConfig = {
       apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
       authDomain: "ipaviet-st.firebaseapp.com",
@@ -244,67 +248,138 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-
     db.settings({ experimentalForceLongPolling: true });
 
-    let allUsersData = []; let googleData = { totalRevenue: 0, inventory: {}, transactions: [] };
+    let adminPin = localStorage.getItem('adminPin') || '';
+    let allUsersData = []; 
+    let googleData = { totalRevenue: 0, inventory: {}, transactions: [] };
 
-    // MOBILE SIDEBAR TOGGLE
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('mobileOverlay');
-        sidebar.classList.toggle('sidebar-open');
-        overlay.classList.toggle('overlay-open');
-    }
-
+    // Bắt đăng nhập Firebase bằng Email Sếp
     auth.onAuthStateChanged(user => {
-        const screen = document.getElementById('loginScreen');
-        if (user && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-            document.getElementById('loginSpinner').classList.add('hidden'); document.getElementById('loginStatusText').innerText = "Vui lòng nhập Mã PIN để vào hệ thống"; document.getElementById('step2Auth').classList.remove('hidden'); document.getElementById('adminEmailShow').innerText = user.email;
+        if (user && user.email.toLowerCase() === "mquitran@gmail.com") {
+            document.getElementById('loginSpinner').classList.add('hidden'); 
+            document.getElementById('loginStatusText').innerText = "Vui lòng nhập Mã PIN máy chủ"; 
+            document.getElementById('step2Auth').classList.remove('hidden'); 
+            document.getElementById('adminEmailShow').innerText = user.email;
+            
+            // Tự động kiểm tra PIN cũ nếu có
+            if(adminPin) { verifyServerPin(adminPin); }
         } else {
-            document.getElementById('loginSpinner').classList.add('hidden'); document.getElementById('loginError').classList.remove('hidden');
+            document.getElementById('loginSpinner').classList.add('hidden'); 
+            document.getElementById('loginError').classList.remove('hidden');
         }
     });
 
-    async function verifyServerPin() {
-        const pinInput = document.getElementById('serverPin').value; const btn = document.getElementById('btnVerify');
-        if (!pinInput) return alert("Vui lòng nhập mã PIN!");
-        btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`; btn.disabled = true;
+    // ==========================================
+    // MODULE ĐĂNG NHẬP & KẾT NỐI GOOGLE SCRIPT
+    // ==========================================
+    async function verifyServerPin(autoPin = null) {
+        const pinInput = autoPin || document.getElementById('serverPin').value; 
+        const btn = document.getElementById('btnVerify');
+        if (!pinInput) return;
+        
+        if(!autoPin) {
+            btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`; 
+            btn.disabled = true;
+        }
+
         try {
-            const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pass=${encodeURIComponent(pinInput)}&t=${Date.now()}`);
+            // Check pass với API mới
+            const res = await fetch(`${GOOGLE_API_URL}?action=verify_pin&pin=${pinInput}`);
             const data = await res.json();
+            
             if (data.success) {
-                authenticatedSessionPass = pinInput; googleData = data.data;
-                const screen = document.getElementById('loginScreen'); screen.classList.add('opacity-0'); setTimeout(() => screen.classList.add('hidden'), 500);
+                adminPin = pinInput;
+                localStorage.setItem('adminPin', pinInput);
+                const screen = document.getElementById('loginScreen'); 
+                screen.classList.add('opacity-0'); 
+                setTimeout(() => screen.classList.add('hidden'), 500);
                 
-                // Fetch toàn bộ data
-                fetchFirebaseUsers(); 
-                fetchGiftcodes(); 
-                renderInventory(googleData.inventory); 
-                renderTransactions(googleData.transactions); 
-                updateDashboardCards();
-            } else { alert("❌ SAI MÃ PIN! Hệ thống từ chối truy cập."); }
-        } catch(e) { alert("Lỗi kết nối đến máy chủ Google!"); }
-        btn.innerHTML = "MỞ KHÓA HỆ THỐNG"; btn.disabled = false;
+                // Mở cửa thành công, load full dữ liệu
+                loadAllData();
+            } else { 
+                if(autoPin) { logoutAdmin(); } 
+                else {
+                    document.getElementById('errorMsgText').innerText = "SAI MÃ PIN! Hệ thống từ chối.";
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+            }
+        } catch(e) { 
+            if(!autoPin) alert("Lỗi kết nối đến máy chủ Google!"); 
+        }
+        
+        if(!autoPin) { btn.innerHTML = "MỞ KHÓA HỆ THỐNG"; btn.disabled = false; }
     }
 
-    async function loadAllData() {
-        const icon = document.getElementById('refreshIcon'); icon.classList.add('animate-spin');
-        await fetchFirebaseUsers();
-        await fetchGiftcodes();
-        try { const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pass=${encodeURIComponent(authenticatedSessionPass)}&t=${Date.now()}`); const data = await res.json(); if(data.success) { googleData = data.data; renderInventory(googleData.inventory); renderTransactions(googleData.transactions); } } catch(e) {}
-        updateDashboardCards(); setTimeout(() => icon.classList.remove('animate-spin'), 500);
+    function logoutAdmin() {
+        adminPin = ''; localStorage.removeItem('adminPin');
+        window.location.reload();
     }
 
     // ==========================================
-    // KHÁCH HÀNG & THỐNG KÊ
+    // TRÍCH XUẤT DỮ LIỆU TỪ SHEET & FIREBASE
+    // ==========================================
+    async function loadAllData() {
+        const icon = document.getElementById('refreshIcon'); 
+        icon.classList.add('animate-spin');
+        
+        // 1. Tải Firebase
+        await fetchFirebaseUsers();
+        await fetchGiftcodes();
+        
+        // 2. Tải Google Sheet (Bóc tách dữ liệu)
+        try { 
+            const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pin=${adminPin}`); 
+            const data = await res.json(); 
+            
+            if(data.success) { 
+                let totalRev = 0; let txs = [];
+                // Bóc mảng ThuNgân
+                if(data.dataThuNgan && data.dataThuNgan.length > 1) {
+                    for(let i = 1; i < data.dataThuNgan.length; i++) {
+                        let r = data.dataThuNgan[i];
+                        if(r[4] === 'CLAIMED' || r[4] === 'PAID') totalRev += (parseInt(r[2]) || 0);
+                        txs.push({ orderId: r[0], uid: r[1], amount: r[2], coins: r[3], status: r[4], time: r[5] });
+                    }
+                }
+                txs.reverse(); // Đảo ngược để đơn mới lên đầu
+
+                // Bóc mảng Kho
+                let invStats = { 'Spotify': {total: 0, available: 0, sold: 0}, 'Netflix': {total: 0, available: 0, sold: 0}, 'CapCut': {total: 0, available: 0, sold: 0} };
+                if(data.dataKho && data.dataKho.length > 1) {
+                    for(let i = 1; i < data.dataKho.length; i++) {
+                        let r = data.dataKho[i]; let type = r[0]; let status = r[2];
+                        if(invStats[type]) {
+                            invStats[type].total++;
+                            if(status === 'SẴN SÀNG') invStats[type].available++; else invStats[type].sold++;
+                        }
+                    }
+                }
+                
+                googleData = { totalRevenue: totalRev, inventory: invStats, transactions: txs }; 
+                renderInventory(googleData.inventory); 
+                renderTransactions(googleData.transactions); 
+            } else if (data.error) {
+                logoutAdmin();
+            }
+        } catch(e) { console.log(e); }
+        
+        updateDashboardCards(); 
+        setTimeout(() => icon.classList.remove('animate-spin'), 500);
+    }
+
+    // ==========================================
+    // XỬ LÝ KHÁCH HÀNG & THỐNG KÊ (FIREBASE)
     // ==========================================
     async function fetchFirebaseUsers() { try { const snapshot = await db.collection("users").get(); allUsersData = []; snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); renderUserTable(allUsersData); } catch (e) { console.error(e); } }
 
     function updateDashboardCards() {
         let totalUsers = allUsersData.length; let totalVips = 0; let totalCoins = 0;
         allUsersData.forEach(u => { totalCoins += (u.coins || 0); if(u.vipExpire && u.vipExpire.toMillis() > Date.now()) totalVips++; });
-        document.getElementById('statUsers').innerText = totalUsers.toLocaleString(); document.getElementById('statVips').innerText = totalVips.toLocaleString(); document.getElementById('statTotalCoins').innerText = totalCoins.toLocaleString(); document.getElementById('statRevenue').innerText = (googleData.totalRevenue || 0).toLocaleString('vi-VN') + "đ";
+        document.getElementById('statUsers').innerText = totalUsers.toLocaleString(); 
+        document.getElementById('statVips').innerText = totalVips.toLocaleString(); 
+        document.getElementById('statTotalCoins').innerText = totalCoins.toLocaleString(); 
+        document.getElementById('statRevenue').innerText = (googleData.totalRevenue || 0).toLocaleString('vi-VN') + "đ";
     }
 
     function renderUserTable(users) {
@@ -325,7 +400,7 @@
     async function saveUserChanges() { const uid = document.getElementById('editUid').value; const newCoins = parseInt(document.getElementById('editCoins').value) || 0; const newDateStr = document.getElementById('editVipDate').value; const btn = document.getElementById('btnSaveUser'); btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang xử lý...`; btn.disabled = true; try { let updateData = { coins: newCoins }; if (newDateStr) { const targetDate = new Date(newDateStr); targetDate.setHours(23, 59, 59); updateData.vipExpire = firebase.firestore.Timestamp.fromDate(targetDate); } else updateData.vipExpire = firebase.firestore.FieldValue.delete(); await db.collection("users").doc(uid).set(updateData, { merge: true }); alert("✅ Cập nhật thành công!"); closeEditModal(); loadAllData(); } catch(e) { alert("❌ Lỗi: " + e.message); } btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI`; btn.disabled = false; lucide.createIcons(); }
 
     // ==========================================
-    // QUẢN LÝ GIFTCODE (FIRESTORE)
+    // QUẢN LÝ GIFTCODE (FIREBASE)
     // ==========================================
     function changeGcLabel() {
         const type = document.getElementById('gcType').value;
@@ -350,7 +425,7 @@
                 else if(data.type === 'vip') typeBadge = `<span class="text-yellow-600 font-bold bg-yellow-50 px-2 py-1 rounded"><i data-lucide="crown" class="w-3 h-3 inline"></i> VIP ${data.value} Ngày</span>`;
                 else if(data.type === 'discount') typeBadge = `<span class="text-green-600 font-bold bg-green-50 px-2 py-1 rounded"><i data-lucide="banknote" class="w-3 h-3 inline"></i> Giảm ${data.value.toLocaleString()}đ</span>`;
                 
-                let limitStr = data.maxUses > 0 ? `${data.usedCount} / ${data.maxUses}` : `${data.usedCount} / Vô hạn`;
+                let limitStr = data.maxUses > 0 ? `${data.usedCount || 0} / ${data.maxUses}` : `${data.usedCount || 0} / Vô hạn`;
                 let limitColor = (data.maxUses > 0 && data.usedCount >= data.maxUses) ? 'text-red-500' : 'text-gray-500';
 
                 html += `<tr class="border-b border-gray-100 hover:bg-gray-50 transition"><td class="p-4"><p class="font-black text-gray-900 tracking-wider text-base">${code}</p></td><td class="p-4 text-xs whitespace-nowrap">${typeBadge}</td><td class="p-4 font-bold ${limitColor} text-sm">${limitStr}</td><td class="p-4 text-right"><button onclick="deleteGiftcode('${code}')" class="text-red-400 hover:text-red-600 p-2 rounded-xl bg-red-50 hover:bg-red-100 transition active:scale-90"><i data-lucide="trash-2" class="w-5 h-5"></i></button></td></tr>`;
@@ -386,7 +461,25 @@
         document.getElementById('inventoryMiniWidgets').innerHTML = miniHtml || `<p class="text-sm">Chưa có data.</p>`; document.getElementById('inventoryFullList').innerHTML = fullHtml || `<p class="text-sm">Chưa có data.</p>`;
     }
 
-    async function pushToSheet() { const type = document.getElementById('accType').value; const info = document.getElementById('accInfo').value.trim(); const btn = document.getElementById('btnAddAcc'); if(!info) { alert("Chưa nhập thông tin tài khoản!"); return; } btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang mã hóa...`; btn.disabled = true; try { const res = await fetch(`${GOOGLE_API_URL}?action=add_account&type=${type}&info=${encodeURIComponent(info)}&pass=${encodeURIComponent(authenticatedSessionPass)}&t=${Date.now()}`); const data = await res.json(); if (data.success) { alert(`✅ Đã nạp tài khoản ${type} vào kho!`); document.getElementById('accInfo').value = ''; loadAllData(); } else alert("❌ Lỗi: " + data.error); } catch(e) { alert("Lỗi kết nối mạng!"); } btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Lên Hệ Thống`; btn.disabled = false; lucide.createIcons(); }
+    async function pushToSheet() { 
+        const type = document.getElementById('accType').value; 
+        const info = document.getElementById('accInfo').value.trim(); 
+        const btn = document.getElementById('btnAddAcc'); 
+        if(!info) { alert("Chưa nhập thông tin tài khoản!"); return; } 
+        
+        btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Đang mã hóa...`; btn.disabled = true; 
+        try { 
+            // Nối API để add account (Đã sửa info thành account)
+            const res = await fetch(`${GOOGLE_API_URL}?action=add_account&type=${type}&account=${encodeURIComponent(info)}&pin=${encodeURIComponent(adminPin)}`); 
+            const data = await res.json(); 
+            if (data.success) { 
+                alert(`✅ Đã nạp tài khoản ${type} vào kho!`); 
+                document.getElementById('accInfo').value = ''; 
+                loadAllData(); 
+            } else { alert("❌ Lỗi: " + data.error); } 
+        } catch(e) { alert("Lỗi kết nối mạng!"); } 
+        btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5"></i> Bơm Hàng Lên Hệ Thống`; btn.disabled = false; lucide.createIcons(); 
+    }
 
     // ==========================================
     // DÒNG TIỀN NẠP XU (GOOGLE SHEET)
@@ -403,8 +496,15 @@
     }
 
     // ==========================================
-    // CHUYỂN TAB VÀ ĐÓNG MỞ SIDEBAR
+    // SIDEBAR & CHUYỂN TAB
     // ==========================================
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileOverlay');
+        sidebar.classList.toggle('sidebar-open');
+        overlay.classList.toggle('overlay-open');
+    }
+
     function switchTab(tab) { 
         ['dashboard', 'users', 'inventory', 'transactions', 'giftcodes'].forEach(id => { 
             document.getElementById('tab-' + id).classList.add('hidden'); 
@@ -415,7 +515,6 @@
         const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng', 'inventory': 'Kho Tài Khoản', 'transactions': 'Dòng Tiền Nạp', 'giftcodes': 'Chiến Dịch Marketing' }; 
         document.getElementById('pageTitle').innerText = titles[tab]; 
         
-        // Tự động đóng sidebar trên mobile khi chọn xong tab
         if(window.innerWidth < 768) {
             document.getElementById('sidebar').classList.remove('sidebar-open');
             document.getElementById('mobileOverlay').classList.remove('overlay-open');
