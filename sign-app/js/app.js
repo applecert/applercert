@@ -168,9 +168,9 @@ new Vue({
                         
                         this.download = `${downApi}/${this.jobId}`;
                         
-                        // Mã hóa an toàn Plist
-                        const plistUrl = this.download.replace('/download', '/plist');
-                        this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`; 
+                        // 🚀 SỨC MẠNH CLOUDFLARE: Gọi thẳng API của Sếp để ép hiện Popup xịn
+                        const workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
+                        this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(workerApi + '?url=' + this.download)}`; 
                         
                         this.showStep3 = false; 
                         this.showStep4 = true;
@@ -197,23 +197,24 @@ new Vue({
             const textSpan = btn.querySelector('.btn-text');
             const svgIcon = btn.querySelector('svg');
             
-            if (textSpan) textSpan.innerText = 'ĐANG MỞ POPUP...';
+            if (textSpan) textSpan.innerText = 'ĐANG GỌI HỆ THỐNG...';
             if (svgIcon) svgIcon.classList.add('spinning');
             btn.style.opacity = '0.7';
             
+            // Bắn link chứa API Cloudflare thẳng vào hệ thống Apple
             window.location.href = this.directInstallLink;
             
-            // Hiện nút cứu hộ sau 2.5 giây nếu nút xịn bị Safari block
+            // Nếu trình duyệt hoặc chế độ ẩn danh chặn Popup, nhả nút dự phòng sau 2.5s
             setTimeout(() => {
                 this.showFallback = true;
             }, 2500);
         },
 
         checkDirectDownload() { 
-            // ĐÃ SỬA LỖI ĐÁNH MÁY TYPO TẠI ĐÂY ("new URLSearchParams" CHUẨN XÁC)
             const id = new URLSearchParams(window.location.search).get('download'); 
             if (id) this.loadFromFirestore(id); 
         },
+        
         async loadFromFirestore(id) {
             try {
                 if(!db) return;
@@ -222,8 +223,9 @@ new Vue({
                     const url = doc.data().download_url;
                     this.download = url;
                     
-                    const plistUrl = url.replace('/download', '/plist');
-                    this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(plistUrl)}`;
+                    // 🚀 ĐỒNG BỘ CLOUDFLARE CHO KHÁCH MỞ TỪ LINK CHIA SẺ
+                    const workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
+                    this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(workerApi + '?url=' + this.download)}`;
                     
                     this.showStep1 = false; this.showDirectDownload = true;
                     setTimeout(() => new QRCode(document.getElementById('directQrcode'), { width: 140, height: 140 }).makeCode(url), 100);
