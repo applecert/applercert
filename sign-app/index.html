@@ -1,24 +1,243 @@
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-        });
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <title>IPA Workspace - Pro</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="https://i.imgur.com/5zPuxRU.png" type="image/x-icon">
+    
+    <script src="https://sign.ipasign.cc/js/vue.min.js"></script>
+    <script src="https://sign.ipasign.cc/js/axios.min.js"></script>
+    <script src="https://sign.ipasign.cc/js/qrcode.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+    <style>
+        :root {
+            --bg-base: #000000; --bg-card: #111113; --bg-hover: #1c1c1f;
+            --border-color: #27272a; --border-focus: #3f3f46;
+            --text-main: #ffffff; --text-sub: #a1a1aa; --text-muted: #71717a;
+            --accent: #0A84FF; --success: #32D74B; --danger: #FF453A;
+            --radius-sm: 10px; --radius-md: 16px; --radius-lg: 24px;
+            --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-base); color: var(--text-main); font-family: 'Inter', sans-serif; overscroll-behavior-y: none; }
+        .ambient-glow { position: fixed; top: -150px; left: 50%; transform: translateX(-50%); width: 600px; height: 300px; background: radial-gradient(ellipse at bottom, rgba(10, 132, 255, 0.15) 0%, transparent 60%); z-index: -1; pointer-events: none; }
+        .app-layout { display: flex; flex-direction: column; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+        .header { position: sticky; top: 0; z-index: 50; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); }
+        .header-content { max-width: 600px; margin: 0 auto; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .header-logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 16px; }
+        .logo-icon { width: 24px; height: 24px; background: var(--text-main); color: var(--bg-base); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        .badge { background: rgba(255,255,255,0.1); font-size: 10px; padding: 4px 8px; border-radius: 20px; font-weight: 700; border: 1px solid var(--border-color); }
+        .main-content { max-width: 600px; margin: 0 auto; width: 100%; padding: 32px 20px; flex: 1; }
+        .section-title { font-size: 13px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 12px; margin-left: 4px; }
+        .mt-32 { margin-top: 32px; } .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .pro-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; }
+        .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .app-item { display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; transition: transform 0.2s var(--spring); }
+        .app-item:active { transform: scale(0.92); }
+        .app-icon-wrap { position: relative; width: 56px; height: 56px; border-radius: 14px; background: var(--bg-hover); border: 1px solid var(--border-color); transition: all 0.2s; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .app-icon-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .app-name { font-size: 12px; font-weight: 500; color: var(--text-sub); transition: color 0.2s; }
+        .upload-icon { color: var(--text-muted); transition: color 0.2s; }
+        .hidden-input { display: none; }
+        .app-item.active .app-icon-wrap { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 4px 15px rgba(10, 132, 255, 0.2); }
+        .app-item.active .app-name { color: var(--text-main); font-weight: 600; }
+        .app-item.active.custom-upload .app-icon-wrap { background: rgba(10, 132, 255, 0.1); border-color: var(--accent); }
+        .app-item.active.custom-upload .upload-icon { color: var(--accent); }
+        .app-status { margin-top: 16px; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 500; text-align: center; border: 1px solid var(--border-color); background: var(--bg-hover); }
+        .app-status.success { color: var(--success); border-color: rgba(50, 215, 75, 0.3); background: rgba(50, 215, 75, 0.05); }
+        .app-status.error { color: var(--danger); border-color: rgba(255, 69, 58, 0.3); background: rgba(255, 69, 58, 0.05); }
+        .input-group { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden; }
+        .input-row { display: flex; align-items: center; padding: 16px; transition: background 0.2s; cursor: pointer; }
+        .input-row:hover { background: var(--bg-hover); }
+        .border-bottom { border-bottom: 1px solid var(--border-color); }
+        .row-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--bg-hover); border: 1px solid var(--border-focus); display: flex; align-items: center; justify-content: center; margin-right: 14px; color: var(--text-sub); flex-shrink: 0; }
+        .row-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        .row-title { font-size: 14px; font-weight: 500; color: var(--text-main); margin-bottom: 2px; }
+        .row-sub { font-size: 12px; color: var(--text-muted); }
+        .pro-input { width: 100%; background: transparent; border: none; color: var(--text-main); font-size: 14px; outline: none; font-weight: 500; }
+        .tags-wrapper { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .tag { padding: 6px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; font-size: 12px; color: var(--text-sub); cursor: pointer; }
+        .btn-primary { width: 100%; background: var(--text-main); color: var(--bg-base); border: none; padding: 16px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 32px; transition: 0.2s; }
+        .btn-primary:active:not(:disabled) { transform: scale(0.97); }
+        .btn-primary:disabled { background: var(--bg-hover); color: var(--text-muted); border: 1px solid var(--border-color); }
+        .btn-install { width: 100%; background: var(--accent); color: white; border: none; padding: 16px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
+        .btn-danger { background: var(--danger); }
+        .btn-outline { width: 100%; background: transparent; color: var(--text-main); border: 1px solid var(--border-focus); padding: 14px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .center-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 48px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: 40px; }
+        .spinner { width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 24px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .status-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+        .status-desc { font-size: 14px; color: var(--text-sub); margin-bottom: 24px; }
+        .progress-track { width: 100%; height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+        .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+        .terminal { width: 100%; background: #000; border: 1px solid var(--border-color); border-radius: 8px; text-align: left; overflow: hidden; margin-top: 16px; }
+        .terminal-header { padding: 8px 12px; background: rgba(255,255,255,0.05); display: flex; gap: 6px; border-bottom: 1px solid var(--border-color); }
+        .dot { width: 10px; height: 10px; border-radius: 50%; } .dot.r { background: #FF5F56; } .dot.y { background: #FFBD2E; } .dot.g { background: #27C93F; }
+        .terminal-body { padding: 16px; font-family: monospace; font-size: 12px; color: #a1a1aa; line-height: 1.6; }
+        .prompt { color: var(--success); }
+        .qr-box { background: #fff; padding: 12px; border-radius: 12px; display: inline-block; margin-bottom: 24px; }
+        .ios-slide-enter-active, .ios-slide-leave-active { transition: all 0.3s var(--spring); }
+        .ios-slide-enter, .ios-slide-leave-to { opacity: 0; transform: translateY(10px) scale(0.98); }
+        [v-cloak] { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <div id="app-vip" class="app-layout" v-cloak>
+        <header class="header">
+            <div class="header-content">
+                <div class="header-logo">
+                    <div class="logo-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg></div>
+                    <span>Signer</span>
+                </div>
+                <span class="badge">PRO</span>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <transition name="ios-slide" mode="out-in">
+                <div v-show="showStep1">
+                    <h2 class="section-title">Nguồn Ứng Dụng</h2>
+                    <div class="pro-card">
+                        <div class="app-grid">
+                            <div class="app-item" :class="{ active: selectedApp === 'esign' }" @click="selectApp('esign')">
+                                <div class="app-icon-wrap"><img src="https://i.imgur.com/6ZevcRc.png" alt="ESign"></div>
+                                <span class="app-name">ESign</span>
+                            </div>
+                            <div class="app-item" :class="{ active: selectedApp === 'sca' }" @click="selectApp('sca')">
+                                <div class="app-icon-wrap"><img src="https://i.imgur.com/DK2YeTt.png" alt="Scarlet"></div>
+                                <span class="app-name">Scarlet</span>
+                            </div>
+                            <div class="app-item" :class="{ active: selectedApp === 'gbox' }" @click="selectApp('gbox')">
+                                <div class="app-icon-wrap"><img src="https://i.imgur.com/Oinvr76.png" alt="GBox"></div>
+                                <span class="app-name">GBox</span>
+                            </div>
+                            <label class="app-item custom-upload" :class="{ active: selectedApp === 'custom' }" @click="selectCustomIpa">
+                                <div class="app-icon-wrap">
+                                    <svg class="upload-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                </div>
+                                <span class="app-name truncate">{{ customIpaFile ? customIpaFile.name : 'Upload IPA' }}</span>
+                                <input type="file" @change="handleCustomIpa" ref="customIpaInput" accept=".ipa" class="hidden-input">
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="app-status" v-if="selectedApp && appStatusText" :class="appStatusClass">
+                        {{ appStatusText }}
+                    </div>
+
+                    <h2 class="section-title mt-32">Chứng Chỉ (P12 & Prov)</h2>
+                    <div class="input-group">
+                        <label class="input-row border-bottom">
+                            <div class="row-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>
+                            <div class="row-content">
+                                <span class="row-title truncate" :style="certZipText !== 'Chọn file ZIP' ? 'color: var(--accent)' : ''">{{ certZipText }}</span>
+                                <span class="row-sub">Chứa 2 file P12 và Mobileprovision</span>
+                            </div>
+                            <input type="file" @change="getFile($event)" ref="certZip" required accept=".zip" class="hidden-input">
+                        </label>
+                        <div class="input-row" style="cursor: text;">
+                            <div class="row-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+                            <div class="row-content">
+                                <input type="password" v-model="password" class="pro-input" placeholder="Mật khẩu file P12..." @focus="showPasswordSuggestions = true" @blur="hidePasswordSuggestions">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tags-wrapper" v-if="showPasswordSuggestions && passwordSuggestions.length > 0">
+                        <button class="tag" v-for="s in passwordSuggestions" :key="s" @mousedown.prevent="selectPassword(s)">{{ s }}</button>
+                    </div>
+
+                    <button class="btn-primary" @click="upload" :disabled="!canSign">
+                        {{ signButtonText }}
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </button>
+                </div>
+            </transition>
+
+            <transition name="ios-slide" mode="out-in">
+                <div v-show="showStep2 || showStep3">
+                    <div class="center-card">
+                        <div class="spinner"></div>
+                        <h2 class="status-title">{{ showStep2 ? 'Đang Tải Lên' : 'Đang Xử Lý' }}</h2>
+                        <p class="status-desc">{{ showStep2 ? `${progressBar}% - ${uploadDetails}` : statusText }}</p>
+                        
+                        <div class="progress-track" v-if="showStep2">
+                            <div class="progress-fill" :style="{ width: progressBar + '%' }"></div>
+                        </div>
+
+                        <div class="terminal" v-if="showStep3 && logText">
+                            <div class="terminal-header"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+                            <div class="terminal-body"><span class="prompt">~ %</span> {{ logText }}</div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name="ios-slide" mode="out-in">
+                <div v-show="showStep4 || showDirectDownload">
+                    <div class="center-card">
+                        <div class="row-icon" style="background: rgba(50, 215, 75, 0.1); color: var(--success); border-color: rgba(50, 215, 75, 0.3); width: 64px; height: 64px; border-radius: 50%; margin-bottom: 24px;">
+                            <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <h2 class="status-title">Ký Thành Công</h2>
+                        <p class="status-desc">Ứng dụng đã sẵn sàng để cài đặt vào thiết bị.</p>
+
+                        <button class="btn-install" @click="triggerInstall($event)" v-show="!showFallback">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                            <span class="btn-text">CÀI ĐẶT NGAY</span>
+                        </button>
+
+                        <div v-show="showFallback" style="width: 100%;">
+                            <p style="color: var(--danger); font-size: 13px; margin-bottom: 12px; font-weight: 500;">⚠️ Trình duyệt chặn Popup.</p>
+                            <a :href="download" class="btn-install btn-danger" style="text-decoration: none;">MỞ LINK TRỰC TIẾP</a>
+                        </div>
+
+                        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 24px; text-transform: uppercase; font-weight: 600;">Hoặc quét QR</p>
+                        <div class="qr-box">
+                            <div id="qrcode" v-show="showStep4"></div>
+                            <div id="directQrcode" v-show="showDirectDownload"></div>
+                        </div>
+
+                        <div style="width: 100%; display: flex; flex-direction: column; gap: 12px;">
+                            <button class="btn-outline" @click="copyShareUrl" v-show="showStep4">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                {{ copySuccess ? 'Đã sao chép!' : 'Copy Link Cài Đặt' }}
+                            </button>
+                            <input type="text" :value="shareUrl" class="hidden-input" ref="shareUrlInput">
+                            <button class="btn-outline" style="border-color: transparent;" @click="goToHome">Trở về trang chủ</button>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        
         let db = null;
         try {
-            const firebaseConfig = {
-                apiKey: "AIzaSyBeKh-_VbiM9F9S4iRdGllx3ypze0Gp4hw",
-                authDomain: "ioscert-signer.firebaseapp.com",
-                projectId: "ioscert-signer",
-                storageBucket: "ioscert-signer.firebasestorage.app"
-            };
-            if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+            if (!firebase.apps.length) {
+                firebase.initializeApp({
+                    apiKey: "AIzaSyBeKh-_VbiM9F9S4iRdGllx3ypze0Gp4hw",
+                    authDomain: "ioscert-signer.firebaseapp.com",
+                    projectId: "ioscert-signer",
+                    storageBucket: "ioscert-signer.firebasestorage.app"
+                });
+            }
             db = firebase.firestore();
-        } catch (error) {}
-
-        function generateShortId() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let result = ''; for (let i = 0; i < 6; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); } return result;
-        }
+        } catch (e) {}
 
         new Vue({
             el: '#app-vip',
@@ -40,7 +259,11 @@
                 canSign() { return (this.ipa && this.ipa.size > 0 && this.certZip && this.password && this.p12 && this.mobileprovision); },
                 signButtonText() { return this.canSign ? 'KÝ ỨNG DỤNG' : 'ĐIỀN ĐỦ THÔNG TIN'; }
             },
-            mounted() { this.checkDirectDownload(); },
+            mounted() {
+                const s = localStorage.getItem('ipa_pwd'); if (s) this.passwordSuggestions = JSON.parse(s);
+                const id = new URLSearchParams(window.location.search).get('download'); 
+                if (id) this.loadFromFirestore(id);
+            },
             methods: {
                 formatFileSize(bytes) {
                     if (bytes === 0) return '0 B'; const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -76,8 +299,17 @@
                         } catch (error) { alert('Lỗi đọc ZIP!'); }
                     }
                 },
+                savePwd(pwd) {
+                    let arr = this.passwordSuggestions.filter(p => p !== pwd);
+                    arr.unshift(pwd); if (arr.length > 3) arr.pop();
+                    this.passwordSuggestions = arr; localStorage.setItem('ipa_pwd', JSON.stringify(arr));
+                },
+                selectPassword(p) { this.password = p; this.showPasswordSuggestions = false; },
+                hidePasswordSuggestions() { setTimeout(() => this.showPasswordSuggestions = false, 200); },
+                
                 async upload() {
                     if (!this.canSign) return;
+                    this.savePwd(this.password);
                     this.showStep1 = false; this.showStep2 = true; this.uploadDetails = 'Đang kết nối...';
                     const fd = new FormData();
                     fd.append('ipa', this.ipa, this.ipa.name); 
@@ -105,18 +337,19 @@
                                 clearInterval(timer);
                                 this.download = `https://sign.ipasign.cc/download/${this.jobId}`;
                                 
-                                // 🚀 GỌI CLOUDFLARE WORKER CỦA SẾP VÀ TRUYỀN TÊN APP VÀO
+                                // CLOUDFLARE WORKER 
                                 const workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
-                                const currentAppName = this.selectedApp === 'custom' ? (this.customIpaFile ? this.customIpaFile.name : 'Custom App') : this.appNames[this.selectedApp];
-                                
-                                // Ghép link truyền qua Cloudflare
+                                const currentAppName = this.selectedApp === 'custom' ? (this.customIpaFile ? this.customIpaFile.name : 'IPAVIET') : this.appNames[this.selectedApp];
                                 const fakePlistUrl = `${workerApi}?url=${encodeURIComponent(this.download)}&name=${encodeURIComponent(currentAppName)}`;
-                                
                                 this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(fakePlistUrl)}`; 
                                 
                                 this.showStep3 = false; this.showStep4 = true;
                                 setTimeout(() => { new QRCode(document.getElementById('qrcode'), { width: 140, height: 140 }).makeCode(this.download); }, 100);
-                                this.saveToFirestore(this.download);
+                                if(db) {
+                                    const shortId = 'IPAV' + Math.floor(Math.random() * 90000 + 10000);
+                                    await db.collection('signed_apps').doc(shortId).set({ download_url: this.download });
+                                    this.shareUrl = `${window.location.origin}${window.location.pathname}?download=${shortId}`;
+                                }
                             } else if (d.status === 'FAILURE') { 
                                 clearInterval(timer); alert('Ký thất bại!'); this.showStep1 = true; this.showStep3 = false;
                             }
@@ -127,12 +360,9 @@
                     window.location.href = this.directInstallLink;
                     setTimeout(() => { this.showFallback = true; }, 2500);
                 },
-                checkDirectDownload() { 
-                    const id = new URLSearchParams(window.location.search).get('download'); 
-                    if (id) this.loadFromFirestore(id); 
-                },
                 async loadFromFirestore(id) {
                     try {
+                        if(!db) return;
                         const doc = await db.collection('signed_apps').doc(id).get();
                         if (doc.exists) {
                             this.download = doc.data().download_url;
@@ -143,13 +373,6 @@
                             setTimeout(() => new QRCode(document.getElementById('directQrcode'), { width: 140, height: 140 }).makeCode(this.download), 100);
                         }
                     } catch(e) {}
-                },
-                async saveToFirestore(url) {
-                    try {
-                        const shortId = generateShortId();
-                        await db.collection('signed_apps').doc(shortId).set({ download_url: url });
-                        this.shareUrl = `${window.location.origin}${window.location.pathname}?download=${shortId}`;
-                    } catch (error) {}
                 },
                 copyShareUrl() { this.$refs.shareUrlInput.select(); document.execCommand('copy'); this.copySuccess = true; setTimeout(() => this.copySuccess = false, 3000); },
                 goToHome() { window.location.href = window.location.pathname; }
