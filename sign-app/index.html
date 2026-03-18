@@ -14,7 +14,6 @@
     <script src="https://sign.ipasign.cc/js/vue.min.js"></script>
     <script src="https://sign.ipasign.cc/js/axios.min.js"></script>
     <script src="https://sign.ipasign.cc/js/qrcode.min.js"></script>
-    <script src="https://sign.ipasign.cc/js/index.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -325,7 +324,6 @@
                     fd.append('mp', this.mobileprovision, this.mobileprovision.name);
                     fd.append('password', this.password); 
                     
-                    // 👉 KHÔI PHỤC DỮ LIỆU APP NAME ĐỂ SERVER KHÔNG BÁO LỖI
                     const currentAppName = this.selectedApp === 'custom' ? (this.customIpaFile ? this.customIpaFile.name : 'CustomApp') : (this.appNames[this.selectedApp] || 'App');
                     fd.append('app_name', currentAppName);
 
@@ -334,7 +332,7 @@
                         const apiURL = getAbsoluteUrl(targetUrl, 'https://sign.ipasign.cc/api/sign');
 
                         const resp = await axios.post(apiURL, fd, {
-                            headers: { 'Content-Type': 'multipart/form-data' }, // 👉 KHÔI PHỤC HEADER BẮT BUỘC
+                            headers: { 'Content-Type': 'multipart/form-data' },
                             onUploadProgress: e => { if (e.lengthComputable) this.progressBar = Math.round((e.loaded / e.total) * 100); }
                         });
                         this.jobId = resp.data.task_id || resp.data; 
@@ -362,11 +360,11 @@
                                 const downApi = getAbsoluteUrl(dlUrl, 'https://sign.ipasign.cc/download');
                                 this.download = `${downApi}/${this.jobId}`;
                                 
-                                // CLOUDFLARE WORKER: Gọi thông báo chuẩn IPaViet
+                                // 👉 LẤY LINK PLIST XỊN TỪ SERVER GỐC, NHỜ CLOUDFLARE FETCH HỘ
+                                const originalPlistUrl = this.download.replace('/download', '/plist');
                                 const workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
-                                const currentAppName = this.selectedApp === 'custom' ? (this.customIpaFile ? this.customIpaFile.name : 'IPAVIET') : this.appNames[this.selectedApp];
-                                const fakePlistUrl = `${workerApi}?url=${encodeURIComponent(this.download)}&name=${encodeURIComponent(currentAppName)}`;
-                                this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(fakePlistUrl)}`; 
+                                
+                                this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(workerApi + '?plist=' + originalPlistUrl)}`; 
                                 
                                 this.showStep3 = false; this.showStep4 = true;
                                 setTimeout(() => { new QRCode(document.getElementById('qrcode'), { width: 140, height: 140 }).makeCode(this.download); }, 100);
@@ -391,9 +389,11 @@
                         const doc = await db.collection('signed_apps').doc(id).get();
                         if (doc.exists) {
                             this.download = doc.data().download_url;
+                            
+                            const originalPlistUrl = this.download.replace('/download', '/plist');
                             const workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
-                            const fakePlistUrl = `${workerApi}?url=${encodeURIComponent(this.download)}&name=IPAVIET_Premium`;
-                            this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(fakePlistUrl)}`;
+                            
+                            this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(workerApi + '?plist=' + originalPlistUrl)}`;
                             this.showStep1 = false; this.showDirectDownload = true;
                             setTimeout(() => new QRCode(document.getElementById('directQrcode'), { width: 140, height: 140 }).makeCode(this.download), 100);
                         }
