@@ -1,195 +1,192 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>IPA Signer - VIP Edition</title>
+    <meta name="theme-color" content="#09090b">
+    <title>IPA Signer - Pro Edition</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="icon" href="https://i.imgur.com/5zPuxRU.png" type="image/x-icon">
-    <link rel="stylesheet" href="css/style.css?v=14"> <script src="https://sign.ipasign.cc/js/vue.min.js"></script>
+    <link rel="stylesheet" href="css/style.css?v=999"> <script src="https://sign.ipasign.cc/js/vue.min.js"></script>
     <script src="https://sign.ipasign.cc/js/axios.min.js"></script>
     <script src="https://sign.ipasign.cc/js/index.js"></script> 
     <script src="https://sign.ipasign.cc/js/qrcode.min.js"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
-    <div class="ios-wallpaper">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
-        <div class="orb orb-3"></div>
-        <div class="glass-overlay"></div>
-    </div>
+    <div class="ambient-background"></div>
 
     <div id="app" style="display: none;"></div>
 
-    <div id="app-vip" class="ios-app">
-        <nav class="ios-nav">
-            <div class="nav-content">
-                <h1 class="nav-title">App Signer</h1>
-                <span class="vip-badge">VIP</span>
+    <div id="app-vip" class="app-layout">
+        <header class="app-header">
+            <div class="header-container">
+                <div class="logo-group">
+                    <div class="logo-mark">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h1 class="header-title">Workspace</h1>
+                </div>
+                <span class="badge-pro">PRO</span>
             </div>
-        </nav>
+        </header>
         
-        <main class="ios-main">
-            <transition name="ios-slide" mode="out-in">
-                <div class="ios-view" v-show="showStep1">
+        <main class="app-main">
+            <transition name="fade-scale" mode="out-in">
+                <div class="view-panel" v-show="showStep1">
                     
-                    <div class="section-title">CHỌN ỨNG DỤNG <span class="dot-pulse"></span></div>
-                    <div class="ios-list shadow-lg">
-                        <div class="app-grid">
-                            <div class="app-squircle-item" :class="{ active: selectedApp === 'esign' }" @click="selectApp('esign')">
-                                <div class="icon-wrapper">
-                                    <img src="https://i.imgur.com/6ZevcRc.png" class="squircle-icon">
-                                    <div class="active-check"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-                                </div>
-                                <span>ESign</span>
-                            </div>
-                            <div class="app-squircle-item" :class="{ active: selectedApp === 'sca' }" @click="selectApp('sca')">
-                                <div class="icon-wrapper">
-                                    <img src="https://i.imgur.com/DK2YeTt.png" class="squircle-icon">
-                                    <div class="active-check"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-                                </div>
-                                <span>Scarlet</span>
-                            </div>
-                            <div class="app-squircle-item" :class="{ active: selectedApp === 'gbox' }" @click="selectApp('gbox')">
-                                <div class="icon-wrapper">
-                                    <img src="https://i.imgur.com/Oinvr76.png" class="squircle-icon">
-                                    <div class="active-check"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-                                </div>
-                                <span>GBox</span>
-                            </div>
-                            <div class="app-squircle-item custom-upload" :class="{ active: selectedApp === 'custom', 'has-file': customIpaFile }" @click="selectCustomIpa">
-                                <div class="icon-wrapper">
-                                    <div class="squircle-icon upload-placeholder">
-                                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                                    </div>
-                                    <div class="active-check"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-                                </div>
-                                <span class="truncate">{{ customIpaFile ? customIpaFile.name : 'Upload IPA' }}</span>
-                                <input type="file" @change="handleCustomIpa" ref="customIpaInput" accept=".ipa" class="hidden-input">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="ios-list-status" v-if="selectedApp && appStatusText">
-                        <span :class="appStatusClass">{{ appStatusText }}</span>
-                    </div>
-
-                    <div class="section-title mt-32">CHỨNG CHỈ & MẬT KHẨU</div>
-                    <div class="ios-list shadow-lg">
-                        <label class="ios-list-item file-selector">
-                            <div class="item-icon bg-gradient-blue">
-                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="white" stroke-width="2.5" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                            </div>
-                            <div class="item-content">
-                                <span class="item-title truncate" :class="{'text-highlight': certZipText !== 'Chưa chọn file'}">{{ certZipText }}</span>
-                                <span class="item-subtitle">Định dạng ZIP (.P12 & .Mobileprovision)</span>
-                            </div>
-                            <input type="file" @change="getFile($event)" ref="certZip" required accept=".zip" class="hidden-input">
-                        </label>
-
-                        <div class="ios-list-item border-top">
-                            <div class="item-icon bg-gradient-green">
-                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="white" stroke-width="2.5" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                            </div>
-                            <div class="item-content no-arrow">
-                                <input type="password" v-model="password" class="ios-input" placeholder="Nhập mật khẩu P12..." @focus="showPasswordSuggestions = true" @blur="hidePasswordSuggestions">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pwd-suggestions" v-if="showPasswordSuggestions && passwordSuggestions.length > 0">
-                        <div class="pwd-chip" v-for="s in passwordSuggestions" :key="s" @mousedown.prevent="selectPassword(s)">{{ s }}</div>
-                    </div>
-
-                    <div class="action-area">
-                        <button class="ios-btn-primary premium-glow" @click="upload" :disabled="!canSign">
-                            <span class="btn-shine"></span>
-                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" style="margin-right: 8px; position: relative; z-index: 2;"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                            <span style="position: relative; z-index: 2;">{{ signButtonText }}</span>
-                        </button>
-                    </div>
-                </div>
-            </transition>
-
-            <transition name="ios-slide" mode="out-in">
-                <div class="ios-view" v-show="showStep2 || showStep3">
-                    <div class="glass-card processing-card">
-                        <div class="loader-ring" :class="{ 'spinning': true }"></div>
-                        <h2 class="status-heading text-gradient">{{ showStep2 ? 'Đang Tải Lên...' : 'Đang Xử Lý Lõi...' }}</h2>
-                        <p class="status-desc">{{ showStep2 ? `${progressBar}% - ${uploadDetails}` : statusText }}</p>
+                    <section class="config-section">
+                        <header class="section-header">
+                            <h2 class="section-heading">Target Application</h2>
+                            <p class="section-subheading">Select a predefined app or upload a custom IPA payload.</p>
+                        </header>
                         
-                        <div class="ios-progress-bar" v-if="showStep2">
-                            <div class="progress-fill" :style="{ width: progressBar + '%' }"></div>
-                            <div class="progress-glow" :style="{ width: progressBar + '%' }"></div>
+                        <div class="app-grid">
+                            <button class="app-card" :class="{ 'is-active': selectedApp === 'esign' }" @click="selectApp('esign')">
+                                <img src="https://i.imgur.com/6ZevcRc.png" class="app-icon" alt="ESign">
+                                <span class="app-name">ESign</span>
+                            </button>
+                            <button class="app-card" :class="{ 'is-active': selectedApp === 'sca' }" @click="selectApp('sca')">
+                                <img src="https://i.imgur.com/DK2YeTt.png" class="app-icon" alt="Scarlet">
+                                <span class="app-name">Scarlet</span>
+                            </button>
+                            <button class="app-card" :class="{ 'is-active': selectedApp === 'gbox' }" @click="selectApp('gbox')">
+                                <img src="https://i.imgur.com/Oinvr76.png" class="app-icon" alt="GBox">
+                                <span class="app-name">GBox</span>
+                            </button>
+                            
+                            <label class="app-card upload-card" :class="{ 'is-active': selectedApp === 'custom', 'has-payload': customIpaFile }" @click="selectCustomIpa">
+                                <div class="upload-icon-wrapper">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                </div>
+                                <span class="app-name truncate">{{ customIpaFile ? customIpaFile.name : 'Custom IPA' }}</span>
+                                <input type="file" @change="handleCustomIpa" ref="customIpaInput" accept=".ipa" class="hidden-input">
+                            </label>
+                        </div>
+                        <div class="status-indicator" v-if="selectedApp && appStatusText" :class="appStatusClass">
+                            <span class="status-dot"></span> {{ appStatusText }}
+                        </div>
+                    </section>
+
+                    <section class="config-section">
+                        <header class="section-header">
+                            <h2 class="section-heading">Signing Credentials</h2>
+                            <p class="section-subheading">Provide your Apple Developer certificate and password.</p>
+                        </header>
+                        
+                        <div class="input-group">
+                            <label class="file-upload-zone" :class="{'has-file': certZipText !== 'Chưa chọn file'}">
+                                <div class="zone-content">
+                                    <div class="zone-icon">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                    </div>
+                                    <div class="zone-text">
+                                        <span class="zone-title truncate">{{ certZipText !== 'Chưa chọn file' ? certZipText : 'Upload Certificate (.zip)' }}</span>
+                                        <span class="zone-subtitle">Contains .p12 and .mobileprovision</span>
+                                    </div>
+                                </div>
+                                <input type="file" @change="getFile($event)" ref="certZip" required accept=".zip" class="hidden-input">
+                            </label>
+
+                            <div class="password-field">
+                                <div class="field-icon">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                </div>
+                                <input type="password" v-model="password" class="modern-input" placeholder="Certificate Password" @focus="showPasswordSuggestions = true" @blur="hidePasswordSuggestions">
+                            </div>
                         </div>
 
-                        <div class="terminal-log" v-if="showStep3 && logText">
-                            <div class="terminal-header"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
-                            <div class="terminal-body">> {{ logText }}</div>
+                        <div class="tags-container" v-if="showPasswordSuggestions && passwordSuggestions.length > 0">
+                            <button class="tag-chip" v-for="s in passwordSuggestions" :key="s" @mousedown.prevent="selectPassword(s)">{{ s }}</button>
+                        </div>
+                    </section>
+
+                    <div class="action-footer">
+                        <button class="btn-primary" @click="upload" :disabled="!canSign">
+                            <span>{{ signButtonText }}</span>
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="margin-left: 8px;"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        </button>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name="fade-scale" mode="out-in">
+                <div class="view-panel" v-show="showStep2 || showStep3">
+                    <div class="process-card">
+                        <div class="process-spinner">
+                            <svg class="spinner-svg" viewBox="0 0 50 50">
+                                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+                            </svg>
+                        </div>
+                        <h2 class="process-title">{{ showStep2 ? 'Uploading Payload' : 'Processing Core' }}</h2>
+                        <p class="process-subtitle">{{ showStep2 ? `${progressBar}% - ${uploadDetails}` : statusText }}</p>
+                        
+                        <div class="progress-track" v-if="showStep2">
+                            <div class="progress-bar" :style="{ width: progressBar + '%' }"></div>
+                        </div>
+
+                        <div class="terminal-window" v-if="showStep3 && logText">
+                            <div class="terminal-header">
+                                <span class="mac-btn close"></span>
+                                <span class="mac-btn minimize"></span>
+                                <span class="mac-btn expand"></span>
+                            </div>
+                            <div class="terminal-content">
+                                <span class="prompt">~ %</span> {{ logText }}
+                                <span class="cursor-blink">_</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </transition>
 
-            <transition name="ios-slide" mode="out-in">
-                <div class="ios-view" v-show="showStep4 || showDirectDownload">
-                    <div class="glass-card success-card">
-                        <div class="success-icon-wrapper pulse-glow">
-                            <svg viewBox="0 0 24 24" width="36" height="36" stroke="white" stroke-width="3" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <transition name="fade-scale" mode="out-in">
+                <div class="view-panel" v-show="showStep4 || showDirectDownload">
+                    <div class="result-card">
+                        <div class="result-icon-box">
+                            <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
                         </div>
-                        <h2 class="status-heading text-gradient-gold">Sẵn Sàng Cài Đặt</h2>
-                        <p class="status-desc">Ứng dụng đã được ép xung và ký VIP thành công.</p>
+                        <h2 class="process-title">Deployment Ready</h2>
+                        <p class="process-subtitle" style="margin-bottom: 32px;">The application has been successfully signed and is ready for installation.</p>
 
-                        <button class="ios-btn-install premium-glow" @click="triggerInstall($event)" v-show="!showFallback">
-                            <span class="btn-shine"></span>
-                            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" style="margin-right: 8px; position: relative; z-index: 2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                            <span class="btn-text" style="position: relative; z-index: 2;">CÀI ĐẶT NGAY</span>
+                        <button class="btn-install" @click="triggerInstall($event)" v-show="!showFallback">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                            Install Application
                         </button>
-                        <p class="install-note" v-show="!showFallback">Nhấn Cài Đặt và trở về màn hình chính chờ tải.</p>
-
-                        <div v-show="showFallback" style="width: 100%; animation: fadeIn 0.5s;">
-                            <p class="error-note">⚠️ Trình duyệt chặn Popup. Hãy mở link trực tiếp!</p>
-                            <a :href="download" class="ios-btn-install btn-danger premium-glow">
-                                <span class="btn-shine"></span>
-                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" style="margin-right: 8px; position: relative; z-index: 2;"><path d="M10 15v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4M14 7l-5 5-5-5M9 12V2"/></svg>
-                                <span style="position: relative; z-index: 2;">MỞ TRANG TẢI GỐC</span>
-                            </a>
-                        </div>
-
-                        <div class="qr-box mt-32">
-                            <p class="qr-title">Quét mã bằng Camera iPhone</p>
-                            <div class="qr-frame">
-                                <div id="qrcode" class="qr-code-img" v-show="showStep4"></div>
-                                <div id="directQrcode" class="qr-code-img" v-show="showDirectDownload"></div>
+                        
+                        <div class="fallback-box" v-show="showFallback">
+                            <div class="alert-msg">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 6px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                Popup blocked by browser
                             </div>
+                            <a :href="download" class="btn-install fallback">Open Direct Link</a>
                         </div>
 
-                        <div class="ios-list shadow-lg mt-32" v-show="showStep4">
-                            <div class="ios-list-item" @click="copyShareUrl">
-                                <div class="item-icon bg-gradient-purple">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="white" stroke-width="2.5" fill="none"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                        <div class="result-grid">
+                            <div class="qr-section">
+                                <span class="qr-label">Scan to Install</span>
+                                <div class="qr-container">
+                                    <div id="qrcode" v-show="showStep4"></div>
+                                    <div id="directQrcode" v-show="showDirectDownload"></div>
                                 </div>
-                                <div class="item-content">
-                                    <span class="item-title">Copy Link Tải</span>
-                                    <span class="item-subtitle" :class="{'text-green font-bold': copySuccess}">{{ copySuccess ? 'Đã sao chép vào khay nhớ tạm!' : 'Chạm để Copy' }}</span>
-                                </div>
+                            </div>
+                            
+                            <div class="actions-section" v-show="showStep4">
+                                <button class="btn-outline" @click="copyShareUrl">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 8px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    {{ copySuccess ? 'Copied!' : 'Copy Link' }}
+                                </button>
                                 <input type="text" :value="shareUrl" class="hidden-input" ref="shareUrlInput">
+                                
+                                <button class="btn-ghost mt-16" @click="goToHome">Sign Another App</button>
                             </div>
                         </div>
-
-                        <button class="ios-btn-secondary mt-32" @click="goToHome">
-                            Ký ứng dụng khác <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="margin-left: 4px; transform: translateY(2px);"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        </button>
                     </div>
                 </div>
             </transition>
