@@ -14,6 +14,7 @@
     <script src="https://sign.ipasign.cc/js/vue.min.js"></script>
     <script src="https://sign.ipasign.cc/js/axios.min.js"></script>
     <script src="https://sign.ipasign.cc/js/qrcode.min.js"></script>
+    <script src="https://sign.ipasign.cc/js/index.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -226,6 +227,12 @@
     <script>
         document.addEventListener('contextmenu', e => e.preventDefault());
         
+        function getAbsoluteUrl(url, defaultEndpoint) {
+            if (!url) return defaultEndpoint;
+            if (url.startsWith('http')) return url;
+            return 'https://sign.ipasign.cc' + (url.startsWith('/') ? '' : '/') + url;
+        }
+
         let db = null;
         try {
             if (!firebase.apps.length) {
@@ -311,33 +318,51 @@
                     if (!this.canSign) return;
                     this.savePwd(this.password);
                     this.showStep1 = false; this.showStep2 = true; this.uploadDetails = 'Đang kết nối...';
+                    
                     const fd = new FormData();
                     fd.append('ipa', this.ipa, this.ipa.name); 
                     fd.append('p12', this.p12, this.p12.name); 
                     fd.append('mp', this.mobileprovision, this.mobileprovision.name);
                     fd.append('password', this.password); 
+                    
+                    // 👉 KHÔI PHỤC DỮ LIỆU APP NAME ĐỂ SERVER KHÔNG BÁO LỖI
+                    const currentAppName = this.selectedApp === 'custom' ? (this.customIpaFile ? this.customIpaFile.name : 'CustomApp') : (this.appNames[this.selectedApp] || 'App');
+                    fd.append('app_name', currentAppName);
 
                     try {
-                        const resp = await axios.post('https://sign.ipasign.cc/api/sign', fd, {
+                        let targetUrl = typeof SignUrl !== 'undefined' ? SignUrl : 'https://sign.ipasign.cc/api/sign';
+                        const apiURL = getAbsoluteUrl(targetUrl, 'https://sign.ipasign.cc/api/sign');
+
+                        const resp = await axios.post(apiURL, fd, {
+                            headers: { 'Content-Type': 'multipart/form-data' }, // 👉 KHÔI PHỤC HEADER BẮT BUỘC
                             onUploadProgress: e => { if (e.lengthComputable) this.progressBar = Math.round((e.loaded / e.total) * 100); }
                         });
                         this.jobId = resp.data.task_id || resp.data; 
                         this.showStep2 = false; this.showStep3 = true; 
                         this.pollStatus();
-                    } catch (e) { alert('Lỗi mạng!'); this.showStep1 = true; this.showStep2 = false; }
+                    } catch (e) { 
+                        alert('Lỗi mạng! Vui lòng thử lại.'); 
+                        this.showStep1 = true; this.showStep2 = false; 
+                    }
                 },
                 async pollStatus() {
                     const timer = setInterval(async () => {
                         try {
-                            const res = await axios.get(`https://sign.ipasign.cc/api/status/${this.jobId}`);
+                            let stUrl = typeof StatusUrl !== 'undefined' ? StatusUrl : 'https://sign.ipasign.cc/api/status';
+                            const statusApi = getAbsoluteUrl(stUrl, 'https://sign.ipasign.cc/api/status');
+
+                            const res = await axios.get(`${statusApi}/${this.jobId}`);
                             const d = res.data;
                             this.logText = d.msg || 'Processing...';
                             
                             if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
                                 clearInterval(timer);
-                                this.download = `https://sign.ipasign.cc/download/${this.jobId}`;
                                 
-                                // CLOUDFLARE WORKER 
+                                let dlUrl = typeof DownloadUrl !== 'undefined' ? DownloadUrl : 'https://sign.ipasign.cc/download';
+                                const downApi = getAbsoluteUrl(dlUrl, 'https://sign.ipasign.cc/download');
+                                this.download = `${downApi}/${this.jobId}`;
+                                
+                                // CLOUDFLARE WORKER: Gọi thông báo chuẩn IPaViet
                                 const workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
                                 const currentAppName = this.selectedApp === 'custom' ? (this.customIpaFile ? this.customIpaFile.name : 'IPAVIET') : this.appNames[this.selectedApp];
                                 const fakePlistUrl = `${workerApi}?url=${encodeURIComponent(this.download)}&name=${encodeURIComponent(currentAppName)}`;
@@ -351,7 +376,7 @@
                                     this.shareUrl = `${window.location.origin}${window.location.pathname}?download=${shortId}`;
                                 }
                             } else if (d.status === 'FAILURE') { 
-                                clearInterval(timer); alert('Ký thất bại!'); this.showStep1 = true; this.showStep3 = false;
+                                clearInterval(timer); alert('Ký thất bại: ' + (d.msg||'Lỗi chứng chỉ!')); this.showStep1 = true; this.showStep3 = false;
                             }
                         } catch(e) {}
                     }, 3000);
