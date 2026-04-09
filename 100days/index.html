@@ -8,110 +8,147 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; overflow-x: hidden; }
+        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; overflow-x: hidden; margin: 0; }
         .ios-blur { backdrop-filter: saturate(180%) blur(25px); background: rgba(0,0,0,0.8); }
         .card-special { border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 20px 60px rgba(255,255,255,0.05); }
-        .img-container { width: 100%; border-radius: 40px; overflow: hidden; position: relative; background: #111; }
-        .img-container img, .img-container video { width: 100%; height: 100%; object-fit: cover; }
+        .img-container { width: 100%; border-radius: 36px; overflow: hidden; position: relative; background: #111; }
+        .img-container img, .img-container video { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.5s ease; }
+        
+        /* Hiệu ứng loading cho ảnh */
+        .img-container img.loading { opacity: 0; }
+        .img-container img.loaded { opacity: 1; }
+
         #loader { transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body>
     <div id="player-anchor" style="position:fixed; opacity:0; pointer-events:none;"><div id="player"></div></div>
 
-    <div id="loader" class="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center">
-        <div class="mb-12 opacity-20 scale-150">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    <div id="loader" class="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-6 text-center">
+        <div class="mb-12 opacity-10">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
         </div>
-        <button onclick="launch()" class="px-10 py-4 bg-white text-black rounded-full font-bold tracking-[0.2em] text-xs hover:scale-105 active:scale-95 transition-all">MỞ KỈ NIỆM</button>
-        <p class="mt-10 text-[9px] tracking-[0.4em] text-zinc-600 uppercase">Designed for Hiền</p>
+        <button onclick="launchApp()" class="px-10 py-4 bg-white text-black rounded-full font-bold tracking-[0.2em] text-xs active:scale-95 transition-all">MỞ KỈ NIỆM</button>
+        <p class="mt-8 text-[9px] tracking-[0.4em] text-zinc-600 uppercase">Designed by Quí for Hiền</p>
     </div>
 
     <main id="app" class="opacity-0">
         <nav class="fixed top-0 w-full z-50 ios-blur px-8 py-5 border-b border-white/5 flex justify-between items-center">
-            <span class="text-[10px] tracking-[0.3em] font-medium opacity-50">100 DAYS OF LOVE</span>
-            <span class="text-[10px] tracking-[0.3em] font-medium">QUÍ + HIỀN</span>
+            <span class="text-[9px] tracking-[0.3em] font-medium opacity-50 uppercase">100 Days of Love</span>
+            <span class="text-[10px] tracking-[0.3em] font-semibold uppercase">QUÍ + HIỀN</span>
         </nav>
 
         <header class="h-screen flex flex-col items-center justify-center text-center px-6">
             <div id="hero-content">
-                <h1 class="text-8xl md:text-[180px] font-bold tracking-tighter leading-none mb-6">100<br><span class="text-zinc-800">Days.</span></h1>
+                <h1 class="text-8xl md:text-[180px] font-bold tracking-tighter leading-none mb-6">100<br><span class="text-zinc-800 italic">Days.</span></h1>
                 <p class="text-zinc-500 uppercase tracking-[0.5em] text-[10px]">Since January 1st, 2026</p>
             </div>
         </header>
 
-        <section class="max-w-2xl mx-auto px-6 space-y-24 pb-40" id="main-feed">
+        <section class="max-w-xl mx-auto px-6 space-y-20 pb-40" id="main-feed">
             </section>
 
-        <footer class="py-20 text-center">
+        <footer class="py-20 text-center border-t border-white/5">
             <p class="text-[9px] tracking-[0.5em] text-zinc-700 uppercase">Forever & Always</p>
         </footer>
     </main>
 
     <script>
-        // DATA ĐÃ FIX CHÍNH XÁC TÊN FILE VÀ ĐUÔI JPEG/PNG/MOV
+        // DATA ĐÃ ĐƯỢC ĐỐI CHIẾU VỚI GITHUB VÀ SỬA LỖI ĐUÔI FILE (jpeg/png/mov)
         const memories = [
-            { type: 'video', src: 'videos/IMG_001.mov', title: 'ĐẶC BIỆT', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ ANH LO', special: true },
-            { type: 'image', src: 'images/IMG_012.jpeg', title: 'ĐẶC BIỆT', desc: 'Ảnh chung của 2 đứaaaaa', special: true },
-            { type: 'image', src: 'images/IMG_07.jpeg', title: 'ĐẶC BIỆT', desc: 'Tấm ảnh đầu tiên của 2 đứa', special: true },
-            { type: 'image', src: 'images/IMG_02.jpeg', title: 'ĐẶC BIỆT', desc: 'Lúc này tỏ tình em thành công nè!', special: true },
-            { type: 'image', src: 'images/IMG_010.jpeg', title: 'ĐẶC BIỆT', desc: 'Đẹp thí, yêu thíii', special: true },
-            { type: 'image', src: 'images/IMG_01.jpeg', title: 'KỈ NIỆM', desc: 'Bó hoa đầu tiên anh tặng em', special: false },
-            { type: 'image', src: 'images/IMG_03.jpeg', title: 'CON BƯ', desc: 'Ảnh con bư của hai đứa', special: false },
-            { type: 'image', src: 'images/IMG_04.jpeg', title: 'CUTE', desc: 'Vẫn là con bư nhưng cuteee', special: false },
-            { type: 'image', src: 'images/IMG_05.jpeg', title: 'TATTOO', desc: 'Hình xăm cặp từ bé :3', special: false },
-            { type: 'image', src: 'images/IMG_06.jpeg', title: 'SÓC', desc: 'Người con gái anh yêu nhất', special: false },
-            { type: 'image', src: 'images/IMG_08.png', title: 'AVATAR', desc: 'Ảnh 2 đứa, đầu đôiiii', special: false },
-            { type: 'image', src: 'images/IMG_09.png', title: 'AVATAR', desc: 'Ảnh 2 đứa, đầu đôiiii', special: false },
-            { type: 'image', src: 'images/IMG_011.jpeg', title: 'ĐẶC BIỆT', desc: 'Đụng vào người yêu bố, bố đấm hết 😼', special: true }
+            // Ô Video lớn (3:4) - ĐẶC BIỆT
+            { type: 'video', src: 'videos/IMG_001.mov', title: 'SPOTLIGHT', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ ANH LO', special: true, h: 'h-[550px]' },
+            
+            // Các ô ảnh ĐẶC BIỆT (Full-width, cao 500px)
+            { type: 'image', src: 'images/IMG_012.jpeg', title: 'ẢNH CHUNG', desc: 'Ảnh chung của 2 đứaaaaa', special: true, h: 'h-[500px]' },
+            { type: 'image', src: 'images/IMG_07.jpeg', title: '30/03/2026', desc: 'Tấm ảnh đầu tiên siêu cấp yêuuuuu', special: true, h: 'h-[500px]' },
+            { type: 'image', src: 'images/IMG_02.jpeg', title: 'TỎ TÌNH', desc: 'Lúc tỏ tình thành công nè, hạnh phúc vli!', special: true, h: 'h-[500px]' },
+            { type: 'image', src: 'images/IMG_010.jpeg', title: 'LOVELY', desc: 'Đẹp thí, yêu thíii', special: true, h: 'h-[500px]' },
+            
+            // Các ô ảnh thường (Cao 380px)
+            { type: 'image', src: 'images/IMG_01.jpeg', title: 'KỈ NIỆM', desc: 'Bó hoa tỏ tình đầu tiên <3', special: false, h: 'h-[380px]' },
+            { type: 'image', src: 'images/IMG_03.jpeg', title: 'PET', desc: 'Ảnh con bư của hai đứa', special: false, h: 'h-[380px]' },
+            { type: 'image', src: 'images/IMG_04.jpeg', title: 'PET', desc: 'Vẫn là con bư nhưng cuteee', special: false, h: 'h-[380px]' },
+            { type: 'image', src: 'images/IMG_05.jpeg', title: 'TATTOO', desc: 'Hình xăm cặp từ bé :3', special: false, h: 'h-[380px]' },
+            { type: 'image', src: 'images/IMG_06.jpeg', title: 'SÓC', desc: 'Người con gái Quí yêu nhất', special: false, h: 'h-[380px]' },
+            
+            // FIX LỖI: Hai ảnh này trên GitHub là đuôi .png
+            { type: 'image', src: 'images/IMG_08.png', title: 'AVATAR', desc: 'Ảnh 2 đứa, đầu đôiiii', special: false, h: 'h-[380px]' },
+            { type: 'image', src: 'images/IMG_09.png', title: 'AVATAR', desc: 'Ảnh 2 đứa, đầu đôiiii', special: false, h: 'h-[380px]' },
+            
+            // Ô ngang (4:3) - ĐẶC BIỆT
+            { type: 'image', src: 'images/IMG_011.jpeg', title: 'BẢO VỆ', desc: 'Đụng vào Hiền là bố đấm hết 😼', special: true, h: 'h-[400px]' }
         ];
 
+        // RENDER FEED
         const feed = document.getElementById('main-feed');
         memories.forEach(m => {
             const div = document.createElement('div');
-            div.className = `memory-card ${m.special ? 'card-special p-2 rounded-[44px]' : ''}`;
+            // Thêm class đặc biệt nếu được đánh dấu
+            div.className = `memory-card ${m.special ? 'card-special p-2 rounded-[40px]' : ''}`;
             
+            // Tối ưu hóa Video mov cho Safari/iOS
             const mediaHtml = m.type === 'video' 
-                ? `<video src="${m.src}" playsinline loop muted autoplay class="w-full h-full"></video>`
-                : `<img src="${m.src}" loading="lazy" class="w-full h-full">`;
+                ? `<video src="${m.src}" playsinline loop muted autoplay preload="auto" class="w-full h-full"></video>`
+                : `<img src="${m.src}" alt="${m.title}" loading="lazy" class="loading w-full h-full" onload="this.classList.remove('loading'); this.classList.add('loaded');" onerror="this.src='https://placehold.co/600x400?text=Loi+File'; this.style.opacity=0.5;">`;
 
             div.innerHTML = `
-                <div class="img-container ${m.special ? 'h-[600px]' : 'h-[450px]'}">
+                <div class="img-container ${m.h}">
                     ${mediaHtml}
                     <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent p-10 flex flex-col justify-end">
                         <span class="text-[9px] tracking-[0.3em] text-white/40 mb-2 uppercase">${m.title}</span>
-                        <p class="text-xl font-light tracking-tight">${m.desc}</p>
+                        <p class="text-lg font-light tracking-tight leading-snug">${m.desc}</p>
                     </div>
                 </div>
             `;
             feed.appendChild(div);
         });
 
-        // Music Engine
+        // NHẠC YOUTUBE (YouTube IFrame API)
         var player;
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                videoId: 'oLEhNVryFhY',
-                playerVars: { 'autoplay': 0, 'controls': 0, 'loop': 1, 'playlist': 'oLEhNVryFhY' }
+                videoId: 'oLEhNVryFhY', // Link của Quí: https://youtu.be/oLEhNVryFhY
+                playerVars: { 
+                    'autoplay': 0, 
+                    'controls': 0, 
+                    'mute': 0, 
+                    'loop': 1, 
+                    'playlist': 'oLEhNVryFhY' // Cần playlist để loop
+                }
             });
         }
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         document.head.appendChild(tag);
 
-        function launch() {
-            if(player && player.playVideo) player.playVideo();
+        // KÍCH HOẠT TRẢI NGHIỆM
+        function launchApp() {
+            // Mở nhạc
+            if(player && player.playVideo) {
+                player.playVideo();
+                player.setVolume(100);
+            }
             
-            gsap.timeline()
-                .to("#loader", { opacity: 0, duration: 1, onComplete: () => document.getElementById('loader').remove() })
-                .to("#app", { opacity: 1, duration: 1 })
-                .from("#hero-content", { y: 50, opacity: 0, duration: 1.5, ease: "power4.out" }, "-=0.5");
+            // Animation chuyển cảnh
+            const tl = gsap.timeline();
+            tl.to("#loader", { opacity: 0, duration: 0.8, ease: "power2.inOut", onComplete: () => document.getElementById('loader').remove() })
+              .to("#app", { opacity: 1, duration: 1 })
+              .from("#hero-content", { y: 60, opacity: 0, duration: 1.5, ease: "power4.out" }, "-=0.5");
 
+            // Animation khi cuộn (Giống iOS)
             gsap.registerPlugin(ScrollTrigger);
             gsap.utils.toArray(".memory-card").forEach(card => {
                 gsap.from(card, {
-                    scrollTrigger: { trigger: card, start: "top bottom-=100px", toggleActions: "play none none reverse" },
-                    y: 80, opacity: 0, duration: 1.5, ease: "power3.out"
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top bottom-=80px",
+                        toggleActions: "play none none reverse"
+                    },
+                    y: 60,
+                    opacity: 0,
+                    duration: 1.2,
+                    ease: "power3.out"
                 });
             });
         }
