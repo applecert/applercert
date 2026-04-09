@@ -20,7 +20,7 @@
     <div id="player-anchor" style="position:fixed; opacity:0; pointer-events:none;"><div id="player"></div></div>
 
     <div id="loader" class="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-6 text-center">
-        <div class="mb-12 opacity-10 scale-150">
+        <div class="mb-12 opacity-10">
             <svg width="60" height="60" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
         </div>
         <button onclick="launchApp()" class="px-10 py-4 bg-white text-black rounded-full font-bold tracking-[0.2em] text-xs active:scale-95 transition-all">MỞ KỈ NIỆM</button>
@@ -49,9 +49,10 @@
     </main>
 
     <script>
-        // DATA ĐÃ ĐƯỢC ĐỐI CHIẾU 100% VỚI CẤU TRÚC GITHUB CỦA QUÍ
+        // DATA ĐÃ ĐƯỢC FIX LỖI CACHE VÀ ĐUÔI FILE (jpeg/png/mov)
+        const version = "?v=2"; // Thay đổi số này để ép trình duyệt tải lại ảnh mới
         const memories = [
-            // Fix: Sửa vid_01.mp4 -> videos/IMG_001.mov (theo image_1.png)
+            // Ô Video lớn (3:4) - ĐẶC BIỆT
             { type: 'video', src: 'videos/IMG_001.mov', title: 'SPOTLIGHT', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ ANH LO', special: true, h: 'h-[550px]' },
             { type: 'image', src: 'images/IMG_012.jpeg', title: 'ẢNH CHUNG', desc: 'Ảnh chung của 2 đứaaaaa', special: true, h: 'h-[500px]' },
             { type: 'image', src: 'images/IMG_07.jpeg', title: '30/03/2026', desc: 'Tấm ảnh đầu tiên siêu cấp yêuuuuu', special: true, h: 'h-[500px]' },
@@ -69,17 +70,16 @@
         ];
 
         // RENDER GRID
-        const grid = document.getElementById('bento-grid');
         const feed = document.getElementById('main-feed');
         memories.forEach(m => {
             const div = document.createElement('div');
             // Thêm class đặc biệt nếu được đánh dấu
             div.className = `memory-card ${m.special ? 'card-special p-2 rounded-[40px]' : ''}`;
             
-            // Fix Video Format cho .mov Safari/iOS
+            // Fix Video Format cho .mov Safari/iOS + Bypass Cache
             const mediaHtml = m.type === 'video' 
-                ? `<video src="${m.src}" playsinline loop muted autoplay preload="auto" class="w-full h-full"></video>`
-                : `<img src="${m.src}" alt="${m.title}" loading="lazy" class="w-full h-full">`;
+                ? `<video src="${m.src}${version}" playsinline loop muted autoplay preload="auto" class="w-full h-full"></video>`
+                : `<img src="${m.src}${version}" alt="${m.title}" loading="lazy" class="w-full h-full" onerror="this.src='https://placehold.co/600x400?text=Loi+File'; this.style.opacity=0.5;">`;
 
             div.innerHTML = `
                 <div class="img-container ${m.h}">
@@ -98,7 +98,7 @@
             feed.appendChild(div);
         });
 
-        // NHẠC YOUTUBE
+        // NHẠC YOUTUBE (YouTube IFrame API)
         var player;
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
@@ -106,15 +106,15 @@
                 playerVars: { 
                     'autoplay': 0, 'controls': 0, 'mute': 0, 
                     'loop': 1, 'playlist': 'oLEhNVryFhY' 
-                }
+                },
+                events: { 'onReady': onPlayerReady }
             });
         }
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
+        function onPlayerReady(event) { console.log("Player ready"); }
 
+        // KÍCH HOẠT TRẢI NGHIỆM
         function launchApp() {
-            // Mở nhạc
+            // Mở nhạc & Ép âm lượng 100%
             if(player && player.playVideo) {
                 player.playVideo();
                 player.setVolume(100);
@@ -125,7 +125,7 @@
               .to("#app", { opacity: 1, duration: 1 })
               .from("#hero-content", { y: 60, opacity: 0, duration: 1.5, ease: "power4.out" }, "-=0.5");
 
-            // Animation khi cuộn
+            // Animation khi cuộn (Giống iOS)
             gsap.registerPlugin(ScrollTrigger);
             gsap.utils.toArray(".memory-card").forEach(card => {
                 gsap.from(card, {
@@ -141,6 +141,9 @@
                 });
             });
         }
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
     </script>
 </body>
 </html>
