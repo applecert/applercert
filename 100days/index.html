@@ -12,14 +12,16 @@
         .ios-blur { backdrop-filter: saturate(180%) blur(20px); background: rgba(0,0,0,0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
         
         #intro-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-center; }
-        .btn-start { background: #fff; color: #000; padding: 18px 45px; border-radius: 30px; font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: transform 0.2s; }
+        .btn-start { background: #fff; color: #000; padding: 18px 45px; border-radius: 30px; font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: transform 0.2s; border: none; }
         .btn-start:active { transform: scale(0.95); }
 
-        .memory-card { position: relative; width: 100%; border-radius: 24px; overflow: hidden; background: #111; margin-bottom: 30px; }
-        .memory-card.special { border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 40px rgba(255,255,255,0.05); }
-        .media-content { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.9); }
+        /* Bố cục Feed đơn giản, không cắt xén ảnh */
+        .memory-card { position: relative; width: 100%; border-radius: 16px; overflow: hidden; background: #111; margin-bottom: 40px; }
+        .memory-card.special { border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 10px 30px rgba(255,215,0,0.05); }
+        .media-content { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(0.85); }
         
-        .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 40%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; }
+        /* Chữ hiển thị mượt mà trên nền Gradient */
+        .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.1) 50%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -34,7 +36,7 @@
     <main id="app" class="opacity-0 hidden">
         <nav class="fixed top-0 w-full z-40 ios-blur px-6 py-4 flex justify-between items-center">
             <span class="text-[9px] tracking-[0.3em] opacity-50 uppercase">Quí & Hiền</span>
-            <span class="text-[9px] tracking-[0.3em] font-bold uppercase text-white/80">01.01.26</span>
+            <span class="text-[9px] tracking-[0.3em] font-bold uppercase text-white/80">01.01.2026</span>
         </nav>
 
         <header class="h-[80vh] flex flex-col items-center justify-center text-center px-6">
@@ -45,47 +47,52 @@
         <section class="max-w-xl mx-auto px-6 pb-20" id="main-feed">
             </section>
 
-        <footer class="py-20 text-center">
+        <footer class="py-20 text-center border-t border-white/5 mx-6">
             <p class="text-[9px] tracking-[0.5em] text-zinc-600 uppercase">Forever & Always</p>
         </footer>
     </main>
 
     <script>
-        // Data chuẩn xác 100% tên file gốc, kết hợp version để xoá cache
-        const v = "?v=final_stable"; 
+        const v = "?v=layout_fixed"; 
         const memories = [
-            // ƯU TIÊN ĐẶC BIỆT + VIDEO CẬP NHẬT
-            { type: 'video', src: 'videos/IMG_4927.mp4', special: true, h: 'h-[500px]', title: 'KHOẢNH KHẮC', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ NGƯỜI YÊU EM LO' },
-            { type: 'image', src: 'images/IMG_012.jpeg', special: true, h: 'h-[500px]', title: 'OUR FRAME', desc: 'Ảnh chung của 2 đứaaaaa' },
-            { type: 'image', src: 'images/IMG_02.jpeg', special: true, h: 'h-[500px]', title: 'THE YES', desc: 'Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn, anh hạnh phúc vli. Nhưng hơm có ngờ là bị từ chối TT.' },
-            { type: 'image', src: 'images/IMG_07.jpeg', special: true, h: 'h-[500px]', title: 'FIRST MEMORY', desc: '30/03/2026 Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu' },
-            { type: 'image', src: 'images/IMG_010.jpeg', special: true, h: 'h-[500px]', title: 'LOVELY', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii' },
+            // --- HÀNG ĐẶC BIỆT ---
+            { type: 'video', src: 'videos/IMG_4927.mp4', ratio: '3/4', special: true, title: 'KHOẢNH KHẮC', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ NGƯỜI YÊU EM LO' },
+            { type: 'image', src: 'images/IMG_02.jpeg', ratio: '9/16', special: true, title: '1/1/2026', desc: 'Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn, anh hạnh phúc vli. Nhưng hơm có ngờ là bị từ chối TT.' },
+            { type: 'image', src: 'images/IMG_07.jpeg', ratio: '9/16', special: true, title: '30/03/2026', desc: 'Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu' },
+            { type: 'image', src: 'images/IMG_010.jpeg', ratio: '9/16', special: true, title: 'LOVELY', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii' },
+            { type: 'image', src: 'images/IMG_012.jpeg', ratio: '16/9', special: true, title: 'OUR FRAME', desc: 'Ảnh chung của 2 đứaaaaa' },
             
-            // ẢNH BÌNH THƯỜNG
-            { type: 'image', src: 'images/IMG_1927.jpeg', special: false, h: 'h-[380px]', title: '1/1/2026', desc: 'Bó hoa đầu tiên anh tặng em lúc tỏ tình <3' },
-            { type: 'image', src: 'images/IMG_4935.jpeg', special: false, h: 'h-[380px]', title: 'BẢO VỆ', desc: 'Thằng nào dám đụng vào người yêu bố, bố đấm hết 😼' },
-            { type: 'image', src: 'images/IMG_4923.png', special: false, h: 'h-[380px]', title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
-            { type: 'image', src: 'images/IMG_4924.png', special: false, h: 'h-[380px]', title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
-            { type: 'image', src: 'images/IMG_3374.jpeg', special: false, h: 'h-[380px]', title: 'PET', desc: 'Ảnh con bư' },
-            { type: 'image', src: 'images/IMG_04.jpeg', special: false, h: 'h-[380px]', title: 'PET', desc: 'Vẫn là con bư nhưng cuteee' },
-            { type: 'image', src: 'images/IMG_05.jpeg', special: false, h: 'h-[380px]', title: 'KỈ NIỆM', desc: 'Hình xăm cặp từ bé :3' },
-            { type: 'image', src: 'images/IMG_06.jpeg', special: false, h: 'h-[380px]', title: 'SÓC', desc: 'HIEN' }
+            // --- HÀNG BÌNH THƯỜNG ---
+            { type: 'image', src: 'images/IMG_1927.jpeg', ratio: '3/4', special: false, title: '1/1/2026', desc: 'Bó hoa đầu tiên anh tặng em lúc tỏ tình <3' },
+            { type: 'image', src: 'images/IMG_3374.jpeg', ratio: '3/4', special: false, title: 'PET', desc: 'Ảnh con bư' },
+            { type: 'image', src: 'images/IMG_04.jpeg', ratio: '9/16', special: false, title: 'PET', desc: 'Vẫn là con bư nhưng cuteee' },
+            { type: 'image', src: 'images/IMG_05.jpeg', ratio: '3/4', special: false, title: 'KỈ NIỆM', desc: 'Hình xăm cặp từ bé :3' },
+            { type: 'image', src: 'images/IMG_06.jpeg', ratio: '9/16', special: false, title: 'SÓC', desc: 'HIEN' },
+            { type: 'image', src: 'images/IMG_4923.png', ratio: '1/1', special: false, title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
+            { type: 'image', src: 'images/IMG_4924.png', ratio: '1/1', special: false, title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
+            { type: 'image', src: 'images/IMG_4935.jpeg', ratio: '4/3', special: false, title: 'BẢO VỆ', desc: 'Thằng nào dám đụng vào người yêu bố, bố đấm hết 😼' }
         ];
 
         const feed = document.getElementById('main-feed');
         
         memories.forEach(m => {
             const card = document.createElement('div');
-            card.className = `memory-card gs-reveal ${m.h} ${m.special ? 'special' : ''}`;
+            // Gắn trực tiếp tỷ lệ khung hình vào CSS
+            card.className = `memory-card gs-reveal ${m.special ? 'special' : ''}`;
+            card.style.aspectRatio = m.ratio;
 
             let mediaElement = m.type === 'video' 
                 ? `<video src="${m.src}${v}" class="media-content" playsinline webkit-playsinline autoplay loop muted preload="auto"></video>`
                 : `<img src="${m.src}${v}" class="media-content" loading="lazy" alt="Memory" onerror="this.src='https://placehold.co/600x800?text=Loi+Load';">`;
 
+            // Tag "ĐẶC BIỆT" nhỏ gọn trên góc cho nổi bật
+            const specialTag = m.special ? `<div style="position:absolute; top:16px; left:16px; background:rgba(255,215,0,0.8); color:#000; font-size:9px; padding:4px 10px; border-radius:12px; font-weight:bold; letter-spacing:1px; z-index:10;">ĐẶC BIỆT</div>` : '';
+
             card.innerHTML = `
+                ${specialTag}
                 ${mediaElement}
                 <div class="overlay">
-                    <span class="text-[9px] tracking-[0.2em] text-white/50 mb-1 uppercase font-bold">${m.title}</span>
+                    <span class="text-[9px] tracking-[0.2em] text-white/60 mb-1 uppercase font-bold">${m.title}</span>
                     <p class="text-base font-light text-white leading-snug">${m.desc}</p>
                 </div>
             `;
@@ -119,8 +126,7 @@
                 let playPromise = vid.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
-                        vid.controls = true; // Hiện nút play nếu iOS cố tình chặn
-                        console.log("iOS chặn video auto-play");
+                        vid.controls = true;
                     });
                 }
             });
