@@ -8,16 +8,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; overflow-x: hidden; margin: 0; }
+        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; overflow: hidden; margin: 0; }
         .ios-blur { backdrop-filter: saturate(180%) blur(25px); background: rgba(0,0,0,0.8); }
         .card-special { border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 20px 60px rgba(255,255,255,0.05); }
         .img-container { width: 100%; border-radius: 36px; overflow: hidden; position: relative; background: #111; }
         .img-container img, .img-container video { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.5s ease; }
-        
-        /* Hiệu ứng loading cho ảnh */
-        .img-container img.loading { opacity: 0; }
-        .img-container img.loaded { opacity: 1; }
-
         #loader { transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
@@ -25,7 +20,7 @@
     <div id="player-anchor" style="position:fixed; opacity:0; pointer-events:none;"><div id="player"></div></div>
 
     <div id="loader" class="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-6 text-center">
-        <div class="mb-12 opacity-10">
+        <div class="mb-12 opacity-10 scale-150">
             <svg width="60" height="60" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
         </div>
         <button onclick="launchApp()" class="px-10 py-4 bg-white text-black rounded-full font-bold tracking-[0.2em] text-xs active:scale-95 transition-all">MỞ KỈ NIỆM</button>
@@ -54,43 +49,37 @@
     </main>
 
     <script>
-        // DATA ĐÃ ĐƯỢC ĐỐI CHIẾU VỚI GITHUB VÀ SỬA LỖI ĐUÔI FILE (jpeg/png/mov)
+        // DATA ĐÃ ĐƯỢC ĐỐI CHIẾU 100% VỚI CẤU TRÚC GITHUB CỦA QUÍ
         const memories = [
-            // Ô Video lớn (3:4) - ĐẶC BIỆT
+            // Fix: Sửa vid_01.mp4 -> videos/IMG_001.mov (theo image_1.png)
             { type: 'video', src: 'videos/IMG_001.mov', title: 'SPOTLIGHT', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ ANH LO', special: true, h: 'h-[550px]' },
-            
-            // Các ô ảnh ĐẶC BIỆT (Full-width, cao 500px)
             { type: 'image', src: 'images/IMG_012.jpeg', title: 'ẢNH CHUNG', desc: 'Ảnh chung của 2 đứaaaaa', special: true, h: 'h-[500px]' },
             { type: 'image', src: 'images/IMG_07.jpeg', title: '30/03/2026', desc: 'Tấm ảnh đầu tiên siêu cấp yêuuuuu', special: true, h: 'h-[500px]' },
             { type: 'image', src: 'images/IMG_02.jpeg', title: 'TỎ TÌNH', desc: 'Lúc tỏ tình thành công nè, hạnh phúc vli!', special: true, h: 'h-[500px]' },
-            { type: 'image', src: 'images/IMG_010.jpeg', title: 'LOVELY', desc: 'Đẹp thí, yêu thíii', special: true, h: 'h-[500px]' },
-            
-            // Các ô ảnh thường (Cao 380px)
+            { type: 'image', src: 'images/IMG_010.jpeg', title: 'ĐẸP THÍ', desc: 'Đẹp thí, yêu thíii', special: true, h: 'h-[500px]' },
             { type: 'image', src: 'images/IMG_01.jpeg', title: 'KỈ NIỆM', desc: 'Bó hoa tỏ tình đầu tiên <3', special: false, h: 'h-[380px]' },
             { type: 'image', src: 'images/IMG_03.jpeg', title: 'PET', desc: 'Ảnh con bư của hai đứa', special: false, h: 'h-[380px]' },
             { type: 'image', src: 'images/IMG_04.jpeg', title: 'PET', desc: 'Vẫn là con bư nhưng cuteee', special: false, h: 'h-[380px]' },
             { type: 'image', src: 'images/IMG_05.jpeg', title: 'TATTOO', desc: 'Hình xăm cặp từ bé :3', special: false, h: 'h-[380px]' },
             { type: 'image', src: 'images/IMG_06.jpeg', title: 'SÓC', desc: 'Người con gái Quí yêu nhất', special: false, h: 'h-[380px]' },
-            
-            // FIX LỖI: Hai ảnh này trên GitHub là đuôi .png
+            // Hai ảnh này trên GitHub là đuôi .png
             { type: 'image', src: 'images/IMG_08.png', title: 'AVATAR', desc: 'Ảnh 2 đứa, đầu đôiiii', special: false, h: 'h-[380px]' },
             { type: 'image', src: 'images/IMG_09.png', title: 'AVATAR', desc: 'Ảnh 2 đứa, đầu đôiiii', special: false, h: 'h-[380px]' },
-            
-            // Ô ngang (4:3) - ĐẶC BIỆT
             { type: 'image', src: 'images/IMG_011.jpeg', title: 'BẢO VỆ', desc: 'Đụng vào Hiền là bố đấm hết 😼', special: true, h: 'h-[400px]' }
         ];
 
-        // RENDER FEED
+        // RENDER GRID
+        const grid = document.getElementById('bento-grid');
         const feed = document.getElementById('main-feed');
         memories.forEach(m => {
             const div = document.createElement('div');
             // Thêm class đặc biệt nếu được đánh dấu
             div.className = `memory-card ${m.special ? 'card-special p-2 rounded-[40px]' : ''}`;
             
-            // Tối ưu hóa Video mov cho Safari/iOS
+            // Fix Video Format cho .mov Safari/iOS
             const mediaHtml = m.type === 'video' 
                 ? `<video src="${m.src}" playsinline loop muted autoplay preload="auto" class="w-full h-full"></video>`
-                : `<img src="${m.src}" alt="${m.title}" loading="lazy" class="loading w-full h-full" onload="this.classList.remove('loading'); this.classList.add('loaded');" onerror="this.src='https://placehold.co/600x400?text=Loi+File'; this.style.opacity=0.5;">`;
+                : `<img src="${m.src}" alt="${m.title}" loading="lazy" class="w-full h-full">`;
 
             div.innerHTML = `
                 <div class="img-container ${m.h}">
@@ -101,20 +90,22 @@
                     </div>
                 </div>
             `;
+            // Tương tác khi di chuột (cho PC)
+            if(m.type === 'video') {
+                div.onmouseenter = () => div.querySelector('video').play();
+                div.onmouseleave = () => div.querySelector('video').pause();
+            }
             feed.appendChild(div);
         });
 
-        // NHẠC YOUTUBE (YouTube IFrame API)
+        // NHẠC YOUTUBE
         var player;
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                videoId: 'oLEhNVryFhY', // Link của Quí: https://youtu.be/oLEhNVryFhY
+                videoId: 'oLEhNVryFhY',
                 playerVars: { 
-                    'autoplay': 0, 
-                    'controls': 0, 
-                    'mute': 0, 
-                    'loop': 1, 
-                    'playlist': 'oLEhNVryFhY' // Cần playlist để loop
+                    'autoplay': 0, 'controls': 0, 'mute': 0, 
+                    'loop': 1, 'playlist': 'oLEhNVryFhY' 
                 }
             });
         }
@@ -122,21 +113,19 @@
         tag.src = "https://www.youtube.com/iframe_api";
         document.head.appendChild(tag);
 
-        // KÍCH HOẠT TRẢI NGHIỆM
         function launchApp() {
             // Mở nhạc
             if(player && player.playVideo) {
                 player.playVideo();
                 player.setVolume(100);
             }
-            
             // Animation chuyển cảnh
             const tl = gsap.timeline();
             tl.to("#loader", { opacity: 0, duration: 0.8, ease: "power2.inOut", onComplete: () => document.getElementById('loader').remove() })
               .to("#app", { opacity: 1, duration: 1 })
               .from("#hero-content", { y: 60, opacity: 0, duration: 1.5, ease: "power4.out" }, "-=0.5");
 
-            // Animation khi cuộn (Giống iOS)
+            // Animation khi cuộn
             gsap.registerPlugin(ScrollTrigger);
             gsap.utils.toArray(".memory-card").forEach(card => {
                 gsap.from(card, {
