@@ -8,100 +8,93 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow-x: hidden; margin: 0; -webkit-font-smoothing: antialiased; }
-        .nav-blur { backdrop-filter: saturate(180%) blur(20px); background: rgba(0,0,0,0.85); border-bottom: 1px solid rgba(255,255,255,0.08); }
+        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow-x: hidden; margin: 0; }
+        .ios-blur { backdrop-filter: saturate(180%) blur(20px); background: rgba(0,0,0,0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
         
-        .media-card { position: relative; width: 100%; border-radius: 24px; overflow: hidden; background: #0a0a0a; border: 1px solid rgba(255,255,255,0.05); }
-        .media-card.special { border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 0 40px rgba(255,255,255,0.08); }
+        #intro-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-center; }
+        .btn-start { background: #fff; color: #000; padding: 18px 45px; border-radius: 30px; font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: transform 0.2s; }
+        .btn-start:active { transform: scale(0.95); }
+
+        .memory-card { position: relative; width: 100%; border-radius: 24px; overflow: hidden; background: #111; margin-bottom: 30px; }
+        .memory-card.special { border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 40px rgba(255,255,255,0.05); }
+        .media-content { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.9); }
         
-        .media-content { width: 100%; height: 100%; object-fit: cover; display: block; }
-        
-        /* Chỉnh gradient overlay tinh tế hơn */
-        .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; }
-        
-        #loader { transition: opacity 0.8s ease; z-index: 9999; }
+        .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 40%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; }
     </style>
 </head>
 <body>
     <div style="position:fixed; opacity:0; pointer-events:none;"><div id="player"></div></div>
 
-    <div id="loader" class="fixed inset-0 bg-black flex flex-col items-center justify-center text-center">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="white" class="mb-10 opacity-20"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-        <button onclick="launchExperience()" class="px-10 py-4 bg-white text-black rounded-full font-bold tracking-[0.2em] text-xs transition-transform active:scale-95">MỞ KỈ NIỆM</button>
-        <p class="mt-8 text-[10px] tracking-[0.4em] text-zinc-600 uppercase">Designed for Hiền</p>
+    <div id="intro-screen">
+        <h2 class="text-zinc-500 tracking-[0.5em] text-[10px] uppercase mb-10">Kỉ niệm 100 ngày</h2>
+        <button class="btn-start" onclick="startJourney()">Mở Kỉ Niệm</button>
+        <p class="mt-8 text-[9px] tracking-widest text-zinc-600 uppercase">Designed by Quí for Hiền</p>
     </div>
 
-    <main id="app" class="opacity-0">
-        <nav class="fixed top-0 w-full z-50 nav-blur px-6 py-4 flex justify-between items-center">
-            <span class="text-[9px] tracking-[0.3em] font-medium opacity-60 uppercase">100 Days of Love</span>
-            <span class="text-[9px] tracking-[0.3em] font-bold uppercase">Quí & Hiền</span>
+    <main id="app" class="opacity-0 hidden">
+        <nav class="fixed top-0 w-full z-40 ios-blur px-6 py-4 flex justify-between items-center">
+            <span class="text-[9px] tracking-[0.3em] opacity-50 uppercase">Quí & Hiền</span>
+            <span class="text-[9px] tracking-[0.3em] font-bold uppercase text-white/80">01.01.26</span>
         </nav>
 
-        <header class="h-screen flex flex-col items-center justify-center text-center px-6">
-            <h1 class="text-7xl md:text-[140px] font-bold tracking-tighter leading-none mb-6">100<br><span class="text-zinc-800 italic">Days.</span></h1>
-            <p class="text-zinc-500 uppercase tracking-[0.5em] text-[10px]">Since 01.01.2026</p>
+        <header class="h-[80vh] flex flex-col items-center justify-center text-center px-6">
+            <h1 class="text-7xl md:text-9xl font-bold tracking-tighter leading-none mb-4">100<br><span class="italic font-light text-zinc-400">Days.</span></h1>
+            <p class="text-zinc-500 uppercase tracking-[0.4em] text-[10px]">Một hành trình yêu thương</p>
         </header>
 
-        <section class="max-w-xl mx-auto px-6 space-y-16 pb-40" id="main-feed">
+        <section class="max-w-xl mx-auto px-6 pb-20" id="main-feed">
             </section>
 
-        <footer class="py-24 text-center border-t border-white/10">
-            <p class="text-[9px] tracking-[0.6em] text-zinc-600 uppercase">Forever & Always</p>
+        <footer class="py-20 text-center">
+            <p class="text-[9px] tracking-[0.5em] text-zinc-600 uppercase">Forever & Always</p>
         </footer>
     </main>
 
     <script>
-        // Dữ liệu đã được cập nhật lại với TÊN FILE GỐC của Quí
-        const v = "?v=v3"; // Đổi tham số để bypass hoàn toàn cache cũ
+        // Data chuẩn xác 100% tên file gốc, kết hợp version để xoá cache
+        const v = "?v=final_stable"; 
         const memories = [
-            // Đã đổi thành IMG_1927
-            { type: 'image', src: 'images/IMG_1927.jpeg', ratio: '3/4', special: false, title: '1/1/2026', desc: 'Bó hoa đầu tiên anh tặng em lúc tỏ tình <3' },
-            { type: 'image', src: 'images/IMG_02.jpeg', ratio: '9/16', special: true, title: 'ĐẶC BIỆT', desc: '1/1/2026 Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn, anh hạnh phúc vli. Nhưng hơm có ngờ là bị từ chối TT.' },
-            // Đã đổi thành IMG_3374
-            { type: 'image', src: 'images/IMG_3374.jpeg', ratio: '3/4', special: false, title: 'PET', desc: 'Ảnh con bư' },
-            { type: 'image', src: 'images/IMG_04.jpeg', ratio: '9/16', special: false, title: 'PET', desc: 'Vẫn là con bư nhưng cuteee' },
-            { type: 'image', src: 'images/IMG_05.jpeg', ratio: '3/4', special: false, title: 'KỈ NIỆM', desc: 'Hình xăm cặp từ bé :3' },
-            { type: 'image', src: 'images/IMG_06.jpeg', ratio: '9/16', special: false, title: 'SÓC', desc: 'HIEN' },
-            { type: 'image', src: 'images/IMG_07.jpeg', ratio: '9/16', special: true, title: 'ĐẶC BIỆT', desc: '30/03/2026 Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu' },
-            // Đã đổi thành IMG_4923 và IMG_4924 (Đuôi PNG)
-            { type: 'image', src: 'images/IMG_4923.png', ratio: '1/1', special: false, title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
-            { type: 'image', src: 'images/IMG_4924.png', ratio: '1/1', special: false, title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
-            { type: 'image', src: 'images/IMG_010.jpeg', ratio: '9/16', special: true, title: 'ĐẶC BIỆT', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii' },
-            // Đã đổi thành IMG_4935
-            { type: 'image', src: 'images/IMG_4935.jpeg', ratio: '4/3', special: false, title: 'BẢO VỆ', desc: 'Thằng nào dám đụng vào người yêu bố, bố đấm hết 😼' },
-            { type: 'image', src: 'images/IMG_012.jpeg', ratio: '16/9', special: true, title: 'ĐẶC BIỆT', desc: 'Ảnh chung của 2 đứaaaaa' },
-            { type: 'video', src: 'videos/IMG_001.mov', ratio: '3/4', special: true, title: 'ĐẶC BIỆT - VIDEO', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ NGƯỜI YÊU EM LO' }
+            // ƯU TIÊN ĐẶC BIỆT + VIDEO CẬP NHẬT
+            { type: 'video', src: 'videos/IMG_4927.mp4', special: true, h: 'h-[500px]', title: 'KHOẢNH KHẮC', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ NGƯỜI YÊU EM LO' },
+            { type: 'image', src: 'images/IMG_012.jpeg', special: true, h: 'h-[500px]', title: 'OUR FRAME', desc: 'Ảnh chung của 2 đứaaaaa' },
+            { type: 'image', src: 'images/IMG_02.jpeg', special: true, h: 'h-[500px]', title: 'THE YES', desc: 'Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn, anh hạnh phúc vli. Nhưng hơm có ngờ là bị từ chối TT.' },
+            { type: 'image', src: 'images/IMG_07.jpeg', special: true, h: 'h-[500px]', title: 'FIRST MEMORY', desc: '30/03/2026 Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu' },
+            { type: 'image', src: 'images/IMG_010.jpeg', special: true, h: 'h-[500px]', title: 'LOVELY', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii' },
+            
+            // ẢNH BÌNH THƯỜNG
+            { type: 'image', src: 'images/IMG_1927.jpeg', special: false, h: 'h-[380px]', title: '1/1/2026', desc: 'Bó hoa đầu tiên anh tặng em lúc tỏ tình <3' },
+            { type: 'image', src: 'images/IMG_4935.jpeg', special: false, h: 'h-[380px]', title: 'BẢO VỆ', desc: 'Thằng nào dám đụng vào người yêu bố, bố đấm hết 😼' },
+            { type: 'image', src: 'images/IMG_4923.png', special: false, h: 'h-[380px]', title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
+            { type: 'image', src: 'images/IMG_4924.png', special: false, h: 'h-[380px]', title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
+            { type: 'image', src: 'images/IMG_3374.jpeg', special: false, h: 'h-[380px]', title: 'PET', desc: 'Ảnh con bư' },
+            { type: 'image', src: 'images/IMG_04.jpeg', special: false, h: 'h-[380px]', title: 'PET', desc: 'Vẫn là con bư nhưng cuteee' },
+            { type: 'image', src: 'images/IMG_05.jpeg', special: false, h: 'h-[380px]', title: 'KỈ NIỆM', desc: 'Hình xăm cặp từ bé :3' },
+            { type: 'image', src: 'images/IMG_06.jpeg', special: false, h: 'h-[380px]', title: 'SÓC', desc: 'HIEN' }
         ];
 
         const feed = document.getElementById('main-feed');
         
         memories.forEach(m => {
             const card = document.createElement('div');
-            // Căn chỉnh khung hình tuyệt đối bằng inline-style aspect-ratio
-            card.className = `media-card ${m.special ? 'special' : ''} gs-reveal`;
-            card.style.aspectRatio = m.ratio;
-            
-            // Xử lý render cho Ảnh hoặc Video (Bao gồm các tag bắt buộc cho iOS)
-            let mediaElement = '';
-            if (m.type === 'video') {
-                mediaElement = `<video src="${m.src}${v}" class="media-content" playsinline webkit-playsinline autoplay muted loop preload="auto"></video>`;
-            } else {
-                mediaElement = `<img src="${m.src}${v}" class="media-content" loading="lazy" alt="${m.title}" onerror="this.src='https://placehold.co/600x800?text=Loi+Đường+Dẫn';">`;
-            }
+            card.className = `memory-card gs-reveal ${m.h} ${m.special ? 'special' : ''}`;
+
+            let mediaElement = m.type === 'video' 
+                ? `<video src="${m.src}${v}" class="media-content" playsinline webkit-playsinline autoplay loop muted preload="auto"></video>`
+                : `<img src="${m.src}${v}" class="media-content" loading="lazy" alt="Memory" onerror="this.src='https://placehold.co/600x800?text=Loi+Load';">`;
 
             card.innerHTML = `
                 ${mediaElement}
                 <div class="overlay">
-                    <span class="text-[9px] tracking-[0.3em] text-white/50 mb-2 uppercase">${m.title}</span>
-                    <p class="text-base font-light leading-relaxed">${m.desc}</p>
+                    <span class="text-[9px] tracking-[0.2em] text-white/50 mb-1 uppercase font-bold">${m.title}</span>
+                    <p class="text-base font-light text-white leading-snug">${m.desc}</p>
                 </div>
             `;
             feed.appendChild(card);
         });
 
-        // ---------------------------------------------------------
-        // YOUTUBE AUDIO ENGINE
-        // ---------------------------------------------------------
+        // -------------------------
+        // YOUTUBE & VIDEO ENGINE
+        // -------------------------
         var player;
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
@@ -113,41 +106,41 @@
         scriptTag.src = "https://www.youtube.com/iframe_api";
         document.head.appendChild(scriptTag);
 
-        // ---------------------------------------------------------
-        // ANIMATION & KHỞI ĐỘNG (GSAP)
-        // ---------------------------------------------------------
-        function launchExperience() {
-            // 1. Ép phát nhạc YouTube
+        function startJourney() {
+            // Phát nhạc YT
             if (player && typeof player.playVideo === 'function') {
                 player.playVideo();
                 player.setVolume(100);
             }
 
-            // 2. Ép phát lại tất cả video (Fix lỗi iOS pause video khi load)
+            // Ép video MP4 chạy
             document.querySelectorAll('video').forEach(vid => {
                 vid.muted = true;
-                vid.play().catch(e => console.log("Video auto-play prevented:", e));
+                let playPromise = vid.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        vid.controls = true; // Hiện nút play nếu iOS cố tình chặn
+                        console.log("iOS chặn video auto-play");
+                    });
+                }
             });
 
-            // 3. Animation chuyển cảnh
-            const tl = gsap.timeline();
-            tl.to("#loader", { opacity: 0, duration: 0.6, ease: "power2.inOut", onComplete: () => document.getElementById('loader').remove() })
-              .to("#app", { opacity: 1, duration: 1 })
-              .from("header h1", { y: 40, opacity: 0, duration: 1.2, ease: "power3.out" }, "-=0.5");
+            // Ẩn Intro, Hiện App
+            const intro = document.getElementById('intro-screen');
+            const app = document.getElementById('app');
+            app.classList.remove('hidden');
 
-            // 4. Animation Scroll cho từng Card
+            const tl = gsap.timeline();
+            tl.to(intro, { opacity: 0, duration: 0.5, onComplete: () => intro.remove() })
+              .to(app, { opacity: 1, duration: 0.8 })
+              .from("header h1", { y: 30, opacity: 0, duration: 1, ease: "power2.out" }, "-=0.4");
+
+            // Animation cuộn nhẹ nhàng
             gsap.registerPlugin(ScrollTrigger);
             gsap.utils.toArray(".gs-reveal").forEach(card => {
                 gsap.from(card, {
-                    scrollTrigger: {
-                        trigger: card,
-                        start: "top bottom-=60px",
-                        toggleActions: "play none none reverse"
-                    },
-                    y: 50,
-                    opacity: 0,
-                    duration: 1,
-                    ease: "power2.out"
+                    scrollTrigger: { trigger: card, start: "top bottom-=50px", toggleActions: "play none none reverse" },
+                    y: 40, opacity: 0, duration: 1, ease: "power2.out"
                 });
             });
         }
