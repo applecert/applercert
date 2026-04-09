@@ -1,1 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>100 Days of Love | Quí & Hiền</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <style>
+        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; margin: 0; }
+        .noise { position: fixed; inset: 0; z-index: 999; pointer-events: none; opacity: 0.04; background: url('https://grainy-gradients.vercel.app/noise.svg'); }
+        
+        #video-bridge { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0.01; transform: scale(0); pointer-events: none; }
+        #loader { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        .apple-btn {
+            padding: 18px 35px; border-radius: 40px; background: #fff; color: #000;
+            font-size: 14px; font-weight: 600; letter-spacing: 1px; cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); border: none;
+        }
+        .apple-btn:hover { transform: scale(1.05); filter: brightness(0.9); }
 
+        .bento-box {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px; overflow: hidden; backdrop-filter: blur(20px);
+            position: relative; transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .bento-box:hover { transform: scale(1.02); border-color: rgba(255,255,255,0.2); }
+        .media-content { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: 0.8s opacity ease; }
+        .bento-box:hover .media-content { opacity: 0.9; }
+        
+        /* Grid Layout Logic */
+        .grid-sizer { width: 100%; display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+        .span-8 { grid-column: span 8; }
+        .span-4 { grid-column: span 4; }
+        .span-12 { grid-column: span 12; }
+        
+        @media (max-width: 768px) {
+            .span-8, .span-4 { grid-column: span 12; }
+        }
+    </style>
+</head>
+<body>
+    <div class="noise"></div>
+    <div id="video-bridge"><div id="player"></div></div>
+
+    <div id="loader">
+        <div class="mb-6 opacity-30">
+            <svg width="35" height="35" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </div>
+        <button class="apple-btn" onclick="startExperience()">KHÁM PHÁ KỈ NIỆM</button>
+        <p class="mt-4 text-[10px] tracking-[0.3em] text-zinc-600 uppercase">Designed by Quí for Hiền</p>
+    </div>
+
+    <main id="main-content" class="opacity-0 pb-20">
+        <section class="h-[80vh] flex flex-col items-center justify-center text-center">
+            <h2 class="text-zinc-500 uppercase tracking-[0.4em] text-[10px] mb-4">1st January 2026 — Today</h2>
+            <h1 class="text-6xl md:text-[120px] font-bold tracking-tighter leading-none">100 <span class="text-zinc-800 italic">Days.</span></h1>
+            <p class="text-zinc-400 mt-6 font-light text-sm tracking-widest">QUÍ & HIỀN (SÓC)</p>
+        </section>
+
+        <section class="max-w-6xl mx-auto px-6 grid-sizer" id="bento-grid">
+            </section>
+
+        <footer class="mt-32 text-center opacity-30 text-[10px] tracking-[0.5em] uppercase">
+            From Ho Chi Minh City with Love • 2026
+        </footer>
+    </main>
+
+    <script>
+        // DATA CỦA QUÍ
+        const memories = [
+            { type: 'video', src: 'videos/IMG_001.mov', title: 'ĐẶC BIỆT', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ NGƯỜI YÊU EM LO', span: 'span-12' },
+            { type: 'image', src: 'images/IMG_012.jpeg', title: 'ẢNH CHUNG', desc: 'Ảnh chung của 2 đứaaaaa', span: 'span-8' },
+            { type: 'image', src: 'images/IMG_01.jpeg', title: '01/01/2026', desc: 'Bó hoa đầu tiên anh tặng em lúc tỏ tình <3', span: 'span-4' },
+            { type: 'image', src: 'images/IMG_02.jpeg', title: 'TỎ TÌNH', desc: 'Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn!', span: 'span-4' },
+            { type: 'image', src: 'images/IMG_010.jpeg', title: 'ĐẸP THÍ', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii', span: 'span-8' },
+            { type: 'image', src: 'images/IMG_03.jpeg', title: 'PET', desc: 'Ảnh con bư', span: 'span-4' },
+            { type: 'image', src: 'images/IMG_04.jpeg', title: 'PET', desc: 'Vẫn là con bư nhưng cuteee', span: 'span-4' },
+            { type: 'image', src: 'images/IMG_05.jpeg', title: 'TATTOO', desc: 'Hình xăm cặp từ bé :3', span: 'span-4' },
+            { type: 'image', src: 'images/IMG_07.jpeg', title: '30/03/2026', desc: 'Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu', span: 'span-12' },
+            { type: 'image', src: 'images/IMG_06.jpeg', title: 'HIỀN', desc: 'Người con gái anh yêu nhất', span: 'span-4' },
+            { type: 'image', src: 'images/IMG_08.jpeg', title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii', span: 'span-4' },
+            { type: 'image', src: 'images/IMG_09.jpeg', title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii', span: 'span-4' },
+            { type: 'image', src: 'images/IMG_011.jpeg', title: 'BẢO VỆ', desc: 'Thằng nào dám đụng vào người yêu bố, bố đấm hết 😼', span: 'span-12' }
+        ];
+
+        // RENDER GRID
+        const grid = document.getElementById('bento-grid');
+        memories.forEach(m => {
+            const div = document.createElement('div');
+            div.className = `bento-box ${m.span} min-h-[300px] md:min-h-[450px]`;
+            
+            const content = m.type === 'video' 
+                ? `<video src="${m.src}" loop muted playsinline class="media-content"></video>`
+                : `<img src="${m.src}" class="media-content">`;
+            
+            div.innerHTML = `
+                ${content}
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500 p-8 flex flex-col justify-end">
+                    <p class="text-[10px] tracking-[0.3em] text-zinc-400 mb-2 uppercase">${m.title}</p>
+                    <p class="text-lg font-light leading-snug">${m.desc}</p>
+                </div>
+            `;
+            if(m.type === 'video') {
+                div.onmouseenter = () => div.querySelector('video').play();
+                div.onmouseleave = () => div.querySelector('video').pause();
+            }
+            grid.appendChild(div);
+        });
+
+        // NHẠC YOUTUBE
+        var player;
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.getElementsByTagName('script')[0].parentNode.insertBefore(tag, document.getElementsByTagName('script')[0]);
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100', width: '100', videoId: 'oLEhNVryFhY',
+                playerVars: { 'autoplay': 0, 'controls': 0, 'mute': 0, 'loop': 1, 'playlist': 'oLEhNVryFhY' }
+            });
+        }
+
+        function startExperience() {
+            if(player && player.playVideo) player.playVideo();
+            gsap.to("#loader", { opacity: 0, duration: 1.5, onComplete: () => {
+                document.getElementById("loader").style.display = "none";
+                document.body.style.overflow = "auto";
+                gsap.to("#main-content", { opacity: 1, duration: 1.5 });
+            }});
+        }
+
+        // SCROLL ANIMATION
+        gsap.registerPlugin(ScrollTrigger);
+        setTimeout(() => {
+            gsap.utils.toArray(".bento-box").forEach(box => {
+                gsap.from(box, {
+                    scrollTrigger: { trigger: box, start: "top bottom-=50px" },
+                    y: 40, opacity: 0, duration: 1, ease: "power2.out"
+                });
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
