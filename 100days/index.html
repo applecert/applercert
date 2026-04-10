@@ -7,65 +7,124 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow-x: hidden; margin: 0; }
-        .ios-blur { backdrop-filter: saturate(180%) blur(20px); background: rgba(0,0,0,0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; overflow-x: hidden; margin: 0; -webkit-font-smoothing: antialiased; }
+        .font-serif { font-family: 'Playfair Display', serif; }
         
-        #intro-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-center; }
-        .btn-start { background: #fff; color: #000; padding: 18px 45px; border-radius: 30px; font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: transform 0.2s; border: none; }
+        .ios-blur { backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); background: rgba(0,0,0,0.7); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        
+        #intro-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .btn-start { background: #fff; color: #000; padding: 16px 45px; border-radius: 30px; font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: transform 0.2s; border: none; }
         .btn-start:active { transform: scale(0.95); }
 
-        /* Bố cục Feed đơn giản, tăng khoảng cách (margin-bottom: 80px) */
-        .memory-card { position: relative; width: 100%; border-radius: 16px; overflow: hidden; background: #111; margin-bottom: 80px; cursor: pointer; }
+        /* Bố cục Feed - Khoảng cách thoáng đãng */
+        .memory-card { 
+            position: relative; width: 100%; border-radius: 16px; overflow: hidden; 
+            background: #111; margin-bottom: 120px; cursor: pointer; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5); transform: translateZ(0); 
+        }
         
-        /* Hiệu ứng ảnh mờ đi một chút khi hiện chữ để dễ đọc hơn */
-        .media-content { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(0.9); transition: filter 0.4s ease; }
-        .memory-card.show-text .media-content { filter: brightness(0.4); }
+        /* Hiệu ứng ảnh: Bình thường rõ nét, chạm vào mờ đi & Zoom nhẹ */
+        .media-content { 
+            width: 100%; height: 100%; object-fit: cover; display: block; 
+            filter: brightness(1) blur(0px); transform: scale(1);
+            transition: filter 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
+            pointer-events: none;
+        }
+        .memory-card.show-text .media-content { filter: brightness(0.3) blur(6px); transform: scale(1.05); }
         
-        /* Chữ mặc định ẨN (opacity: 0), hiện ra khi có class 'show-text' */
-        .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; opacity: 0; transition: opacity 0.4s ease; pointer-events: none; }
+        /* Lớp nền chữ & Animation trượt */
+        .overlay { 
+            position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 80%); 
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 30px 24px; 
+            opacity: 0; pointer-events: none; transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
         .memory-card.show-text .overlay { opacity: 1; }
+
+        .overlay-content { transform: translateY(20px); transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .memory-card.show-text .overlay-content { transform: translateY(0); }
+
+        /* --- POPUP APPLE STYLE --- */
+        #popup-59s { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
+        #popup-59s.active { opacity: 1; pointer-events: auto; }
+        .popup-box { background: rgba(28,28,30,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px 24px; max-width: 320px; width: 90%; text-align: center; transform: scale(0.95); transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        #popup-59s.active .popup-box { transform: scale(1); }
+
+        /* --- MÀN HÌNH ĐỌC THƯ --- */
+        #letter-screen { position: fixed; inset: 0; background: #000; z-index: 10001; overflow-y: auto; opacity: 0; pointer-events: none; transition: opacity 1s ease; padding: 60px 24px; }
+        #letter-screen.active { opacity: 1; pointer-events: auto; }
+        .letter-content { max-width: 32rem; margin-left: auto; margin-right: auto; color: #e5e5ea; padding-bottom: 80px; }
+        .letter-p { opacity: 0; transform: translateY(20px); font-size: 16px; line-height: 1.8; margin-bottom: 24px; font-family: 'Playfair Display', serif; }
+        
+        .btn-close-letter { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; color: #fff; font-size: 18px; z-index: 50; transition: 0.2s; }
+        .btn-close-letter:active { background: rgba(255,255,255,0.2); transform: scale(0.9); }
     </style>
 </head>
 <body>
     <div style="position:fixed; opacity:0; pointer-events:none;"><div id="player"></div></div>
 
     <div id="intro-screen">
-        <h2 class="text-zinc-500 tracking-[0.5em] text-[10px] uppercase mb-10">Kỉ niệm 100 ngày</h2>
+        <h2 class="text-zinc-500 tracking-[0.4em] text-[10px] uppercase mb-10">Kỉ niệm 100 ngày</h2>
         <button class="btn-start" onclick="startJourney()">Bắt đầu xem</button>
         <p class="mt-8 text-[9px] tracking-widest text-zinc-600 uppercase">Designed by Quí for Hiền</p>
     </div>
 
     <main id="app" class="opacity-0 hidden">
         <nav class="fixed top-0 w-full z-40 ios-blur px-6 py-4 flex justify-between items-center pointer-events-none">
-            <span class="text-[9px] tracking-[0.3em] opacity-50 uppercase">Quí & Hiền</span>
-            <span class="text-[9px] tracking-[0.3em] font-bold uppercase text-white/80">01.01.2026</span>
+            <span class="text-[10px] tracking-[0.2em] font-medium opacity-50 uppercase">Quí & Hiền</span>
+            <span class="text-[10px] tracking-[0.2em] font-medium uppercase text-white/80">01.01.2026</span>
         </nav>
 
         <header class="h-[80vh] flex flex-col items-center justify-center text-center px-6">
-            <h1 class="text-7xl md:text-9xl font-bold tracking-tighter leading-none mb-4">100<br><span class="italic font-light text-zinc-400">Days.</span></h1>
-            <p class="text-zinc-500 uppercase tracking-[0.4em] text-[10px]">Một hành trình yêu thương</p>
+            <h1 class="text-7xl md:text-9xl font-semibold tracking-tighter leading-none mb-4">100<br><span class="font-light text-zinc-400">Days.</span></h1>
+            <p class="text-zinc-500 uppercase tracking-[0.3em] text-[10px]">Một hành trình yêu thương</p>
         </header>
 
         <section class="max-w-xl mx-auto px-6 pb-20" id="main-feed">
             </section>
 
-        <footer class="py-20 text-center border-t border-white/5 mx-6">
-            <p class="text-[9px] tracking-[0.5em] text-zinc-600 uppercase">Forever & Always</p>
+        <footer class="py-24 text-center border-t border-white/5 mx-6">
+            <p class="text-[10px] tracking-[0.4em] text-zinc-500 uppercase">Forever & Always</p>
         </footer>
     </main>
 
+    <div id="popup-59s">
+        <div class="popup-box">
+            <h3 class="text-white text-lg font-medium mb-2 font-serif italic">Bất ngờ tưa...</h3>
+            <p class="text-[#86868b] text-sm mb-6 leading-relaxed">Thư nà thư nà :><br>Em có muốn đọc nó bây giờ không?</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closePopup()" class="px-5 py-2.5 rounded-full bg-[#333336] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#444446] transition">Để sau</button>
+                <button onclick="openLetter()" class="px-5 py-2.5 rounded-full bg-white text-black text-xs font-medium uppercase tracking-wider transition">Đọc ngay</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="letter-screen">
+        <button class="btn-close-letter" onclick="closeLetter()">✕</button>
+        <div class="letter-content">
+            <div class="letter-p text-xl font-bold mb-8 text-white">Gửi Sóc yêu của anh,</div>
+            <div class="letter-p">Hôm nay là 100 ngày mình yêu nhau rồi em nhỉ.</div>
+            <div class="letter-p">Anh ngồi viết mấy dòng này mà chẳng biết bắt đầu từ đâu. Chỉ biết rằng, lâu lắm rồi anh mới thấy lòng mình ấm lại. Giữa một đời sống đôi khi chẳng dễ thương chút nào, thế mà có em, tự dưng anh thấy mọi thứ nhẹ nhàng hơn hẳn.</div>
+            <div class="letter-p">Anh nhớ có lần em hỏi anh yêu em vì gì. Hồi đó anh trêu em, nhưng mà thật lòng thì… anh cũng chẳng biết nữa. Anh chỉ biết, mỗi sáng thức dậy nghĩ đến em là anh muốn cố gắng thêm một ngày nữa. Mỗi lần nhìn em cười, tự dưng anh thấy mọi mệt mỏi như tan hết. Mỗi lần em buồn, anh lại thấy lòng mình xốn xang chẳng yên.</div>
+            <div class="letter-p">Anh yêu em lúc em ăn ngon, lúc em cáu kỉnh, lúc em im lặng, lúc em ôm anh thật chặt. Anh yêu em cả những lúc em chẳng làm gì đặc biệt, chỉ đơn giản là em đang ở đây, cạnh anh.</div>
+            <div class="letter-p">Anh không biết mình sẽ còn được bao lâu bên em.<br>Nhưng anh biết chắc một điều: anh muốn mỗi ngày trôi qua đều có em.<br>Anh muốn lo cho em, che chở cho em, muốn là người đứng cạnh em khi em cần.<br>Anh không nỡ để em một mình.<br>Trong mắt anh, em vẫn chỉ là một cô nhóc – một cô nhóc mà anh thương đến nỗi chẳng thể hình dung nổi một ngày không có em.</div>
+            <div class="letter-p">Em à, nhiều lúc anh nhìn em ngủ, anh chỉ muốn thời gian ngừng lại.<br>Anh muốn khắc ghi khuôn mặt em, để sau này nếu có chẳng may không còn nhớ được gì nữa, thì anh vẫn còn hình bóng ấy trong tim.</div>
+            <div class="letter-p">Anh muốn một mái ấm nhỏ. Có em, có anh, có những đứa trẻ tên Minh Khôi, Minh Hiếu, Minh Anh, Minh An.<br>Anh muốn được chăm lo cho tất cả.<br>Anh muốn em là gia đình của anh.</div>
+            <div class="letter-p">Và anh hứa, anh sẽ cố gắng.<br>Không phải vì anh giỏi, mà vì anh có em.</div>
+            <div class="letter-p">Em nhớ đợi anh nhé.<br>Đợi đến ngày anh đủ tư cách dắt em về nhà mình.<br>Đợi đến ngày mình chính thức là của nhau, bằng một đám cưới.</div>
+            <div class="letter-p mt-12 text-white">Thương em rất nhiều,<br><span class="italic text-lg">Minh Quí (của em)</span></div>
+        </div>
+    </div>
+
     <script>
-        const v = "?v=layout_fixed_clean_music"; 
+        const v = "?v=apple_perfection_letter"; 
         const memories = [
-            // --- HÀNG ĐẶC BIỆT ---
             { type: 'video', src: 'videos/IMG_4927.mp4', ratio: '3/4', title: 'KHOẢNH KHẮC', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ NGƯỜI YÊU EM LO' },
             { type: 'image', src: 'images/IMG_02.jpeg', ratio: '9/16', title: '1/1/2026', desc: 'Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn, anh hạnh phúc vli. Nhưng hơm có ngờ là bị từ chối TT.' },
             { type: 'image', src: 'images/IMG_07.jpeg', ratio: '9/16', title: '30/03/2026', desc: 'Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu' },
             { type: 'image', src: 'images/IMG_010.jpeg', ratio: '9/16', title: 'LOVELY', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii' },
             { type: 'image', src: 'images/IMG_012.jpeg', ratio: '16/9', title: 'OUR FRAME', desc: 'Ảnh chung của 2 đứaaaaa' },
-            
-            // --- HÀNG BÌNH THƯỜNG ---
             { type: 'image', src: 'images/IMG_1927.jpeg', ratio: '3/4', title: '1/1/2026', desc: 'Bó hoa đầu tiên anh tặng em lúc tỏ tình <3' },
             { type: 'image', src: 'images/IMG_3374.jpeg', ratio: '3/4', title: 'PET', desc: 'Ảnh con bư' },
             { type: 'image', src: 'images/IMG_04.jpeg', ratio: '9/16', title: 'PET', desc: 'Vẫn là con bư nhưng cuteee' },
@@ -83,29 +142,28 @@
             card.className = `memory-card gs-reveal`;
             card.style.aspectRatio = m.ratio;
 
-            // Xử lý sự kiện CHẠM ĐỂ HIỆN CHỮ
             card.onclick = () => {
-                // Nếu muốn chạm ảnh này thì các ảnh khác tự đóng chữ lại, hãy bỏ comment dòng bên dưới:
-                // document.querySelectorAll('.memory-card').forEach(c => { if(c !== card) c.classList.remove('show-text') });
                 card.classList.toggle('show-text');
             };
 
             let mediaElement = m.type === 'video' 
                 ? `<video src="${m.src}${v}" class="media-content" playsinline webkit-playsinline autoplay loop muted preload="auto"></video>`
-                : `<img src="${m.src}${v}" class="media-content" loading="lazy" alt="Memory" onerror="this.src='https://placehold.co/600x800?text=Loi+Load';">`;
+                : `<img src="${m.src}${v}" class="media-content" loading="lazy">`;
 
             card.innerHTML = `
                 ${mediaElement}
                 <div class="overlay">
-                    <span class="text-[9px] tracking-[0.2em] text-white/60 mb-1 uppercase font-bold">${m.title}</span>
-                    <p class="text-base font-light text-white leading-snug">${m.desc}</p>
+                    <div class="overlay-content">
+                        <span class="text-[10px] tracking-[0.2em] text-white/60 mb-2 block uppercase font-medium">${m.title}</span>
+                        <p class="text-lg font-light text-white leading-relaxed">${m.desc}</p>
+                    </div>
                 </div>
             `;
             feed.appendChild(card);
         });
 
         // -------------------------
-        // YOUTUBE & VIDEO ENGINE
+        // YOUTUBE ENGINE
         // -------------------------
         var player;
         function onYouTubeIframeAPIReady() {
@@ -118,53 +176,76 @@
         scriptTag.src = "https://www.youtube.com/iframe_api";
         document.head.appendChild(scriptTag);
 
+        // -------------------------
+        // LOGIC CHÍNH & HIỆU ỨNG CUỘN
+        // -------------------------
+        let letterTriggered = false;
+
         function startJourney() {
-            // Phát nhạc YT
             if (player && typeof player.playVideo === 'function') {
                 player.playVideo();
                 player.setVolume(100);
             }
 
-            // Ép video MP4 chạy
             document.querySelectorAll('video').forEach(vid => {
                 vid.muted = true;
                 let playPromise = vid.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        vid.controls = true;
-                    });
-                }
+                if (playPromise !== undefined) playPromise.catch(e => { vid.controls = true; });
             });
 
-            // Ẩn Intro, Hiện App
             const intro = document.getElementById('intro-screen');
             const app = document.getElementById('app');
             app.classList.remove('hidden');
 
             const tl = gsap.timeline();
-            tl.to(intro, { opacity: 0, duration: 0.5, onComplete: () => intro.remove() })
+            tl.to(intro, { opacity: 0, duration: 0.6, ease: "power2.inOut", onComplete: () => intro.remove() })
               .to(app, { opacity: 1, duration: 0.8 })
-              .from("header h1", { y: 30, opacity: 0, duration: 1, ease: "power2.out" }, "-=0.4");
+              .from("header h1", { y: 40, opacity: 0, duration: 1.2, ease: "power3.out" }, "-=0.4");
 
-            // Animation cuộn xen kẽ TRÁI / PHẢI
             gsap.registerPlugin(ScrollTrigger);
             gsap.utils.toArray(".gs-reveal").forEach((card, index) => {
-                // Xác định hướng bay vào: Chẵn bay từ trái (60), Lẻ bay từ phải (-60)
-                const xDirection = index % 2 === 0 ? 60 : -60;
+                const xOffset = index % 2 === 0 ? -60 : 60; 
                 
                 gsap.from(card, {
-                    scrollTrigger: { 
-                        trigger: card, 
-                        start: "top bottom-=40px", 
-                        toggleActions: "play none none reverse" 
-                    },
-                    x: xDirection,
-                    y: 30,
+                    scrollTrigger: { trigger: card, start: "top bottom-=80px", toggleActions: "play none none reverse" },
+                    x: xOffset,
+                    y: 40,
                     opacity: 0, 
-                    duration: 1.2, 
-                    ease: "power3.out"
+                    duration: 1.4, 
+                    ease: "expo.out" 
                 });
             });
+
+            // ĐANG TEST: 59000 = 59 giây.
+            // SAU KHI TEST XONG, ĐỔI THÀNH 59000 NHÉ!
+            setTimeout(() => {
+                if (!letterTriggered) {
+                    letterTriggered = true;
+                    document.getElementById('popup-59s').classList.add('active');
+                }
+            }, 59000); 
+        }
+
+        function closePopup() {
+            document.getElementById('popup-59s').classList.remove('active');
+        }
+
+        function openLetter() {
+            closePopup();
+            const letterScreen = document.getElementById('letter-screen');
+            letterScreen.classList.add('active');
+            
+            letterScreen.scrollTop = 0;
+
+            // Chữ chạy lên từ từ từng đoạn, cách nhau 1.5 giây
+            gsap.fromTo(".letter-p", 
+                { opacity: 0, y: 30 }, 
+                { opacity: 1, y: 0, duration: 2, stagger: 1.5, ease: "power2.out", delay: 0.5 }
+            );
+        }
+
+        function closeLetter() {
+            document.getElementById('letter-screen').classList.remove('active');
         }
     </script>
 </body>
