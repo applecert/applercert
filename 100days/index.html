@@ -15,13 +15,16 @@
         .btn-start { background: #fff; color: #000; padding: 18px 45px; border-radius: 30px; font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: transform 0.2s; border: none; }
         .btn-start:active { transform: scale(0.95); }
 
-        /* Bố cục Feed đơn giản, không cắt xén ảnh */
-        .memory-card { position: relative; width: 100%; border-radius: 16px; overflow: hidden; background: #111; margin-bottom: 40px; }
-        .memory-card.special { border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 10px 30px rgba(255,215,0,0.05); }
-        .media-content { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(0.85); }
+        /* Bố cục Feed đơn giản, tăng khoảng cách (margin-bottom: 80px) */
+        .memory-card { position: relative; width: 100%; border-radius: 16px; overflow: hidden; background: #111; margin-bottom: 80px; cursor: pointer; }
         
-        /* Chữ hiển thị mượt mà trên nền Gradient */
-        .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.1) 50%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; pointer-events: none; }
+        /* Hiệu ứng ảnh mờ đi một chút khi hiện chữ để dễ đọc hơn */
+        .media-content { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(0.9); transition: filter 0.4s ease; }
+        .memory-card.show-text .media-content { filter: brightness(0.4); }
+        
+        /* Chữ mặc định ẨN (opacity: 0), hiện ra khi có class 'show-text' */
+        .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; opacity: 0; transition: opacity 0.4s ease; pointer-events: none; }
+        .memory-card.show-text .overlay { opacity: 1; }
     </style>
 </head>
 <body>
@@ -34,7 +37,7 @@
     </div>
 
     <main id="app" class="opacity-0 hidden">
-        <nav class="fixed top-0 w-full z-40 ios-blur px-6 py-4 flex justify-between items-center">
+        <nav class="fixed top-0 w-full z-40 ios-blur px-6 py-4 flex justify-between items-center pointer-events-none">
             <span class="text-[9px] tracking-[0.3em] opacity-50 uppercase">Quí & Hiền</span>
             <span class="text-[9px] tracking-[0.3em] font-bold uppercase text-white/80">01.01.2026</span>
         </nav>
@@ -53,43 +56,45 @@
     </main>
 
     <script>
-        const v = "?v=layout_fixed"; 
+        const v = "?v=layout_fixed_clean"; 
         const memories = [
             // --- HÀNG ĐẶC BIỆT ---
-            { type: 'video', src: 'videos/IMG_4927.mp4', ratio: '3/4', special: true, title: 'KHOẢNH KHẮC', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ NGƯỜI YÊU EM LO' },
-            { type: 'image', src: 'images/IMG_02.jpeg', ratio: '9/16', special: true, title: '1/1/2026', desc: 'Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn, anh hạnh phúc vli. Nhưng hơm có ngờ là bị từ chối TT.' },
-            { type: 'image', src: 'images/IMG_07.jpeg', ratio: '9/16', special: true, title: '30/03/2026', desc: 'Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu' },
-            { type: 'image', src: 'images/IMG_010.jpeg', ratio: '9/16', special: true, title: 'LOVELY', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii' },
-            { type: 'image', src: 'images/IMG_012.jpeg', ratio: '16/9', special: true, title: 'OUR FRAME', desc: 'Ảnh chung của 2 đứaaaaa' },
+            { type: 'video', src: 'videos/IMG_4927.mp4', ratio: '3/4', title: 'KHOẢNH KHẮC', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ NGƯỜI YÊU EM LO' },
+            { type: 'image', src: 'images/IMG_02.jpeg', ratio: '9/16', title: '1/1/2026', desc: 'Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn, anh hạnh phúc vli. Nhưng hơm có ngờ là bị từ chối TT.' },
+            { type: 'image', src: 'images/IMG_07.jpeg', ratio: '9/16', title: '30/03/2026', desc: 'Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu' },
+            { type: 'image', src: 'images/IMG_010.jpeg', ratio: '9/16', title: 'LOVELY', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii' },
+            { type: 'image', src: 'images/IMG_012.jpeg', ratio: '16/9', title: 'OUR FRAME', desc: 'Ảnh chung của 2 đứaaaaa' },
             
             // --- HÀNG BÌNH THƯỜNG ---
-            { type: 'image', src: 'images/IMG_1927.jpeg', ratio: '3/4', special: false, title: '1/1/2026', desc: 'Bó hoa đầu tiên anh tặng em lúc tỏ tình <3' },
-            { type: 'image', src: 'images/IMG_3374.jpeg', ratio: '3/4', special: false, title: 'PET', desc: 'Ảnh con bư' },
-            { type: 'image', src: 'images/IMG_04.jpeg', ratio: '9/16', special: false, title: 'PET', desc: 'Vẫn là con bư nhưng cuteee' },
-            { type: 'image', src: 'images/IMG_05.jpeg', ratio: '3/4', special: false, title: 'KỈ NIỆM', desc: 'Hình xăm cặp từ bé :3' },
-            { type: 'image', src: 'images/IMG_06.jpeg', ratio: '9/16', special: false, title: 'SÓC', desc: 'HIEN' },
-            { type: 'image', src: 'images/IMG_4923.png', ratio: '1/1', special: false, title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
-            { type: 'image', src: 'images/IMG_4924.png', ratio: '1/1', special: false, title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
-            { type: 'image', src: 'images/IMG_4935.jpeg', ratio: '4/3', special: false, title: 'ĐẸP THÍ', desc: 'Thằng nào dám đụng vào người yêu bố, bố đấm hết 😼' }
+            { type: 'image', src: 'images/IMG_1927.jpeg', ratio: '3/4', title: '1/1/2026', desc: 'Bó hoa đầu tiên anh tặng em lúc tỏ tình <3' },
+            { type: 'image', src: 'images/IMG_3374.jpeg', ratio: '3/4', title: 'PET', desc: 'Ảnh con bư' },
+            { type: 'image', src: 'images/IMG_04.jpeg', ratio: '9/16', title: 'PET', desc: 'Vẫn là con bư nhưng cuteee' },
+            { type: 'image', src: 'images/IMG_05.jpeg', ratio: '3/4', title: 'KỈ NIỆM', desc: 'Hình xăm cặp từ bé :3' },
+            { type: 'image', src: 'images/IMG_06.jpeg', ratio: '9/16', title: 'SÓC', desc: 'HIEN' },
+            { type: 'image', src: 'images/IMG_4923.png', ratio: '1/1', title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
+            { type: 'image', src: 'images/IMG_4924.png', ratio: '1/1', title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
+            { type: 'image', src: 'images/IMG_4935.jpeg', ratio: '4/3', title: 'ĐẸP THÍ', desc: 'Thằng nào dám đụng vào người yêu bố, bố đấm hết 😼' }
         ];
 
         const feed = document.getElementById('main-feed');
         
-        memories.forEach(m => {
+        memories.forEach((m, index) => {
             const card = document.createElement('div');
-            // Gắn trực tiếp tỷ lệ khung hình vào CSS
-            card.className = `memory-card gs-reveal ${m.special ? 'special' : ''}`;
+            card.className = `memory-card gs-reveal`;
             card.style.aspectRatio = m.ratio;
+
+            // Xử lý sự kiện CHẠM ĐỂ HIỆN CHỮ
+            card.onclick = () => {
+                // Nếu muốn chạm ảnh này thì các ảnh khác tự đóng chữ lại, hãy bỏ comment dòng bên dưới:
+                // document.querySelectorAll('.memory-card').forEach(c => { if(c !== card) c.classList.remove('show-text') });
+                card.classList.toggle('show-text');
+            };
 
             let mediaElement = m.type === 'video' 
                 ? `<video src="${m.src}${v}" class="media-content" playsinline webkit-playsinline autoplay loop muted preload="auto"></video>`
                 : `<img src="${m.src}${v}" class="media-content" loading="lazy" alt="Memory" onerror="this.src='https://placehold.co/600x800?text=Loi+Load';">`;
 
-            // Tag "ĐẶC BIỆT" nhỏ gọn trên góc cho nổi bật
-            const specialTag = m.special ? `<div style="position:absolute; top:16px; left:16px; background:rgba(255,215,0,0.8); color:#000; font-size:9px; padding:4px 10px; border-radius:12px; font-weight:bold; letter-spacing:1px; z-index:10;">ĐẶC BIỆT</div>` : '';
-
             card.innerHTML = `
-                ${specialTag}
                 ${mediaElement}
                 <div class="overlay">
                     <span class="text-[9px] tracking-[0.2em] text-white/60 mb-1 uppercase font-bold">${m.title}</span>
@@ -141,12 +146,23 @@
               .to(app, { opacity: 1, duration: 0.8 })
               .from("header h1", { y: 30, opacity: 0, duration: 1, ease: "power2.out" }, "-=0.4");
 
-            // Animation cuộn nhẹ nhàng
+            // Animation cuộn xen kẽ TRÁI / PHẢI
             gsap.registerPlugin(ScrollTrigger);
-            gsap.utils.toArray(".gs-reveal").forEach(card => {
+            gsap.utils.toArray(".gs-reveal").forEach((card, index) => {
+                // Xác định hướng bay vào: Chẵn bay từ trái (80), Lẻ bay từ phải (-80)
+                const xDirection = index % 2 === 0 ? 60 : -60;
+                
                 gsap.from(card, {
-                    scrollTrigger: { trigger: card, start: "top bottom-=50px", toggleActions: "play none none reverse" },
-                    y: 40, opacity: 0, duration: 1, ease: "power2.out"
+                    scrollTrigger: { 
+                        trigger: card, 
+                        start: "top bottom-=40px", 
+                        toggleActions: "play none none reverse" 
+                    },
+                    x: xDirection,
+                    y: 30,
+                    opacity: 0, 
+                    duration: 1.2, 
+                    ease: "power3.out"
                 });
             });
         }
