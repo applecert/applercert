@@ -2,440 +2,153 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>100 Days | The Tree of Life</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>100 Days | Quí & Hiền</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <style>
-        :root { --gold: #d4af37; --bg: #000000; --text: #f5f5f7; }
-        body, html { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; margin: 0; width: 100%; height: 100%; touch-action: none; -webkit-font-smoothing: antialiased; }
-        .font-serif { font-family: 'Playfair Display', serif; }
-
-        /* CONTAINERS 3D */
-        #webgl-container { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-        #css3d-container { position: absolute; inset: 0; z-index: 2; } /* OrbitControls gắn vào đây */
-
-        /* GIAO DIỆN UI (ABSOLUTE TOP) */
-        #ui-layer { position: absolute; inset: 0; z-index: 100; pointer-events: none; }
+        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow-x: hidden; margin: 0; }
+        .ios-blur { backdrop-filter: saturate(180%) blur(20px); background: rgba(0,0,0,0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
         
-        /* MÀN HÌNH CHỜ (TỐI GIẢN) */
-        #intro { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; transition: opacity 0.8s; pointer-events: auto; }
-        .btn-apple { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.3); padding: 14px 40px; border-radius: 30px; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: 0.3s; }
-        .btn-apple:active { transform: scale(0.95); background: #fff; color: #000; }
+        #intro-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-center; }
+        .btn-start { background: #fff; color: #000; padding: 18px 45px; border-radius: 30px; font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: transform 0.2s; border: none; }
+        .btn-start:active { transform: scale(0.95); }
 
-        /* HEADER & HƯỚNG DẪN */
-        .top-nav { position: absolute; top: 0; width: 100%; padding: 30px 24px; display: flex; justify-content: space-between; align-items: center; opacity: 0; transition: 1s; }
-        .guide-text { position: absolute; bottom: 100px; width: 100%; text-align: center; opacity: 0; transition: 1s; }
+        /* Bố cục Feed đơn giản, không cắt xén ảnh */
+        .memory-card { position: relative; width: 100%; border-radius: 16px; overflow: hidden; background: #111; margin-bottom: 40px; }
+        .memory-card.special { border: 1px solid rgba(255,215,0,0.3); box-shadow: 0 10px 30px rgba(255,215,0,0.05); }
+        .media-content { width: 100%; height: 100%; object-fit: cover; display: block; filter: brightness(0.85); }
         
-        /* NÚT NỞ RỘ */
-        #btn-bloom { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px 30px; border-radius: 30px; font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: 0.3s; opacity: 0; pointer-events: auto; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        #btn-bloom:active { transform: translateX(-50%) scale(0.95); background: #fff; color: #000; }
-
-        /* ------------------------------------------- */
-        /* CSS3D NODE: BÚP HOA & ẢNH (TỈ LỆ NHỎ GỌN) */
-        /* ------------------------------------------- */
-        .memory-node { position: relative; pointer-events: auto !important; cursor: pointer; }
-        
-        /* Búp hoa sáng tinh khiết */
-        .bud { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; background: #fff; border-radius: 50%; box-shadow: 0 0 15px 4px rgba(255,255,255,0.8); transition: 0.4s; animation: pulse-bud 2s infinite ease-in-out; }
-        @keyframes pulse-bud { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.3); box-shadow: 0 0 20px 6px rgba(212,175,55,0.6); } }
-        .memory-node.is-bloomed .bud { transform: translate(-50%, -50%) scale(0); opacity: 0; pointer-events: none; }
-
-        /* Khung ảnh */
-        .card { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; background: #111; border: 1px solid rgba(255,255,255,0.1); transform: scale(0); opacity: 0; transition: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; box-shadow: 0 5px 20px rgba(0,0,0,0.8); }
-        .card.special { border: 1px solid rgba(212,175,55,0.5); box-shadow: 0 0 15px rgba(212,175,55,0.2); }
-        .memory-node.is-bloomed .card { transform: scale(1); opacity: 1; pointer-events: auto; }
-        .card img, .card video { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; transition: 0.3s; pointer-events: none; }
-        .card:hover img, .card:hover video { opacity: 1; }
-
-        /* ------------------------------------------- */
-        /* MODAL CHI TIẾT (CHUẨN APPLE) */
-        /* ------------------------------------------- */
-        #modal { position: absolute; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px; }
-        #modal.active { opacity: 1; pointer-events: auto; }
-        .modal-box { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; transform: translateY(30px) scale(0.95); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        #modal.active .modal-box { transform: translateY(0) scale(1); }
-        
-        .modal-media { width: 100%; height: 55vh; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
-        .modal-media img, .modal-media video { width: 100%; height: 100%; object-fit: contain; }
-        
-        .modal-info { margin-top: 24px; text-align: center; width: 100%; padding: 0 10px; max-height: 25vh; overflow-y: auto; }
-        .modal-title { font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 8px; text-transform: uppercase; }
-        .modal-desc { font-size: 14px; font-weight: 300; line-height: 1.6; color: #d2d2d7; font-family: 'Playfair Display', serif; font-style: italic; }
-        
-        /* Nút tắt SVG 2 màu Minimalist */
-        .btn-close { position: absolute; top: 25px; right: 25px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; border: none; }
-        .btn-close:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+        /* Chữ hiển thị mượt mà trên nền Gradient */
+        .overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.1) 50%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; pointer-events: none; }
     </style>
 </head>
 <body>
     <div style="position:fixed; opacity:0; pointer-events:none;"><div id="player"></div></div>
 
-    <div id="webgl-container"></div>
-    <div id="css3d-container"></div>
-
-    <div id="ui-layer">
-        <div id="intro">
-            <h1 class="font-serif italic text-3xl mb-3 text-white tracking-wide">Tree of Life</h1>
-            <p class="text-[10px] tracking-[0.4em] uppercase text-[#86868b] mb-12">100 Days • Quí & Sóc</p>
-            <button class="btn-apple" onclick="startCinematicGrowth()">Gieo Mầm</button>
-        </div>
-
-        <nav class="top-nav" id="ui-nav">
-            <span class="text-[9px] tracking-[0.3em] font-medium uppercase text-[#86868b]">Quí & Sóc</span>
-            <span class="text-[9px] tracking-[0.3em] font-medium uppercase text-white">April 10, 2026</span>
-        </nav>
-        
-        <div class="guide-text" id="ui-guide">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="1.5" class="mx-auto mb-2 animate-bounce"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-            <span class="text-[9px] tracking-[0.2em] text-[#86868b] uppercase">Vuốt để xoay • Thu phóng 2 ngón</span>
-        </div>
-
-        <button id="btn-bloom" onclick="triggerBloomAll()">Nở Rộ Tất Cả</button>
-
-        <div id="modal">
-            <button class="btn-close" onclick="closeModal()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-            <div class="modal-box">
-                <div class="modal-media" id="modal-media"></div>
-                <div class="modal-info">
-                    <h3 class="modal-title" id="modal-title"></h3>
-                    <p class="modal-desc" id="modal-desc"></p>
-                </div>
-            </div>
-        </div>
+    <div id="intro-screen">
+        <h2 class="text-zinc-500 tracking-[0.5em] text-[10px] uppercase mb-10">Kỉ niệm 100 ngày</h2>
+        <button class="btn-start" onclick="startJourney()">Bắt đầu xem</button>
+        <p class="mt-8 text-[9px] tracking-widest text-zinc-600 uppercase">Designed by Quí for Hiền</p>
     </div>
 
+    <main id="app" class="opacity-0 hidden">
+        <nav class="fixed top-0 w-full z-40 ios-blur px-6 py-4 flex justify-between items-center">
+            <span class="text-[9px] tracking-[0.3em] opacity-50 uppercase">Quí & Hiền</span>
+            <span class="text-[9px] tracking-[0.3em] font-bold uppercase text-white/80">01.01.2026</span>
+        </nav>
+
+        <header class="h-[80vh] flex flex-col items-center justify-center text-center px-6">
+            <h1 class="text-7xl md:text-9xl font-bold tracking-tighter leading-none mb-4">100<br><span class="italic font-light text-zinc-400">Days.</span></h1>
+            <p class="text-zinc-500 uppercase tracking-[0.4em] text-[10px]">Một hành trình yêu thương</p>
+        </header>
+
+        <section class="max-w-xl mx-auto px-6 pb-20" id="main-feed">
+            </section>
+
+        <footer class="py-20 text-center border-t border-white/5 mx-6">
+            <p class="text-[9px] tracking-[0.5em] text-zinc-600 uppercase">Forever & Always</p>
+        </footer>
+    </main>
+
     <script>
-        const v = "?v=apple_perfection_v2"; 
-        
-        // 13 KỈ NIỆM
+        const v = "?v=layout_fixed"; 
         const memories = [
-            { type: 'video', src: 'videos/IMG_4927.mp4', special: true, ratio: 3/4, title: 'Khoảnh Khắc', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ ANH LO. Một trăm ngày trọn vẹn.' },
-            { type: 'image', src: 'images/IMG_012.jpeg', special: true, ratio: 16/9, title: 'Our Frame', desc: 'Ảnh chung của 2 đứaaaaa. Mọi muộn phiền tan biến khi nhìn thấy em.' },
-            { type: 'image', src: 'images/IMG_02.jpeg', special: true, ratio: 9/16, title: 'The Yes', desc: 'Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn.' },
-            { type: 'image', src: 'images/IMG_07.jpeg', special: true, ratio: 9/16, title: 'First Memory', desc: '30/03/2026 Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu.' },
-            { type: 'image', src: 'images/IMG_010.jpeg', special: true, ratio: 9/16, title: 'Lovely', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii.' },
-            { type: 'image', src: 'images/IMG_1927.jpeg', special: false, ratio: 3/4, title: 'The Start', desc: 'Bó hoa tỏ tình đầu tiên <3.' },
-            { type: 'image', src: 'images/IMG_4935.jpeg', special: false, ratio: 4/3, title: 'Bảo Vệ', desc: 'Thằng nào dám đụng vào Sóc là bố đấm hết 😼.' },
-            { type: 'image', src: 'images/IMG_4923.png', special: false, ratio: 1/1, title: 'Couple', desc: 'Ảnh 2 đứa, đầu đôiiii.' },
-            { type: 'image', src: 'images/IMG_4924.png', special: false, ratio: 1/1, title: 'Couple', desc: 'Ảnh 2 đứa, đầu đôiiii.' },
-            { type: 'image', src: 'images/IMG_3374.jpeg', special: false, ratio: 3/4, title: 'Pet', desc: 'Ảnh con bư. Thằng nhỏ cute xỉu.' },
-            { type: 'image', src: 'images/IMG_04.jpeg', special: false, ratio: 9/16, title: 'Pet', desc: 'Vẫn là con bư nhưng cuteee.' },
-            { type: 'image', src: 'images/IMG_05.jpeg', special: false, ratio: 3/4, title: 'Tattoo', desc: 'Hình xăm cặp từ bé :3. Dấu ấn định mệnh.' },
-            { type: 'image', src: 'images/IMG_06.jpeg', special: false, ratio: 9/16, title: 'Sóc', desc: 'Người con gái anh yêu.' }
+            // --- HÀNG ĐẶC BIỆT ---
+            { type: 'video', src: 'videos/IMG_4927.mp4', ratio: '3/4', special: true, title: 'KHOẢNH KHẮC', desc: 'NGỒI SAU XE ANH - CÒN LẠI CỨ ĐỂ NGƯỜI YÊU EM LO' },
+            { type: 'image', src: 'images/IMG_02.jpeg', ratio: '9/16', special: true, title: '1/1/2026', desc: 'Lúc này tỏ tình em thành công nè. Vui quá trời vui luôn, anh hạnh phúc vli. Nhưng hơm có ngờ là bị từ chối TT.' },
+            { type: 'image', src: 'images/IMG_07.jpeg', ratio: '9/16', special: true, title: '30/03/2026', desc: 'Tấm ảnh đầu tiên của 2 đứa, siêu cấp yêuuuuu' },
+            { type: 'image', src: 'images/IMG_010.jpeg', ratio: '9/16', special: true, title: 'LOVELY', desc: 'Ảnh chung của 2 đứa / đẹp thí, yêu thíii' },
+            { type: 'image', src: 'images/IMG_012.jpeg', ratio: '16/9', special: true, title: 'OUR FRAME', desc: 'Ảnh chung của 2 đứaaaaa' },
+            
+            // --- HÀNG BÌNH THƯỜNG ---
+            { type: 'image', src: 'images/IMG_1927.jpeg', ratio: '3/4', special: false, title: '1/1/2026', desc: 'Bó hoa đầu tiên anh tặng em lúc tỏ tình <3' },
+            { type: 'image', src: 'images/IMG_3374.jpeg', ratio: '3/4', special: false, title: 'PET', desc: 'Ảnh con bư' },
+            { type: 'image', src: 'images/IMG_04.jpeg', ratio: '9/16', special: false, title: 'PET', desc: 'Vẫn là con bư nhưng cuteee' },
+            { type: 'image', src: 'images/IMG_05.jpeg', ratio: '3/4', special: false, title: 'KỈ NIỆM', desc: 'Hình xăm cặp từ bé :3' },
+            { type: 'image', src: 'images/IMG_06.jpeg', ratio: '9/16', special: false, title: 'SÓC', desc: 'HIEN' },
+            { type: 'image', src: 'images/IMG_4923.png', ratio: '1/1', special: false, title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
+            { type: 'image', src: 'images/IMG_4924.png', ratio: '1/1', special: false, title: 'COUPLE', desc: 'Ảnh 2 đứa, đầu đôiiii' },
+            { type: 'image', src: 'images/IMG_4935.jpeg', ratio: '4/3', special: false, title: 'ĐẸP THÍ', desc: 'Thằng nào dám đụng vào người yêu bố, bố đấm hết 😼' }
         ];
 
-        // --------------------------------------------------------
-        // ENGINE LÕI THREE.JS
-        // --------------------------------------------------------
-        let scene, camera, rendererWebGL, rendererCSS, controls;
-        let treeGroup;
-        let seedMesh, groundWave;
-        const cssObjects = []; // Các Object HTML sẽ bay theo cành cây
+        const feed = document.getElementById('main-feed');
+        
+        memories.forEach(m => {
+            const card = document.createElement('div');
+            // Gắn trực tiếp tỷ lệ khung hình vào CSS
+            card.className = `memory-card gs-reveal ${m.special ? 'special' : ''}`;
+            card.style.aspectRatio = m.ratio;
 
-        function init3D() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 4000);
-            camera.position.set(0, 50, 900); // Góc nhìn vừa phải
+            let mediaElement = m.type === 'video' 
+                ? `<video src="${m.src}${v}" class="media-content" playsinline webkit-playsinline autoplay loop muted preload="auto"></video>`
+                : `<img src="${m.src}${v}" class="media-content" loading="lazy" alt="Memory" onerror="this.src='https://placehold.co/600x800?text=Loi+Load';">`;
 
-            // WebGL (Vẽ cây đặc, hạt giống, sóng)
-            rendererWebGL = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            rendererWebGL.setSize(window.innerWidth, window.innerHeight);
-            rendererWebGL.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            document.getElementById('webgl-container').appendChild(rendererWebGL.domElement);
+            // Tag "ĐẶC BIỆT" nhỏ gọn trên góc cho nổi bật
+            const specialTag = m.special ? `<div style="position:absolute; top:16px; left:16px; background:rgba(255,215,0,0.8); color:#000; font-size:9px; padding:4px 10px; border-radius:12px; font-weight:bold; letter-spacing:1px; z-index:10;">ĐẶC BIỆT</div>` : '';
 
-            // CSS3D (Vẽ Thẻ Ảnh cực nét)
-            rendererCSS = new THREE.CSS3DRenderer();
-            rendererCSS.setSize(window.innerWidth, window.innerHeight);
-            document.getElementById('css3d-container').appendChild(rendererCSS.domElement);
-
-            // Ánh sáng tôn lên vỏ cây
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xd4af37, 1);
-            directionalLight.position.set(200, 500, 300);
-            scene.add(directionalLight);
-
-            // OrbitControls
-            controls = new THREE.OrbitControls(camera, rendererCSS.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.minDistance = 300;
-            controls.maxDistance = 1200;
-            controls.maxPolarAngle = Math.PI / 1.6; // Chống lật ngược camera
-            controls.enablePan = false;
-
-            treeGroup = new THREE.Group();
-            scene.add(treeGroup);
-
-            // Tạo Hạt giống 3D (Ban đầu ẩn trên cao)
-            const seedGeo = new THREE.SphereGeometry(6, 16, 16);
-            const seedMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            seedMesh = new THREE.Mesh(seedGeo, seedMat);
-            seedMesh.position.set(0, 600, 0);
-            seedMesh.visible = false;
-            scene.add(seedMesh);
-
-            // Tạo Sóng Ánh Sáng (Lúc hạt chạm đất)
-            const waveGeo = new THREE.RingGeometry(0.1, 10, 32);
-            const waveMat = new THREE.MeshBasicMaterial({ color: 0xd4af37, side: THREE.DoubleSide, transparent: true, opacity: 0 });
-            groundWave = new THREE.Mesh(waveGeo, waveMat);
-            groundWave.rotation.x = Math.PI / 2; // Nằm ngang
-            groundWave.position.y = -250;
-            scene.add(groundWave);
-
-            createDust();
-            window.addEventListener('resize', onWindowResize, false);
-            animate();
-        }
-
-        // HẠT BỤI
-        function createDust() {
-            const geo = new THREE.BufferGeometry();
-            const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 2, transparent: true, opacity: 0.3 });
-            const verts = [];
-            for(let i=0; i<300; i++) verts.push((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, (Math.random()-0.5)*2000);
-            geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-            scene.add(new THREE.Points(geo, mat));
-        }
-
-        // --------------------------------------------------------
-        // THUẬT TOÁN MỌC CÂY & GẮN NODE HTML
-        // --------------------------------------------------------
-        const treeMaterial = new THREE.MeshStandardMaterial({ color: 0xb59a5d, roughness: 0.6, metalness: 0.4 });
-
-        function buildSymmetricalTree() {
-            // Cấu trúc đệ quy đối xứng hoàn hảo
-            const startPoint = new THREE.Vector3(0, -250, 0); // Gốc rễ
-            let memTracker = { current: 0 };
-            
-            // Hàm vẽ cành
-            function grow(parent, start, length, angleY, pitch, depth) {
-                // Vector hướng của cành
-                const axisY = new THREE.Vector3(0, 1, 0);
-                let dir = new THREE.Vector3(0, 1, 0);
-                
-                if (depth < 3) {
-                    const pitchAxis = new THREE.Vector3(1, 0, 0).applyAxisAngle(axisY, angleY);
-                    dir.applyAxisAngle(pitchAxis, pitch).normalize();
-                }
-
-                // Hình trụ đặc ruột
-                const radius = 2 + (depth * 2);
-                const geo = new THREE.CylinderGeometry(radius * 0.6, radius, length, 8);
-                geo.translate(0, length / 2, 0); 
-                
-                const branch = new THREE.Mesh(geo, treeMaterial);
-                branch.position.copy(start);
-                branch.quaternion.setFromUnitVectors(axisY, dir);
-                branch.scale.set(0.001, 0.001, 0.001); // Ẩn ban đầu
-                parent.add(branch);
-
-                // Thời gian delay dựa trên độ sâu để cây mọc từ từ
-                const delay = (3 - depth) * 1.2;
-
-                gsap.to(branch.scale, {
-                    x: 1, y: 1, z: 1,
-                    duration: 1.5,
-                    delay: delay,
-                    ease: "power1.inOut",
-                    onComplete: () => {
-                        const endPos = new THREE.Vector3(0, length, 0); // Local end
-
-                        if (depth === 0) {
-                            // Tới ngọn -> Nảy búp hoa HTML
-                            if (memTracker.current < memories.length) {
-                                createHTMLNode(branch, endPos, memTracker.current);
-                                memTracker.current++;
-                                
-                                // Nếu mọc xong toàn bộ
-                                if(memTracker.current === memories.length) {
-                                    setTimeout(() => {
-                                        document.getElementById('ui-nav').style.opacity = '1';
-                                        document.getElementById('ui-guide').style.opacity = '1';
-                                        document.getElementById('btn-bloom').style.opacity = '1';
-                                    }, 800);
-                                }
-                            }
-                        } else {
-                            // Rẽ 3 nhánh đối xứng
-                            const numChild = depth === 3 ? 1 : 3; // Thân gốc mọc thẳng, sau đó chia 3
-                            for (let i = 0; i < numChild; i++) {
-                                const newAngleY = angleY + (i * (Math.PI * 2 / 3));
-                                const newPitch = depth === 3 ? 0 : 0.6; // Độ xoè
-                                grow(branch, endPos, length * 0.7, newAngleY, newPitch, depth - 1);
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Gắn ngọn đặc biệt (Video) thẳng lên đỉnh thân chính
-            grow(treeGroup, startPoint, 150, 0, 0, 3);
-            
-            // Rẽ thêm 1 cành phụ từ nửa thân để đủ 13 búp hoa
-            setTimeout(() => {
-                grow(treeGroup, new THREE.Vector3(0, -150, 0), 100, Math.PI, 0.8, 2);
-            }, 500);
-        }
-
-        // TẠO NODE HTML (Chuẩn Tỉ Lệ, Gắn Vào 3D)
-        function createHTMLNode(parentBranch, localPos, index) {
-            const m = memories[index];
-            const div = document.createElement('div');
-            div.className = `memory-node`;
-            div.id = `node-${index}`;
-            
-            // Kích thước chuẩn: Rộng 60px để không bị thô, dài theo ratio
-            const baseW = 60;
-            const h = baseW / m.ratio;
-            
-            // Ngăn sự kiện kéo chuột truyền xuống OrbitControls
-            div.addEventListener('pointerdown', e => e.stopPropagation());
-            div.addEventListener('touchstart', e => e.stopPropagation());
-
-            let mediaHtml = m.type === 'video' 
-                ? `<video src="${m.src}${v}" playsinline webkit-playsinline loop muted autoplay preload="auto"></video>`
-                : `<img src="${m.src}${v}">`;
-
-            div.innerHTML = `
-                <div class="bud" onclick="bloomFlower(${index})"></div>
-                <div class="card ${m.special ? 'special' : ''}" style="width: ${baseW}px; height: ${h}px;" onclick="openModal(${index})">
-                    ${mediaHtml}
+            card.innerHTML = `
+                ${specialTag}
+                ${mediaElement}
+                <div class="overlay">
+                    <span class="text-[9px] tracking-[0.2em] text-white/60 mb-1 uppercase font-bold">${m.title}</span>
+                    <p class="text-base font-light text-white leading-snug">${m.desc}</p>
                 </div>
             `;
-            
-            // Biến thành CSS3DObject
-            const cssObj = new THREE.CSS3DObject(div);
-            // Đẩy ra khỏi cành 1 chút
-            cssObj.position.copy(localPos).add(new THREE.Vector3(0, 15, 0)); 
-            
-            cssObj.scale.set(0.001, 0.001, 0.001);
-            parentBranch.add(cssObj);
-            cssObjects.push(cssObj);
-
-            // Búp hoa nảy ra
-            gsap.to(cssObj.scale, { x: 1, y: 1, z: 1, duration: 1, ease: "back.out(1.5)" });
-        }
-
-        // VÒNG LẶP RENDER & BẮT ẢNH HƯỚNG VỀ CAMERA
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            
-            if(treeGroup) treeGroup.rotation.y += 0.0015; // Cây tự quay nhẹ nhàng
-            
-            // Ép tất cả khung ảnh luôn quay mặt về phía người dùng (Billboard)
-            cssObjects.forEach(obj => {
-                obj.lookAt(camera.position);
-            });
-
-            rendererWebGL.render(scene, camera);
-            rendererCSS.render(scene, camera);
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            rendererWebGL.setSize(window.innerWidth, window.innerHeight);
-            rendererCSS.setSize(window.innerWidth, window.innerHeight);
-        }
+            feed.appendChild(card);
+        });
 
         // -------------------------
-        // YOUTUBE NHẠC NỀN
+        // YOUTUBE & VIDEO ENGINE
         // -------------------------
         var player;
         function onYouTubeIframeAPIReady() {
-            player = new YT.Player('player', { videoId: 'oLEhNVryFhY', playerVars: { 'autoplay': 0, 'controls': 0, 'mute': 0, 'loop': 1, 'playlist': 'oLEhNVryFhY', 'playsinline': 1 } });
+            player = new YT.Player('player', {
+                videoId: 'oLEhNVryFhY',
+                playerVars: { 'autoplay': 0, 'controls': 0, 'mute': 0, 'loop': 1, 'playlist': 'oLEhNVryFhY', 'playsinline': 1 }
+            });
         }
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
+        var scriptTag = document.createElement('script');
+        scriptTag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(scriptTag);
 
-        // -------------------------
-        // KỊCH BẢN ĐIỆN ẢNH: GIEO HẠT -> MỌC CÂY
-        // -------------------------
-        function startCinematicGrowth() {
-            if (player && typeof player.playVideo === 'function') { player.playVideo(); player.setVolume(100); }
-            
-            // 1. Tắt Intro
-            const intro = document.getElementById('intro');
-            intro.style.opacity = '0';
-            setTimeout(() => { intro.style.display = 'none'; }, 800);
+        function startJourney() {
+            // Phát nhạc YT
+            if (player && typeof player.playVideo === 'function') {
+                player.playVideo();
+                player.setVolume(100);
+            }
 
-            // 2. Khởi tạo Không gian 3D
-            init3D();
-
-            // 3. Hạt giống rớt xuống đất
-            seedMesh.visible = true;
-            gsap.to(seedMesh.position, {
-                y: -250,
-                duration: 2,
-                ease: "bounce.out",
-                onComplete: () => {
-                    seedMesh.visible = false;
-                    
-                    // Sóng ánh sáng lan toả
-                    gsap.to(groundWave.scale, { x: 10, y: 10, duration: 1.5, ease: "power2.out" });
-                    gsap.to(groundWave.material, { opacity: 1, duration: 0.5, yoyo: true, repeat: 1 });
-                    
-                    // 4. Cây bắt đầu vươn lên
-                    buildSymmetricalTree();
-
-                    document.querySelectorAll('video').forEach(vid => {
-                        vid.muted = true;
-                        let p = vid.play();
-                        if(p !== undefined) p.catch(e => console.log(e));
+            // Ép video MP4 chạy
+            document.querySelectorAll('video').forEach(vid => {
+                vid.muted = true;
+                let playPromise = vid.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        vid.controls = true;
                     });
                 }
             });
-        }
 
-        // -------------------------
-        // TƯƠNG TÁC NỞ HOA VÀ MODAL
-        // -------------------------
-        function bloomFlower(index) {
-            const node = document.getElementById(`node-${index}`);
-            node.classList.add('is-bloomed');
-        }
+            // Ẩn Intro, Hiện App
+            const intro = document.getElementById('intro-screen');
+            const app = document.getElementById('app');
+            app.classList.remove('hidden');
 
-        function triggerBloomAll() {
-            memories.forEach((m, i) => {
-                setTimeout(() => bloomFlower(i), i * 150);
+            const tl = gsap.timeline();
+            tl.to(intro, { opacity: 0, duration: 0.5, onComplete: () => intro.remove() })
+              .to(app, { opacity: 1, duration: 0.8 })
+              .from("header h1", { y: 30, opacity: 0, duration: 1, ease: "power2.out" }, "-=0.4");
+
+            // Animation cuộn nhẹ nhàng
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.utils.toArray(".gs-reveal").forEach(card => {
+                gsap.from(card, {
+                    scrollTrigger: { trigger: card, start: "top bottom-=50px", toggleActions: "play none none reverse" },
+                    y: 40, opacity: 0, duration: 1, ease: "power2.out"
+                });
             });
-            gsap.to("#btn-bloom", {opacity: 0, pointerEvents: 'none', duration: 0.5});
-            gsap.to("#ui-guide", {opacity: 0, duration: 0.5});
-        }
-
-        const modal = document.getElementById('modal');
-        const modalMedia = document.getElementById('modal-media');
-
-        function openModal(index) {
-            const m = memories[index];
-            let mediaContent = m.type === 'video'
-                ? `<video src="${m.src}${v}" playsinline webkit-playsinline autoplay muted loop></video>`
-                : `<img src="${m.src}${v}">`;
-                
-            modalMedia.innerHTML = mediaContent;
-            document.getElementById('modal-title').innerText = m.title;
-            document.getElementById('modal-desc').innerText = m.desc;
-            
-            modal.classList.add('active');
-
-            const modalVid = modal.querySelector('video');
-            if(modalVid) modalVid.play().catch(e=>console.log(e));
-        }
-
-        function closeModal() {
-            modal.classList.remove('active');
-            setTimeout(() => { modalMedia.innerHTML = ''; }, 400);
         }
     </script>
 </body>
