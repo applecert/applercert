@@ -9,7 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; overflow-x: hidden; margin: 0; -webkit-font-smoothing: antialiased; }
+        /* FIX LỖI TRƯỢT NGANG TRÊN ĐIỆN THOẠI BẰNG CÁCH KHÓA CẢ HTML LẪN BODY */
+        html, body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif; overflow-x: hidden; width: 100%; margin: 0; -webkit-font-smoothing: antialiased; }
         .font-serif { font-family: 'Playfair Display', serif; }
         
         .ios-blur { backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); background: rgba(0,0,0,0.7); border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -45,11 +46,14 @@
         .overlay-content { transform: translateY(20px); transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
         .memory-card.show-text .overlay-content { transform: translateY(0); }
 
-        /* --- POPUP APPLE STYLE --- */
-        #popup-59s { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
-        #popup-59s.active { opacity: 1; pointer-events: auto; }
+        /* --- POPUP MẬT KHẨU & POPUP 59s APPLE STYLE --- */
+        #password-popup, #popup-59s { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
+        #password-popup.active, #popup-59s.active { opacity: 1; pointer-events: auto; }
         .popup-box { background: rgba(28,28,30,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px 24px; max-width: 320px; width: 90%; text-align: center; transform: scale(0.95); transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
-        #popup-59s.active .popup-box { transform: scale(1); }
+        #password-popup.active .popup-box, #popup-59s.active .popup-box { transform: scale(1); }
+
+        .pw-input { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; color: #fff; text-align: center; font-size: 24px; letter-spacing: 0.5em; padding: 12px; margin-bottom: 8px; outline: none; transition: border-color 0.3s; }
+        .pw-input:focus { border-color: #fff; }
 
         /* --- MÀN HÌNH ĐỌC THƯ --- */
         #letter-screen { position: fixed; inset: 0; background: #000; z-index: 10001; overflow-y: auto; opacity: 0; pointer-events: none; transition: opacity 1s ease; padding: 60px 24px; }
@@ -66,7 +70,7 @@
 
     <div id="intro-screen">
         <h2 class="text-zinc-500 tracking-[0.4em] text-[10px] uppercase mb-10">Kỉ niệm 100 ngày</h2>
-        <button class="btn-start" onclick="startJourney()">Bắt đầu xem</button>
+        <button class="btn-start" onclick="openPasswordPopup()">Bắt đầu xem</button>
         <p class="mt-8 text-[9px] tracking-widest text-zinc-600 uppercase">Designed by Quí for Hiền</p>
     </div>
 
@@ -77,7 +81,7 @@
         </nav>
 
         <header class="h-[80vh] flex flex-col items-center justify-center text-center px-6">
-            <h1 class="text-7xl md:text-9xl font-semibold tracking-tighter leading-none mb-4">100<br><span class="font-light text-zinc-400">Days.</span></h1>
+            <h1 class="text-7xl md:text-9xl font-semibold tracking-tighter leading-none mb-4 font-serif italic">100<br><span class="font-light text-zinc-400 not-italic">Days.</span></h1>
             <p class="text-zinc-500 uppercase tracking-[0.3em] text-[10px]">Một hành trình yêu thương</p>
         </header>
 
@@ -89,10 +93,23 @@
         </footer>
     </main>
 
+    <div id="password-popup">
+        <div class="popup-box" id="pw-box">
+            <h3 class="text-white text-lg font-medium mb-2 font-serif italic">Xác nhận danh tính</h3>
+            <p class="text-[#86868b] text-sm mb-6 leading-relaxed">Vui lòng nhập mật khẩu (4 số) để mở kỉ niệm.</p>
+            <input type="password" id="pw-input" maxlength="4" class="pw-input" placeholder="****">
+            <p id="pw-error" class="text-red-400 text-xs mb-4 hidden transition-opacity">Mật khẩu không chính xác!</p>
+            <div class="flex gap-3 justify-center mt-4">
+                <button onclick="closePasswordPopup()" class="px-5 py-2.5 rounded-full bg-[#333336] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#444446] transition">Hủy</button>
+                <button onclick="checkPassword()" class="px-5 py-2.5 rounded-full bg-white text-black text-xs font-medium uppercase tracking-wider transition">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
     <div id="popup-59s">
         <div class="popup-box">
-            <h3 class="text-white text-lg font-medium mb-2 font-serif italic">Bất ngờ tưa...</h3>
-            <p class="text-[#86868b] text-sm mb-6 leading-relaxed">Thư nà thư nà :><br>Em có muốn đọc nó bây giờ không?</p>
+            <h3 class="text-white text-lg font-medium mb-2 font-serif italic">Một chút bất ngờ...</h3>
+            <p class="text-[#86868b] text-sm mb-6 leading-relaxed">Anh có viết vài dòng gửi riêng cho em.<br>Em có muốn đọc nó bây giờ không?</p>
             <div class="flex gap-3 justify-center">
                 <button onclick="closePopup()" class="px-5 py-2.5 rounded-full bg-[#333336] text-white text-xs font-medium uppercase tracking-wider hover:bg-[#444446] transition">Để sau</button>
                 <button onclick="openLetter()" class="px-5 py-2.5 rounded-full bg-white text-black text-xs font-medium uppercase tracking-wider transition">Đọc ngay</button>
@@ -177,6 +194,35 @@
         document.head.appendChild(scriptTag);
 
         // -------------------------
+        // LOGIC XỬ LÝ MẬT KHẨU
+        // -------------------------
+        function openPasswordPopup() {
+            document.getElementById('password-popup').classList.add('active');
+            document.getElementById('pw-input').focus();
+        }
+
+        function closePasswordPopup() {
+            document.getElementById('password-popup').classList.remove('active');
+            document.getElementById('pw-input').value = '';
+            document.getElementById('pw-error').classList.add('hidden');
+        }
+
+        function checkPassword() {
+            const pw = document.getElementById('pw-input').value;
+            const error = document.getElementById('pw-error');
+            if (pw === '1004') {
+                closePasswordPopup();
+                startJourney(); // Nhập đúng -> Bắt đầu hành trình
+            } else {
+                // Nhập sai -> Báo lỗi và rung hộp thoại
+                error.classList.remove('hidden');
+                const box = document.getElementById('pw-box');
+                gsap.fromTo(box, {x: -10}, {x: 10, duration: 0.05, yoyo: true, repeat: 5, onComplete: () => gsap.set(box, {x: 0})});
+                document.getElementById('pw-input').value = '';
+            }
+        }
+
+        // -------------------------
         // LOGIC CHÍNH & HIỆU ỨNG CUỘN
         // -------------------------
         let letterTriggered = false;
@@ -216,8 +262,7 @@
                 });
             });
 
-            // ĐANG TEST: 59000 = 59 giây.
-            // SAU KHI TEST XONG, ĐỔI THÀNH 59000 NHÉ!
+            // 59 GIÂY HIỆN THƯ
             setTimeout(() => {
                 if (!letterTriggered) {
                     letterTriggered = true;
