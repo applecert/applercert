@@ -4,15 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Admin Workspace - IPAVIET</title>
+  
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
   <script>
-    tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: '#007aff', brandDark: '#0A84FF', mall: '#9e0000' } } } }
+    tailwind.config = { 
+        theme: { 
+            extend: { 
+                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, 
+                colors: { brand: '#007aff', brandDark: '#0A84FF', mall: '#9e0000' } 
+            } 
+        } 
+    }
   </script>
 
   <style>
@@ -34,6 +43,7 @@
       </div>
       <h2 class="text-2xl md:text-3xl font-black mb-2 tracking-tight text-center">WORKSPACE CẤP CAO</h2>
       <p class="text-gray-400 mb-8 text-sm font-medium text-center" id="loginStatusText">Đang xác thực thẻ đặc quyền...</p>
+      
       <div id="loginSpinner" class="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
       
       <div id="loginError" class="hidden mt-4 w-full max-w-sm bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-4 rounded-[20px] text-sm text-center shadow-lg">
@@ -67,7 +77,7 @@
       <nav class="flex-1 py-6 px-4 space-y-1.5 overflow-y-auto scrollbar-hide">
           <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3">Hệ thống Core</p>
           <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center px-4 py-3.5 rounded-[16px] bg-brand/10 text-brand font-bold transition active:scale-95 text-[15px]"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Tổng Quan</button>
-          <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center px-4 py-3.5 rounded-[16px] text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Khách Hàng</button>
+          <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center px-4 py-3.5 rounded-[16px] text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Khách Hàng & VIP</button>
           <button onclick="switchTab('transactions')" id="nav-transactions" class="w-full flex items-center px-4 py-3.5 rounded-[16px] text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="receipt" class="w-5 h-5 mr-3"></i> Nạp Tiền (SieuThiCode)</button>
           
           <p class="text-[10px] font-black text-mall uppercase tracking-widest px-2 mb-3 mt-6">IPAVIET Mall</p>
@@ -109,21 +119,28 @@
           </div>
 
           <div id="tab-users" class="hidden max-w-6xl mx-auto w-full">
-              <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full">
-                  <div class="p-5 border-b border-gray-100 bg-white">
+              <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full flex flex-col">
+                  
+                  <div class="p-5 border-b border-gray-100 bg-white flex flex-col md:flex-row justify-between items-center gap-4">
                       <h3 class="text-lg font-black text-gray-900">Danh Sách Khách Hàng</h3>
+                      <div class="relative w-full md:w-72">
+                          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                          <input type="text" id="searchUserInput" placeholder="Tìm Email hoặc UID..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-[12px] text-sm font-medium outline-none focus:border-brand focus:bg-white transition">
+                      </div>
                   </div>
+
                   <div class="overflow-x-auto w-full scrollbar-hide">
-                      <table class="w-full text-left border-collapse min-w-[600px]">
+                      <table class="w-full text-left border-collapse min-w-[700px]">
                           <thead>
                               <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-widest">
                                   <th class="p-4 font-bold border-b border-gray-100">Khách / Định danh</th>
+                                  <th class="p-4 font-bold border-b border-gray-100">Gói VIP</th>
                                   <th class="p-4 font-bold border-b border-gray-100">Số Dư (VNĐ)</th>
                                   <th class="p-4 font-bold border-b border-gray-100 text-right">Thao Tác</th>
                               </tr>
                           </thead>
                           <tbody id="userTableBody" class="text-sm">
-                              <tr><td colspan="3" class="p-10 text-center text-gray-400">Đang tải...</td></tr>
+                              <tr><td colspan="4" class="p-10 text-center text-gray-400">Đang tải dữ liệu...</td></tr>
                           </tbody>
                       </table>
                   </div>
@@ -166,7 +183,7 @@
                           </div>
                           
                           <button onclick="bulkFulfillOrders()" id="btnBulkFulfill" class="w-full md:w-auto bg-mall hover:bg-mallLight text-white px-5 py-2.5 rounded-[12px] text-sm font-black shadow-md active:scale-95 transition flex items-center justify-center gap-2 whitespace-nowrap">
-                              <i data-lucide="check-square" class="w-4 h-4"></i> Duyệt Đã Chọn
+                              <i data-lucide="check-square" class="w-4 h-4"></i> Duyệt Đã Chọn (Tự Động)
                           </button>
                       </div>
                   </div>
@@ -178,7 +195,7 @@
                   </div>
 
                   <div class="overflow-x-auto w-full scrollbar-hide">
-                      <table class="w-full text-left border-collapse min-w-[1000px]">
+                      <table class="w-full text-left border-collapse min-w-[1100px]">
                           <thead>
                               <tr class="bg-red-50/50 text-mall text-[11px] uppercase tracking-widest border-b border-red-100">
                                   <th class="p-4 w-10 text-center">
@@ -186,9 +203,9 @@
                                   </th>
                                   <th class="p-4 font-black">Mã Đơn / Khách</th>
                                   <th class="p-4 font-black">Trạng Thái</th>
-                                  <th class="p-4 font-black">Thông Tin Sản Phẩm</th>
+                                  <th class="p-4 font-black w-[250px]">Thông Tin Sản Phẩm</th>
                                   <th class="p-4 font-black">Thời Gian</th>
-                                  <th class="p-4 font-black text-right">Chi Tiết / Hành Động</th>
+                                  <th class="p-4 font-black text-right w-[200px]">Chi Tiết / Hành Động</th>
                               </tr>
                           </thead>
                           <tbody id="mmoOrdersBody" class="text-sm font-medium">
@@ -223,12 +240,10 @@
                               </span>
                               <div class="flex items-center gap-2">
                                   <input type="number" id="bulkPercent" placeholder="Nhập %" class="w-20 px-3 py-2.5 border border-gray-200 rounded-[10px] text-[13px] font-black text-center outline-none focus:border-mall bg-gray-50">
-                                  
                                   <select id="bulkPriceTarget" class="px-3 py-2.5 border border-gray-200 rounded-[10px] text-[12px] font-bold bg-white outline-none focus:border-mall flex-1 cursor-pointer">
                                       <option value=".cfg-price">Giá Bán</option>
                                       <option value=".cfg-fake">Giá Gạch (Giá Cũ)</option>
                                   </select>
-                                  
                                   <button onclick="applyBulkDiscount('up')" class="bg-green-500 text-white w-10 h-10 rounded-[10px] shadow-md transition active:scale-90 flex items-center justify-center shrink-0">
                                       <i data-lucide="trending-up" class="w-4 h-4 font-black"></i>
                                   </button>
@@ -307,26 +322,55 @@
       <div class="absolute inset-0 bg-black/60 backdrop-blur-md opacity-0 transition-opacity duration-300 ease-out" id="editModalOverlay" onclick="closeEditModal()"></div>
       <div class="bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[32px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border border-white/20 relative p-7 z-10 transition-all duration-300 ease-out transform scale-90 translate-y-8 opacity-0" id="editPanel">
           <div class="flex justify-between items-center mb-6">
-              <h3 class="text-[22px] font-black text-gray-900 tracking-tight">Cập Nhật Số Dư</h3>
+              <h3 class="text-[22px] font-black text-gray-900 tracking-tight">Cấu Hình User</h3>
               <button onclick="closeEditModal()" class="text-gray-400 hover:text-red-500 bg-gray-50 border border-gray-100 rounded-full p-2 transition active:scale-90"><i data-lucide="x" class="w-5 h-5"></i></button>
           </div>
           <div>
               <input type="hidden" id="editUid">
+              
               <div class="mb-4">
                   <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Định danh User</label>
                   <input type="text" id="editEmail" disabled class="w-full bg-gray-50 px-5 py-4 rounded-[16px] text-[13px] font-bold text-gray-400 border border-gray-100 outline-none">
               </div>
-              <div class="mb-8">
+              
+              <div class="mb-4">
                   <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Số Dư Hiện Tại (VNĐ)</label>
                   <div class="relative">
-                      <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                          <i data-lucide="wallet" class="w-5 h-5 text-brand opacity-70"></i>
-                      </div>
+                      <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><i data-lucide="wallet" class="w-5 h-5 text-brand opacity-70"></i></div>
                       <input type="number" id="editCoins" class="w-full pl-12 pr-5 py-4 rounded-[16px] border border-gray-200 font-black text-brand text-2xl focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition-all shadow-inner bg-white">
                   </div>
               </div>
+
+              <div class="mb-8">
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Ngày Hết Hạn VIP <span class="lowercase font-normal text-gray-400">(Xóa trống để hủy VIP)</span></label>
+                  <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><i data-lucide="crown" class="w-5 h-5 text-mall opacity-70"></i></div>
+                      <input type="date" id="editVipDate" class="w-full pl-12 pr-5 py-4 rounded-[16px] border border-gray-200 font-bold text-gray-800 focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition-all shadow-inner bg-white uppercase tracking-wider">
+                  </div>
+              </div>
+
               <button onclick="saveUserChanges()" id="btnSaveUser" class="w-full bg-gradient-to-r from-brand to-brandDark text-white font-black py-4 rounded-[16px] shadow-[0_8px_20px_rgba(0,122,255,0.3)] active:scale-95 transition-all flex justify-center items-center gap-2 text-[15px] tracking-wide">
                   <i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI
+              </button>
+          </div>
+      </div>
+  </div>
+
+  <div id="manualModal" class="fixed inset-0 z-[140] hidden flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-md opacity-0 transition-opacity duration-300 ease-out" id="manualModalOverlay" onclick="closeManualModal()"></div>
+      <div class="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-[32px] shadow-2xl border border-white/20 relative p-7 z-10 transition-all duration-300 ease-out transform scale-90 translate-y-8 opacity-0" id="manualPanel">
+          <div class="flex justify-between items-center mb-4">
+              <h3 class="text-[20px] font-black text-gray-900 tracking-tight flex items-center gap-2"><i data-lucide="pen-tool" class="w-5 h-5 text-blue-600"></i> Duyệt Đơn Thủ Công</h3>
+              <button onclick="closeManualModal()" class="text-gray-400 hover:text-red-500 bg-gray-50 border border-gray-100 rounded-full p-2 transition active:scale-90"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <div>
+              <p class="text-[12px] text-gray-500 mb-4 font-medium">Nhập thông tin tài khoản (UID | Mật khẩu | 2FA...) để xuất kho cho khách.</p>
+              <input type="hidden" id="manualRow">
+              
+              <textarea id="manualAccountData" rows="6" placeholder="Paste thông tin tài khoản tại đây..." class="w-full bg-white p-4 rounded-[16px] text-[13px] font-mono text-gray-800 border border-blue-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 mb-6 shadow-inner leading-relaxed"></textarea>
+              
+              <button onclick="submitManualFulfill()" id="btnSubmitManual" class="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-black py-4 rounded-[16px] shadow-[0_8px_20px_rgba(37,99,235,0.3)] active:scale-95 transition-all flex justify-center items-center gap-2 text-[15px] tracking-wide">
+                  <i data-lucide="send" class="w-5 h-5"></i> XÁC NHẬN TRẢ ACC
               </button>
           </div>
       </div>
@@ -352,12 +396,13 @@
     
     let mmoRawProducts = [];
     let mmoConfigMap = {};
-    let categoryIconsMap = {}; // Lưu trữ Icon cho từng Danh Mục riêng
+    let categoryIconsMap = {}; 
     
     let currentMmoFilter = 'PENDING_PAID'; 
     let currentSearchMmoQuery = '';
+    let currentUserSearchQuery = '';
 
-    // Khởi tạo đăng nhập
+    // Khởi chạy đăng nhập
     auth.onAuthStateChanged(user => {
         if (user && user.email.toLowerCase() === "mquitran@gmail.com") {
             document.getElementById('loginSpinner').classList.add('hidden'); 
@@ -374,31 +419,49 @@
         const pinInput = autoPin || document.getElementById('serverPin').value; 
         const btn = document.getElementById('btnVerify');
         if (!pinInput) return;
-        if(!autoPin) { btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; btn.disabled = true; }
+        
+        if(!autoPin) { 
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; 
+            btn.disabled = true; 
+        }
 
         try {
             const res = await fetch(`${GOOGLE_API_URL}?action=verify_pin&pin=${pinInput}`);
             const data = await res.json();
+            
             if (data.success) {
-                adminPin = pinInput; localStorage.setItem('adminPin', pinInput);
+                adminPin = pinInput; 
+                localStorage.setItem('adminPin', pinInput);
                 const screen = document.getElementById('loginScreen'); 
-                screen.classList.add('opacity-0'); setTimeout(() => screen.classList.add('hidden'), 500);
+                screen.classList.add('opacity-0'); 
+                setTimeout(() => screen.classList.add('hidden'), 500);
                 loadAllData();
             } else { 
                 if(autoPin) logoutAdmin(); 
-                else { document.getElementById('errorMsgText').innerText = "SAI MÃ PIN!"; document.getElementById('loginError').classList.remove('hidden'); }
+                else { 
+                    document.getElementById('errorMsgText').innerText = "SAI MÃ PIN!"; 
+                    document.getElementById('loginError').classList.remove('hidden'); 
+                }
             }
-        } catch(e) { if(!autoPin) renderModal('error', 'Lỗi Mạng', 'Không thể kết nối máy chủ.', closeActionModal, 'Đóng'); }
+        } catch(e) { 
+            if(!autoPin) renderModal('error', 'Lỗi Mạng', 'Không thể kết nối máy chủ.', closeActionModal, 'Đóng'); 
+        }
+        
         if(!autoPin) { btn.innerHTML = "MỞ KHÓA HỆ THỐNG"; btn.disabled = false; }
     }
 
     function logoutAdmin() { adminPin = ''; localStorage.removeItem('adminPin'); window.location.reload(); }
 
-    // TẢI DATA
+    // TẢI DATA TOÀN HỆ THỐNG
     async function loadAllData() {
         const icon = document.getElementById('refreshIcon'); icon.classList.add('animate-spin');
         
-        try { const snapshot = await db.collection("users").get(); allUsersData = []; snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); renderUserTable(); } catch (e) {}
+        try { 
+            const snapshot = await db.collection("users").get(); 
+            allUsersData = []; 
+            snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); 
+            renderUserTable(); 
+        } catch (e) {}
         
         try { 
             const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pin=${adminPin}`); 
@@ -436,14 +499,9 @@
                 mmoRawProducts = extractProductsFromKingMMO(itemsArray || []);
                 
                 mmoConfigMap = dataP.configs || {};
-                
-                // Trích xuất cấu hình Icon Danh Mục riêng
                 categoryIconsMap = {};
                 Object.keys(mmoConfigMap).forEach(k => {
-                    if(k.startsWith('CAT___')) {
-                        let catName = k.replace('CAT___', '');
-                        categoryIconsMap[catName] = mmoConfigMap[k].icon;
-                    }
+                    if(k.startsWith('CAT___')) { categoryIconsMap[k.replace('CAT___', '')] = mmoConfigMap[k].icon; }
                 });
 
                 renderMMOConfigTable();
@@ -454,7 +512,6 @@
         setTimeout(() => icon.classList.remove('animate-spin'), 500);
     }
 
-    // --- TIỆN ÍCH DỮ LIỆU ---
     function findProductsArray(obj) {
         if (Array.isArray(obj) && obj.length > 0 && typeof obj[0] === 'object') return obj;
         if (typeof obj === 'object' && obj !== null) {
@@ -482,7 +539,12 @@
         return products;
     }
 
-    // --- DASHBOARD & USER TABLE ---
+    // --- HIỂN THỊ KHÁCH HÀNG & VIP ---
+    document.getElementById('searchUserInput').addEventListener('input', (e) => {
+        currentUserSearchQuery = e.target.value.toLowerCase();
+        renderUserTable();
+    });
+
     function updateDashboardCards() {
         document.getElementById('statUsers').innerText = allUsersData.length.toLocaleString(); 
         document.getElementById('statRevenue').innerText = (googleData.totalRevenue || 0).toLocaleString('vi-VN') + "đ";
@@ -491,25 +553,52 @@
         document.getElementById('statPendingMMO').innerText = pendingPaidCount;
         
         const badge = document.getElementById('badgeMMO');
-        if(pendingPaidCount > 0) { badge.classList.remove('hidden'); badge.innerText = pendingPaidCount; } else badge.classList.add('hidden');
+        if(pendingPaidCount > 0) { badge.classList.remove('hidden'); badge.innerText = pendingPaidCount; } 
+        else { badge.classList.add('hidden'); }
     }
 
     function renderUserTable() {
         const tbody = document.getElementById('userTableBody'); 
-        if(allUsersData.length === 0) { tbody.innerHTML = `<tr><td colspan="3" class="p-8 text-center text-gray-500">Trống.</td></tr>`; return; }
+        
+        let filteredUsers = allUsersData;
+        if(currentUserSearchQuery.trim() !== '') {
+            filteredUsers = filteredUsers.filter(u => 
+                (u.email || '').toLowerCase().includes(currentUserSearchQuery) || 
+                u.uid.toLowerCase().includes(currentUserSearchQuery)
+            );
+        }
+
+        if(filteredUsers.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Không tìm thấy khách hàng.</td></tr>`; 
+            return; 
+        }
         
         let html = '';
-        allUsersData.forEach(u => { 
+        filteredUsers.forEach(u => { 
+            let vipText = '';
+            if (u.vipExpire && u.vipExpire.toMillis) {
+                if(u.vipExpire.toMillis() > Date.now()) {
+                    vipText = `<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-[10px] font-black border border-yellow-200 flex items-center gap-1 w-fit mt-1"><i data-lucide="crown" class="w-3 h-3"></i> Tới: ${new Date(u.vipExpire.toMillis()).toLocaleDateString('vi-VN')}</span>`;
+                } else {
+                    vipText = `<span class="text-[10px] text-gray-400 font-medium block mt-1">Đã hết hạn VIP</span>`;
+                }
+            } else {
+                vipText = `<span class="text-[10px] text-gray-400 font-medium block mt-1">-</span>`;
+            }
+
             html += `
             <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
                 <td class="p-4"><p class="font-bold text-gray-900">${u.email || 'Ẩn danh'}</p><p class="text-[10px] text-gray-400 font-mono mt-0.5">${u.uid}</p></td>
+                <td class="p-4">${vipText}</td>
                 <td class="p-4 font-black text-brand">${(u.coins || 0).toLocaleString()}đ</td>
                 <td class="p-4 text-right">
                     <button onclick="openEditModal('${u.uid}')" class="bg-white border border-gray-200 text-gray-600 hover:text-brand hover:border-brand px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm hover:shadow active:scale-95">Chỉnh sửa</button>
                 </td>
             </tr>`; 
         });
+        
         tbody.innerHTML = html;
+        lucide.createIcons();
     }
 
     function renderTransactions() {
@@ -532,7 +621,7 @@
         tbody.innerHTML = html; lucide.createIcons();
     }
 
-    // --- SỬA TIỀN USER ---
+    // --- SỬA TIỀN & VIP USER ---
     function openEditModal(uid) { 
         const user = allUsersData.find(u => u.uid === uid); 
         if(!user) return; 
@@ -540,6 +629,13 @@
         document.getElementById('editUid').value = user.uid; 
         document.getElementById('editEmail').value = user.email || 'N/A'; 
         document.getElementById('editCoins').value = user.coins || 0; 
+        
+        if (user.vipExpire && user.vipExpire.toMillis && user.vipExpire.toMillis() > Date.now()) { 
+            const d = new Date(user.vipExpire.toMillis()); 
+            document.getElementById('editVipDate').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; 
+        } else {
+            document.getElementById('editVipDate').value = ''; 
+        }
         
         const modal = document.getElementById('editModal'); 
         const overlay = document.getElementById('editModalOverlay');
@@ -561,14 +657,25 @@
     async function saveUserChanges() { 
         const uid = document.getElementById('editUid').value; 
         const newCoins = parseInt(document.getElementById('editCoins').value) || 0; 
+        const newDateStr = document.getElementById('editVipDate').value; 
         const btn = document.getElementById('btnSaveUser'); 
         
         btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; 
         btn.disabled = true; 
         
         try { 
-            await db.collection("users").doc(uid).set({ coins: newCoins }, { merge: true }); 
-            renderModal('success', 'Thành công', 'Đã cập nhật số dư cho khách hàng!', closeActionModal, 'Xong');
+            let updateData = { coins: newCoins }; 
+            if (newDateStr) { 
+                const targetDate = new Date(newDateStr); 
+                targetDate.setHours(23, 59, 59); 
+                updateData.vipExpire = firebase.firestore.Timestamp.fromDate(targetDate); 
+            } else {
+                updateData.vipExpire = firebase.firestore.FieldValue.delete(); 
+            }
+
+            await db.collection("users").doc(uid).set(updateData, { merge: true }); 
+            
+            renderModal('success', 'Thành công', 'Đã cập nhật Số dư & VIP cho khách hàng!', closeActionModal, 'Xong');
             closeEditModal(); 
             loadAllData(); 
         } catch(e) { 
@@ -580,7 +687,7 @@
         lucide.createIcons(); 
     }
 
-    // --- QUẢN LÝ ĐƠN HÀNG MMO ---
+    // --- QUẢN LÝ ĐƠN HÀNG MMO (THÊM DUYỆT TAY & XÓA ĐƠN) ---
     function filterAdminMmoOrders(filterType) {
         currentMmoFilter = filterType;
         
@@ -646,35 +753,50 @@
 
             let canCheck = o.status === 'PENDING' && o.isPaid;
             let actionHtml = '';
+            let deleteBtn = `<button onclick="deleteMmoOrder(${o.row})" class="mt-2.5 text-red-500 bg-red-50 border border-red-100 hover:bg-red-500 hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition active:scale-95 flex items-center gap-1.5 w-full justify-center shadow-sm"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Xóa Đơn Này</button>`;
             
             if(isCompleted) {
-                actionHtml = `<div class="text-[10px] text-gray-500 font-mono text-left bg-gray-50 p-2.5 rounded border border-gray-200 break-all w-72 ml-auto max-h-24 overflow-y-auto">${(o.accountData || '').replace(/\n/g, '<br>')}</div>`;
+                actionHtml = `
+                <div class="flex flex-col items-end w-full">
+                    <div class="text-[10px] text-gray-500 font-mono text-left bg-gray-50 p-2.5 rounded-lg border border-gray-200 break-all w-[240px] max-h-28 overflow-y-auto shadow-inner">${(o.accountData || '').replace(/\n/g, '<br>')}</div>
+                    ${deleteBtn}
+                </div>`;
             } else if (canCheck) {
-                actionHtml = `<button id="btnDuyet_${o.row}" onclick="fulfillMMOOrder(${o.row}, '${o.productId}', ${o.amount})" class="bg-mall text-white px-5 py-2.5 rounded-lg text-xs font-black shadow-[0_4px_10px_rgba(158,0,0,0.3)] hover:bg-mallLight active:scale-95 transition whitespace-nowrap"><i data-lucide="check-circle" class="w-4 h-4 inline"></i> Duyệt Tự Động</button>`;
+                actionHtml = `
+                <div class="flex flex-col gap-2 items-end w-full">
+                    <button id="btnDuyet_${o.row}" onclick="fulfillMMOOrder(${o.row}, '${o.productId}', ${o.amount})" class="w-full bg-mall text-white px-4 py-2.5 rounded-lg text-xs font-black shadow-[0_4px_10px_rgba(158,0,0,0.3)] hover:bg-mallLight active:scale-95 transition flex justify-center items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5"></i> Tự Động (API)</button>
+                    <button onclick="openManualFulfillModal(${o.row})" class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg text-xs font-black shadow-[0_4px_10px_rgba(37,99,235,0.3)] hover:bg-blue-700 active:scale-95 transition flex justify-center items-center gap-1.5"><i data-lucide="pen-tool" class="w-3.5 h-3.5"></i> Nhập Tay Thủ Công</button>
+                    ${deleteBtn}
+                </div>`;
             } else {
-                actionHtml = `<button class="bg-gray-100 text-gray-400 px-4 py-2.5 rounded-lg text-xs font-bold cursor-not-allowed whitespace-nowrap border border-gray-200">Đang Khóa</button>`;
+                actionHtml = `
+                <div class="flex flex-col gap-2 items-end w-full">
+                    <button class="w-full bg-gray-100 text-gray-400 px-4 py-2.5 rounded-lg text-xs font-bold cursor-not-allowed whitespace-nowrap border border-gray-200">Đang Khóa</button>
+                    ${deleteBtn}
+                </div>`;
             }
 
             html += `
-            <tr class="border-b border-gray-100 ${canCheck ? 'bg-green-50/20 hover:bg-green-50/40' : 'hover:bg-gray-50'} transition">
+            <tr class="border-b border-gray-100 ${canCheck ? 'bg-green-50/10 hover:bg-green-50/30' : 'hover:bg-gray-50'} transition">
                 <td class="p-4 text-center">
                     <input type="checkbox" class="mmo-row-cb w-4 h-4 accent-mall cursor-pointer rounded" data-row="${o.row}" data-pid="${o.productId}" data-amt="${o.amount}" ${canCheck ? '' : 'disabled'}>
                 </td>
                 <td class="p-4"><p class="font-black text-gray-900">${o.orderId}</p><p class="text-[10px] text-gray-400 font-mono mt-1">${o.uid}</p></td>
                 <td class="p-4">${statusBadge}</td>
-                <td class="p-4"><p class="font-bold text-mall text-[13px] leading-snug w-56 line-clamp-2">${o.productName || o.productId}</p><p class="text-[11px] font-bold text-gray-500 mt-1">SL: ${o.amount} <span class="mx-1">|</span> Giá: ${parseInt(o.price || 0).toLocaleString()}đ</p></td>
+                <td class="p-4"><p class="font-bold text-mall text-[13px] leading-snug w-48 line-clamp-2">${o.productName || o.productId}</p><p class="text-[11px] font-bold text-gray-500 mt-1">SL: ${o.amount} <span class="mx-1">|</span> Giá: ${parseInt(o.price || 0).toLocaleString()}đ</p></td>
                 <td class="p-4 text-[11px] font-bold text-gray-500 whitespace-nowrap">${new Date(o.time).toLocaleString('vi-VN')}</td>
-                <td class="p-4 text-right">${actionHtml}</td>
+                <td class="p-4 text-right align-top w-[250px]">${actionHtml}</td>
             </tr>`;
         });
         tbody.innerHTML = html; lucide.createIcons();
     }
 
+    // --- CHỨC NĂNG DUYỆT VÀ XÓA ĐƠN ---
     async function fulfillMMOOrder(row, productId, amount) {
-        renderModal('confirm', 'Duyệt Đơn Hàng', 'Xác nhận ĐÃ THẤY TIỀN và muốn tự động lấy Acc trả cho khách?', async () => {
+        renderModal('confirm', 'Duyệt Đơn Hàng', 'Hệ thống sẽ lấy Acc tự động từ KingMMO để trả cho khách. Xác nhận duyệt?', async () => {
             closeActionModal();
             const btn = document.getElementById(`btnDuyet_${row}`);
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Xử lý...`; 
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Đang gọi...`; 
             btn.disabled = true;
             
             try {
@@ -691,7 +813,7 @@
                 renderModal('error', 'Lỗi Mạng', 'Không thể kết nối đến máy chủ.', closeActionModal, 'Đóng');
                 btn.innerHTML = "Thử Lại"; btn.disabled = false; 
             }
-        }, 'Duyệt Ngay');
+        }, 'Duyệt Tự Động');
     }
 
     async function bulkFulfillOrders() {
@@ -701,7 +823,7 @@
             return;
         }
         
-        renderModal('confirm', 'Duyệt Hàng Loạt', `Xác nhận duyệt TỰ ĐỘNG ${checkboxes.length} đơn hàng? Cấm tuyệt đối tải lại trang lúc này.`, async () => {
+        renderModal('confirm', 'Duyệt Hàng Loạt', `Xác nhận duyệt TỰ ĐỘNG ${checkboxes.length} đơn hàng qua API? Cấm tuyệt đối tải lại trang lúc này.`, async () => {
             closeActionModal();
             const btnMain = document.getElementById('btnBulkFulfill');
             btnMain.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Đang chạy...`; 
@@ -714,7 +836,7 @@
                 let btnLine = document.getElementById(`btnDuyet_${row}`);
                 
                 if(btnLine) { 
-                    btnLine.innerHTML = "Đang xử lý..."; 
+                    btnLine.innerHTML = "Đang lấy..."; 
                     btnLine.classList.remove('bg-mall'); 
                     btnLine.classList.add('bg-orange-500'); 
                 }
@@ -727,7 +849,7 @@
                         if(btnLine) { btnLine.innerHTML = "THÀNH CÔNG"; btnLine.classList.replace('bg-orange-500', 'bg-green-500'); } 
                     } else { 
                         failCount++; 
-                        if(btnLine) { btnLine.innerHTML = "LỖI KINGMMO"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } 
+                        if(btnLine) { btnLine.innerHTML = "LỖI API"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } 
                     }
                 } catch(e) { 
                     failCount++; 
@@ -740,6 +862,89 @@
             btnMain.disabled = false;
             loadAllData();
         }, 'Bắt Đầu Chạy');
+    }
+
+    function openManualFulfillModal(row) {
+        document.getElementById('manualRow').value = row;
+        document.getElementById('manualAccountData').value = '';
+        
+        const modal = document.getElementById('manualModal'); 
+        const overlay = document.getElementById('manualModalOverlay');
+        const panel = document.getElementById('manualPanel'); 
+        
+        modal.classList.remove('hidden'); 
+        requestAnimationFrame(() => { 
+            overlay.classList.add('opacity-100'); 
+            panel.classList.remove('scale-90', 'translate-y-8', 'opacity-0'); 
+        }); 
+    }
+
+    function closeManualModal() {
+        document.getElementById('manualModalOverlay').classList.remove('opacity-100'); 
+        document.getElementById('manualPanel').classList.add('scale-90', 'translate-y-8', 'opacity-0'); 
+        setTimeout(() => document.getElementById('manualModal').classList.add('hidden'), 300); 
+    }
+
+    async function submitManualFulfill() {
+        const row = document.getElementById('manualRow').value;
+        const accData = document.getElementById('manualAccountData').value.trim();
+        
+        if(!accData) return renderModal('error', 'Lỗi nhập liệu', 'Vui lòng dán thông tin tài khoản cần trả cho khách!', closeActionModal, 'Đóng');
+        
+        const btn = document.getElementById('btnSubmitManual');
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> ĐANG GỬI...`;
+        btn.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('action', 'admin_manual_fulfill');
+            formData.append('pin', adminPin);
+            formData.append('row', row);
+            formData.append('accountData', accData);
+
+            const res = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+            const data = await res.json();
+            
+            if(data.success) { 
+                closeManualModal();
+                renderModal('success', 'Thành công', 'Đã trả Acc thủ công cho khách thành công!', closeActionModal, 'Xong');
+                loadAllData(); 
+            } else {
+                renderModal('error', 'Lỗi Server', data.error, closeActionModal, 'Đóng');
+            }
+        } catch(e) { 
+            renderModal('error', 'Lỗi mạng', e.message, closeActionModal, 'Đóng'); 
+        }
+        
+        btn.innerHTML = `<i data-lucide="send" class="w-5 h-5"></i> XÁC NHẬN TRẢ ACC`;
+        btn.disabled = false;
+        lucide.createIcons();
+    }
+
+    function deleteMmoOrder(row) {
+        renderModal('confirm', 'Xóa Đơn Hàng', 'Bạn có chắc chắn muốn <b>xóa vĩnh viễn</b> đơn hàng này không? Hành động này không thể hoàn tác.', async () => {
+            closeActionModal();
+            renderModal('loading', 'Đang xóa đơn...', 'Hệ thống đang xử lý.', ()=>{}, '');
+            
+            try {
+                const formData = new FormData();
+                formData.append('action', 'admin_delete_mmo_order');
+                formData.append('pin', adminPin);
+                formData.append('row', row);
+
+                const res = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+                const data = await res.json();
+                
+                if(data.success) { 
+                    renderModal('success', 'Đã Xóa', 'Đơn hàng đã bị xóa khỏi hệ thống.', closeActionModal, 'Xong');
+                    loadAllData(); 
+                } else {
+                    renderModal('error', 'Lỗi Server', data.error, closeActionModal, 'Đóng');
+                }
+            } catch(e) { 
+                renderModal('error', 'Lỗi mạng', e.message, closeActionModal, 'Đóng'); 
+            }
+        }, 'Xóa Vĩnh Viễn');
     }
 
     // --- CẤU HÌNH SẢN PHẨM MMO XỊN ---
@@ -813,7 +1018,6 @@
     }
 
     function filterConfigTable(cat) {
-        // Lọc bảng sản phẩm
         const rows = document.querySelectorAll('.config-row');
         rows.forEach(tr => {
             if(cat === 'all' || tr.dataset.cat === cat) {
@@ -823,7 +1027,6 @@
             }
         });
 
-        // Xử lý Editor Ảnh Danh Mục
         const placeholder = document.getElementById('tool2_Placeholder');
         const editor = document.getElementById('catIconEditor');
         
@@ -836,17 +1039,13 @@
             
             document.getElementById('lblCatEditName').innerText = cat;
             
-            // Lấy icon hiện tại của danh mục này (từ bộ nhớ hoặc mặc định)
             let currentIcon = categoryIconsMap[cat] || getAutoIcon(cat);
             document.getElementById('inputCatIcon').value = currentIcon;
             document.getElementById('previewCatIcon').src = currentIcon;
             
-            // Reset checkbox Áp dụng cho tất cả
             document.getElementById('cbApplyAllProducts').checked = false;
         }
     }
-
-    // --- CÁC HÀM CÔNG CỤ CHỈNH SỬA ĐỒNG LOẠT ---
 
     function applyBulkDiscount(type) {
         let percent = parseFloat(document.getElementById('bulkPercent').value);
@@ -875,7 +1074,6 @@
         let url = document.getElementById('inputCatIcon').value.trim();
         if(!url) return renderModal('error', 'Cảnh báo', 'Vui lòng dán Link ảnh (URL)!', closeActionModal, 'Đóng');
         
-        // 1. Lưu icon vào bộ nhớ đệm của danh mục
         categoryIconsMap[cat] = url;
         document.getElementById('previewCatIcon').src = url;
         
@@ -883,7 +1081,6 @@
         let count = 0;
         let msg = `Đã thay đổi Icon Bộ Lọc cho danh mục <b>${cat}</b>.`;
 
-        // 2. Nếu Sếp muốn, áp dụng luôn vào tất cả sản phẩm đang hiện
         if (applyToProducts) {
             document.querySelectorAll('.config-row').forEach(tr => {
                 if(tr.style.display !== 'none') {
@@ -900,7 +1097,6 @@
         renderModal('success', 'Đã Áp Dụng Ảnh', msg, closeActionModal, 'Tuyệt vời');
     }
 
-    // --- LƯU CẤU HÌNH LÊN GOOGLE SCRIPT ---
     async function saveMMOConfig() {
         renderModal('confirm', 'Lưu Cấu Hình', 'Lưu toàn bộ thay đổi giá, ảnh, trạng thái ẩn này lên hệ thống?', async () => {
             closeActionModal();
@@ -910,7 +1106,6 @@
 
             let payload = [];
             
-            // 1. Lưu cấu hình của từng sản phẩm (quét tất cả các dòng)
             document.querySelectorAll('.config-row').forEach(tr => {
                 payload.push({
                     id: tr.dataset.id,
@@ -921,7 +1116,6 @@
                 });
             });
 
-            // 2. Lưu cấu hình Icon của từng Danh mục (Mã đặc biệt CAT___)
             Object.keys(categoryIconsMap).forEach(cat => {
                 payload.push({
                     id: 'CAT___' + cat,
@@ -967,7 +1161,7 @@
         document.getElementById('nav-' + tab).className = "w-full flex items-center px-4 py-3.5 rounded-[16px] bg-brand/10 text-brand font-bold transition active:scale-95 text-[15px]"; 
         if(tab.includes('mmo')) document.getElementById('nav-' + tab).className = "w-full flex items-center justify-between px-4 py-3.5 rounded-[16px] bg-red-50 text-mall font-bold transition active:scale-95 text-[15px]";
 
-        const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng', 'transactions': 'Nạp Tiền', 'mmo_orders': 'Quản Trị Mall', 'mmo_config': 'Cấu Hình Mall' }; 
+        const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng & VIP', 'transactions': 'Nạp Tiền', 'mmo_orders': 'Quản Trị Mall', 'mmo_config': 'Cấu Hình Mall' }; 
         document.getElementById('pageTitle').innerText = titles[tab]; 
         if(window.innerWidth < 768) { document.getElementById('sidebar').classList.remove('sidebar-open'); document.getElementById('mobileOverlay').classList.remove('overlay-open'); }
     }
