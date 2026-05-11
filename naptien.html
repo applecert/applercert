@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="vi" class="antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Nạp Tiền - IPAVIET Mall</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  
+  <script>
+    tailwind.config = { 
+        theme: { 
+            extend: { 
+                fontFamily: { sans: ['Roboto', 'sans-serif'] }, 
+                colors: { mall: '#9e0000', mallLight: '#c20000', bgLight: '#f5f5f5' } 
+            } 
+        } 
+    }
+  </script>
+
+  <style>
+    body { 
+        background-color: #f5f5f5; 
+        -webkit-tap-highlight-color: transparent; 
+        user-select: none; 
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .mall-header { background: #9e0000; padding-top: env(safe-area-inset-top); }
+    
+    .bottom-nav { background: white; border-top: 1px solid rgba(0,0,0,.05); padding-bottom: env(safe-area-inset-bottom); }
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #999; font-size: 10px; font-weight: 500; text-decoration: none; padding: 8px 0; }
+    .nav-item.active { color: #9e0000; font-weight: 700; }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+    th { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; background: #fafafa; }
+    td { font-size: 12px; color: #333; }
+  </style>
+</head>
+<body class="text-gray-800 flex flex-col h-[100dvh] overflow-hidden">
+
+  <header class="mall-header z-40 w-full fixed top-0 left-0 shadow-md">
+    <div class="flex items-center justify-between px-3 h-14 max-w-md mx-auto">
+      <div class="flex items-center gap-2 cursor-pointer text-white shrink-0" onclick="window.location.href='tap-hoa-mmo.html'">
+          <i data-lucide="chevron-left" class="w-7 h-7"></i>
+      </div>
+      <div class="flex-1 text-center font-black text-white text-[16px] tracking-wide uppercase">
+          Nạp Tiền Tự Động
+      </div>
+      <div class="w-7 h-7 shrink-0"></div>
+    </div>
+    
+    <div class="bg-black/10 flex items-center justify-between px-4 py-2 text-white text-[12px] max-w-md mx-auto">
+        <span class="font-bold uppercase tracking-wider">Số dư hiện tại</span>
+        <span class="font-black bg-black/20 px-3 py-1 rounded-full flex items-center gap-1">
+            <i data-lucide="wallet" class="w-4 h-4"></i> 
+            <span id="headerCoins">0đ</span>
+        </span>
+    </div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto scrollbar-hide pt-[95px] pb-[80px] max-w-md mx-auto w-full relative px-3">
+     
+     <div class="bg-[#fff3cd] border border-[#ffeeba] text-[#856404] p-4 rounded-xl mb-4 shadow-sm">
+         <h3 class="font-black flex items-center gap-2 mb-2 text-[14px]">
+             <i data-lucide="alert-triangle" class="w-5 h-5 text-orange-500"></i> Lưu ý quan trọng
+         </h3>
+         <ul class="text-[12px] space-y-1.5 font-medium leading-relaxed pl-6 list-disc">
+             <li>Quý khách chuyển khoản ngân hàng qua STK ACB của hệ thống.</li>
+             <li>Lưu ý ghi chính xác <b>Nội dung chuyển khoản</b> (Copy mã lệnh bên dưới). Không bật chế độ dịch tiếng Việt khi copy.</li>
+             <li>Nạp tiền ít nhất 10.000 VNĐ. Nếu nạp dưới mức tối thiểu sẽ không được hỗ trợ hoàn lại.</li>
+             <li class="text-red-600 font-bold">Hệ thống tự động cập nhật số dư trong vài giây. Nếu quá 5 phút không được cộng tiền, vui lòng liên hệ Admin.</li>
+         </ul>
+     </div>
+
+     <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden mb-6">
+         <div class="bg-[#1a5b9e] text-white p-3 flex items-center gap-2">
+             <i data-lucide="building" class="w-5 h-5"></i> 
+             <span class="font-black text-[14px] uppercase">Ngân Hàng Á Châu (ACB)</span>
+         </div>
+         
+         <div class="p-5 flex flex-col items-center border-b border-gray-100">
+             <div class="w-48 h-48 bg-gray-50 p-2 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center mb-4">
+                 <img id="qrImage" src="" class="w-full h-full object-contain mix-blend-multiply">
+             </div>
+             
+             <div class="bg-red-50 text-mall border border-red-200 px-6 py-2 rounded font-black text-[18px] tracking-widest text-center w-full relative">
+                 <div class="text-[9px] text-gray-500 uppercase tracking-widest mb-1 absolute -top-2 left-1/2 -translate-x-1/2 bg-red-50 px-2">Nội dung chuyển khoản</div>
+                 <span id="transferSyntax">ĐANG TẠO...</span>
+                 <button onclick="copyText(document.getElementById('transferSyntax').innerText)" class="absolute right-2 top-1/2 -translate-y-1/2 text-mall p-1 active:scale-90 transition">
+                     <i data-lucide="copy" class="w-4 h-4"></i>
+                 </button>
+             </div>
+         </div>
+
+         <div class="p-4 space-y-4">
+             <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+                 <span class="text-[11px] font-bold text-gray-500 uppercase">Số tài khoản</span>
+                 <div class="flex items-center gap-2">
+                     <span class="font-black text-[14px] text-green-600 tracking-wider">22703611</span>
+                     <button onclick="copyText('22703611')" class="text-gray-400 active:scale-90 transition p-1 border rounded"><i data-lucide="copy" class="w-3 h-3"></i></button>
+                 </div>
+             </div>
+             
+             <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+                 <span class="text-[11px] font-bold text-gray-500 uppercase">Chủ tài khoản</span>
+                 <span class="font-black text-[12px] text-gray-800">TRAN NGUYEN MINH QUI</span>
+             </div>
+             
+             <div class="text-center text-[10px] text-gray-400 pt-2 font-medium">
+                 <i data-lucide="info" class="w-3 h-3 inline pb-0.5"></i> Nhập đúng nội dung chuyển tiền để hệ thống cộng tiền tự động.
+             </div>
+         </div>
+         
+         <div class="bg-gray-50 p-3 text-center border-t border-gray-100" id="pollingStatus">
+             <div class="flex items-center justify-center gap-2 text-blue-600 text-[12px] font-black animate-pulse">
+                 <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> HỆ THỐNG ĐANG QUÉT TIỀN AUTO...
+             </div>
+         </div>
+     </div>
+     
+     <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden mb-6">
+         <div class="bg-[#293a59] text-white p-3 flex items-center gap-2">
+             <i data-lucide="history" class="w-5 h-5"></i> 
+             <span class="font-black text-[14px] uppercase tracking-wide">Lịch sử nạp tiền</span>
+         </div>
+         
+         <div class="overflow-x-auto w-full scrollbar-hide">
+             <table class="w-full whitespace-nowrap min-w-[500px]">
+                 <thead>
+                     <tr>
+                         <th>Thời gian</th>
+                         <th>Ngân hàng</th>
+                         <th>Mã GD (Nội dung)</th>
+                         <th>Thực nhận</th>
+                         <th class="text-right">Trạng thái</th>
+                     </tr>
+                 </thead>
+                 <tbody id="historyTableBody">
+                     <tr>
+                         <td colspan="5" class="text-center py-10 text-gray-400">
+                             <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-mall"></i>
+                             Đang tải lịch sử...
+                         </td>
+                     </tr>
+                 </tbody>
+             </table>
+         </div>
+     </div>
+
+  </main>
+
+  <div class="fixed bottom-0 left-0 right-0 z-40 flex justify-center w-full">
+    <nav class="bottom-nav flex w-full max-w-md shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+      <a href="index.html" class="nav-item items-center"><i data-lucide="home" class="w-5 h-5"></i><span>Trang chủ</span></a>
+      <a href="tap-hoa-mmo.html" class="nav-item items-center"><i data-lucide="store" class="w-5 h-5"></i><span>Mall</span></a>
+      <a href="ipavip.html" class="nav-item items-center"><i data-lucide="crown" class="w-5 h-5"></i><span>VIP App</span></a>
+      <a href="naptien.html" class="nav-item items-center active"><i data-lucide="credit-card" class="w-5 h-5"></i><span>Nạp Tiền</span></a>
+      <a href="account.html" class="nav-item items-center"><i data-lucide="user" class="w-5 h-5"></i><span>Tôi</span></a>
+    </nav>
+  </div>
+
+  <script>
+    const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
+    const firebaseConfig = { 
+        apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", 
+        authDomain: "ipaviet-st.firebaseapp.com", 
+        projectId: "ipaviet-st", 
+        storageBucket: "ipaviet-st.firebasestorage.app", 
+        messagingSenderId: "127619650916", 
+        appId: "1:127619650916:web:fc8904c99804eeb7539671" 
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null; 
+    let depositOrderId = null;
+    let pollingInterval = null;
+
+    // 1. Khởi tạo & Kiểm tra đăng nhập
+    auth.onAuthStateChanged(user => { 
+        if(user) {
+            currentUser = user; 
+            
+            // Lắng nghe số dư Live từ Firebase
+            db.collection("users").doc(user.uid).onSnapshot(doc => {
+                if (doc.exists) {
+                    document.getElementById('headerCoins').innerText = (doc.data().coins || 0).toLocaleString() + "đ";
+                }
+            });
+            
+            initDeposit();
+            loadTransactionHistory();
+        } else {
+            window.location.href = 'account.html';
+        }
+    });
+
+    // 2. Khởi tạo lệnh Nạp Tiền
+    function initDeposit() {
+        // Tạo cú pháp nạp: NAP + 6 ký tự đầu của UID + 3 số ngẫu nhiên
+        depositOrderId = "NAP" + currentUser.uid.substring(0, 6).toUpperCase() + Math.floor(Math.random()*900 + 100);
+        document.getElementById('transferSyntax').innerText = depositOrderId;
+        
+        // Tạo QR Code
+        const bankId = "ACB";
+        const accNo = "22703611";
+        const accName = "TRAN NGUYEN MINH QUI";
+        const qrUrl = `https://img.vietqr.io/image/${bankId}-${accNo}-compact2.png?addInfo=${depositOrderId}&accountName=${encodeURIComponent(accName)}`;
+        
+        document.getElementById('qrImage').src = qrUrl;
+
+        // Đẩy lệnh chờ lên Google Script
+        fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${depositOrderId}&uid=${currentUser.uid}&amount=1&coins=1`);
+        
+        // Chạy vòng lặp quét tiền
+        if(pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(checkBankTransfer, 4000);
+    }
+
+    // 3. Quét kiểm tra tiền
+    async function checkBankTransfer() {
+        try { 
+            let res = await fetch(`${GOOGLE_API_URL}?action=check_stc_payment&orderId=${depositOrderId}&amount=1`); 
+            let data = await res.json();
+            
+            // Nếu có API trả về success = true và amount > 0
+            if(data.success && data.amount > 0) { 
+                clearInterval(pollingInterval); 
+                
+                const st = document.getElementById('pollingStatus');
+                st.innerHTML = `
+                    <div class="flex flex-col items-center justify-center gap-1 text-green-600 font-black">
+                        <i data-lucide="check-circle-2" class="w-6 h-6 mb-1"></i>
+                        <span>NẠP THÀNH CÔNG: +${data.amount.toLocaleString()}đ</span>
+                    </div>`;
+                lucide.createIcons();
+
+                // CỘNG TIỀN VÀO FIREBASE
+                await db.collection("users").doc(currentUser.uid).set({ 
+                    coins: firebase.firestore.FieldValue.increment(data.amount) 
+                }, { merge: true });
+                
+                // Tải lại lịch sử
+                loadTransactionHistory();
+                
+                alert("Nạp tiền thành công! Cảm ơn bạn.");
+            }
+        } catch(e) {
+            console.log("Polling error:", e);
+        }
+    }
+
+    // 4. Kéo lịch sử giao dịch nạp tiền
+    async function loadTransactionHistory() {
+        const tbody = document.getElementById('historyTableBody');
+        
+        try {
+            const res = await fetch(`${GOOGLE_API_URL}?action=get_user_transactions&uid=${currentUser.uid}`);
+            const json = await res.json();
+            
+            if(json.success) {
+                if(json.data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center py-10 text-gray-400">
+                                <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                                Bạn chưa có giao dịch nạp tiền nào.
+                            </td>
+                        </tr>`;
+                    lucide.createIcons();
+                    return;
+                }
+                
+                let html = '';
+                json.data.forEach(t => {
+                    let isClaimed = t.status === 'CLAIMED';
+                    
+                    // Format thời gian
+                    let dateObj = new Date(t.time);
+                    let timeString = dateObj.getFullYear() + '-' + 
+                                    String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + 
+                                    String(dateObj.getDate()).padStart(2, '0') + ' ' + 
+                                    String(dateObj.getHours()).padStart(2, '0') + ':' + 
+                                    String(dateObj.getMinutes()).padStart(2, '0');
+                    
+                    let statusHtml = isClaimed 
+                        ? '<span class="text-green-600 font-bold">Đã thanh toán</span>' 
+                        : '<span class="text-orange-500 font-bold">Chờ thanh toán</span>';
+                        
+                    let amountHtml = isClaimed 
+                        ? `<span class="text-mall font-black">${parseInt(t.amount).toLocaleString()}đ</span>` 
+                        : '<span class="text-gray-400">-</span>';
+
+                    html += `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="text-[11px] text-gray-500 whitespace-nowrap">${timeString}</td>
+                            <td class="font-bold">ACB</td>
+                            <td class="font-mono text-[11px]">${t.orderId}</td>
+                            <td>${amountHtml}</td>
+                            <td class="text-right whitespace-nowrap">${statusHtml}</td>
+                        </tr>`;
+                });
+                
+                tbody.innerHTML = html;
+            }
+        } catch(e) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-red-500">Lỗi tải dữ liệu.</td></tr>`;
+        }
+    }
+
+    // 5. Tính năng Copy tiện ích
+    function copyText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Đã copy: " + text);
+        }).catch(err => {
+            alert("Không thể copy. Hãy bôi đen thủ công!");
+        });
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
