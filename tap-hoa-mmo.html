@@ -137,7 +137,8 @@
      
      <div class="h-[80px] border-t border-gray-100 flex p-3 gap-3 bg-white shrink-0">
          <button onclick="addCurrentToCart()" class="w-[110px] bg-red-50 text-mall border border-red-100 font-black rounded-[14px] flex flex-col items-center justify-center active:scale-95 transition shadow-sm">
-             <i data-lucide="shopping-cart" class="w-5 h-5 mb-0.5"></i> <span class="text-[10px]">Thêm Giỏ</span>
+             <i data-lucide="shopping-cart" class="w-5 h-5 mb-0.5"></i> 
+             <span class="text-[10px]">Thêm Giỏ</span>
          </button>
          <button onclick="buyCurrentNow()" class="flex-1 bg-gradient-to-r from-[#9e0000] to-[#c20000] shadow-[0_8px_20px_rgba(158,0,0,0.3)] text-white font-black text-[15px] rounded-[14px] active:scale-95 transition tracking-wider">
              MUA NGAY
@@ -171,7 +172,7 @@
      </div>
      <div class="flex bg-white shadow-sm shrink-0 font-black">
          <button onclick="switchOrderTab('pending')" id="tabPending" class="flex-1 py-3.5 text-[12px] text-mall border-b-2 border-mall tracking-wide transition">ĐANG CHỜ DUYỆT</button>
-         <button onclick="switchOrderTab('completed')" id="tabCompleted" class="flex-1 py-3.5 text-[12px] text-gray-400 border-b-2 border-transparent tracking-wide transition">ĐÃ CÓ TÀI KHOẢN</button>
+         <button onclick="switchOrderTab('completed')" id="tabCompleted" class="flex-1 py-3.5 text-[12px] text-gray-400 border-b-2 border-transparent tracking-wide transition">ĐÃ NHẬN ACC</button>
      </div>
      <div class="flex-1 overflow-y-auto p-3 space-y-3" id="ordersContainer"></div>
   </div>
@@ -186,6 +187,7 @@
   <script>
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
     const firebaseConfig = { apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", authDomain: "ipaviet-st.firebaseapp.com", projectId: "ipaviet-st", storageBucket: "ipaviet-st.firebasestorage.app", messagingSenderId: "127619650916", appId: "1:127619650916:web:fc8904c99804eeb7539671" };
+    
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -199,9 +201,9 @@
     let currentFilter = 'all'; 
     let detailProductId = null; 
     let currentOrderTab = 'pending';
-    
     let categoryIconsMap = {}; 
 
+    // Lắng nghe trạng thái đăng nhập
     auth.onAuthStateChanged(user => { 
         if(user) {
             currentUser = user; 
@@ -217,125 +219,10 @@
         }
     });
 
-    async function loadMMOProducts() {
-        const grid = document.getElementById('mmoProductsGrid');
-        try {
-            const res = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
-            const json = await res.json();
-            
-            if (!json.success) throw new Error("Lỗi API Google Script");
-            
-            let rawData = json.raw || json;
-            
-            function findProductsArray(obj) {
-                if (Array.isArray(obj) && obj.length > 0 && typeof obj[0] === 'object') return obj;
-                if (typeof obj === 'object' && obj !== null) { 
-                    for (let key in obj) { 
-                        if (Array.isArray(obj[key]) && obj[key].length > 0 && typeof obj[key][0] === 'object') return obj[key]; 
-                    } 
-                }
-                return null;
-            }
-
-            let itemsArray = findProductsArray(rawData);
-            
-            if (itemsArray) {
-                allProducts = extractProductsFromKingMMO(itemsArray);
-                
-                if (json.configs) {
-                    Object.keys(json.configs).forEach(k => {
-                        if(k.startsWith('CAT___')) { categoryIconsMap[k.replace('CAT___', '')] = json.configs[k].icon; }
-                    });
-
-                    allProducts = allProducts.map(p => {
-                        let conf = json.configs[p.id];
-                        if (conf) { 
-                            let basePrice = parseInt(p.price) || 0;
-                            p.price = conf.price !== undefined ? parseInt(conf.price) : basePrice; 
-                            p.fakePrice = conf.fakePrice !== undefined ? parseInt(conf.fakePrice) : Math.floor(basePrice * 1.3); 
-                            p.icon = conf.icon || p.icon; 
-                            p.isHidden = conf.isHidden === true || conf.isHidden === "true" || conf.isHidden === "TRUE"; 
-                            
-                            p.price = isNaN(p.price) ? basePrice : p.price;
-                            p.fakePrice = isNaN(p.fakePrice) ? Math.floor(basePrice * 1.3) : p.fakePrice;
-                        }
-                        return p;
-                    });
-                }
-                
-                // [NÂNG CẤP] Bổ sung đọc thông số KHO của SP thủ công
-                if (json.customProducts && json.customProducts.length > 0) {
-                    json.customProducts.forEach(cp => {
-                        if (!cp.isHidden) {
-                            allProducts.unshift({
-                                id: cp.id,
-                                name: cp.name,
-                                cat: cp.cat,
-                                price: cp.price,
-                                fakePrice: cp.fakePrice,
-                                icon: cp.icon,
-                                stock: cp.stock !== undefined ? parseInt(cp.stock) : 999, // Lấy stock thủ công
-                                isHidden: false
-                            });
-                        }
-                    });
-                }
-
-                allProducts = allProducts.filter(p => !p.isHidden);
-
-                if(allProducts.length > 0) { 
-                    renderCategoryFilters(); 
-                    renderProducts(allProducts); 
-                } else {
-                    throw new Error("Tất cả sản phẩm đang bị ẩn");
-                }
-            } else {
-                throw new Error("Mảng dữ liệu không hợp lệ");
-            }
-        } catch(e) { 
-            grid.innerHTML = `
-                <div class="col-span-2 py-10 text-center text-gray-500">
-                    <i data-lucide="wifi-off" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-                    <p class="text-[13px] font-bold">Lỗi tải dữ liệu. Hãy tải lại trang.</p>
-                </div>`; 
-            lucide.createIcons(); 
-        }
-    }
-
-    function extractProductsFromKingMMO(data) {
-        let products = [];
-        data.forEach(item => {
-            if (item.products && Array.isArray(item.products)) {
-                item.products.forEach(p => { 
-                    products.push({ 
-                        id: p.id || p.product_id || p.id_product, 
-                        name: p.name || p.title || p.product_name, 
-                        price: p.price || p.money || p.amount || p.rate || 0, 
-                        stock: p.quantity || p.ton_kho || Math.floor(Math.random() * 500 + 10), 
-                        cat: item.name || item.category || 'Khác' 
-                    }); 
-                });
-            } else {
-                let pId = item.id || item.product_id || item.id_product; 
-                let pName = item.name || item.title || item.product_name;
-                let pPrice = item.price || item.money || item.amount || item.rate || 0;
-                
-                if (pId && pName) { 
-                    products.push({ 
-                        id: pId, 
-                        name: pName, 
-                        price: pPrice, 
-                        stock: item.quantity || item.ton_kho || Math.floor(Math.random() * 500 + 10), 
-                        cat: item.categoryName || item.category || 'Khác' 
-                    }); 
-                }
-            }
-        });
-        return products;
-    }
-
+    // HÀM BACKUP ICON
     function getCatIcon(name) {
-        let c = name.toLowerCase();
+        if (!name) return 'https://kingmmo.com/assets/storage/images/0M76.png';
+        let c = String(name).toLowerCase();
         if(c.includes('tích xanh')) return 'https://kingmmo.com/assets/storage/images/categoryJ4QE.png';
         if(c.includes('hẹn hò')) return 'https://kingmmo.com/assets/storage/images/category4AE2.png';
         if(c.includes('clone') || c.includes('ngoại') || c.includes('usa') || c.includes('toàn cầu') || c.includes('ads') || c.includes('nuôi') || c.includes('no whatsapp') || c.includes('facebook') || c.includes('fb')) return 'https://kingmmo.com/assets/storage/images/0M76.png';
@@ -359,6 +246,124 @@
         return 'https://kingmmo.com/assets/storage/images/0M76.png';
     }
 
+    // 1. ENGINE TẢI DỮ LIỆU ĐÃ ĐƯỢC FIX LỖI "XOAY MÃI"
+    async function loadMMOProducts() {
+        const grid = document.getElementById('mmoProductsGrid');
+        try {
+            const res = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
+            const json = await res.json();
+            
+            if (!json.success) throw new Error("Lỗi API: " + (json.error || "Không rõ nguyên nhân"));
+            
+            allProducts = []; 
+            let rawData = json.raw || {};
+            
+            // Xử lý chống treo nếu KingMMO sập
+            let itemsArray = null;
+            if (Array.isArray(rawData) && rawData.length > 0 && typeof rawData[0] === 'object') {
+                itemsArray = rawData;
+            } else if (typeof rawData === 'object' && rawData !== null) {
+                for (let key in rawData) {
+                    if (Array.isArray(rawData[key]) && rawData[key].length > 0 && typeof rawData[key][0] === 'object') {
+                        itemsArray = rawData[key];
+                        break;
+                    }
+                }
+            }
+            
+            // Kéo mảng KingMMO (nếu có)
+            if (itemsArray) {
+                itemsArray.forEach(item => {
+                    if (item.products && Array.isArray(item.products)) {
+                        item.products.forEach(p => { 
+                            allProducts.push({ 
+                                id: p.id || p.product_id || p.id_product, 
+                                name: p.name || p.title || p.product_name, 
+                                price: p.price || p.money || p.amount || p.rate || 0, 
+                                stock: p.quantity || p.ton_kho || Math.floor(Math.random() * 500 + 10), 
+                                cat: item.name || item.category || 'Khác' 
+                            }); 
+                        });
+                    } else {
+                        let pId = item.id || item.product_id || item.id_product; 
+                        let pName = item.name || item.title || item.product_name;
+                        if (pId && pName) { 
+                            allProducts.push({ 
+                                id: pId, 
+                                name: pName, 
+                                price: item.price || item.money || item.amount || item.rate || 0, 
+                                stock: item.quantity || item.ton_kho || Math.floor(Math.random() * 500 + 10), 
+                                cat: item.categoryName || item.category || 'Khác' 
+                            }); 
+                        }
+                    }
+                });
+            }
+
+            // Ghi đè cấu hình Admin & Tải Logo
+            if (json.configs) {
+                Object.keys(json.configs).forEach(k => {
+                    if(k.startsWith('CAT___')) {
+                        categoryIconsMap[k.replace('CAT___', '')] = json.configs[k].icon;
+                    }
+                });
+
+                allProducts = allProducts.map(p => {
+                    let conf = json.configs[p.id];
+                    if (conf) { 
+                        let basePrice = parseInt(p.price) || 0;
+                        p.price = conf.price !== undefined && conf.price !== "" ? parseInt(conf.price) : basePrice; 
+                        p.fakePrice = conf.fakePrice !== undefined && conf.fakePrice !== "" ? parseInt(conf.fakePrice) : Math.floor(basePrice * 1.3); 
+                        p.icon = conf.icon || p.icon; 
+                        // Ép kiểu chuẩn xác cho isHidden
+                        p.isHidden = conf.isHidden === true || String(conf.isHidden).toLowerCase() === "true"; 
+                    }
+                    return p;
+                });
+            }
+            
+            // Kéo Sản phẩm thủ công của Admin
+            if (json.customProducts && json.customProducts.length > 0) {
+                json.customProducts.forEach(cp => {
+                    if (cp.isHidden !== true && String(cp.isHidden).toLowerCase() !== "true") {
+                        allProducts.unshift({
+                            id: cp.id,
+                            name: cp.name || 'Sản phẩm thủ công',
+                            cat: cp.cat || 'Khác',
+                            price: parseInt(cp.price) || 0,
+                            fakePrice: parseInt(cp.fakePrice) || 0,
+                            icon: cp.icon || 'https://kingmmo.com/assets/storage/images/0M76.png',
+                            stock: cp.stock !== undefined && cp.stock !== "" ? parseInt(cp.stock) : 999,
+                            isHidden: false
+                        });
+                    }
+                });
+            }
+
+            // Xóa các SP bị đánh dấu ẩn
+            allProducts = allProducts.filter(p => !p.isHidden);
+
+            if(allProducts.length > 0) { 
+                renderCategoryFilters(); 
+                renderProducts(allProducts); 
+            } else {
+                grid.innerHTML = `<div class="col-span-2 py-10 text-center text-gray-500"><i data-lucide="package-x" class="w-10 h-10 mx-auto mb-2 opacity-50"></i><p class="text-[13px] font-bold">Chưa có sản phẩm nào được bán</p></div>`;
+                lucide.createIcons();
+            }
+            
+        } catch(e) { 
+            console.error("LỖI KHỞI TẠO APP:", e);
+            grid.innerHTML = `
+                <div class="col-span-2 py-10 text-center text-red-500">
+                    <i data-lucide="wifi-off" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                    <p class="text-[13px] font-bold">Lỗi mạng: ${e.message}</p>
+                    <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-xs border border-red-200">Tải Lại Trang</button>
+                </div>`; 
+            lucide.createIcons(); 
+        }
+    }
+
+    // 2. RENDER GIAO DIỆN
     function renderCategoryFilters() {
         let cats = new Set(); 
         allProducts.forEach(p => cats.add(p.cat));
@@ -432,8 +437,10 @@
             let iconSrc = p.icon || getCatIcon(p.name + p.cat);
             let sold = Math.floor(Math.random() * 500) + 50; 
             let fakePriceHtml = p.fakePrice ? `<span class="text-[9px] text-gray-400 line-through mr-1">${p.fakePrice.toLocaleString()}đ</span>` : '';
+            
+            // Gắn mạc SP Riêng
             let isCustom = String(p.id).startsWith('CUSTOM_');
-            let badgeCustom = isCustom ? '<span class="absolute top-2 left-2 bg-purple-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm">SP RIÊNG</span>' : '';
+            let badgeCustom = isCustom ? `<span class="absolute top-2 left-2 bg-gradient-to-r from-purple-600 to-purple-800 text-white text-[8px] font-black px-2 py-0.5 rounded shadow-sm tracking-wide z-10">SP RIÊNG</span>` : '';
             
             html += `
             <div class="product-card flex flex-col overflow-hidden relative">
@@ -446,7 +453,7 @@
                     <div class="p-3 flex-1 flex flex-col">
                         <h4 class="text-[11px] font-bold line-clamp-2 min-h-[30px] mb-1.5 leading-snug text-gray-800">${p.name}</h4>
                         <div class="text-[10px] text-gray-400 font-medium mb-1.5 flex justify-between items-center mt-auto">
-                            <span>Kho: ${p.stock}</span>
+                            <span>Kho: <span class="font-bold">${p.stock}</span></span>
                             <span>Đã bán ${sold}</span>
                         </div>
                         <div class="text-mall font-black text-[14px]">
@@ -456,7 +463,7 @@
                 </div>
                 
                 <div class="flex items-center gap-1.5 p-2 pt-0 mt-auto border-t border-gray-50 bg-white">
-                    <button onclick="addToCart('${p.id}', event)" class="w-9 h-9 flex items-center justify-center border-2 border-red-50 text-mall rounded-xl bg-white hover:bg-red-50 active:scale-90 transition shadow-sm">
+                    <button onclick="addToCart('${p.id}', event)" class="w-9 h-9 flex items-center justify-center border border-red-100 text-mall rounded-xl bg-white hover:bg-red-50 active:scale-90 transition shadow-[0_2px_5px_rgba(0,0,0,0.02)]">
                         <i data-lucide="shopping-cart" class="w-4 h-4"></i>
                     </button>
                     <button onclick="buyDirectly('${p.id}', event)" class="flex-1 bg-mall text-white text-[11px] font-black rounded-xl h-9 active:scale-95 transition shadow-sm">
@@ -469,6 +476,7 @@
         lucide.createIcons();
     }
 
+    // 3. CHI TIẾT SẢN PHẨM & GIỎ HÀNG
     function openProductDetail(id) { 
         let p = allProducts.find(x => String(x.id) === String(id)); 
         if(!p) return; 
@@ -500,14 +508,9 @@
         const overlay = document.getElementById('cartOverlay'); 
         
         if (panel.classList.contains('open')) { 
-            panel.classList.remove('open'); 
-            overlay.classList.remove('opacity-100'); 
-            setTimeout(() => overlay.classList.add('hidden'), 300); 
+            panel.classList.remove('open'); overlay.classList.remove('opacity-100'); setTimeout(() => overlay.classList.add('hidden'), 300); 
         } else { 
-            renderCartItems(); 
-            panel.classList.add('open'); 
-            overlay.classList.remove('hidden'); 
-            setTimeout(() => overlay.classList.add('opacity-100'), 10); 
+            renderCartItems(); panel.classList.add('open'); overlay.classList.remove('hidden'); setTimeout(() => overlay.classList.add('opacity-100'), 10); 
         } 
     }
     
@@ -519,19 +522,13 @@
         if(!p) return;
         
         let ex = cart.find(i => String(i.id) === String(pid)); 
-        if(ex) { 
-            ex.quantity++; 
-        } else { 
-            cart.push({...p, quantity: 1}); 
-        }
+        if(ex) { ex.quantity++; } else { cart.push({...p, quantity: 1}); }
         
         updateCartBadge(); 
         renderModal('success', 'Đã thêm', `Đã bỏ <b>${p.name}</b> vào giỏ hàng.`, closeActionModal, 'Tiếp tục mua sắm'); 
     }
     
-    function updateCartBadge() { 
-        document.getElementById('cartBadge').innerText = cart.reduce((s, i) => s + i.quantity, 0); 
-    }
+    function updateCartBadge() { document.getElementById('cartBadge').innerText = cart.reduce((s, i) => s + i.quantity, 0); }
     
     function renderCartItems() {
         const container = document.getElementById('cartItemsContainer'); 
@@ -546,13 +543,10 @@
             return; 
         }
         
-        let html = ''; 
-        let total = 0; 
-        
+        let html = ''; let total = 0; 
         cart.forEach((item, idx) => { 
             total += item.price * item.quantity; 
             let iconSrc = item.icon || getCatIcon(item.name + item.cat);
-            
             html += `
             <div class="flex items-start gap-3 bg-white p-3 rounded-[16px] border border-gray-100 relative shadow-sm">
                 <button onclick="removeFromCart(${idx})" class="absolute top-2 right-2 text-gray-400 p-1 active:scale-90 bg-gray-50 rounded-full">
@@ -579,21 +573,13 @@
     }
     
     function updateQty(idx, change) { 
-        if (cart[idx].quantity + change > 0) { 
-            cart[idx].quantity += change; 
-        } else { 
-            cart.splice(idx, 1); 
-        } 
-        updateCartBadge(); 
-        renderCartItems(); 
+        if (cart[idx].quantity + change > 0) { cart[idx].quantity += change; } else { cart.splice(idx, 1); } 
+        updateCartBadge(); renderCartItems(); 
     }
     
-    function removeFromCart(idx) { 
-        cart.splice(idx, 1); 
-        updateCartBadge(); 
-        renderCartItems(); 
-    }
+    function removeFromCart(idx) { cart.splice(idx, 1); updateCartBadge(); renderCartItems(); }
 
+    // 4. LOGIC MUA HÀNG VÀ CHỜ DUYỆT TỰ ĐỘNG
     async function buyDirectly(pid, event = null) { 
         if(event) event.stopPropagation(); 
         if(!currentUser) { location.href = 'account.html'; return; } 
@@ -609,12 +595,12 @@
         renderModal('confirm', 'Xác Nhận Mua Hàng', `Hệ thống sẽ trừ <b>${parseInt(p.price).toLocaleString()}đ</b> trong ví để thanh toán đơn hàng này.`, async () => {
             try {
                 closeActionModal();
-                renderModal('loading', 'Đang xử lý...', 'Hệ thống đang xuất kho. Vui lòng không tắt ứng dụng.', ()=>{}, '');
+                renderModal('loading', 'Đang xử lý...', 'Hệ thống đang thao tác. Vui lòng không tắt ứng dụng.', ()=>{}, '');
                 
                 await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-p.price) }, { merge: true });
                 await fetch(`${GOOGLE_API_URL}?action=buy_mmo_pending&orderId=M${Date.now()}&uid=${currentUser.uid}&productId=${p.id}&productName=${encodeURIComponent(p.name)}&price=${p.price}&amount=1`);
                 
-                renderModal('success', 'Thanh toán thành công', 'Đã trừ tiền trong ví. Đơn hàng đang được Admin xuất kho.', () => openOrdersPanel(), 'Xem Lịch Sử');
+                renderModal('success', 'Thanh toán thành công', 'Đã trừ tiền trong ví. Đơn hàng đang được Admin xử lý xuất kho.', () => openOrdersPanel(), 'Xem Lịch Sử');
             } catch(e) { 
                 renderModal('error', 'Lỗi Giao Dịch', 'Thanh toán thất bại: ' + e.message, closeActionModal, 'Đóng'); 
             }
@@ -635,7 +621,7 @@
         renderModal('confirm', 'Thanh Toán Giỏ Hàng', `Hệ thống sẽ trừ <b>${tot.toLocaleString()}đ</b> trong ví để thanh toán ${cart.length} loại sản phẩm.`, async () => {
             try {
                 closeActionModal();
-                renderModal('loading', 'Đang xử lý...', 'Hệ thống đang xuất kho. Vui lòng không tắt ứng dụng.', ()=>{}, '');
+                renderModal('loading', 'Đang xử lý...', 'Hệ thống đang thao tác. Vui lòng không tắt ứng dụng.', ()=>{}, '');
                 
                 await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-tot) }, { merge: true });
                 
@@ -643,10 +629,7 @@
                     await fetch(`${GOOGLE_API_URL}?action=buy_mmo_pending&orderId=M${Date.now()}&uid=${currentUser.uid}&productId=${it.id}&productName=${encodeURIComponent(it.name)}&price=${it.price * it.quantity}&amount=${it.quantity}`);
                 }
                 
-                cart = []; 
-                updateCartBadge(); 
-                toggleCart();
-                
+                cart = []; updateCartBadge(); toggleCart();
                 renderModal('success', 'Thanh toán thành công', 'Đã trừ tiền trong ví. Các đơn hàng đang được Admin xử lý.', () => openOrdersPanel(), 'Xem Lịch Sử');
             } catch(e) { 
                 renderModal('error', 'Lỗi Giao Dịch', 'Thanh toán thất bại: ' + e.message, closeActionModal, 'Đóng'); 
@@ -654,6 +637,7 @@
         }, 'Xác Nhận Mua');
     }
 
+    // 5. BẢNG LỊCH SỬ
     function openOrdersPanel() { 
         if(!currentUser) { location.href = 'account.html'; return; } 
         document.getElementById('ordersPanel').classList.add('open'); 
@@ -697,7 +681,7 @@
                     <div class="bg-white p-4 rounded-xl border-l-4 border-green-500 shadow-sm mb-3 relative overflow-hidden">
                         <div class="flex justify-between items-center mb-3">
                             <span class="font-black text-[11px] text-gray-500">Mã Đơn: ${o.orderId}</span>
-                            <span class="text-green-700 bg-green-50 px-2 py-0.5 text-[10px] font-black rounded border border-green-200">ĐÃ THANH TOÁN VÍ</span>
+                            <span class="text-green-700 bg-green-50 px-2 py-0.5 text-[10px] font-black rounded border border-green-200">CHỜ XUẤT KHO</span>
                         </div>
                         <p class="text-[13px] font-bold text-gray-800 mb-2 leading-snug">${o.productName}</p>
                         <p class="text-[11px] text-gray-500">Thời gian mua: ${new Date(o.time).toLocaleString('vi-VN')}</p>
@@ -735,11 +719,9 @@
         lucide.createIcons();
     }
 
-    // --- MODAL HIỆU ỨNG SPRING PREMIUM ---
+    // 6. POPUP XỊN
     function renderModal(type, title, desc, actionFn, btnText) {
-        let iconHtml = '';
-        let btnHtml = '';
-
+        let iconHtml = ''; let btnHtml = '';
         if (type === 'success') {
             iconHtml = `<div class="w-20 h-20 mx-auto bg-green-50 rounded-[24px] flex items-center justify-center mb-5 shadow-[inset_0_0_20px_rgba(34,197,94,0.1)] border border-green-100"><i data-lucide="check" class="w-10 h-10 text-green-500"></i></div>`;
             btnHtml = `<button id="mBtn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-[0_8px_20px_rgba(34,197,94,0.3)] py-4 rounded-2xl font-black text-[15px] active:scale-95 transition-all">${btnText}</button>`;
@@ -784,6 +766,8 @@
         setTimeout(() => document.getElementById('actionModal').classList.add('hidden'), 300); 
     }
 
+    // RUN INITIALIZATION
+    loadMMOProducts(); 
     lucide.createIcons();
   </script>
 </body>
