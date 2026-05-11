@@ -4,15 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Admin Workspace - IPAVIET</title>
+  
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
   <script>
-    tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: '#007aff', brandDark: '#0A84FF', mall: '#9e0000' } } } }
+    tailwind.config = { 
+        theme: { 
+            extend: { 
+                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, 
+                colors: { brand: '#007aff', brandDark: '#0A84FF', mall: '#9e0000' } 
+            } 
+        } 
+    }
   </script>
 
   <style>
@@ -29,15 +38,24 @@
 <body class="h-[100dvh] flex overflow-hidden selection:bg-brand selection:text-white">
 
   <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0a0a0a] flex flex-col items-center justify-center text-white transition-opacity duration-500 p-5">
-      <div class="w-20 h-20 bg-gray-800 rounded-3xl flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(0,122,255,0.3)] border border-gray-700"><i data-lucide="shield-check" class="w-10 h-10 text-brand"></i></div>
+      <div class="w-20 h-20 bg-gray-800 rounded-[24px] flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(0,122,255,0.3)] border border-gray-700">
+          <i data-lucide="shield-check" class="w-10 h-10 text-brand"></i>
+      </div>
       <h2 class="text-2xl md:text-3xl font-black mb-2 tracking-tight text-center">WORKSPACE CẤP CAO</h2>
       <p class="text-gray-400 mb-8 text-sm font-medium text-center" id="loginStatusText">Đang xác thực thẻ đặc quyền...</p>
+      
       <div id="loginSpinner" class="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
       
-      <div id="step2Auth" class="hidden mt-2 bg-gray-900 border border-gray-800 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl">
+      <div id="loginError" class="hidden mt-4 w-full max-w-sm bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-4 rounded-[20px] text-sm text-center shadow-lg">
+          <i data-lucide="alert-triangle" class="w-6 h-6 mx-auto mb-2 text-red-500"></i>
+          <span id="errorMsgText">Quyền truy cập bị từ chối!<br><span class="text-xs text-red-500/70">Tài khoản hiện tại không thuộc nhóm Quản trị viên.</span></span><br>
+          <a href="account.html" class="bg-red-500 text-white font-bold px-4 py-3 rounded-xl mt-4 inline-block hover:bg-red-600 transition w-full active:scale-95">Đăng Nhập Lại</a>
+      </div>
+      
+      <div id="step2Auth" class="hidden mt-2 bg-gray-900 border border-gray-800 p-6 rounded-[32px] w-full max-w-sm text-center shadow-2xl">
           <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4"><i data-lucide="key" class="w-4 h-4 inline pb-1"></i> Nhập Mã PIN Máy Chủ</p>
-          <input type="password" id="serverPin" placeholder="Mật khẩu Backend..." class="w-full text-center font-black text-gray-900 px-4 py-4 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-brand text-lg tracking-widest">
-          <button onclick="verifyServerPin()" id="btnVerify" class="bg-brand text-white font-black px-6 py-4 rounded-xl w-full hover:bg-brandDark transition active:scale-95 shadow-lg shadow-brand/30">MỞ KHÓA HỆ THỐNG</button>
+          <input type="password" id="serverPin" placeholder="Mật khẩu Backend..." class="w-full text-center font-black text-gray-900 px-4 py-4 rounded-[16px] mb-4 outline-none focus:ring-2 focus:ring-brand text-lg tracking-widest">
+          <button onclick="verifyServerPin()" id="btnVerify" class="bg-brand text-white font-black px-6 py-4 rounded-[16px] w-full hover:bg-brandDark transition active:scale-95 shadow-lg shadow-brand/30">MỞ KHÓA HỆ THỐNG</button>
       </div>
   </div>
 
@@ -46,25 +64,34 @@
   <aside id="sidebar" class="w-[280px] bg-white border-r border-gray-200 flex flex-col z-40 shrink-0 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none">
       <div class="h-20 flex items-center justify-between px-6 border-b border-gray-100 shrink-0">
           <div class="flex items-center">
-              <div class="w-8 h-8 bg-brand rounded-lg flex items-center justify-center mr-3 shadow-md shadow-brand/30"><i data-lucide="cpu" class="w-5 h-5 text-white"></i></div>
+              <div class="w-8 h-8 bg-brand rounded-lg flex items-center justify-center mr-3 shadow-md shadow-brand/30">
+                  <i data-lucide="cpu" class="w-5 h-5 text-white"></i>
+              </div>
               <span class="font-black text-xl tracking-tight text-gray-900">ADMIN<span class="text-brand">.OS</span></span>
           </div>
-          <button onclick="toggleSidebar()" class="md:hidden text-gray-500 p-2 bg-gray-50 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button onclick="toggleSidebar()" class="md:hidden text-gray-500 p-2 bg-gray-50 rounded-full active:scale-90 transition">
+              <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
       </div>
 
       <nav class="flex-1 py-6 px-4 space-y-1.5 overflow-y-auto scrollbar-hide">
           <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-3">Hệ thống Core</p>
-          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center px-4 py-3.5 rounded-xl bg-brand/10 text-brand font-bold transition active:scale-95 text-[15px]"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Tổng Quan</button>
-          <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center px-4 py-3.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Khách Hàng</button>
-          <button onclick="switchTab('transactions')" id="nav-transactions" class="w-full flex items-center px-4 py-3.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="receipt" class="w-5 h-5 mr-3"></i> Nạp Tiền (SieuThiCode)</button>
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center px-4 py-3.5 rounded-[16px] bg-brand/10 text-brand font-bold transition active:scale-95 text-[15px]"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Tổng Quan</button>
+          <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center px-4 py-3.5 rounded-[16px] text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Khách Hàng</button>
+          <button onclick="switchTab('transactions')" id="nav-transactions" class="w-full flex items-center px-4 py-3.5 rounded-[16px] text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"><i data-lucide="receipt" class="w-5 h-5 mr-3"></i> Nạp Tiền (SieuThiCode)</button>
           
           <p class="text-[10px] font-black text-mall uppercase tracking-widest px-2 mb-3 mt-6">IPAVIET Mall</p>
-          <button onclick="switchTab('mmo_orders')" id="nav-mmo_orders" class="w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-gray-500 hover:bg-red-50 hover:text-mall font-bold transition active:scale-95 text-[15px]"><div class="flex items-center"><i data-lucide="package" class="w-5 h-5 mr-3"></i> Đơn Hàng Mall</div> <span id="badgeMMO" class="bg-mall text-white text-[10px] px-2 py-0.5 rounded-full hidden">0</span></button>
-          <button onclick="switchTab('mmo_config')" id="nav-mmo_config" class="w-full flex items-center px-4 py-3.5 rounded-xl text-gray-500 hover:bg-red-50 hover:text-mall font-bold transition active:scale-95 text-[15px]"><i data-lucide="sliders" class="w-5 h-5 mr-3"></i> Cấu Hình Sản Phẩm</button>
+          <button onclick="switchTab('mmo_orders')" id="nav-mmo_orders" class="w-full flex items-center justify-between px-4 py-3.5 rounded-[16px] text-gray-500 hover:bg-red-50 hover:text-mall font-bold transition active:scale-95 text-[15px]">
+              <div class="flex items-center"><i data-lucide="package" class="w-5 h-5 mr-3"></i> Đơn Hàng Mall</div> 
+              <span id="badgeMMO" class="bg-mall text-white text-[10px] px-2 py-0.5 rounded-full hidden shadow-sm">0</span>
+          </button>
+          <button onclick="switchTab('mmo_config')" id="nav-mmo_config" class="w-full flex items-center px-4 py-3.5 rounded-[16px] text-gray-500 hover:bg-red-50 hover:text-mall font-bold transition active:scale-95 text-[15px]"><i data-lucide="sliders" class="w-5 h-5 mr-3"></i> Cấu Hình Sản Phẩm</button>
       </nav>
       
       <div class="p-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
-          <button onclick="logoutAdmin()" class="w-full flex items-center justify-center px-4 py-3 rounded-xl border border-gray-200 text-gray-600 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-bold transition active:scale-95 text-sm shadow-sm"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng Xuất</button>
+          <button onclick="logoutAdmin()" class="w-full flex items-center justify-center px-4 py-3.5 rounded-[16px] border border-gray-200 text-gray-600 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-bold transition active:scale-95 text-sm shadow-sm">
+              <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng Xuất
+          </button>
       </div>
   </aside>
 
@@ -75,7 +102,9 @@
               <h1 class="text-lg md:text-[22px] font-black text-gray-900 tracking-tight line-clamp-1" id="pageTitle">Tổng Quan</h1>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-              <button onclick="loadAllData()" class="px-4 py-2.5 flex items-center justify-center gap-2 bg-white border border-gray-200 rounded-full text-sm font-bold text-gray-600 hover:text-brand hover:border-brand transition shadow-sm active:scale-95"><i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i> Làm mới</button>
+              <button onclick="loadAllData()" class="px-4 py-2.5 flex items-center justify-center gap-2 bg-white border border-gray-200 rounded-[12px] text-sm font-bold text-gray-600 hover:text-brand hover:border-brand transition shadow-sm active:scale-95">
+                  <i data-lucide="refresh-cw" class="w-4 h-4" id="refreshIcon"></i> Làm mới
+              </button>
           </div>
       </header>
 
@@ -83,9 +112,9 @@
           
           <div id="tab-dashboard" class="block max-w-6xl mx-auto space-y-6">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div class="bg-white rounded-[24px] p-6 border border-gray-100 stat-card shadow-sm"><p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Tổng Tiền Nạp</p><h3 class="text-3xl font-black text-green-600" id="statRevenue">...đ</h3></div>
-                  <div class="bg-white rounded-[24px] p-6 border border-gray-100 stat-card shadow-sm"><p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Khách Hàng</p><h3 class="text-3xl font-black text-brand" id="statUsers">...</h3></div>
-                  <div class="bg-white rounded-[24px] p-6 border border-red-200 stat-card shadow-sm bg-red-50"><p class="text-sm font-bold text-red-600 uppercase tracking-widest mb-1">Đơn Mall Cần Duyệt</p><h3 class="text-3xl font-black text-mall" id="statPendingMMO">...</h3></div>
+                  <div class="bg-white rounded-[24px] p-6 border border-gray-100 stat-card shadow-sm"><p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Tổng Tiền Nạp</p><h3 class="text-3xl font-black text-green-600 tracking-tight" id="statRevenue">0đ</h3></div>
+                  <div class="bg-white rounded-[24px] p-6 border border-gray-100 stat-card shadow-sm"><p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Khách Hàng</p><h3 class="text-3xl font-black text-brand tracking-tight" id="statUsers">0</h3></div>
+                  <div class="bg-white rounded-[24px] p-6 border border-red-200 stat-card shadow-sm bg-red-50"><p class="text-sm font-bold text-red-600 uppercase tracking-widest mb-1">Đơn Mall Cần Duyệt</p><h3 class="text-3xl font-black text-mall tracking-tight" id="statPendingMMO">0</h3></div>
               </div>
           </div>
 
@@ -96,8 +125,16 @@
                   </div>
                   <div class="overflow-x-auto w-full scrollbar-hide">
                       <table class="w-full text-left border-collapse min-w-[600px]">
-                          <thead><tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-widest"><th class="p-4 font-bold border-b border-gray-100">Khách</th><th class="p-4 font-bold border-b border-gray-100">Số Dư (VNĐ)</th><th class="p-4 font-bold border-b border-gray-100 text-right">Thao Tác</th></tr></thead>
-                          <tbody id="userTableBody" class="text-sm"><tr><td colspan="3" class="p-10 text-center text-gray-400">Đang tải...</td></tr></tbody>
+                          <thead>
+                              <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-widest">
+                                  <th class="p-4 font-bold border-b border-gray-100">Khách / Định danh</th>
+                                  <th class="p-4 font-bold border-b border-gray-100">Số Dư (VNĐ)</th>
+                                  <th class="p-4 font-bold border-b border-gray-100 text-right">Thao Tác</th>
+                              </tr>
+                          </thead>
+                          <tbody id="userTableBody" class="text-sm">
+                              <tr><td colspan="3" class="p-10 text-center text-gray-400">Đang tải...</td></tr>
+                          </tbody>
                       </table>
                   </div>
               </div>
@@ -105,11 +142,22 @@
 
           <div id="tab-transactions" class="hidden max-w-6xl mx-auto w-full">
               <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full">
-                  <div class="p-5 border-b border-gray-100 bg-white"><h3 class="text-lg font-black text-gray-900">Lịch Sử Nạp Tiền (SieuThiCode)</h3></div>
+                  <div class="p-5 border-b border-gray-100 bg-white">
+                      <h3 class="text-lg font-black text-gray-900">Lịch Sử Nạp Tiền (SieuThiCode)</h3>
+                  </div>
                   <div class="overflow-x-auto w-full scrollbar-hide">
                       <table class="w-full text-left border-collapse min-w-[600px]">
-                          <thead><tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-widest"><th class="p-4 font-bold border-b border-gray-100">Thời gian</th><th class="p-4 font-bold border-b border-gray-100">Mã Đơn / Khách</th><th class="p-4 font-bold border-b border-gray-100">Số Tiền</th><th class="p-4 font-bold border-b border-gray-100 text-right">Trạng thái</th></tr></thead>
-                          <tbody id="txTableBody" class="text-sm"><tr><td colspan="4" class="p-10 text-center text-gray-400">Đang đồng bộ...</td></tr></tbody>
+                          <thead>
+                              <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-widest">
+                                  <th class="p-4 font-bold border-b border-gray-100">Thời gian</th>
+                                  <th class="p-4 font-bold border-b border-gray-100">Mã Đơn / Khách</th>
+                                  <th class="p-4 font-bold border-b border-gray-100">Số Tiền</th>
+                                  <th class="p-4 font-bold border-b border-gray-100 text-right">Trạng thái</th>
+                              </tr>
+                          </thead>
+                          <tbody id="txTableBody" class="text-sm">
+                              <tr><td colspan="4" class="p-10 text-center text-gray-400">Đang đồng bộ...</td></tr>
+                          </tbody>
                       </table>
                   </div>
               </div>
@@ -121,29 +169,32 @@
                   <div class="p-5 border-b border-gray-100 bg-white flex flex-col md:flex-row gap-4 justify-between md:items-center">
                       <h3 class="text-lg font-black text-mall uppercase tracking-wide">Quản Trị Đơn Hàng Mall</h3>
                       <div class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                          
                           <div class="relative w-full md:w-72">
                               <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                              <input type="text" id="searchMmoInput" placeholder="Tìm Mã Đơn, UID, Tên SP..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:border-mall focus:bg-white transition">
+                              <input type="text" id="searchMmoInput" placeholder="Tìm Mã Đơn, UID, Tên SP..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-[12px] text-sm font-medium outline-none focus:border-mall focus:bg-white transition">
                           </div>
-                          <button onclick="bulkFulfillOrders()" id="btnBulkFulfill" class="w-full md:w-auto bg-mall hover:bg-mallLight text-white px-5 py-2 rounded-xl text-sm font-black shadow-md active:scale-95 transition flex items-center justify-center gap-2 whitespace-nowrap">
+                          
+                          <button onclick="bulkFulfillOrders()" id="btnBulkFulfill" class="w-full md:w-auto bg-mall hover:bg-mallLight text-white px-5 py-2.5 rounded-[12px] text-sm font-black shadow-md active:scale-95 transition flex items-center justify-center gap-2 whitespace-nowrap">
                               <i data-lucide="check-square" class="w-4 h-4"></i> Duyệt Đã Chọn
                           </button>
                       </div>
                   </div>
 
                   <div class="bg-gray-50 border-b border-gray-200 px-5 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
-                      <button onclick="filterAdminMmoOrders('PENDING_PAID')" id="filter_PENDING_PAID" class="px-4 py-1.5 rounded-full text-[12px] font-black bg-green-500 text-white shadow-sm whitespace-nowrap tracking-wide">Chờ Duyệt (Đã Có Tiền)</button>
-                      <button onclick="filterAdminMmoOrders('PENDING_UNPAID')" id="filter_PENDING_UNPAID" class="px-4 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide">Chưa Thanh Toán</button>
-                      <button onclick="filterAdminMmoOrders('COMPLETED')" id="filter_COMPLETED" class="px-4 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide">Đã Hoàn Thành</button>
-                      <button onclick="filterAdminMmoOrders('ALL')" id="filter_ALL" class="px-4 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide">Tất Cả Đơn</button>
+                      <button onclick="filterAdminMmoOrders('PENDING_PAID')" id="filter_PENDING_PAID" class="px-5 py-1.5 rounded-full text-[12px] font-black bg-green-500 text-white shadow-md whitespace-nowrap tracking-wide transition">Chờ Duyệt (Ưu tiên)</button>
+                      <button onclick="filterAdminMmoOrders('COMPLETED')" id="filter_COMPLETED" class="px-5 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide">Đã Hoàn Thành</button>
+                      <button onclick="filterAdminMmoOrders('ALL')" id="filter_ALL" class="px-5 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide">Tất Cả Đơn</button>
                   </div>
 
-                  <div class="overflow-x-auto w-full">
+                  <div class="overflow-x-auto w-full scrollbar-hide">
                       <table class="w-full text-left border-collapse min-w-[1000px]">
                           <thead>
                               <tr class="bg-red-50/50 text-mall text-[11px] uppercase tracking-widest border-b border-red-100">
-                                  <th class="p-4 w-10 text-center"><input type="checkbox" id="selectAllMmo" onclick="toggleSelectAllMmo(this)" class="w-4 h-4 accent-mall cursor-pointer rounded"></th>
-                                  <th class="p-4 font-black">Mã Đơn / UID Khách</th>
+                                  <th class="p-4 w-10 text-center">
+                                      <input type="checkbox" id="selectAllMmo" onclick="toggleSelectAllMmo(this)" class="w-4 h-4 accent-mall cursor-pointer rounded">
+                                  </th>
+                                  <th class="p-4 font-black">Mã Đơn / Khách</th>
                                   <th class="p-4 font-black">Trạng Thái</th>
                                   <th class="p-4 font-black">Thông Tin Sản Phẩm</th>
                                   <th class="p-4 font-black">Thời Gian</th>
@@ -160,24 +211,79 @@
 
           <div id="tab-mmo_config" class="hidden max-w-6xl mx-auto w-full">
               <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full flex flex-col">
-                  <div class="p-5 border-b border-gray-100 bg-white flex flex-col md:flex-row gap-4 justify-between items-center">
-                      <h3 class="text-lg font-black text-gray-900">Bảng Cấu Hình Sản Phẩm MMO</h3>
-                      <div class="flex items-center gap-2 w-full md:w-auto">
-                          <div class="flex bg-gray-50 border border-gray-200 rounded-xl p-1 shadow-inner">
-                              <input type="number" id="bulkPercent" placeholder="Nhập %..." class="w-24 px-2 py-1.5 text-sm outline-none bg-transparent font-bold text-center">
-                              <button onclick="applyBulkDiscount('up')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-[11px] font-black rounded-lg ml-1 shadow-sm transition"><i data-lucide="trending-up" class="w-3 h-3 inline"></i> TĂNG</button>
-                              <button onclick="applyBulkDiscount('down')" class="px-3 py-1.5 bg-mall hover:bg-mallLight text-white text-[11px] font-black rounded-lg ml-1 shadow-sm transition"><i data-lucide="trending-down" class="w-3 h-3 inline"></i> GIẢM</button>
+                  
+                  <div class="p-6 border-b border-gray-100 bg-white">
+                      
+                      <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                          <h3 class="text-[20px] font-black text-gray-900 tracking-tight">Cấu Hình Sản Phẩm Mall</h3>
+                          <div class="flex items-center gap-2 bg-gray-50 p-1.5 rounded-[14px] border border-gray-200 shadow-sm w-full md:w-auto">
+                              <i data-lucide="filter" class="w-4 h-4 text-gray-400 ml-3"></i>
+                              <select id="configCatFilter" onchange="filterConfigTable(this.value)" class="bg-transparent border-none text-[13px] font-bold text-gray-700 outline-none pr-4 py-1.5 w-full md:w-auto cursor-pointer">
+                                  <option value="all">Tất cả danh mục</option>
+                              </select>
                           </div>
-                          <button onclick="saveMMOConfig()" id="btnSaveConfig" class="px-6 py-2.5 bg-gray-900 hover:bg-black text-white text-[13px] font-black tracking-wide rounded-xl shadow-md active:scale-95 transition flex items-center gap-2"><i data-lucide="save" class="w-4 h-4"></i> LƯU LẠI</button>
+                      </div>
+
+                      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 bg-gray-50 p-5 rounded-[20px] border border-gray-100 shadow-inner">
+                          
+                          <div class="bg-white p-4 rounded-[16px] border border-gray-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-center">
+                              <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-3">
+                                  Chỉnh Giá Nhanh (%)
+                              </span>
+                              <div class="flex items-center gap-2">
+                                  <input type="number" id="bulkPercent" placeholder="Nhập %" class="w-20 px-3 py-2.5 border border-gray-200 rounded-[10px] text-[13px] font-black text-center outline-none focus:border-mall bg-gray-50">
+                                  <select id="bulkPriceTarget" class="px-3 py-2.5 border border-gray-200 rounded-[10px] text-[12px] font-bold bg-white outline-none focus:border-mall flex-1 cursor-pointer">
+                                      <option value=".cfg-price">Giá Bán</option>
+                                      <option value=".cfg-fake">Giá Gạch (Giá Cũ)</option>
+                                  </select>
+                                  <button onclick="applyBulkDiscount('up')" class="bg-green-500 text-white w-10 h-10 rounded-[10px] shadow-md transition active:scale-90 flex items-center justify-center">
+                                      <i data-lucide="trending-up" class="w-4 h-4 font-black"></i>
+                                  </button>
+                                  <button onclick="applyBulkDiscount('down')" class="bg-red-500 text-white w-10 h-10 rounded-[10px] shadow-md transition active:scale-90 flex items-center justify-center">
+                                      <i data-lucide="trending-down" class="w-4 h-4 font-black"></i>
+                                  </button>
+                              </div>
+                          </div>
+
+                          <div class="bg-white p-4 rounded-[16px] border border-gray-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-center">
+                              <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-3">
+                                  Gắn Link Ảnh Đồng Loạt
+                              </span>
+                              <div class="flex items-center gap-2">
+                                  <div class="relative flex-1">
+                                      <i data-lucide="link" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                      <input type="text" id="bulkIconUrl" placeholder="Dán link ảnh (https://...)" class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-[10px] text-[12px] font-medium outline-none focus:border-blue-500 bg-gray-50">
+                                  </div>
+                                  <button onclick="applyBulkIcon()" class="bg-blue-600 text-white px-5 py-2.5 rounded-[10px] text-[12px] font-black shadow-md transition active:scale-95 flex items-center gap-1.5">
+                                      <i data-lucide="image" class="w-4 h-4"></i> ÁP DỤNG
+                                  </button>
+                              </div>
+                          </div>
+                      </div>
+
+                      <div class="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
+                          <p class="text-[11px] text-orange-600 font-bold bg-orange-50 px-4 py-2.5 rounded-[10px] border border-orange-100 flex items-center gap-2">
+                              <i data-lucide="info" class="w-4 h-4"></i>
+                              <span>Các công cụ trên chỉ tác động vào <b>các sản phẩm đang hiển thị</b> bên dưới.</span>
+                          </p>
+                          <button onclick="saveMMOConfig()" id="btnSaveConfig" class="w-full md:w-auto px-8 py-3.5 bg-gradient-to-r from-gray-800 to-black text-white text-[13px] font-black tracking-widest rounded-[16px] shadow-[0_8px_20px_rgba(0,0,0,0.2)] active:scale-95 transition flex items-center justify-center gap-2">
+                              <i data-lucide="save" class="w-4 h-4"></i> LƯU VÀO MÁY CHỦ
+                          </button>
                       </div>
                   </div>
-                  <div class="p-4 bg-orange-50 border-b border-orange-100 text-orange-800 text-xs font-medium">
-                      <i data-lucide="info" class="w-4 h-4 inline pb-0.5"></i> <b>Hướng dẫn:</b> Chỉnh Giá Bán, Giá Cũ (Bị Gạch), Ảnh hiển thị. Tích vào ô vuông ở cột cuối để ẨN sản phẩm. <b>Nhớ bấm Lưu Lại để kích hoạt!</b>
-                  </div>
+                  
                   <div class="overflow-x-auto w-full h-[600px] scrollbar-hide">
                       <table class="w-full text-left border-collapse min-w-[1000px] relative">
                           <thead class="sticky top-0 z-20 bg-gray-100 text-gray-600 text-[11px] uppercase tracking-widest shadow-sm">
-                              <tr><th class="p-3 font-bold border-b border-gray-200">ID</th><th class="p-3 font-bold border-b border-gray-200 w-1/3">Tên Gốc (KingMMO)</th><th class="p-3 font-bold border-b border-gray-200">Giá Gốc</th><th class="p-3 font-bold border-b border-gray-200">Giá Bán (VNĐ)</th><th class="p-3 font-bold border-b border-gray-200">Giá Bị Gạch</th><th class="p-3 font-bold border-b border-gray-200">Link Icon Ảnh</th><th class="p-3 font-bold border-b border-gray-200 text-center">Ẩn SP</th></tr>
+                              <tr>
+                                  <th class="p-3 font-bold border-b border-gray-200">ID</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-1/3">Tên Gốc (KingMMO)</th>
+                                  <th class="p-3 font-bold border-b border-gray-200">Giá Gốc</th>
+                                  <th class="p-3 font-bold border-b border-gray-200">Giá Bán (VNĐ)</th>
+                                  <th class="p-3 font-bold border-b border-gray-200">Giá Bị Gạch</th>
+                                  <th class="p-3 font-bold border-b border-gray-200">Icon / Ảnh</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 text-center">Ẩn SP</th>
+                              </tr>
                           </thead>
                           <tbody id="mmoConfigBody" class="text-sm">
                               <tr><td colspan="7" class="p-10 text-center text-gray-400">Đang kéo kho sản phẩm...</td></tr>
@@ -228,7 +334,15 @@
 
   <script>
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec"; 
-    const firebaseConfig = { apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", authDomain: "ipaviet-st.firebaseapp.com", projectId: "ipaviet-st", storageBucket: "ipaviet-st.firebasestorage.app", messagingSenderId: "127619650916", appId: "1:127619650916:web:fc8904c99804eeb7539671" };
+    const firebaseConfig = { 
+        apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", 
+        authDomain: "ipaviet-st.firebaseapp.com", 
+        projectId: "ipaviet-st", 
+        storageBucket: "ipaviet-st.firebasestorage.app", 
+        messagingSenderId: "127619650916", 
+        appId: "1:127619650916:web:fc8904c99804eeb7539671" 
+    };
+    
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -239,9 +353,10 @@
     
     let mmoRawProducts = [];
     let mmoConfigMap = {};
-    let currentMmoFilter = 'PENDING_PAID'; 
+    let currentMmoFilter = 'PENDING_PAID'; // Tab đơn MMO mặc định
     let currentSearchMmoQuery = '';
 
+    // Lắng nghe đăng nhập
     auth.onAuthStateChanged(user => {
         if (user && user.email.toLowerCase() === "mquitran@gmail.com") {
             document.getElementById('loginSpinner').classList.add('hidden'); 
@@ -258,31 +373,60 @@
         const pinInput = autoPin || document.getElementById('serverPin').value; 
         const btn = document.getElementById('btnVerify');
         if (!pinInput) return;
-        if(!autoPin) { btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; btn.disabled = true; }
+        
+        if(!autoPin) { 
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; 
+            btn.disabled = true; 
+        }
 
         try {
             const res = await fetch(`${GOOGLE_API_URL}?action=verify_pin&pin=${pinInput}`);
             const data = await res.json();
+            
             if (data.success) {
-                adminPin = pinInput; localStorage.setItem('adminPin', pinInput);
+                adminPin = pinInput; 
+                localStorage.setItem('adminPin', pinInput);
                 const screen = document.getElementById('loginScreen'); 
-                screen.classList.add('opacity-0'); setTimeout(() => screen.classList.add('hidden'), 500);
+                screen.classList.add('opacity-0'); 
+                setTimeout(() => screen.classList.add('hidden'), 500);
                 loadAllData();
             } else { 
                 if(autoPin) logoutAdmin(); 
-                else { document.getElementById('errorMsgText').innerText = "SAI MÃ PIN!"; document.getElementById('loginError').classList.remove('hidden'); }
+                else { 
+                    document.getElementById('errorMsgText').innerText = "SAI MÃ PIN!"; 
+                    document.getElementById('loginError').classList.remove('hidden'); 
+                }
             }
-        } catch(e) { if(!autoPin) renderModal('error', 'Lỗi', 'Lỗi kết nối Backend!', closeActionModal, 'Đóng'); }
-        if(!autoPin) { btn.innerHTML = "MỞ KHÓA HỆ THỐNG"; btn.disabled = false; }
+        } catch(e) { 
+            if(!autoPin) renderModal('error', 'Lỗi Mạng', 'Không thể kết nối máy chủ.', closeActionModal, 'Đóng'); 
+        }
+        
+        if(!autoPin) { 
+            btn.innerHTML = "MỞ KHÓA HỆ THỐNG"; 
+            btn.disabled = false; 
+        }
     }
 
-    function logoutAdmin() { adminPin = ''; localStorage.removeItem('adminPin'); window.location.reload(); }
+    function logoutAdmin() { 
+        adminPin = ''; 
+        localStorage.removeItem('adminPin'); 
+        window.location.reload(); 
+    }
 
+    // TẢI DATA TOÀN HỆ THỐNG
     async function loadAllData() {
-        const icon = document.getElementById('refreshIcon'); icon.classList.add('animate-spin');
+        const icon = document.getElementById('refreshIcon'); 
+        icon.classList.add('animate-spin');
         
-        try { const snapshot = await db.collection("users").get(); allUsersData = []; snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); renderUserTable(); } catch (e) {}
+        // 1. Lấy Users Firebase
+        try { 
+            const snapshot = await db.collection("users").get(); 
+            allUsersData = []; 
+            snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); 
+            renderUserTable(); 
+        } catch (e) {}
         
+        // 2. Lấy Thu Ngân
         try { 
             const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pin=${adminPin}`); 
             const data = await res.json(); 
@@ -295,11 +439,13 @@
                         txs.push({ orderId: r[0], uid: r[1], amount: r[2], coins: r[3], status: r[4], time: r[5] });
                     }
                 }
-                googleData.totalRevenue = totalRev; googleData.transactions = txs.reverse();
+                googleData.totalRevenue = totalRev; 
+                googleData.transactions = txs.reverse();
                 renderTransactions(); 
             } else if (data.error) logoutAdmin();
         } catch(e) {}
 
+        // 3. Lấy Đơn MMO
         try {
             const resMMO = await fetch(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${adminPin}`);
             const dataMMO = await resMMO.json();
@@ -309,6 +455,7 @@
             }
         } catch(e) {}
 
+        // 4. Lấy Kho Sản Phẩm KingMMO
         try {
             const resP = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
             const dataP = await resP.json();
@@ -325,10 +472,13 @@
         setTimeout(() => icon.classList.remove('animate-spin'), 500);
     }
 
+    // --- TIỆN ÍCH DỮ LIỆU ---
     function findProductsArray(obj) {
         if (Array.isArray(obj) && obj.length > 0 && typeof obj[0] === 'object') return obj;
         if (typeof obj === 'object' && obj !== null) {
-            for (let key in obj) { if (Array.isArray(obj[key]) && obj[key].length > 0 && typeof obj[key][0] === 'object') return obj[key]; }
+            for (let key in obj) { 
+                if (Array.isArray(obj[key]) && obj[key].length > 0 && typeof obj[key][0] === 'object') return obj[key]; 
+            }
         }
         return null;
     }
@@ -337,15 +487,18 @@
         let products = [];
         data.forEach(item => {
             if (item.products && Array.isArray(item.products)) {
-                item.products.forEach(p => { products.push({ id: p.id || p.product_id, name: p.name || p.title, price: p.price || p.money || 0 }); });
+                item.products.forEach(p => { 
+                    products.push({ id: p.id || p.product_id, name: p.name || p.title, price: p.price || p.money || 0, cat: item.name || item.category || 'Khác' }); 
+                });
             } else {
                 let pId = item.id || item.product_id; let pName = item.name || item.title;
-                if (pId && pName) products.push({ id: pId, name: pName, price: item.price || item.money || 0 });
+                if (pId && pName) products.push({ id: pId, name: pName, price: item.price || item.money || 0, cat: item.categoryName || item.category || 'Khác' });
             }
         });
         return products;
     }
 
+    // --- RENDER BẢNG ĐIỀU KHIỂN ---
     function updateDashboardCards() {
         document.getElementById('statUsers').innerText = allUsersData.length.toLocaleString(); 
         document.getElementById('statRevenue').innerText = (googleData.totalRevenue || 0).toLocaleString('vi-VN') + "đ";
@@ -354,29 +507,57 @@
         document.getElementById('statPendingMMO').innerText = pendingPaidCount;
         
         const badge = document.getElementById('badgeMMO');
-        if(pendingPaidCount > 0) { badge.classList.remove('hidden'); badge.innerText = pendingPaidCount; } else badge.classList.add('hidden');
+        if(pendingPaidCount > 0) { 
+            badge.classList.remove('hidden'); 
+            badge.innerText = pendingPaidCount; 
+        } else {
+            badge.classList.add('hidden');
+        }
     }
 
     function renderUserTable() {
-        const tbody = document.getElementById('userTableBody'); if(allUsersData.length === 0) { tbody.innerHTML = `<tr><td colspan="3" class="p-8 text-center text-gray-500">Trống.</td></tr>`; return; }
+        const tbody = document.getElementById('userTableBody'); 
+        if(allUsersData.length === 0) { tbody.innerHTML = `<tr><td colspan="3" class="p-8 text-center text-gray-500">Trống.</td></tr>`; return; }
+        
         let html = '';
-        allUsersData.forEach(u => { html += `<tr class="border-b border-gray-100 hover:bg-gray-50 transition"><td class="p-4"><p class="font-bold text-gray-900">${u.email || 'Ẩn danh'}</p><p class="text-[10px] text-gray-400 font-mono mt-0.5">${u.uid}</p></td><td class="p-4 font-black text-brand">${(u.coins || 0).toLocaleString()}đ</td><td class="p-4 text-right"><button onclick="openEditModal('${u.uid}')" class="bg-white border border-gray-200 text-gray-600 hover:text-brand hover:border-brand px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm hover:shadow active:scale-95">Chỉnh sửa</button></td></tr>`; });
+        allUsersData.forEach(u => { 
+            html += `
+            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                <td class="p-4"><p class="font-bold text-gray-900">${u.email || 'Ẩn danh'}</p><p class="text-[10px] text-gray-400 font-mono mt-0.5">${u.uid}</p></td>
+                <td class="p-4 font-black text-brand">${(u.coins || 0).toLocaleString()}đ</td>
+                <td class="p-4 text-right">
+                    <button onclick="openEditModal('${u.uid}')" class="bg-white border border-gray-200 text-gray-600 hover:text-brand hover:border-brand px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm hover:shadow active:scale-95">Chỉnh sửa</button>
+                </td>
+            </tr>`; 
+        });
         tbody.innerHTML = html;
     }
 
     function renderTransactions() {
-        const tbody = document.getElementById('txTableBody'); if(googleData.transactions.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Trống.</td></tr>`; return; }
+        const tbody = document.getElementById('txTableBody'); 
+        if(googleData.transactions.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500">Trống.</td></tr>`; return; }
+        
         let html = '';
         googleData.transactions.forEach(t => {
             let isPaid = t.status === 'CLAIMED';
             let statusBadge = isPaid ? `<span class="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-[10px] font-black border border-green-200"><i data-lucide="check" class="w-3 h-3 inline"></i> OK</span>` : `<span class="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg text-[10px] font-black border border-orange-200">CHỜ</span>`;
-            html += `<tr class="border-b border-gray-100 hover:bg-gray-50 transition"><td class="p-4 text-[11px] font-bold text-gray-500">${new Date(t.time).toLocaleString('vi-VN')}</td><td class="p-4"><p class="font-bold text-gray-900">${t.orderId}</p></td><td class="p-4"><p class="font-black text-red-500">${(parseInt(t.amount)||0).toLocaleString()}đ</p></td><td class="p-4 text-right">${statusBadge}</td></tr>`;
+            
+            html += `
+            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                <td class="p-4 text-[11px] font-bold text-gray-500">${new Date(t.time).toLocaleString('vi-VN')}</td>
+                <td class="p-4"><p class="font-bold text-gray-900">${t.orderId}</p></td>
+                <td class="p-4"><p class="font-black text-red-500">${(parseInt(t.amount)||0).toLocaleString()}đ</p></td>
+                <td class="p-4 text-right">${statusBadge}</td>
+            </tr>`;
         });
         tbody.innerHTML = html; lucide.createIcons();
     }
 
+    // --- SỬA TIỀN USER ---
     function openEditModal(uid) { 
-        const user = allUsersData.find(u => u.uid === uid); if(!user) return; 
+        const user = allUsersData.find(u => u.uid === uid); 
+        if(!user) return; 
+        
         document.getElementById('editUid').value = user.uid; 
         document.getElementById('editEmail').value = user.email || 'N/A'; 
         document.getElementById('editCoins').value = user.coins || 0; 
@@ -402,7 +583,10 @@
         const uid = document.getElementById('editUid').value; 
         const newCoins = parseInt(document.getElementById('editCoins').value) || 0; 
         const btn = document.getElementById('btnSaveUser'); 
-        btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; btn.disabled = true; 
+        
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; 
+        btn.disabled = true; 
+        
         try { 
             await db.collection("users").doc(uid).set({ coins: newCoins }, { merge: true }); 
             renderModal('success', 'Thành công', 'Đã cập nhật số dư cho khách hàng!', closeActionModal, 'Xong');
@@ -411,18 +595,23 @@
         } catch(e) { 
             renderModal('error', 'Thất bại', 'Lỗi: ' + e.message, closeActionModal, 'Đóng');
         } 
-        btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI`; btn.disabled = false; lucide.createIcons(); 
+        
+        btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI`; 
+        btn.disabled = false; 
+        lucide.createIcons(); 
     }
 
+    // --- QUẢN LÝ ĐƠN HÀNG MMO ---
     function filterAdminMmoOrders(filterType) {
         currentMmoFilter = filterType;
+        
         ['PENDING_PAID', 'PENDING_UNPAID', 'COMPLETED', 'ALL'].forEach(id => {
             const btn = document.getElementById('filter_' + id);
             if(!btn) return;
             if(id === filterType) {
-                btn.className = `px-4 py-1.5 rounded-full text-[12px] font-black ${id === 'PENDING_PAID' ? 'bg-green-500 text-white shadow-md' : 'bg-gray-800 text-white shadow-md'} whitespace-nowrap tracking-wide transition`;
+                btn.className = `px-5 py-1.5 rounded-full text-[12px] font-black ${id === 'PENDING_PAID' ? 'bg-green-500 text-white shadow-md' : 'bg-gray-800 text-white shadow-md'} whitespace-nowrap tracking-wide transition`;
             } else {
-                btn.className = `px-4 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide`;
+                btn.className = `px-5 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide`;
             }
         });
 
@@ -472,27 +661,29 @@
             let isCompleted = o.status === 'COMPLETED';
             
             let statusBadge = '';
-            if (isCompleted) statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black border border-blue-200">ĐÃ DUYỆT / CÓ ACC</span>`;
-            else if (o.isPaid) statusBadge = `<span class="bg-green-500 text-white px-2 py-0.5 rounded text-[10px] font-black shadow-sm shadow-green-500/30">TIỀN ĐÃ VÀO</span>`;
-            else statusBadge = `<span class="bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-[10px] font-black border border-orange-200">CHƯA TRẢ TIỀN</span>`;
+            if (isCompleted) statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-black border border-blue-200">ĐÃ HOÀN THÀNH</span>`;
+            else if (o.isPaid) statusBadge = `<span class="bg-green-500 text-white px-2 py-1 rounded text-[10px] font-black shadow-sm shadow-green-500/30">CÓ TIỀN, CHỜ DUYỆT</span>`;
+            else statusBadge = `<span class="bg-orange-50 text-orange-600 px-2 py-1 rounded text-[10px] font-black border border-orange-200">CHƯA TRẢ TIỀN</span>`;
 
             let canCheck = o.status === 'PENDING' && o.isPaid;
             let actionHtml = '';
             
             if(isCompleted) {
-                actionHtml = `<div class="text-[10px] text-gray-500 font-mono text-left bg-gray-50 p-2 rounded border border-gray-200 break-all w-64 ml-auto max-h-24 overflow-y-auto">${(o.accountData || '').replace(/\n/g, '<br>')}</div>`;
+                actionHtml = `<div class="text-[10px] text-gray-500 font-mono text-left bg-gray-50 p-2.5 rounded border border-gray-200 break-all w-72 ml-auto max-h-24 overflow-y-auto">${(o.accountData || '').replace(/\n/g, '<br>')}</div>`;
             } else if (canCheck) {
-                actionHtml = `<button id="btnDuyet_${o.row}" onclick="fulfillMMOOrder(${o.row}, '${o.productId}', ${o.amount})" class="bg-mall text-white px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-mallLight active:scale-95 transition whitespace-nowrap"><i data-lucide="check-circle" class="w-4 h-4 inline"></i> Duyệt Trả Acc</button>`;
+                actionHtml = `<button id="btnDuyet_${o.row}" onclick="fulfillMMOOrder(${o.row}, '${o.productId}', ${o.amount})" class="bg-mall text-white px-5 py-2.5 rounded-lg text-xs font-black shadow-[0_4px_10px_rgba(158,0,0,0.3)] hover:bg-mallLight active:scale-95 transition whitespace-nowrap"><i data-lucide="check-circle" class="w-4 h-4 inline"></i> Duyệt Tự Động</button>`;
             } else {
-                actionHtml = `<button class="bg-gray-200 text-gray-400 px-4 py-2 rounded-lg text-xs font-bold cursor-not-allowed whitespace-nowrap">Khóa (Chờ Tiền)</button>`;
+                actionHtml = `<button class="bg-gray-100 text-gray-400 px-4 py-2.5 rounded-lg text-xs font-bold cursor-not-allowed whitespace-nowrap border border-gray-200">Đang Khóa</button>`;
             }
 
             html += `
             <tr class="border-b border-gray-100 ${canCheck ? 'bg-green-50/20 hover:bg-green-50/40' : 'hover:bg-gray-50'} transition">
-                <td class="p-4 text-center"><input type="checkbox" class="mmo-row-cb w-4 h-4 accent-mall cursor-pointer rounded" data-row="${o.row}" data-pid="${o.productId}" data-amt="${o.amount}" ${canCheck ? '' : 'disabled'}></td>
+                <td class="p-4 text-center">
+                    <input type="checkbox" class="mmo-row-cb w-4 h-4 accent-mall cursor-pointer rounded" data-row="${o.row}" data-pid="${o.productId}" data-amt="${o.amount}" ${canCheck ? '' : 'disabled'}>
+                </td>
                 <td class="p-4"><p class="font-black text-gray-900">${o.orderId}</p><p class="text-[10px] text-gray-400 font-mono mt-1">${o.uid}</p></td>
                 <td class="p-4">${statusBadge}</td>
-                <td class="p-4"><p class="font-bold text-mall text-[13px] leading-snug w-48 line-clamp-2">${o.productName || o.productId}</p><p class="text-[11px] font-bold text-gray-500 mt-1">SL: ${o.amount} <span class="mx-1">|</span> Giá: ${parseInt(o.price || 0).toLocaleString()}đ</p></td>
+                <td class="p-4"><p class="font-bold text-mall text-[13px] leading-snug w-56 line-clamp-2">${o.productName || o.productId}</p><p class="text-[11px] font-bold text-gray-500 mt-1">SL: ${o.amount} <span class="mx-1">|</span> Giá: ${parseInt(o.price || 0).toLocaleString()}đ</p></td>
                 <td class="p-4 text-[11px] font-bold text-gray-500 whitespace-nowrap">${new Date(o.time).toLocaleString('vi-VN')}</td>
                 <td class="p-4 text-right">${actionHtml}</td>
             </tr>`;
@@ -504,15 +695,16 @@
         renderModal('confirm', 'Duyệt Đơn Hàng', 'Xác nhận ĐÃ THẤY TIỀN và muốn tự động lấy Acc trả cho khách?', async () => {
             closeActionModal();
             const btn = document.getElementById(`btnDuyet_${row}`);
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Xử lý...`; btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Xử lý...`; 
+            btn.disabled = true;
+            
             try {
                 const res = await fetch(`${GOOGLE_API_URL}?action=admin_fulfill_kingmmo&pin=${adminPin}&row=${row}&productId=${productId}&amount=${amount}`);
                 const data = await res.json();
                 if(data.success) { 
-                    renderModal('success', 'Thành công', 'Duyệt đơn & Trả acc thành công!', closeActionModal, 'Đóng');
+                    renderModal('success', 'Thành công', 'Duyệt đơn & Trả acc thành công!', closeActionModal, 'Tuyệt vời');
                     loadAllData(); 
-                }
-                else { 
+                } else { 
                     renderModal('error', 'Lỗi KingMMO', data.error, closeActionModal, 'Đóng');
                     btn.innerHTML = "Thử Lại"; btn.disabled = false; 
                 }
@@ -530,32 +722,48 @@
             return;
         }
         
-        renderModal('confirm', 'Duyệt Hàng Loạt', `Xác nhận duyệt TỰ ĐỘNG ${checkboxes.length} đơn hàng? Tránh thao tác khi hệ thống đang chạy.`, async () => {
+        renderModal('confirm', 'Duyệt Hàng Loạt', `Xác nhận duyệt TỰ ĐỘNG ${checkboxes.length} đơn hàng? Cấm tuyệt đối tải lại trang lúc này.`, async () => {
             closeActionModal();
             const btnMain = document.getElementById('btnBulkFulfill');
-            btnMain.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Đang chạy...`; btnMain.disabled = true;
+            btnMain.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Đang chạy...`; 
+            btnMain.disabled = true;
 
             let successCount = 0; let failCount = 0;
 
             for(let i=0; i<checkboxes.length; i++) {
                 let cb = checkboxes[i]; let row = cb.dataset.row; let pid = cb.dataset.pid; let amt = cb.dataset.amt;
                 let btnLine = document.getElementById(`btnDuyet_${row}`);
-                if(btnLine) { btnLine.innerHTML = "Đang xử lý..."; btnLine.classList.remove('bg-mall'); btnLine.classList.add('bg-orange-500'); }
+                
+                if(btnLine) { 
+                    btnLine.innerHTML = "Đang xử lý..."; 
+                    btnLine.classList.remove('bg-mall'); 
+                    btnLine.classList.add('bg-orange-500'); 
+                }
 
                 try {
                     let res = await fetch(`${GOOGLE_API_URL}?action=admin_fulfill_kingmmo&pin=${adminPin}&row=${row}&productId=${pid}&amount=${amt}`);
                     let data = await res.json();
-                    if(data.success) { successCount++; if(btnLine) { btnLine.innerHTML = "THÀNH CÔNG"; btnLine.classList.replace('bg-orange-500', 'bg-green-500'); } } 
-                    else { failCount++; if(btnLine) { btnLine.innerHTML = "LỖI KINGMMO"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } }
-                } catch(e) { failCount++; if(btnLine) { btnLine.innerHTML = "LỖI MẠNG"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } }
+                    if(data.success) { 
+                        successCount++; 
+                        if(btnLine) { btnLine.innerHTML = "THÀNH CÔNG"; btnLine.classList.replace('bg-orange-500', 'bg-green-500'); } 
+                    } else { 
+                        failCount++; 
+                        if(btnLine) { btnLine.innerHTML = "LỖI KINGMMO"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } 
+                    }
+                } catch(e) { 
+                    failCount++; 
+                    if(btnLine) { btnLine.innerHTML = "LỖI MẠNG"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } 
+                }
             }
 
-            renderModal('success', 'Xử Lý Hoàn Tất', `- Thành công: ${successCount} đơn<br>- Thất bại: ${failCount} đơn`, closeActionModal, 'Đóng');
-            btnMain.innerHTML = `<i data-lucide="check-square" class="w-4 h-4"></i> Duyệt Đã Chọn`; btnMain.disabled = false;
+            renderModal('success', 'Xử Lý Hoàn Tất', `- Thành công: <b>${successCount} đơn</b><br>- Thất bại: <b>${failCount} đơn</b>`, closeActionModal, 'Tải Lại Bảng');
+            btnMain.innerHTML = `<i data-lucide="check-square" class="w-4 h-4"></i> Duyệt Đã Chọn`; 
+            btnMain.disabled = false;
             loadAllData();
         }, 'Bắt Đầu Chạy');
     }
 
+    // --- CẤU HÌNH SẢN PHẨM MMO XỊN ---
     function getAutoIcon(name) {
         let c = name.toLowerCase();
         if(c.includes('tích xanh')) return 'https://kingmmo.com/assets/storage/images/categoryJ4QE.png';
@@ -583,8 +791,15 @@
 
     function renderMMOConfigTable() {
         const tbody = document.getElementById('mmoConfigBody');
+        const selectFilter = document.getElementById('configCatFilter');
+        
+        let cats = new Set();
         let html = '';
+        
         mmoRawProducts.forEach(p => {
+            let catName = p.cat || 'Khác';
+            cats.add(catName);
+
             let conf = mmoConfigMap[p.id] || {};
             let customPrice = conf.price !== undefined ? conf.price : p.price;
             let fakePrice = conf.fakePrice !== undefined ? conf.fakePrice : Math.floor(p.price * 1.3); 
@@ -592,41 +807,84 @@
             let isHidden = conf.isHidden ? 'checked' : '';
 
             html += `
-            <tr class="border-b border-gray-100 hover:bg-gray-50" data-id="${p.id}">
-                <td class="p-3"><span class="bg-gray-100 px-2 py-1 rounded text-[11px] font-mono text-gray-500">${p.id}</span></td>
-                <td class="p-3"><p class="text-[13px] font-bold text-gray-800 line-clamp-2">${p.name}</p></td>
+            <tr class="border-b border-gray-100 hover:bg-gray-50 transition config-row" data-id="${p.id}" data-cat="${catName}">
+                <td class="p-3"><span class="bg-gray-100 px-2.5 py-1 rounded text-[11px] font-mono text-gray-500">${p.id}</span></td>
+                <td class="p-3"><p class="text-[13px] font-bold text-gray-800 line-clamp-2 leading-snug w-48">${p.name}</p></td>
                 <td class="p-3"><p class="text-[12px] text-gray-500 font-bold">${parseInt(p.price).toLocaleString()}đ</p></td>
-                <td class="p-3"><input type="number" class="cfg-price w-full border border-gray-200 rounded px-2 py-1.5 text-sm font-bold text-mall outline-none focus:border-mall" value="${customPrice}"></td>
-                <td class="p-3"><input type="number" class="cfg-fake w-full border border-gray-200 rounded px-2 py-1.5 text-sm font-bold text-gray-400 outline-none focus:border-mall" value="${fakePrice}"></td>
-                <td class="p-3"><div class="flex items-center gap-2"><img src="${iconUrl}" class="w-6 h-6 object-contain border border-gray-200 rounded bg-white"><input type="text" class="cfg-icon w-full border border-gray-200 rounded px-2 py-1.5 text-[11px] outline-none" value="${iconUrl}"></div></td>
-                <td class="p-3 text-center"><input type="checkbox" class="cfg-hide w-5 h-5 accent-mall cursor-pointer" ${isHidden}></td>
+                <td class="p-3"><input type="number" class="cfg-price w-24 border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-black text-mall outline-none focus:border-mall bg-white shadow-inner"></td>
+                <td class="p-3"><input type="number" class="cfg-fake w-24 border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-black text-gray-400 outline-none focus:border-mall bg-white shadow-inner"></td>
+                <td class="p-3"><div class="flex items-center gap-2"><img src="${iconUrl}" class="preview-icon w-8 h-8 object-contain border border-gray-200 rounded-lg bg-white p-0.5"><input type="text" class="cfg-icon w-48 border border-gray-200 rounded-[10px] px-3 py-2 text-[11px] outline-none focus:border-blue-500 bg-white" value="${iconUrl}"></div></td>
+                <td class="p-3 text-center"><input type="checkbox" class="cfg-hide w-5 h-5 accent-mall cursor-pointer rounded" ${isHidden}></td>
             </tr>`;
         });
         tbody.innerHTML = html;
+
+        // Render Options cho Lọc
+        let filterHtml = '<option value="all">Tất cả danh mục</option>';
+        cats.forEach(c => { filterHtml += `<option value="${c}">${c}</option>`; });
+        
+        let currentVal = selectFilter.value;
+        selectFilter.innerHTML = filterHtml;
+        if(cats.has(currentVal)) selectFilter.value = currentVal;
+    }
+
+    function filterConfigTable(cat) {
+        const rows = document.querySelectorAll('.config-row');
+        rows.forEach(tr => {
+            if(cat === 'all' || tr.dataset.cat === cat) {
+                tr.style.display = '';
+            } else {
+                tr.style.display = 'none';
+            }
+        });
     }
 
     function applyBulkDiscount(type) {
         let percent = parseFloat(document.getElementById('bulkPercent').value);
-        if(isNaN(percent) || percent <= 0) return renderModal('error', 'Cảnh báo', 'Vui lòng nhập % hợp lệ!', closeActionModal, 'Đóng');
+        if(isNaN(percent) || percent <= 0) return renderModal('error', 'Cảnh báo', 'Vui lòng nhập phần trăm (%) hợp lệ!', closeActionModal, 'Đóng');
         
+        let targetClass = document.getElementById('bulkPriceTarget').value; // .cfg-price hoặc .cfg-fake
         let multiplier = type === 'up' ? (1 + percent/100) : (1 - percent/100);
-        document.querySelectorAll('#mmoConfigBody tr').forEach(tr => {
-            let inputPrice = tr.querySelector('.cfg-price');
-            let current = parseFloat(inputPrice.value);
-            inputPrice.value = Math.floor(current * multiplier);
+        
+        let count = 0;
+        document.querySelectorAll('.config-row').forEach(tr => {
+            if(tr.style.display !== 'none') {
+                let inputPrice = tr.querySelector(targetClass);
+                let current = parseFloat(inputPrice.value);
+                inputPrice.value = Math.floor(current * multiplier);
+                count++;
+            }
         });
         
-        renderModal('success', 'Thành công', `Đã ${type === 'up' ? 'tăng' : 'giảm'} ${percent}% toàn bộ giá.<br><b>Vui lòng bấm LƯU LẠI để áp dụng!</b>`, closeActionModal, 'Đã hiểu');
+        renderModal('success', 'Đã Áp Dụng', `Đã ${type === 'up' ? 'tăng' : 'giảm'} ${percent}% cho <b>${count} sản phẩm</b> đang hiển thị trên bảng.<br><br>🚨 <b>Hãy bấm LƯU CẤU HÌNH để lưu vào hệ thống!</b>`, closeActionModal, 'Tuyệt vời');
+    }
+
+    function applyBulkIcon() {
+        let url = document.getElementById('bulkIconUrl').value.trim();
+        if(!url) return renderModal('error', 'Cảnh báo', 'Vui lòng nhập Link ảnh (URL)!', closeActionModal, 'Đóng');
+        
+        let count = 0;
+        document.querySelectorAll('.config-row').forEach(tr => {
+            if(tr.style.display !== 'none') {
+                tr.querySelector('.cfg-icon').value = url;
+                tr.querySelector('.preview-icon').src = url;
+                count++;
+            }
+        });
+        
+        renderModal('success', 'Đã Áp Dụng', `Đã gắn ảnh mới cho <b>${count} sản phẩm</b> đang hiển thị.<br><br>🚨 <b>Hãy bấm LƯU CẤU HÌNH để lưu vào hệ thống!</b>`, closeActionModal, 'Tuyệt vời');
     }
 
     async function saveMMOConfig() {
-        renderModal('confirm', 'Lưu Cấu Hình', 'Lưu toàn bộ thay đổi này lên hệ thống?', async () => {
+        renderModal('confirm', 'Lưu Cấu Hình', 'Lưu toàn bộ thay đổi giá, ảnh, trạng thái ẩn này lên hệ thống?', async () => {
             closeActionModal();
             const btn = document.getElementById('btnSaveConfig');
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Đang lưu...`; btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Đang lưu...`; 
+            btn.disabled = true;
 
             let payload = [];
-            document.querySelectorAll('#mmoConfigBody tr').forEach(tr => {
+            // Quét TẤT CẢ các dòng để lưu (cả dòng ẩn lẫn dòng hiện)
+            document.querySelectorAll('.config-row').forEach(tr => {
                 payload.push({
                     id: tr.dataset.id,
                     price: parseInt(tr.querySelector('.cfg-price').value) || 0,
@@ -644,33 +902,39 @@
 
                 const res = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
                 const data = await res.json();
+                
                 if(data.success) { 
-                    renderModal('success', 'Hoàn tất', 'Đã lưu cấu hình lên Server thành công!', closeActionModal, 'Đóng');
+                    renderModal('success', 'Hoàn tất', 'Đã đồng bộ cấu hình lên Server thành công!', closeActionModal, 'Đóng');
                     loadAllData(); 
+                } else {
+                    renderModal('error', 'Lỗi Server', data.error, closeActionModal, 'Đóng');
                 }
-                else renderModal('error', 'Lỗi Server', data.error, closeActionModal, 'Đóng');
-            } catch(e) { renderModal('error', 'Lỗi mạng', e.message, closeActionModal, 'Đóng'); }
+            } catch(e) { 
+                renderModal('error', 'Lỗi mạng', e.message, closeActionModal, 'Đóng'); 
+            }
             
-            btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> LƯU LẠI`; btn.disabled = false; lucide.createIcons();
-        }, 'Xác Nhận');
+            btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> LƯU CẤU HÌNH VÀO SERVER`; 
+            btn.disabled = false; 
+            lucide.createIcons();
+        }, 'Lưu Ngay');
     }
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('sidebar-open'); document.getElementById('mobileOverlay').classList.toggle('overlay-open'); }
     function switchTab(tab) { 
         ['dashboard', 'users', 'transactions', 'mmo_orders', 'mmo_config'].forEach(id => { 
             document.getElementById('tab-' + id).classList.add('hidden'); 
-            document.getElementById('nav-' + id).className = "w-full flex items-center px-4 py-3.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"; 
+            document.getElementById('nav-' + id).className = "w-full flex items-center px-4 py-3.5 rounded-[16px] text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-bold transition active:scale-95 text-[15px]"; 
         }); 
         document.getElementById('tab-' + tab).classList.remove('hidden'); 
-        document.getElementById('nav-' + tab).className = "w-full flex items-center px-4 py-3.5 rounded-xl bg-brand/10 text-brand font-bold transition active:scale-95 text-[15px]"; 
-        if(tab.includes('mmo')) document.getElementById('nav-' + tab).className = "w-full flex items-center px-4 py-3.5 rounded-xl bg-red-50 text-mall font-bold transition active:scale-95 text-[15px]";
+        document.getElementById('nav-' + tab).className = "w-full flex items-center px-4 py-3.5 rounded-[16px] bg-brand/10 text-brand font-bold transition active:scale-95 text-[15px]"; 
+        if(tab.includes('mmo')) document.getElementById('nav-' + tab).className = "w-full flex items-center justify-between px-4 py-3.5 rounded-[16px] bg-red-50 text-mall font-bold transition active:scale-95 text-[15px]";
 
         const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng', 'transactions': 'Nạp Tiền', 'mmo_orders': 'Quản Trị Mall', 'mmo_config': 'Cấu Hình Mall' }; 
         document.getElementById('pageTitle').innerText = titles[tab]; 
         if(window.innerWidth < 768) { document.getElementById('sidebar').classList.remove('sidebar-open'); document.getElementById('mobileOverlay').classList.remove('overlay-open'); }
     }
 
-    // --- PREMIUM MODAL LOGIC ---
+    // --- MODAL HIỆU ỨNG SPRING PREMIUM ---
     function renderModal(type, title, desc, actionFn, btnText) {
         let iconHtml = '';
         let btnHtml = '';
@@ -718,7 +982,7 @@
         document.getElementById('actionModalPanel').classList.add('scale-90', 'translate-y-8', 'opacity-0'); 
         setTimeout(() => document.getElementById('actionModal').classList.add('hidden'), 300); 
     }
-    
+
     lucide.createIcons();
   </script>
 </body>
