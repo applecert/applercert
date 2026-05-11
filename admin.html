@@ -105,7 +105,7 @@
 
           <div id="tab-transactions" class="hidden max-w-6xl mx-auto w-full">
               <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full">
-                  <div class="p-5 border-b border-gray-100 bg-white"><h3 class="text-lg font-black text-gray-900">Lịch Sử Nạp Tiền</h3></div>
+                  <div class="p-5 border-b border-gray-100 bg-white"><h3 class="text-lg font-black text-gray-900">Lịch Sử Nạp Tiền (SieuThiCode)</h3></div>
                   <div class="overflow-x-auto w-full scrollbar-hide">
                       <table class="w-full text-left border-collapse min-w-[600px]">
                           <thead><tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-widest"><th class="p-4 font-bold border-b border-gray-100">Thời gian</th><th class="p-4 font-bold border-b border-gray-100">Mã Đơn / Khách</th><th class="p-4 font-bold border-b border-gray-100">Số Tiền</th><th class="p-4 font-bold border-b border-gray-100 text-right">Trạng thái</th></tr></thead>
@@ -132,7 +132,8 @@
                   </div>
 
                   <div class="bg-gray-50 border-b border-gray-200 px-5 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
-                      <button onclick="filterAdminMmoOrders('PENDING_PAID')" id="filter_PENDING_PAID" class="px-4 py-1.5 rounded-full text-[12px] font-black bg-green-500 text-white shadow-sm whitespace-nowrap tracking-wide">Chờ Duyệt (Ưu Tiên)</button>
+                      <button onclick="filterAdminMmoOrders('PENDING_PAID')" id="filter_PENDING_PAID" class="px-4 py-1.5 rounded-full text-[12px] font-black bg-green-500 text-white shadow-sm whitespace-nowrap tracking-wide">Chờ Duyệt (Đã Có Tiền)</button>
+                      <button onclick="filterAdminMmoOrders('PENDING_UNPAID')" id="filter_PENDING_UNPAID" class="px-4 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide">Chưa Thanh Toán</button>
                       <button onclick="filterAdminMmoOrders('COMPLETED')" id="filter_COMPLETED" class="px-4 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide">Đã Hoàn Thành</button>
                       <button onclick="filterAdminMmoOrders('ALL')" id="filter_ALL" class="px-4 py-1.5 rounded-full text-[12px] font-bold bg-white text-gray-500 border border-gray-200 whitespace-nowrap hover:bg-gray-100 transition tracking-wide">Tất Cả Đơn</button>
                   </div>
@@ -142,7 +143,7 @@
                           <thead>
                               <tr class="bg-red-50/50 text-mall text-[11px] uppercase tracking-widest border-b border-red-100">
                                   <th class="p-4 w-10 text-center"><input type="checkbox" id="selectAllMmo" onclick="toggleSelectAllMmo(this)" class="w-4 h-4 accent-mall cursor-pointer rounded"></th>
-                                  <th class="p-4 font-black">Mã Đơn / Khách</th>
+                                  <th class="p-4 font-black">Mã Đơn / UID Khách</th>
                                   <th class="p-4 font-black">Trạng Thái</th>
                                   <th class="p-4 font-black">Thông Tin Sản Phẩm</th>
                                   <th class="p-4 font-black">Thời Gian</th>
@@ -189,21 +190,39 @@
       </div>
   </main>
 
-  <div id="editModal" class="fixed inset-0 z-[120] bg-gray-900/60 backdrop-blur-sm hidden flex items-center justify-center opacity-0 transition-opacity duration-300 p-4">
-      <div class="bg-white w-full max-w-sm rounded-[32px] shadow-2xl transform scale-95 transition-transform duration-300 overflow-hidden" id="editPanel">
-          <div class="bg-gray-50 px-6 py-5 border-b border-gray-100 flex justify-between items-center"><h3 class="text-[18px] font-black text-gray-800">Cập Nhật Số Dư</h3><button onclick="closeEditModal()" class="text-gray-400 hover:text-red-500 bg-white rounded-full p-1.5 border border-gray-200 transition active:scale-90"><i data-lucide="x" class="w-5 h-5"></i></button></div>
-          <div class="p-6">
+  <div id="editModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-md opacity-0 transition-opacity duration-300 ease-out" id="editModalOverlay" onclick="closeEditModal()"></div>
+      <div class="bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[32px] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] border border-white/20 relative p-7 z-10 transition-all duration-300 ease-out transform scale-90 translate-y-8 opacity-0" id="editPanel">
+          <div class="flex justify-between items-center mb-6">
+              <h3 class="text-[22px] font-black text-gray-900 tracking-tight">Cập Nhật Số Dư</h3>
+              <button onclick="closeEditModal()" class="text-gray-400 hover:text-red-500 bg-gray-50 border border-gray-100 rounded-full p-2 transition active:scale-90"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <div>
               <input type="hidden" id="editUid">
-              <div class="mb-4"><label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Định danh</label><input type="text" id="editEmail" disabled class="w-full bg-gray-50 px-4 py-3 rounded-xl text-sm font-medium text-gray-500 border border-gray-200 outline-none"></div>
               <div class="mb-4">
-                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Số Dư Hiện Tại (VNĐ)</label>
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Định danh User</label>
+                  <input type="text" id="editEmail" disabled class="w-full bg-gray-50 px-5 py-4 rounded-[16px] text-[13px] font-bold text-gray-400 border border-gray-100 outline-none">
+              </div>
+              <div class="mb-8">
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Số Dư Hiện Tại (VNĐ)</label>
                   <div class="relative">
-                      <i data-lucide="wallet" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand"></i>
-                      <input type="number" id="editCoins" class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 font-black text-brand text-xl focus:border-brand focus:ring-2 focus:ring-brand/20 outline-none transition-all shadow-inner">
+                      <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                          <i data-lucide="wallet" class="w-5 h-5 text-brand opacity-70"></i>
+                      </div>
+                      <input type="number" id="editCoins" class="w-full pl-12 pr-5 py-4 rounded-[16px] border border-gray-200 font-black text-brand text-2xl focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition-all shadow-inner bg-white">
                   </div>
               </div>
-              <button onclick="saveUserChanges()" id="btnSaveUser" class="w-full bg-brand hover:bg-brandDark text-white font-black py-4 rounded-xl shadow-[0_10px_20px_-10px_rgba(0,122,255,0.6)] active:scale-95 transition-all flex justify-center items-center gap-2 text-[15px]"><i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI</button>
+              <button onclick="saveUserChanges()" id="btnSaveUser" class="w-full bg-gradient-to-r from-brand to-brandDark text-white font-black py-4 rounded-[16px] shadow-[0_8px_20px_rgba(0,122,255,0.3)] active:scale-95 transition-all flex justify-center items-center gap-2 text-[15px] tracking-wide">
+                  <i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI
+              </button>
           </div>
+      </div>
+  </div>
+
+  <div id="actionModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-300 ease-out" id="actionModalOverlay" onclick="closeActionModal()"></div>
+      <div id="actionModalPanel" class="bg-white/95 backdrop-blur-xl w-full max-w-[340px] rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-white/50 p-6 transition-all duration-300 ease-out transform scale-90 translate-y-8 opacity-0">
+          <div id="actionModalContent"></div>
       </div>
   </div>
 
@@ -253,7 +272,7 @@
                 if(autoPin) logoutAdmin(); 
                 else { document.getElementById('errorMsgText').innerText = "SAI MÃ PIN!"; document.getElementById('loginError').classList.remove('hidden'); }
             }
-        } catch(e) { if(!autoPin) alert("Lỗi mạng!"); }
+        } catch(e) { if(!autoPin) renderModal('error', 'Lỗi', 'Lỗi kết nối Backend!', closeActionModal, 'Đóng'); }
         if(!autoPin) { btn.innerHTML = "MỞ KHÓA HỆ THỐNG"; btn.disabled = false; }
     }
 
@@ -361,13 +380,22 @@
         document.getElementById('editUid').value = user.uid; 
         document.getElementById('editEmail').value = user.email || 'N/A'; 
         document.getElementById('editCoins').value = user.coins || 0; 
-        const m = document.getElementById('editModal'); const p = document.getElementById('editPanel'); 
-        m.classList.remove('hidden'); requestAnimationFrame(() => { m.classList.add('opacity-100'); p.classList.remove('scale-95'); }); 
+        
+        const modal = document.getElementById('editModal'); 
+        const overlay = document.getElementById('editModalOverlay');
+        const panel = document.getElementById('editPanel'); 
+        
+        modal.classList.remove('hidden'); 
+        requestAnimationFrame(() => { 
+            overlay.classList.add('opacity-100'); 
+            panel.classList.remove('scale-90', 'translate-y-8', 'opacity-0'); 
+        }); 
     }
     
     function closeEditModal() { 
-        const m = document.getElementById('editModal'); const p = document.getElementById('editPanel'); 
-        m.classList.remove('opacity-100'); p.classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); 
+        document.getElementById('editModalOverlay').classList.remove('opacity-100'); 
+        document.getElementById('editPanel').classList.add('scale-90', 'translate-y-8', 'opacity-0'); 
+        setTimeout(() => document.getElementById('editModal').classList.add('hidden'), 300); 
     }
     
     async function saveUserChanges() { 
@@ -377,14 +405,18 @@
         btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; btn.disabled = true; 
         try { 
             await db.collection("users").doc(uid).set({ coins: newCoins }, { merge: true }); 
-            alert("✅ Cập nhật thành công!"); closeEditModal(); loadAllData(); 
-        } catch(e) { alert("❌ Lỗi: " + e.message); } 
+            renderModal('success', 'Thành công', 'Đã cập nhật số dư cho khách hàng!', closeActionModal, 'Xong');
+            closeEditModal(); 
+            loadAllData(); 
+        } catch(e) { 
+            renderModal('error', 'Thất bại', 'Lỗi: ' + e.message, closeActionModal, 'Đóng');
+        } 
         btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI`; btn.disabled = false; lucide.createIcons(); 
     }
 
     function filterAdminMmoOrders(filterType) {
         currentMmoFilter = filterType;
-        ['PENDING_PAID', 'COMPLETED', 'ALL'].forEach(id => {
+        ['PENDING_PAID', 'PENDING_UNPAID', 'COMPLETED', 'ALL'].forEach(id => {
             const btn = document.getElementById('filter_' + id);
             if(!btn) return;
             if(id === filterType) {
@@ -417,6 +449,7 @@
         
         let filtered = googleData.allMmoOrders.filter(o => {
             if(currentMmoFilter === 'PENDING_PAID') return o.status === 'PENDING' && o.isPaid;
+            if(currentMmoFilter === 'PENDING_UNPAID') return o.status === 'PENDING' && !o.isPaid;
             if(currentMmoFilter === 'COMPLETED') return o.status === 'COMPLETED';
             return true; 
         });
@@ -439,8 +472,9 @@
             let isCompleted = o.status === 'COMPLETED';
             
             let statusBadge = '';
-            if (isCompleted) statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black border border-blue-200">ĐÃ HOÀN THÀNH</span>`;
-            else statusBadge = `<span class="bg-green-500 text-white px-2 py-0.5 rounded text-[10px] font-black shadow-sm shadow-green-500/30">TIỀN ĐÃ VÀO VÍ</span>`;
+            if (isCompleted) statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black border border-blue-200">ĐÃ DUYỆT / CÓ ACC</span>`;
+            else if (o.isPaid) statusBadge = `<span class="bg-green-500 text-white px-2 py-0.5 rounded text-[10px] font-black shadow-sm shadow-green-500/30">TIỀN ĐÃ VÀO</span>`;
+            else statusBadge = `<span class="bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-[10px] font-black border border-orange-200">CHƯA TRẢ TIỀN</span>`;
 
             let canCheck = o.status === 'PENDING' && o.isPaid;
             let actionHtml = '';
@@ -448,7 +482,9 @@
             if(isCompleted) {
                 actionHtml = `<div class="text-[10px] text-gray-500 font-mono text-left bg-gray-50 p-2 rounded border border-gray-200 break-all w-64 ml-auto max-h-24 overflow-y-auto">${(o.accountData || '').replace(/\n/g, '<br>')}</div>`;
             } else if (canCheck) {
-                actionHtml = `<button id="btnDuyet_${o.row}" onclick="fulfillMMOOrder(${o.row}, '${o.productId}', ${o.amount})" class="bg-mall text-white px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-mallLight active:scale-95 transition whitespace-nowrap"><i data-lucide="check-circle" class="w-4 h-4 inline"></i> Lấy Acc & Trả Khách</button>`;
+                actionHtml = `<button id="btnDuyet_${o.row}" onclick="fulfillMMOOrder(${o.row}, '${o.productId}', ${o.amount})" class="bg-mall text-white px-4 py-2 rounded-lg text-xs font-black shadow-md hover:bg-mallLight active:scale-95 transition whitespace-nowrap"><i data-lucide="check-circle" class="w-4 h-4 inline"></i> Duyệt Trả Acc</button>`;
+            } else {
+                actionHtml = `<button class="bg-gray-200 text-gray-400 px-4 py-2 rounded-lg text-xs font-bold cursor-not-allowed whitespace-nowrap">Khóa (Chờ Tiền)</button>`;
             }
 
             html += `
@@ -465,43 +501,59 @@
     }
 
     async function fulfillMMOOrder(row, productId, amount) {
-        if(!confirm("Xác nhận muốn tự động lấy Acc trả cho khách?")) return;
-        const btn = document.getElementById(`btnDuyet_${row}`);
-        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Xử lý...`; btn.disabled = true;
-        try {
-            const res = await fetch(`${GOOGLE_API_URL}?action=admin_fulfill_kingmmo&pin=${adminPin}&row=${row}&productId=${productId}&amount=${amount}`);
-            const data = await res.json();
-            if(data.success) { alert("Duyệt đơn & Trả acc thành công!"); loadAllData(); }
-            else { alert("LỖI TỪ KINGMMO: " + data.error); btn.innerHTML = "Thử Lại"; btn.disabled = false; }
-        } catch(e) { alert("Lỗi mạng!"); btn.innerHTML = "Thử Lại"; btn.disabled = false; }
+        renderModal('confirm', 'Duyệt Đơn Hàng', 'Xác nhận ĐÃ THẤY TIỀN và muốn tự động lấy Acc trả cho khách?', async () => {
+            closeActionModal();
+            const btn = document.getElementById(`btnDuyet_${row}`);
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Xử lý...`; btn.disabled = true;
+            try {
+                const res = await fetch(`${GOOGLE_API_URL}?action=admin_fulfill_kingmmo&pin=${adminPin}&row=${row}&productId=${productId}&amount=${amount}`);
+                const data = await res.json();
+                if(data.success) { 
+                    renderModal('success', 'Thành công', 'Duyệt đơn & Trả acc thành công!', closeActionModal, 'Đóng');
+                    loadAllData(); 
+                }
+                else { 
+                    renderModal('error', 'Lỗi KingMMO', data.error, closeActionModal, 'Đóng');
+                    btn.innerHTML = "Thử Lại"; btn.disabled = false; 
+                }
+            } catch(e) { 
+                renderModal('error', 'Lỗi Mạng', 'Không thể kết nối đến máy chủ.', closeActionModal, 'Đóng');
+                btn.innerHTML = "Thử Lại"; btn.disabled = false; 
+            }
+        }, 'Duyệt Ngay');
     }
 
     async function bulkFulfillOrders() {
         const checkboxes = document.querySelectorAll('.mmo-row-cb:checked');
-        if(checkboxes.length === 0) return alert("Vui lòng tích chọn ít nhất 1 đơn hàng ĐÃ CÓ TIỀN để duyệt.");
-        if(!confirm(`Xác nhận duyệt TỰ ĐỘNG ${checkboxes.length} đơn hàng? Tránh thao tác khi hệ thống đang chạy.`)) return;
-
-        const btnMain = document.getElementById('btnBulkFulfill');
-        btnMain.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Đang chạy...`; btnMain.disabled = true;
-
-        let successCount = 0; let failCount = 0;
-
-        for(let i=0; i<checkboxes.length; i++) {
-            let cb = checkboxes[i]; let row = cb.dataset.row; let pid = cb.dataset.pid; let amt = cb.dataset.amt;
-            let btnLine = document.getElementById(`btnDuyet_${row}`);
-            if(btnLine) { btnLine.innerHTML = "Đang xử lý..."; btnLine.classList.remove('bg-mall'); btnLine.classList.add('bg-orange-500'); }
-
-            try {
-                let res = await fetch(`${GOOGLE_API_URL}?action=admin_fulfill_kingmmo&pin=${adminPin}&row=${row}&productId=${pid}&amount=${amt}`);
-                let data = await res.json();
-                if(data.success) { successCount++; if(btnLine) { btnLine.innerHTML = "THÀNH CÔNG"; btnLine.classList.replace('bg-orange-500', 'bg-green-500'); } } 
-                else { failCount++; if(btnLine) { btnLine.innerHTML = "LỖI KINGMMO"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } }
-            } catch(e) { failCount++; if(btnLine) { btnLine.innerHTML = "LỖI MẠNG"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } }
+        if(checkboxes.length === 0) {
+            renderModal('error', 'Cảnh báo', 'Vui lòng tích chọn ít nhất 1 đơn hàng ĐÃ CÓ TIỀN để duyệt.', closeActionModal, 'Đã hiểu');
+            return;
         }
+        
+        renderModal('confirm', 'Duyệt Hàng Loạt', `Xác nhận duyệt TỰ ĐỘNG ${checkboxes.length} đơn hàng? Tránh thao tác khi hệ thống đang chạy.`, async () => {
+            closeActionModal();
+            const btnMain = document.getElementById('btnBulkFulfill');
+            btnMain.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 inline animate-spin"></i> Đang chạy...`; btnMain.disabled = true;
 
-        alert(`Xử lý hoàn tất!\n- Thành công: ${successCount}\n- Thất bại: ${failCount}`);
-        btnMain.innerHTML = `<i data-lucide="check-square" class="w-4 h-4"></i> Duyệt Đã Chọn`; btnMain.disabled = false;
-        loadAllData();
+            let successCount = 0; let failCount = 0;
+
+            for(let i=0; i<checkboxes.length; i++) {
+                let cb = checkboxes[i]; let row = cb.dataset.row; let pid = cb.dataset.pid; let amt = cb.dataset.amt;
+                let btnLine = document.getElementById(`btnDuyet_${row}`);
+                if(btnLine) { btnLine.innerHTML = "Đang xử lý..."; btnLine.classList.remove('bg-mall'); btnLine.classList.add('bg-orange-500'); }
+
+                try {
+                    let res = await fetch(`${GOOGLE_API_URL}?action=admin_fulfill_kingmmo&pin=${adminPin}&row=${row}&productId=${pid}&amount=${amt}`);
+                    let data = await res.json();
+                    if(data.success) { successCount++; if(btnLine) { btnLine.innerHTML = "THÀNH CÔNG"; btnLine.classList.replace('bg-orange-500', 'bg-green-500'); } } 
+                    else { failCount++; if(btnLine) { btnLine.innerHTML = "LỖI KINGMMO"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } }
+                } catch(e) { failCount++; if(btnLine) { btnLine.innerHTML = "LỖI MẠNG"; btnLine.classList.replace('bg-orange-500', 'bg-red-500'); } }
+            }
+
+            renderModal('success', 'Xử Lý Hoàn Tất', `- Thành công: ${successCount} đơn<br>- Thất bại: ${failCount} đơn`, closeActionModal, 'Đóng');
+            btnMain.innerHTML = `<i data-lucide="check-square" class="w-4 h-4"></i> Duyệt Đã Chọn`; btnMain.disabled = false;
+            loadAllData();
+        }, 'Bắt Đầu Chạy');
     }
 
     function getAutoIcon(name) {
@@ -530,13 +582,15 @@
     }
 
     function renderMMOConfigTable() {
-        const tbody = document.getElementById('mmoConfigBody'); let html = '';
+        const tbody = document.getElementById('mmoConfigBody');
+        let html = '';
         mmoRawProducts.forEach(p => {
             let conf = mmoConfigMap[p.id] || {};
             let customPrice = conf.price !== undefined ? conf.price : p.price;
             let fakePrice = conf.fakePrice !== undefined ? conf.fakePrice : Math.floor(p.price * 1.3); 
             let iconUrl = conf.icon || getAutoIcon(p.name);
             let isHidden = conf.isHidden ? 'checked' : '';
+
             html += `
             <tr class="border-b border-gray-100 hover:bg-gray-50" data-id="${p.id}">
                 <td class="p-3"><span class="bg-gray-100 px-2 py-1 rounded text-[11px] font-mono text-gray-500">${p.id}</span></td>
@@ -553,38 +607,52 @@
 
     function applyBulkDiscount(type) {
         let percent = parseFloat(document.getElementById('bulkPercent').value);
-        if(isNaN(percent) || percent <= 0) return alert("Nhập % hợp lệ!");
+        if(isNaN(percent) || percent <= 0) return renderModal('error', 'Cảnh báo', 'Vui lòng nhập % hợp lệ!', closeActionModal, 'Đóng');
+        
         let multiplier = type === 'up' ? (1 + percent/100) : (1 - percent/100);
         document.querySelectorAll('#mmoConfigBody tr').forEach(tr => {
-            let inputPrice = tr.querySelector('.cfg-price'); let current = parseFloat(inputPrice.value);
+            let inputPrice = tr.querySelector('.cfg-price');
+            let current = parseFloat(inputPrice.value);
             inputPrice.value = Math.floor(current * multiplier);
         });
-        alert(`Đã ${type==='up'?'Tăng':'Giảm'} ${percent}% toàn bộ giá. Vui lòng bấm LƯU LẠI để áp dụng.`);
+        
+        renderModal('success', 'Thành công', `Đã ${type === 'up' ? 'tăng' : 'giảm'} ${percent}% toàn bộ giá.<br><b>Vui lòng bấm LƯU LẠI để áp dụng!</b>`, closeActionModal, 'Đã hiểu');
     }
 
     async function saveMMOConfig() {
-        const btn = document.getElementById('btnSaveConfig');
-        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Đang lưu...`; btn.disabled = true;
+        renderModal('confirm', 'Lưu Cấu Hình', 'Lưu toàn bộ thay đổi này lên hệ thống?', async () => {
+            closeActionModal();
+            const btn = document.getElementById('btnSaveConfig');
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Đang lưu...`; btn.disabled = true;
 
-        let payload = [];
-        document.querySelectorAll('#mmoConfigBody tr').forEach(tr => {
-            payload.push({
-                id: tr.dataset.id, price: parseInt(tr.querySelector('.cfg-price').value) || 0,
-                fakePrice: parseInt(tr.querySelector('.cfg-fake').value) || 0,
-                icon: tr.querySelector('.cfg-icon').value, isHidden: tr.querySelector('.cfg-hide').checked
+            let payload = [];
+            document.querySelectorAll('#mmoConfigBody tr').forEach(tr => {
+                payload.push({
+                    id: tr.dataset.id,
+                    price: parseInt(tr.querySelector('.cfg-price').value) || 0,
+                    fakePrice: parseInt(tr.querySelector('.cfg-fake').value) || 0,
+                    icon: tr.querySelector('.cfg-icon').value,
+                    isHidden: tr.querySelector('.cfg-hide').checked
+                });
             });
-        });
 
-        try {
-            const formData = new FormData();
-            formData.append('action', 'admin_save_mmo_config');
-            formData.append('pin', adminPin);
-            formData.append('configs', JSON.stringify(payload));
-            const res = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
-            const data = await res.json();
-            if(data.success) { alert("✅ Đã lưu cấu hình lên Server thành công!"); loadAllData(); } else alert("❌ Lỗi Server: " + data.error);
-        } catch(e) { alert("❌ Lỗi mạng: " + e.message); }
-        btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> LƯU LẠI`; btn.disabled = false; lucide.createIcons();
+            try {
+                const formData = new FormData();
+                formData.append('action', 'admin_save_mmo_config');
+                formData.append('pin', adminPin);
+                formData.append('configs', JSON.stringify(payload));
+
+                const res = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+                const data = await res.json();
+                if(data.success) { 
+                    renderModal('success', 'Hoàn tất', 'Đã lưu cấu hình lên Server thành công!', closeActionModal, 'Đóng');
+                    loadAllData(); 
+                }
+                else renderModal('error', 'Lỗi Server', data.error, closeActionModal, 'Đóng');
+            } catch(e) { renderModal('error', 'Lỗi mạng', e.message, closeActionModal, 'Đóng'); }
+            
+            btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> LƯU LẠI`; btn.disabled = false; lucide.createIcons();
+        }, 'Xác Nhận');
     }
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('sidebar-open'); document.getElementById('mobileOverlay').classList.toggle('overlay-open'); }
@@ -600,6 +668,55 @@
         const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng', 'transactions': 'Nạp Tiền', 'mmo_orders': 'Quản Trị Mall', 'mmo_config': 'Cấu Hình Mall' }; 
         document.getElementById('pageTitle').innerText = titles[tab]; 
         if(window.innerWidth < 768) { document.getElementById('sidebar').classList.remove('sidebar-open'); document.getElementById('mobileOverlay').classList.remove('overlay-open'); }
+    }
+
+    // --- PREMIUM MODAL LOGIC ---
+    function renderModal(type, title, desc, actionFn, btnText) {
+        let iconHtml = '';
+        let btnHtml = '';
+
+        if (type === 'success') {
+            iconHtml = `<div class="w-20 h-20 mx-auto bg-green-50 rounded-[24px] flex items-center justify-center mb-5 shadow-[inset_0_0_20px_rgba(34,197,94,0.1)] border border-green-100"><i data-lucide="check" class="w-10 h-10 text-green-500"></i></div>`;
+            btnHtml = `<button id="mBtn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-[0_8px_20px_rgba(34,197,94,0.3)] py-4 rounded-2xl font-black text-[15px] active:scale-95 transition-all">${btnText}</button>`;
+        } else if (type === 'error') {
+            iconHtml = `<div class="w-20 h-20 mx-auto bg-red-50 rounded-[24px] flex items-center justify-center mb-5 shadow-[inset_0_0_20px_rgba(239,68,68,0.1)] border border-red-100"><i data-lucide="x" class="w-10 h-10 text-red-500"></i></div>`;
+            btnHtml = `<div class="flex gap-3 mt-6"><button onclick="closeActionModal()" class="flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200 py-4 rounded-2xl font-bold text-[14px] active:scale-95 transition-all">Đóng</button><button id="mBtn" class="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-[0_8px_20px_rgba(239,68,68,0.3)] py-4 rounded-2xl font-black text-[14px] active:scale-95 transition-all">${btnText}</button></div>`;
+        } else if (type === 'confirm') {
+            iconHtml = `<div class="w-20 h-20 mx-auto bg-orange-50 rounded-[24px] flex items-center justify-center mb-5 shadow-[inset_0_0_20px_rgba(249,115,22,0.1)] border border-orange-100"><i data-lucide="shopping-cart" class="w-10 h-10 text-orange-500"></i></div>`;
+            btnHtml = `<div class="flex gap-3 mt-6"><button onclick="closeActionModal()" class="flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200 py-4 rounded-2xl font-bold text-[14px] active:scale-95 transition-all">Hủy</button><button id="mBtn" class="flex-1 bg-gradient-to-r from-[#9e0000] to-[#c20000] text-white shadow-[0_8px_20px_rgba(158,0,0,0.3)] py-4 rounded-2xl font-black text-[14px] active:scale-95 transition-all">${btnText}</button></div>`;
+        } else if (type === 'loading') {
+            iconHtml = `<div class="w-20 h-20 mx-auto bg-gray-50 rounded-[24px] flex items-center justify-center mb-5 shadow-inner border border-gray-100"><i data-lucide="loader-2" class="w-10 h-10 text-mall animate-spin"></i></div>`;
+            btnHtml = ``; 
+        }
+
+        document.getElementById('actionModalContent').innerHTML = `
+            <div class="text-center p-1">
+                ${iconHtml}
+                <h3 class="font-black text-[22px] text-gray-900 mb-2 tracking-tight">${title}</h3>
+                <p class="text-[14px] text-gray-500 leading-relaxed ${btnHtml ? 'mb-6' : 'mb-2'} px-2">${desc}</p>
+                ${btnHtml}
+            </div>`;
+            
+        lucide.createIcons();
+        const modal = document.getElementById('actionModal');
+        const overlay = document.getElementById('actionModalOverlay');
+        const panel = document.getElementById('actionModalPanel');
+        
+        modal.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            overlay.classList.add('opacity-100');
+            panel.classList.remove('scale-90', 'translate-y-8', 'opacity-0');
+        });
+        
+        if (type !== 'loading' && document.getElementById('mBtn')) {
+            document.getElementById('mBtn').onclick = actionFn;
+        }
+    }
+
+    function closeActionModal() { 
+        document.getElementById('actionModalOverlay').classList.remove('opacity-100'); 
+        document.getElementById('actionModalPanel').classList.add('scale-90', 'translate-y-8', 'opacity-0'); 
+        setTimeout(() => document.getElementById('actionModal').classList.add('hidden'), 300); 
     }
     
     lucide.createIcons();
