@@ -4,24 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Admin Workspace - IPAVIET</title>
-  
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
   <script>
-    tailwind.config = { 
-        theme: { 
-            extend: { 
-                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, 
-                colors: { brand: '#007aff', brandDark: '#0A84FF', mall: '#9e0000' } 
-            } 
-        } 
-    }
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] }, colors: { brand: '#007aff', brandDark: '#0A84FF', mall: '#9e0000' } } } }
   </script>
 
   <style>
@@ -43,7 +34,6 @@
       </div>
       <h2 class="text-2xl md:text-3xl font-black mb-2 tracking-tight text-center">WORKSPACE CẤP CAO</h2>
       <p class="text-gray-400 mb-8 text-sm font-medium text-center" id="loginStatusText">Đang xác thực thẻ đặc quyền...</p>
-      
       <div id="loginSpinner" class="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
       
       <div id="loginError" class="hidden mt-4 w-full max-w-sm bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-4 rounded-[20px] text-sm text-center shadow-lg">
@@ -216,11 +206,12 @@
                       
                       <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                           <h3 class="text-[20px] font-black text-gray-900 tracking-tight">Cấu Hình Sản Phẩm Mall</h3>
-                          <div class="flex items-center gap-2 bg-gray-50 p-1.5 rounded-[14px] border border-gray-200 shadow-sm w-full md:w-auto">
+                          <div class="flex items-center gap-2 bg-gray-50 p-1.5 rounded-[14px] border border-gray-200 shadow-sm w-full md:w-auto relative">
                               <i data-lucide="filter" class="w-4 h-4 text-gray-400 ml-3"></i>
-                              <select id="configCatFilter" onchange="filterConfigTable(this.value)" class="bg-transparent border-none text-[13px] font-bold text-gray-700 outline-none pr-4 py-1.5 w-full md:w-auto cursor-pointer">
+                              <select id="configCatFilter" onchange="filterConfigTable(this.value)" class="bg-transparent border-none text-[13px] font-bold text-gray-700 outline-none pr-4 py-1.5 w-full md:w-auto cursor-pointer appearance-none">
                                   <option value="all">Tất cả danh mục</option>
                               </select>
+                              <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 absolute right-3 pointer-events-none"></i>
                           </div>
                       </div>
 
@@ -228,43 +219,59 @@
                           
                           <div class="bg-white p-4 rounded-[16px] border border-gray-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-center">
                               <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-3">
-                                  Chỉnh Giá Nhanh (%)
+                                  Chỉnh Giá Hàng Loạt (%)
                               </span>
                               <div class="flex items-center gap-2">
                                   <input type="number" id="bulkPercent" placeholder="Nhập %" class="w-20 px-3 py-2.5 border border-gray-200 rounded-[10px] text-[13px] font-black text-center outline-none focus:border-mall bg-gray-50">
+                                  
                                   <select id="bulkPriceTarget" class="px-3 py-2.5 border border-gray-200 rounded-[10px] text-[12px] font-bold bg-white outline-none focus:border-mall flex-1 cursor-pointer">
                                       <option value=".cfg-price">Giá Bán</option>
                                       <option value=".cfg-fake">Giá Gạch (Giá Cũ)</option>
                                   </select>
-                                  <button onclick="applyBulkDiscount('up')" class="bg-green-500 text-white w-10 h-10 rounded-[10px] shadow-md transition active:scale-90 flex items-center justify-center">
+                                  
+                                  <button onclick="applyBulkDiscount('up')" class="bg-green-500 text-white w-10 h-10 rounded-[10px] shadow-md transition active:scale-90 flex items-center justify-center shrink-0">
                                       <i data-lucide="trending-up" class="w-4 h-4 font-black"></i>
                                   </button>
-                                  <button onclick="applyBulkDiscount('down')" class="bg-red-500 text-white w-10 h-10 rounded-[10px] shadow-md transition active:scale-90 flex items-center justify-center">
+                                  <button onclick="applyBulkDiscount('down')" class="bg-red-500 text-white w-10 h-10 rounded-[10px] shadow-md transition active:scale-90 flex items-center justify-center shrink-0">
                                       <i data-lucide="trending-down" class="w-4 h-4 font-black"></i>
                                   </button>
                               </div>
                           </div>
 
-                          <div class="bg-white p-4 rounded-[16px] border border-gray-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-center">
-                              <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-3">
-                                  Gắn Link Ảnh Đồng Loạt
-                              </span>
-                              <div class="flex items-center gap-2">
-                                  <div class="relative flex-1">
-                                      <i data-lucide="link" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                                      <input type="text" id="bulkIconUrl" placeholder="Dán link ảnh (https://...)" class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-[10px] text-[12px] font-medium outline-none focus:border-blue-500 bg-gray-50">
+                          <div class="relative">
+                              <div id="tool2_Placeholder" class="bg-white p-4 rounded-[16px] border border-gray-200 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col justify-center items-center text-center h-full">
+                                  <i data-lucide="image" class="w-6 h-6 text-gray-300 mb-2"></i>
+                                  <p class="text-[11px] font-bold text-gray-500 leading-snug">Vui lòng chọn 1 danh mục cụ thể ở bộ lọc<br>để Đổi Icon & Áp dụng đồng loạt</p>
+                              </div>
+                              
+                              <div id="catIconEditor" class="hidden absolute inset-0 bg-blue-50/50 p-4 rounded-[16px] border border-blue-200 shadow-inner flex flex-col justify-center">
+                                  <span class="text-[10px] font-black text-blue-700 uppercase tracking-widest block mb-2.5">
+                                      Sửa Icon Danh Mục: <span id="lblCatEditName" class="text-mall"></span>
+                                  </span>
+                                  <div class="flex flex-col gap-2">
+                                      <div class="flex items-center gap-2">
+                                          <img id="previewCatIcon" src="" class="w-9 h-9 object-contain bg-white rounded-lg border border-blue-200 p-1 shrink-0 shadow-sm">
+                                          <input type="text" id="inputCatIcon" placeholder="Dán link ảnh (https://...)" class="w-full px-3 py-2 border border-blue-200 rounded-[10px] text-[11px] font-medium outline-none focus:border-blue-500 bg-white">
+                                      </div>
+                                      <div class="flex items-center justify-between gap-2 mt-1 px-1">
+                                          <label class="flex items-center gap-1.5 text-[10px] font-bold text-gray-600 cursor-pointer">
+                                              <input type="checkbox" id="cbApplyAllProducts" class="w-3.5 h-3.5 accent-blue-600 rounded">
+                                              Đổi luôn ảnh các SP bên dưới
+                                          </label>
+                                          <button onclick="applyCategoryIcon()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-[11px] font-black shadow-sm transition active:scale-95 tracking-wide">
+                                              ÁP DỤNG
+                                          </button>
+                                      </div>
                                   </div>
-                                  <button onclick="applyBulkIcon()" class="bg-blue-600 text-white px-5 py-2.5 rounded-[10px] text-[12px] font-black shadow-md transition active:scale-95 flex items-center gap-1.5">
-                                      <i data-lucide="image" class="w-4 h-4"></i> ÁP DỤNG
-                                  </button>
                               </div>
                           </div>
+                          
                       </div>
 
                       <div class="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
-                          <p class="text-[11px] text-orange-600 font-bold bg-orange-50 px-4 py-2.5 rounded-[10px] border border-orange-100 flex items-center gap-2">
-                              <i data-lucide="info" class="w-4 h-4"></i>
-                              <span>Các công cụ trên chỉ tác động vào <b>các sản phẩm đang hiển thị</b> bên dưới.</span>
+                          <p class="text-[11px] text-orange-600 font-bold bg-orange-50 px-4 py-2.5 rounded-[10px] border border-orange-100 flex items-center gap-2 w-full md:w-auto">
+                              <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+                              <span>Các công cụ trên chỉ tác động vào <b>các sản phẩm đang hiển thị</b> bên dưới bảng.</span>
                           </p>
                           <button onclick="saveMMOConfig()" id="btnSaveConfig" class="w-full md:w-auto px-8 py-3.5 bg-gradient-to-r from-gray-800 to-black text-white text-[13px] font-black tracking-widest rounded-[16px] shadow-[0_8px_20px_rgba(0,0,0,0.2)] active:scale-95 transition flex items-center justify-center gap-2">
                               <i data-lucide="save" class="w-4 h-4"></i> LƯU VÀO MÁY CHỦ
@@ -334,15 +341,7 @@
 
   <script>
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec"; 
-    const firebaseConfig = { 
-        apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", 
-        authDomain: "ipaviet-st.firebaseapp.com", 
-        projectId: "ipaviet-st", 
-        storageBucket: "ipaviet-st.firebasestorage.app", 
-        messagingSenderId: "127619650916", 
-        appId: "1:127619650916:web:fc8904c99804eeb7539671" 
-    };
-    
+    const firebaseConfig = { apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", authDomain: "ipaviet-st.firebaseapp.com", projectId: "ipaviet-st", storageBucket: "ipaviet-st.firebasestorage.app", messagingSenderId: "127619650916", appId: "1:127619650916:web:fc8904c99804eeb7539671" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -353,10 +352,12 @@
     
     let mmoRawProducts = [];
     let mmoConfigMap = {};
-    let currentMmoFilter = 'PENDING_PAID'; // Tab đơn MMO mặc định
+    let categoryIconsMap = {}; // Lưu trữ Icon cho từng Danh Mục riêng
+    
+    let currentMmoFilter = 'PENDING_PAID'; 
     let currentSearchMmoQuery = '';
 
-    // Lắng nghe đăng nhập
+    // Khởi tạo đăng nhập
     auth.onAuthStateChanged(user => {
         if (user && user.email.toLowerCase() === "mquitran@gmail.com") {
             document.getElementById('loginSpinner').classList.add('hidden'); 
@@ -373,60 +374,32 @@
         const pinInput = autoPin || document.getElementById('serverPin').value; 
         const btn = document.getElementById('btnVerify');
         if (!pinInput) return;
-        
-        if(!autoPin) { 
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; 
-            btn.disabled = true; 
-        }
+        if(!autoPin) { btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>`; btn.disabled = true; }
 
         try {
             const res = await fetch(`${GOOGLE_API_URL}?action=verify_pin&pin=${pinInput}`);
             const data = await res.json();
-            
             if (data.success) {
-                adminPin = pinInput; 
-                localStorage.setItem('adminPin', pinInput);
+                adminPin = pinInput; localStorage.setItem('adminPin', pinInput);
                 const screen = document.getElementById('loginScreen'); 
-                screen.classList.add('opacity-0'); 
-                setTimeout(() => screen.classList.add('hidden'), 500);
+                screen.classList.add('opacity-0'); setTimeout(() => screen.classList.add('hidden'), 500);
                 loadAllData();
             } else { 
                 if(autoPin) logoutAdmin(); 
-                else { 
-                    document.getElementById('errorMsgText').innerText = "SAI MÃ PIN!"; 
-                    document.getElementById('loginError').classList.remove('hidden'); 
-                }
+                else { document.getElementById('errorMsgText').innerText = "SAI MÃ PIN!"; document.getElementById('loginError').classList.remove('hidden'); }
             }
-        } catch(e) { 
-            if(!autoPin) renderModal('error', 'Lỗi Mạng', 'Không thể kết nối máy chủ.', closeActionModal, 'Đóng'); 
-        }
-        
-        if(!autoPin) { 
-            btn.innerHTML = "MỞ KHÓA HỆ THỐNG"; 
-            btn.disabled = false; 
-        }
+        } catch(e) { if(!autoPin) renderModal('error', 'Lỗi Mạng', 'Không thể kết nối máy chủ.', closeActionModal, 'Đóng'); }
+        if(!autoPin) { btn.innerHTML = "MỞ KHÓA HỆ THỐNG"; btn.disabled = false; }
     }
 
-    function logoutAdmin() { 
-        adminPin = ''; 
-        localStorage.removeItem('adminPin'); 
-        window.location.reload(); 
-    }
+    function logoutAdmin() { adminPin = ''; localStorage.removeItem('adminPin'); window.location.reload(); }
 
-    // TẢI DATA TOÀN HỆ THỐNG
+    // TẢI DATA
     async function loadAllData() {
-        const icon = document.getElementById('refreshIcon'); 
-        icon.classList.add('animate-spin');
+        const icon = document.getElementById('refreshIcon'); icon.classList.add('animate-spin');
         
-        // 1. Lấy Users Firebase
-        try { 
-            const snapshot = await db.collection("users").get(); 
-            allUsersData = []; 
-            snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); 
-            renderUserTable(); 
-        } catch (e) {}
+        try { const snapshot = await db.collection("users").get(); allUsersData = []; snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); renderUserTable(); } catch (e) {}
         
-        // 2. Lấy Thu Ngân
         try { 
             const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pin=${adminPin}`); 
             const data = await res.json(); 
@@ -445,7 +418,6 @@
             } else if (data.error) logoutAdmin();
         } catch(e) {}
 
-        // 3. Lấy Đơn MMO
         try {
             const resMMO = await fetch(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${adminPin}`);
             const dataMMO = await resMMO.json();
@@ -455,7 +427,6 @@
             }
         } catch(e) {}
 
-        // 4. Lấy Kho Sản Phẩm KingMMO
         try {
             const resP = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
             const dataP = await resP.json();
@@ -463,7 +434,18 @@
                 let rawData = dataP.raw || dataP.rawData || dataP.data || dataP;
                 let itemsArray = findProductsArray(rawData);
                 mmoRawProducts = extractProductsFromKingMMO(itemsArray || []);
+                
                 mmoConfigMap = dataP.configs || {};
+                
+                // Trích xuất cấu hình Icon Danh Mục riêng
+                categoryIconsMap = {};
+                Object.keys(mmoConfigMap).forEach(k => {
+                    if(k.startsWith('CAT___')) {
+                        let catName = k.replace('CAT___', '');
+                        categoryIconsMap[catName] = mmoConfigMap[k].icon;
+                    }
+                });
+
                 renderMMOConfigTable();
             }
         } catch(e) {}
@@ -476,9 +458,7 @@
     function findProductsArray(obj) {
         if (Array.isArray(obj) && obj.length > 0 && typeof obj[0] === 'object') return obj;
         if (typeof obj === 'object' && obj !== null) {
-            for (let key in obj) { 
-                if (Array.isArray(obj[key]) && obj[key].length > 0 && typeof obj[key][0] === 'object') return obj[key]; 
-            }
+            for (let key in obj) { if (Array.isArray(obj[key]) && obj[key].length > 0 && typeof obj[key][0] === 'object') return obj[key]; }
         }
         return null;
     }
@@ -488,17 +468,21 @@
         data.forEach(item => {
             if (item.products && Array.isArray(item.products)) {
                 item.products.forEach(p => { 
-                    products.push({ id: p.id || p.product_id, name: p.name || p.title, price: p.price || p.money || 0, cat: item.name || item.category || 'Khác' }); 
+                    products.push({ id: p.id || p.product_id || p.id_product, name: p.name || p.title || p.product_name, price: p.price || p.money || p.amount || p.rate || 0, cat: item.name || item.category || 'Khác' }); 
                 });
             } else {
-                let pId = item.id || item.product_id; let pName = item.name || item.title;
-                if (pId && pName) products.push({ id: pId, name: pName, price: item.price || item.money || 0, cat: item.categoryName || item.category || 'Khác' });
+                let pId = item.id || item.product_id || item.id_product; 
+                let pName = item.name || item.title || item.product_name;
+                let pPrice = item.price || item.money || item.amount || item.rate || 0;
+                if (pId && pName) {
+                    products.push({ id: pId, name: pName, price: pPrice, cat: item.categoryName || item.category || 'Khác' });
+                }
             }
         });
         return products;
     }
 
-    // --- RENDER BẢNG ĐIỀU KHIỂN ---
+    // --- DASHBOARD & USER TABLE ---
     function updateDashboardCards() {
         document.getElementById('statUsers').innerText = allUsersData.length.toLocaleString(); 
         document.getElementById('statRevenue').innerText = (googleData.totalRevenue || 0).toLocaleString('vi-VN') + "đ";
@@ -507,12 +491,7 @@
         document.getElementById('statPendingMMO').innerText = pendingPaidCount;
         
         const badge = document.getElementById('badgeMMO');
-        if(pendingPaidCount > 0) { 
-            badge.classList.remove('hidden'); 
-            badge.innerText = pendingPaidCount; 
-        } else {
-            badge.classList.add('hidden');
-        }
+        if(pendingPaidCount > 0) { badge.classList.remove('hidden'); badge.innerText = pendingPaidCount; } else badge.classList.add('hidden');
     }
 
     function renderUserTable() {
@@ -661,9 +640,9 @@
             let isCompleted = o.status === 'COMPLETED';
             
             let statusBadge = '';
-            if (isCompleted) statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-black border border-blue-200">ĐÃ HOÀN THÀNH</span>`;
-            else if (o.isPaid) statusBadge = `<span class="bg-green-500 text-white px-2 py-1 rounded text-[10px] font-black shadow-sm shadow-green-500/30">CÓ TIỀN, CHỜ DUYỆT</span>`;
-            else statusBadge = `<span class="bg-orange-50 text-orange-600 px-2 py-1 rounded text-[10px] font-black border border-orange-200">CHƯA TRẢ TIỀN</span>`;
+            if (isCompleted) statusBadge = `<span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black border border-blue-200">ĐÃ DUYỆT / CÓ ACC</span>`;
+            else if (o.isPaid) statusBadge = `<span class="bg-green-500 text-white px-2 py-0.5 rounded text-[10px] font-black shadow-sm shadow-green-500/30">TIỀN ĐÃ VÀO</span>`;
+            else statusBadge = `<span class="bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-[10px] font-black border border-orange-200">CHƯA TRẢ TIỀN</span>`;
 
             let canCheck = o.status === 'PENDING' && o.isPaid;
             let actionHtml = '';
@@ -801,8 +780,14 @@
             cats.add(catName);
 
             let conf = mmoConfigMap[p.id] || {};
-            let customPrice = conf.price !== undefined ? conf.price : p.price;
-            let fakePrice = conf.fakePrice !== undefined ? conf.fakePrice : Math.floor(p.price * 1.3); 
+            let basePrice = parseInt(p.price) || 0;
+            
+            let customPrice = conf.price !== undefined ? parseInt(conf.price) : basePrice;
+            let fakePrice = conf.fakePrice !== undefined ? parseInt(conf.fakePrice) : Math.floor(basePrice * 1.3); 
+            
+            customPrice = isNaN(customPrice) ? basePrice : customPrice;
+            fakePrice = isNaN(fakePrice) ? Math.floor(basePrice * 1.3) : fakePrice;
+
             let iconUrl = conf.icon || getAutoIcon(p.name);
             let isHidden = conf.isHidden ? 'checked' : '';
 
@@ -810,16 +795,15 @@
             <tr class="border-b border-gray-100 hover:bg-gray-50 transition config-row" data-id="${p.id}" data-cat="${catName}">
                 <td class="p-3"><span class="bg-gray-100 px-2.5 py-1 rounded text-[11px] font-mono text-gray-500">${p.id}</span></td>
                 <td class="p-3"><p class="text-[13px] font-bold text-gray-800 line-clamp-2 leading-snug w-48">${p.name}</p></td>
-                <td class="p-3"><p class="text-[12px] text-gray-500 font-bold">${parseInt(p.price).toLocaleString()}đ</p></td>
-                <td class="p-3"><input type="number" class="cfg-price w-24 border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-black text-mall outline-none focus:border-mall bg-white shadow-inner"></td>
-                <td class="p-3"><input type="number" class="cfg-fake w-24 border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-black text-gray-400 outline-none focus:border-mall bg-white shadow-inner"></td>
+                <td class="p-3"><p class="text-[12px] text-gray-500 font-bold">${basePrice.toLocaleString()}đ</p></td>
+                <td class="p-3"><input type="number" class="cfg-price w-24 border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-black text-mall outline-none focus:border-mall bg-white shadow-inner" value="${customPrice}"></td>
+                <td class="p-3"><input type="number" class="cfg-fake w-24 border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-black text-gray-400 outline-none focus:border-mall bg-white shadow-inner" value="${fakePrice}"></td>
                 <td class="p-3"><div class="flex items-center gap-2"><img src="${iconUrl}" class="preview-icon w-8 h-8 object-contain border border-gray-200 rounded-lg bg-white p-0.5"><input type="text" class="cfg-icon w-48 border border-gray-200 rounded-[10px] px-3 py-2 text-[11px] outline-none focus:border-blue-500 bg-white" value="${iconUrl}"></div></td>
                 <td class="p-3 text-center"><input type="checkbox" class="cfg-hide w-5 h-5 accent-mall cursor-pointer rounded" ${isHidden}></td>
             </tr>`;
         });
         tbody.innerHTML = html;
 
-        // Render Options cho Lọc
         let filterHtml = '<option value="all">Tất cả danh mục</option>';
         cats.forEach(c => { filterHtml += `<option value="${c}">${c}</option>`; });
         
@@ -829,6 +813,7 @@
     }
 
     function filterConfigTable(cat) {
+        // Lọc bảng sản phẩm
         const rows = document.querySelectorAll('.config-row');
         rows.forEach(tr => {
             if(cat === 'all' || tr.dataset.cat === cat) {
@@ -837,44 +822,85 @@
                 tr.style.display = 'none';
             }
         });
+
+        // Xử lý Editor Ảnh Danh Mục
+        const placeholder = document.getElementById('tool2_Placeholder');
+        const editor = document.getElementById('catIconEditor');
+        
+        if (cat === 'all') {
+            placeholder.classList.remove('hidden');
+            editor.classList.add('hidden');
+        } else {
+            placeholder.classList.add('hidden');
+            editor.classList.remove('hidden');
+            
+            document.getElementById('lblCatEditName').innerText = cat;
+            
+            // Lấy icon hiện tại của danh mục này (từ bộ nhớ hoặc mặc định)
+            let currentIcon = categoryIconsMap[cat] || getAutoIcon(cat);
+            document.getElementById('inputCatIcon').value = currentIcon;
+            document.getElementById('previewCatIcon').src = currentIcon;
+            
+            // Reset checkbox Áp dụng cho tất cả
+            document.getElementById('cbApplyAllProducts').checked = false;
+        }
     }
+
+    // --- CÁC HÀM CÔNG CỤ CHỈNH SỬA ĐỒNG LOẠT ---
 
     function applyBulkDiscount(type) {
         let percent = parseFloat(document.getElementById('bulkPercent').value);
         if(isNaN(percent) || percent <= 0) return renderModal('error', 'Cảnh báo', 'Vui lòng nhập phần trăm (%) hợp lệ!', closeActionModal, 'Đóng');
         
-        let targetClass = document.getElementById('bulkPriceTarget').value; // .cfg-price hoặc .cfg-fake
+        let targetClass = document.getElementById('bulkPriceTarget').value; 
         let multiplier = type === 'up' ? (1 + percent/100) : (1 - percent/100);
         
         let count = 0;
         document.querySelectorAll('.config-row').forEach(tr => {
             if(tr.style.display !== 'none') {
                 let inputPrice = tr.querySelector(targetClass);
-                let current = parseFloat(inputPrice.value);
+                let current = parseFloat(inputPrice.value) || 0;
                 inputPrice.value = Math.floor(current * multiplier);
                 count++;
             }
         });
         
-        renderModal('success', 'Đã Áp Dụng', `Đã ${type === 'up' ? 'tăng' : 'giảm'} ${percent}% cho <b>${count} sản phẩm</b> đang hiển thị trên bảng.<br><br>🚨 <b>Hãy bấm LƯU CẤU HÌNH để lưu vào hệ thống!</b>`, closeActionModal, 'Tuyệt vời');
+        renderModal('success', 'Đã Áp Dụng Giá', `Đã ${type === 'up' ? 'tăng' : 'giảm'} ${percent}% cho <b>${count} sản phẩm</b> đang hiển thị.<br><br>🚨 <b>Hãy bấm LƯU VÀO MÁY CHỦ để ghi đè hệ thống!</b>`, closeActionModal, 'Tuyệt vời');
     }
 
-    function applyBulkIcon() {
-        let url = document.getElementById('bulkIconUrl').value.trim();
-        if(!url) return renderModal('error', 'Cảnh báo', 'Vui lòng nhập Link ảnh (URL)!', closeActionModal, 'Đóng');
+    function applyCategoryIcon() {
+        let cat = document.getElementById('configCatFilter').value;
+        if(cat === 'all') return;
         
+        let url = document.getElementById('inputCatIcon').value.trim();
+        if(!url) return renderModal('error', 'Cảnh báo', 'Vui lòng dán Link ảnh (URL)!', closeActionModal, 'Đóng');
+        
+        // 1. Lưu icon vào bộ nhớ đệm của danh mục
+        categoryIconsMap[cat] = url;
+        document.getElementById('previewCatIcon').src = url;
+        
+        let applyToProducts = document.getElementById('cbApplyAllProducts').checked;
         let count = 0;
-        document.querySelectorAll('.config-row').forEach(tr => {
-            if(tr.style.display !== 'none') {
-                tr.querySelector('.cfg-icon').value = url;
-                tr.querySelector('.preview-icon').src = url;
-                count++;
-            }
-        });
+        let msg = `Đã thay đổi Icon Bộ Lọc cho danh mục <b>${cat}</b>.`;
+
+        // 2. Nếu Sếp muốn, áp dụng luôn vào tất cả sản phẩm đang hiện
+        if (applyToProducts) {
+            document.querySelectorAll('.config-row').forEach(tr => {
+                if(tr.style.display !== 'none') {
+                    tr.querySelector('.cfg-icon').value = url;
+                    tr.querySelector('.preview-icon').src = url;
+                    count++;
+                }
+            });
+            msg += `<br>Đã áp dụng ảnh đồng loạt cho <b>${count} sản phẩm</b> bên dưới.`;
+        }
         
-        renderModal('success', 'Đã Áp Dụng', `Đã gắn ảnh mới cho <b>${count} sản phẩm</b> đang hiển thị.<br><br>🚨 <b>Hãy bấm LƯU CẤU HÌNH để lưu vào hệ thống!</b>`, closeActionModal, 'Tuyệt vời');
+        msg += `<br><br>🚨 <b>Hãy bấm LƯU VÀO MÁY CHỦ để ghi đè hệ thống!</b>`;
+        
+        renderModal('success', 'Đã Áp Dụng Ảnh', msg, closeActionModal, 'Tuyệt vời');
     }
 
+    // --- LƯU CẤU HÌNH LÊN GOOGLE SCRIPT ---
     async function saveMMOConfig() {
         renderModal('confirm', 'Lưu Cấu Hình', 'Lưu toàn bộ thay đổi giá, ảnh, trạng thái ẩn này lên hệ thống?', async () => {
             closeActionModal();
@@ -883,7 +909,8 @@
             btn.disabled = true;
 
             let payload = [];
-            // Quét TẤT CẢ các dòng để lưu (cả dòng ẩn lẫn dòng hiện)
+            
+            // 1. Lưu cấu hình của từng sản phẩm (quét tất cả các dòng)
             document.querySelectorAll('.config-row').forEach(tr => {
                 payload.push({
                     id: tr.dataset.id,
@@ -891,6 +918,17 @@
                     fakePrice: parseInt(tr.querySelector('.cfg-fake').value) || 0,
                     icon: tr.querySelector('.cfg-icon').value,
                     isHidden: tr.querySelector('.cfg-hide').checked
+                });
+            });
+
+            // 2. Lưu cấu hình Icon của từng Danh mục (Mã đặc biệt CAT___)
+            Object.keys(categoryIconsMap).forEach(cat => {
+                payload.push({
+                    id: 'CAT___' + cat,
+                    price: 0,
+                    fakePrice: 0,
+                    icon: categoryIconsMap[cat],
+                    isHidden: false
                 });
             });
 
@@ -913,7 +951,7 @@
                 renderModal('error', 'Lỗi mạng', e.message, closeActionModal, 'Đóng'); 
             }
             
-            btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> LƯU CẤU HÌNH VÀO SERVER`; 
+            btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> LƯU VÀO MÁY CHỦ`; 
             btn.disabled = false; 
             lucide.createIcons();
         }, 'Lưu Ngay');
