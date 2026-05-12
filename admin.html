@@ -33,6 +33,10 @@
     .sidebar-open { transform: translateX(0) !important; }
     .overlay-open { opacity: 1 !important; pointer-events: auto !important; }
     input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    
+    /* Custom Scrollbar for Textarea */
+    textarea::-webkit-scrollbar { width: 4px; }
+    textarea::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
   </style>
 </head>
 <body class="h-[100dvh] flex overflow-hidden selection:bg-brand selection:text-white">
@@ -170,7 +174,6 @@
 
           <div id="tab-mmo_orders" class="hidden max-w-6xl mx-auto w-full">
               <div class="bg-white rounded-[24px] shadow-sm border border-red-200 overflow-hidden w-full flex flex-col">
-                  
                   <div class="p-5 border-b border-gray-100 bg-white flex flex-col md:flex-row gap-4 justify-between md:items-center">
                       <h3 class="text-lg font-black text-mall uppercase tracking-wide">Quản Trị Đơn Hàng Mall</h3>
                       <div class="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
@@ -179,7 +182,7 @@
                               <input type="text" id="searchMmoInput" placeholder="Tìm Mã Đơn, UID, Tên SP..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-[12px] text-sm font-medium outline-none focus:border-mall focus:bg-white transition">
                           </div>
                           <button onclick="bulkFulfillOrders()" id="btnBulkFulfill" class="w-full md:w-auto bg-mall hover:bg-mallLight text-white px-5 py-2.5 rounded-[12px] text-sm font-black shadow-md active:scale-95 transition flex items-center justify-center gap-2 whitespace-nowrap">
-                              <i data-lucide="check-square" class="w-4 h-4"></i> Duyệt Đã Chọn (Tự Động)
+                              <i data-lucide="check-square" class="w-4 h-4"></i> Duyệt Đã Chọn (API)
                           </button>
                       </div>
                   </div>
@@ -203,7 +206,7 @@
                               </tr>
                           </thead>
                           <tbody id="mmoOrdersBody" class="text-sm font-medium">
-                              <tr><td colspan="6" class="p-10 text-center text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>Đang tải kho đơn hàng...</td></tr>
+                              <tr><td colspan="6" class="p-10 text-center text-gray-400">Đang tải kho đơn hàng...</td></tr>
                           </tbody>
                       </table>
                   </div>
@@ -243,16 +246,18 @@
                                   </div>
                                   <div class="grid grid-cols-2 gap-2">
                                       <input type="number" id="inlineCustomStock" placeholder="Kho hàng..." class="w-full px-3 py-2 rounded-[10px] border border-purple-200 text-[12px] font-bold outline-none focus:border-purple-500 bg-white text-center">
-                                      <input type="text" id="inlineCustomIcon" placeholder="Link Icon (Tùy chọn)..." class="w-full px-3 py-2 rounded-[10px] border border-purple-200 text-[12px] font-medium outline-none focus:border-purple-500 bg-white">
+                                      <input type="text" id="inlineCustomIcon" placeholder="Link Icon (URL)..." class="w-full px-3 py-2 rounded-[10px] border border-purple-200 text-[12px] font-medium outline-none focus:border-purple-500 bg-white">
+                                  </div>
+                                  <div>
+                                      <textarea id="inlineCustomDesc" placeholder="Mô tả sản phẩm (Bảo hành, định dạng... hỗ trợ HTML)" rows="2" class="w-full px-3 py-2 rounded-[10px] border border-purple-200 text-[11px] outline-none focus:border-purple-500 bg-white resize-none"></textarea>
                                   </div>
                                   <button onclick="addCustomProductInline()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-[10px] text-[12px] font-black shadow-md transition active:scale-95 whitespace-nowrap mt-1">
-                                      THÊM VÀO BẢNG
+                                      THÊM VÀO BẢNG CHỜ
                                   </button>
                               </div>
                           </div>
 
                           <div class="col-span-1 xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                              
                               <div class="bg-white p-4 rounded-[16px] border border-gray-200 flex flex-col justify-center">
                                   <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-3">Chỉnh Giá Hàng Loạt (%)</span>
                                   <div class="flex items-center gap-2">
@@ -271,7 +276,6 @@
                                       <i data-lucide="image" class="w-5 h-5 text-gray-300 mb-1"></i>
                                       <p class="text-[10px] font-bold text-gray-500 leading-snug">Chọn 1 danh mục ở bộ lọc<br>để Quản Lý (Đổi Icon / Ẩn / Xóa)</p>
                                   </div>
-                                  
                                   <div id="catIconEditor" class="hidden absolute inset-0 bg-blue-50/95 p-4 flex flex-col justify-center backdrop-blur-sm z-10">
                                       <div class="flex justify-between items-center mb-2 border-b border-blue-200/50 pb-2">
                                           <span class="text-[10px] font-black text-blue-800 uppercase tracking-widest">Sửa: <span id="lblCatEditName" class="text-mall"></span></span>
@@ -292,7 +296,6 @@
                                       </div>
                                   </div>
                               </div>
-
                           </div>
                       </div>
 
@@ -308,21 +311,22 @@
                   </div>
                   
                   <div class="overflow-x-auto w-full h-[600px] scrollbar-hide">
-                      <table class="w-full text-left border-collapse min-w-[1000px] relative">
+                      <table class="w-full text-left border-collapse min-w-[1200px] relative">
                           <thead class="sticky top-0 z-20 bg-gray-100 text-gray-600 text-[11px] uppercase tracking-widest shadow-sm">
                               <tr>
                                   <th class="p-3 font-bold border-b border-gray-200">ID</th>
-                                  <th class="p-3 font-bold border-b border-gray-200 w-1/4">Tên Gốc / SP Thủ Công</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-64">Tên Gốc / SP Thủ Công</th>
                                   <th class="p-3 font-bold border-b border-gray-200 w-16">Kho</th>
                                   <th class="p-3 font-bold border-b border-gray-200">Giá Gốc</th>
-                                  <th class="p-3 font-bold border-b border-gray-200">Giá Bán (VNĐ)</th>
+                                  <th class="p-3 font-bold border-b border-gray-200">Giá Bán</th>
                                   <th class="p-3 font-bold border-b border-gray-200">Giá Bị Gạch</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-48">Mô Tả SP</th>
                                   <th class="p-3 font-bold border-b border-gray-200">Icon / Ảnh</th>
                                   <th class="p-3 font-bold border-b border-gray-200 text-center w-24">Ẩn / Xóa</th>
                               </tr>
                           </thead>
                           <tbody id="mmoConfigBody" class="text-sm">
-                              <tr><td colspan="8" class="p-10 text-center text-gray-400">Đang kéo kho sản phẩm...</td></tr>
+                              <tr><td colspan="9" class="p-10 text-center text-gray-400">Đang kéo kho sản phẩm...</td></tr>
                           </tbody>
                       </table>
                   </div>
@@ -353,7 +357,7 @@
                   </div>
               </div>
               <div class="mb-8">
-                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Ngày Hết Hạn VIP <span class="lowercase font-normal text-gray-400">(Xóa trống để hủy)</span></label>
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Ngày Hết Hạn VIP</label>
                   <div class="relative">
                       <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"><i data-lucide="crown" class="w-5 h-5 text-mall opacity-70"></i></div>
                       <input type="date" id="editVipDate" class="w-full pl-12 pr-5 py-4 rounded-[16px] border border-gray-200 font-bold text-gray-800 focus:border-brand focus:ring-4 focus:ring-brand/10 outline-none transition-all shadow-inner bg-white uppercase tracking-wider">
@@ -722,7 +726,7 @@
         }, 'Xóa Vĩnh Viễn');
     }
 
-    // --- CẤU HÌNH SẢN PHẨM & TẠO SẢN PHẨM MỚI TÍCH HỢP TRONG BẢNG ---
+    // --- CẤU HÌNH SẢN PHẨM ---
     function getAutoIcon(name) {
         let c = name.toLowerCase();
         if(c.includes('tích xanh')) return 'https://kingmmo.com/assets/storage/images/categoryJ4QE.png';
@@ -776,11 +780,12 @@
             
             let deleteBtn = isCustom ? `<button onclick="deleteCustomProduct('${p.id}')" class="text-red-500 hover:text-red-700 p-1.5 bg-red-50 rounded-lg active:scale-90 transition" title="Xóa SP này"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '';
 
-            // [MỚI] Thêm Input sửa Kho cho SP thủ công, khóa đối với SP KingMMO
             let customStock = conf.stock !== undefined && conf.stock !== "" ? conf.stock : 999;
             let stockInput = isCustom ? 
                 `<input type="number" class="cfg-stock w-16 border border-gray-200 rounded-[10px] px-2 py-2 text-[12px] font-black outline-none focus:border-mall bg-white shadow-inner text-center" value="${customStock}">` : 
                 `<input type="text" class="cfg-stock w-16 border border-transparent bg-transparent text-center text-gray-400 text-[11px] font-bold outline-none" value="Auto" disabled title="Hàng KingMMO tự động cập nhật kho">`;
+
+            let customDesc = conf.desc || "";
 
             html += `
             <tr class="border-b border-gray-100 hover:bg-gray-50 transition config-row" data-id="${p.id}" data-cat="${catName}" data-name="${p.name}">
@@ -790,7 +795,10 @@
                 <td class="p-3"><p class="text-[12px] text-gray-500 font-bold">${basePrice.toLocaleString()}đ</p></td>
                 <td class="p-3"><input type="number" class="cfg-price w-24 border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-black text-mall outline-none focus:border-mall bg-white shadow-inner" value="${customPrice}"></td>
                 <td class="p-3"><input type="number" class="cfg-fake w-24 border border-gray-200 rounded-[10px] px-3 py-2 text-[13px] font-black text-gray-400 outline-none focus:border-mall bg-white shadow-inner" value="${fakePrice}"></td>
-                <td class="p-3"><div class="flex items-center gap-2"><img src="${iconUrl}" class="preview-icon w-8 h-8 object-contain border border-gray-200 rounded-lg bg-white p-0.5"><input type="text" class="cfg-icon w-48 border border-gray-200 rounded-[10px] px-3 py-2 text-[11px] outline-none focus:border-blue-500 bg-white" value="${iconUrl}"></div></td>
+                <td class="p-3">
+                    <textarea class="cfg-desc w-full border border-gray-200 rounded-[10px] px-3 py-2 text-[11px] font-medium outline-none focus:border-mall bg-white shadow-inner h-9 focus:h-24 transition-all resize-none leading-relaxed" placeholder="Nhập mô tả SP...">${customDesc}</textarea>
+                </td>
+                <td class="p-3"><div class="flex items-center gap-2"><img src="${iconUrl}" class="preview-icon w-8 h-8 object-contain border border-gray-200 rounded-lg bg-white p-0.5"><input type="text" class="cfg-icon w-32 border border-gray-200 rounded-[10px] px-3 py-2 text-[11px] outline-none focus:border-blue-500 bg-white" value="${iconUrl}"></div></td>
                 <td class="p-3 text-center">
                     <div class="flex items-center justify-center gap-3">
                         <input type="checkbox" class="cfg-hide w-5 h-5 accent-mall cursor-pointer rounded" ${isHidden} title="Ẩn SP này">
@@ -814,20 +822,29 @@
     function filterConfigTable(cat) {
         const rows = document.querySelectorAll('.config-row');
         rows.forEach(tr => {
-            if(cat === 'all' || tr.dataset.cat === cat) { tr.style.display = ''; } else { tr.style.display = 'none'; }
+            if(cat === 'all' || tr.dataset.cat === cat) {
+                tr.style.display = '';
+            } else {
+                tr.style.display = 'none';
+            }
         });
 
         const placeholder = document.getElementById('tool2_Placeholder');
         const editor = document.getElementById('catIconEditor');
         
         if (cat === 'all') {
-            placeholder.classList.remove('hidden'); editor.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            editor.classList.add('hidden');
         } else {
-            placeholder.classList.add('hidden'); editor.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            editor.classList.remove('hidden');
+            
             document.getElementById('lblCatEditName').innerText = cat;
+            
             let currentIcon = categoryIconsMap[cat] || getAutoIcon(cat);
             document.getElementById('inputCatIcon').value = currentIcon;
             document.getElementById('previewCatIcon').src = currentIcon;
+            
             document.getElementById('cbApplyAllProducts').checked = false;
         }
     }
@@ -878,10 +895,11 @@
         }
         
         msg += `<br><br>🚨 <b>Hãy bấm LƯU VÀO MÁY CHỦ để ghi đè hệ thống!</b>`;
+        
         renderModal('success', 'Đã Áp Dụng Ảnh', msg, closeActionModal, 'Tuyệt vời');
     }
 
-    // --- XÓA / ẨN DANH MỤC TOÀN DIỆN ---
+    // ẨN / XÓA DANH MỤC TOÀN DIỆN
     function hideEntireCategory() {
         let cat = document.getElementById('configCatFilter').value;
         if (cat === 'all') return;
@@ -934,6 +952,7 @@
         let price = parseInt(document.getElementById('inlineCustomPrice').value) || 0;
         let stock = document.getElementById('inlineCustomStock').value.trim();
         let icon = document.getElementById('inlineCustomIcon').value.trim() || 'https://kingmmo.com/assets/storage/images/0M76.png';
+        let desc = document.getElementById('inlineCustomDesc').value.trim();
 
         if(!name) return renderModal('error', 'Lỗi nhập liệu', 'Vui lòng nhập Tên Sản Phẩm!', closeActionModal, 'Đóng');
         if(price <= 0) return renderModal('error', 'Lỗi nhập liệu', 'Giá bán phải lớn hơn 0!', closeActionModal, 'Đóng');
@@ -952,7 +971,8 @@
             fakePrice: Math.floor(price * 1.3),
             icon: icon,
             isHidden: false,
-            stock: stock !== "" ? parseInt(stock) : 999
+            stock: stock !== "" ? parseInt(stock) : 999,
+            desc: desc
         };
 
         document.getElementById('inlineCustomName').value = '';
@@ -960,6 +980,7 @@
         document.getElementById('inlineCustomPrice').value = '';
         document.getElementById('inlineCustomStock').value = '';
         document.getElementById('inlineCustomIcon').value = '';
+        document.getElementById('inlineCustomDesc').value = '';
 
         renderMMOConfigTable();
         document.querySelector('#tab-mmo_config .overflow-x-auto').scrollTo({top: 0, behavior: 'smooth'});
@@ -967,7 +988,7 @@
         renderModal('success', 'Đã thêm vào bảng', 'Sản phẩm đã được đưa vào đầu danh sách.<br><br>🚨 <b>Hãy bấm LƯU VÀO MÁY CHỦ để đẩy SP lên cửa hàng!</b>', closeActionModal, 'Xong');
     }
 
-    // XÓA SẢN PHẨM THỦ CÔNG (TRƯỚC KHI LƯU)
+    // XÓA SẢN PHẨM THỦ CÔNG
     function deleteCustomProduct(id) {
         renderModal('confirm', 'Xóa Sản Phẩm', 'Bạn có chắc chắn muốn xóa sản phẩm thủ công này khỏi hệ thống?', () => {
             closeActionModal();
@@ -981,7 +1002,7 @@
 
     // LƯU CẤU HÌNH VÀO GOOGLE SCRIPT
     async function saveMMOConfig() {
-        renderModal('confirm', 'Lưu Cấu Hình', 'Lưu toàn bộ thay đổi giá, kho hàng, ảnh, thêm/xóa SP thủ công lên hệ thống?', async () => {
+        renderModal('confirm', 'Lưu Cấu Hình', 'Lưu toàn bộ thay đổi giá, kho hàng, mô tả, ảnh, thêm/xóa SP thủ công lên hệ thống?', async () => {
             closeActionModal();
             const btn = document.getElementById('btnSaveConfig');
             btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Đang lưu...`; 
@@ -999,7 +1020,8 @@
                     fakePrice: parseInt(tr.querySelector('.cfg-fake').value) || 0,
                     icon: tr.querySelector('.cfg-icon').value,
                     isHidden: tr.querySelector('.cfg-hide').checked,
-                    stock: stockVal === "Auto" ? "" : (parseInt(stockVal) || 0)
+                    stock: stockVal === "Auto" ? "" : (parseInt(stockVal) || 0),
+                    desc: tr.querySelector('.cfg-desc').value.trim()
                 });
             });
 
@@ -1012,7 +1034,8 @@
                     fakePrice: 0,
                     icon: categoryIconsMap[cat],
                     isHidden: false,
-                    stock: ''
+                    stock: '',
+                    desc: ''
                 });
             });
 
