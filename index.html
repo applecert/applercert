@@ -1,601 +1,966 @@
 <!DOCTYPE html>
-<html lang="vi" class="antialiased">
+<html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>IPAVIET - Kho App & Tweak</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-  
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
-          colors: { brand: '#007aff', brandDark: '#0A84FF', bgLight: '#f2f2f7', bgDark: '#000000', cardLight: '#ffffff', cardDark: '#1c1c1e', iosGray: '#8E8E93' },
-          animation: { 'fluid-up': 'fluidUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards' },
-          keyframes: { fluidUp: { '0%': { transform: 'translateY(20px) scale(0.98)', opacity: '0' }, '100%': { transform: 'translateY(0) scale(1)', opacity: '1' } } }
-        }
-      }
-    }
-  </script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+<title>IPAVIET — Hệ Sinh Thái Số</title>
+<meta name="description" content="Nền tảng hệ sinh thái số toàn diện: Ứng dụng IPA, MMO, Phím tắt iOS và hơn thế nữa.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+/* ════════════════════════════════════════════════
+   IPAVIET PORTAL — Design System (sync với Store)
+   ════════════════════════════════════════════════ */
+:root{
+  --primary:#2563eb;
+  --primary-dark:#1d4ed8;
+  --primary-light:#dbeafe;
+  --bg:#f1f5f9;
+  --card:#fff;
+  --radius:14px;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --shadow-card:0 2px 8px rgba(0,0,0,.04),0 0 0 1px rgba(15,23,42,.05);
+  --shadow-hover:0 12px 32px rgba(37,99,235,.14),0 4px 12px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Saira Semi Condensed',sans-serif;
+  background:var(--bg);
+  color:#1e293b;
+  overflow-x:hidden;
+  min-height:100vh;
+}
 
-  <style>
-    :root { font-size: 16px; }
-    body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; user-select: none; overflow-x: hidden; }
-    .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-    .glass-effect { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(35px) saturate(200%); border-color: rgba(0,0,0,0.08); }
-    .dark .glass-effect { background: rgba(28, 28, 30, 0.65); border-color: rgba(255,255,255,0.1); }
-    .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.15); }
-    .dark .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6); }
-    .floating-nav { margin: 0 auto 24px auto; border-radius: 35px; width: calc(100% - 32px); max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-    .dark .floating-nav { box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
-    
-    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; color: #8E8E93; transition: all 0.3s; background: none; border: none; cursor: pointer; text-decoration: none;}
-    .tab-btn i { width: 22px; height: 22px; transition: all 0.4s; } 
-    .tab-btn span { font-size: 0.6rem; font-weight: 700; opacity: 0.8; }
-    .tab-btn.active { color: #007aff; }
-    .dark .tab-btn.active { color: #0A84FF; }
-    .tab-btn.active i { transform: translateY(-4px) scale(1.15); filter: drop-shadow(0 4px 6px rgba(0,122,255,0.4)); }
-    .tab-btn.active span { opacity: 1; font-weight: 800; transform: translateY(-2px); }
-    
-    .squircle { clip-path: url(#squirclePath); }
-    .slide-page { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 100; }
-    .slide-page.open { transform: translateX(0); }
-    .screenshot-img { height: 280px; width: auto; border-radius: 18px; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }
-    .dark .screenshot-img { border-color: rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+/* ════════════════════════════════
+   HEADER — bám sát store
+   ════════════════════════════════ */
+.header-bar{
+  position:fixed;top:0;left:0;right:0;z-index:700;
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(148,163,184,.12);
+  box-shadow:0 2px 10px rgba(0,0,0,.05);
+  padding:8px 0;
+  transition:transform .35s var(--ease),box-shadow .35s ease;
+}
+.header-inner{
+  max-width:1200px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;gap:10px;
+}
+.logo-text{
+  font-size:21px;font-weight:900;letter-spacing:-.4px;
+  color:#0f172a;text-decoration:none!important;
+}
+.logo-text span{color:var(--primary)}
+.logo-tagline{
+  font-size:10.5px;font-weight:600;color:#94a3b8;
+  letter-spacing:.05em;text-transform:uppercase;
+  border-left:2px solid #e2e8f0;padding-left:10px;margin-left:2px;
+  display:none;
+}
+@media(min-width:640px){.logo-tagline{display:block}}
+.hdr-spacer{flex:1}
+.hbtn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:0 14px;height:37px;border-radius:9px;
+  font-weight:700;font-size:12.5px;
+  text-decoration:none!important;transition:all .15s;
+  cursor:pointer;white-space:nowrap;border:1px solid #e2e8f0;
+  background:#f8fafc;color:#475569;font-family:inherit;
+}
+.hbtn:hover{background:#fff;border-color:#bfdbfe;color:#0f172a;transform:translateY(-1px)}
+.hbtn i{font-size:12px;color:#64748b}
+.hbtn.blue{
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  color:#fff;border-color:transparent;
+  box-shadow:0 4px 14px rgba(37,99,235,.28);
+}
+.hbtn.blue:hover{background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff}
+.hbtn.blue i{color:#fff}
 
-    /* WATERMARK KÉP CHUẨN GÓC */
-    .ipaviet-watermark-sm, .ipaviet-watermark-lg { position: relative; overflow: hidden; }
-    
-    .ipaviet-watermark-sm::after {
-        content: "IPAVIET.SITE"; position: absolute; top: 6px; left: -22px; width: 80px; height: 12px;       
-        background: #ff3b30; color: #ffffff; font-size: 5.5px; font-weight: 900;
-        display: flex; align-items: center; justify-content: center;
-        transform: rotate(-45deg); z-index: 50; pointer-events: none; 
-        box-shadow: 0 1px 3px rgba(0,0,0,0.5); letter-spacing: 0.5px;
-    }
-    
-    .ipaviet-watermark-lg::after {
-        content: "IPAVIET.SITE"; position: absolute; top: 10px; left: -35px; width: 130px; height: 18px;       
-        background: #ff3b30; color: #ffffff; font-size: 8px; font-weight: 900;
-        display: flex; align-items: center; justify-content: center;
-        transform: rotate(-45deg); z-index: 50; pointer-events: none; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 0.5px;
-    }
-  </style>
+/* ════════════════════════════════
+   TRUST BAR
+   ════════════════════════════════ */
+.trust-bar{
+  background:#fafbfc;
+  border-bottom:1px solid #e5e7eb;
+  padding:6px 0;
+  position:fixed;top:53px;left:0;right:0;z-index:699;
+  transition:transform .35s var(--ease);
+}
+.trust-list{
+  display:flex;align-items:center;justify-content:center;
+  list-style:none;gap:0;overflow-x:auto;scrollbar-width:none;
+  max-width:1200px;margin:0 auto;padding:0 20px;
+}
+.trust-list::-webkit-scrollbar{display:none}
+.trust-item{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:0 18px;font-size:12px;color:#475569;white-space:nowrap;
+  position:relative;
+}
+.trust-item+.trust-item::before{
+  content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:1px;height:14px;background:#e2e8f0;
+}
+.trust-tile{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:20px;height:20px;border-radius:6px;font-size:10px;
+}
+.t-amber{background:#fef3c7;color:#d97706}
+.t-sky{background:#e0f2fe;color:#0369a1}
+.t-emerald{background:#d1fae5;color:#059669}
+.t-violet{background:#ede9fe;color:#7c3aed}
+.trust-item b{font-weight:700;color:#0f172a}
+
+/* ════════════════════════════════
+   HERO SECTION — 100vh
+   ════════════════════════════════ */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  position:relative;
+  overflow:hidden;
+  padding:120px 20px 80px;
+  text-align:center;
+}
+
+/* Nền gradient lớp 1 */
+.hero-bg{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(37,99,235,.09) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(124,58,237,.07) 0%, transparent 60%),
+    linear-gradient(180deg, #f0f6ff 0%, #f1f5f9 60%, #f8fafc 100%);
+}
+
+/* Lưới nền mờ (grid pattern) */
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(37,99,235,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,99,235,.04) 1px, transparent 1px);
+  background-size:48px 48px;
+  mask-image:radial-gradient(ellipse 80% 70% at center, black 0%, transparent 75%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 70% at center, black 0%, transparent 75%);
+}
+
+/* Các blob nền động */
+.blob{
+  position:absolute;border-radius:50%;
+  filter:blur(72px);pointer-events:none;opacity:.45;
+  animation:blobFloat 8s ease-in-out infinite;
+}
+.blob-1{
+  width:520px;height:420px;
+  background:radial-gradient(circle, rgba(59,130,246,.25), rgba(37,99,235,.08));
+  top:-120px;left:-140px;
+  animation-delay:0s;
+}
+.blob-2{
+  width:400px;height:380px;
+  background:radial-gradient(circle, rgba(124,58,237,.18), rgba(139,92,246,.06));
+  bottom:-80px;right:-100px;
+  animation-delay:-4s;
+}
+.blob-3{
+  width:260px;height:260px;
+  background:radial-gradient(circle, rgba(16,185,129,.14), transparent);
+  top:40%;right:8%;
+  animation-delay:-2s;
+}
+@keyframes blobFloat{
+  0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(20px,-30px) scale(1.04)}
+  66%{transform:translate(-15px,20px) scale(.97)}
+}
+
+.hero-content{position:relative;z-index:2;max-width:720px;width:100%}
+
+/* Badge "NEW" trên đầu */
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:999px;
+  background:rgba(255,255,255,.85);
+  border:1px solid rgba(37,99,235,.18);
+  box-shadow:0 2px 12px rgba(37,99,235,.1),inset 0 1px 0 rgba(255,255,255,.8);
+  backdrop-filter:blur(8px);
+  font-size:11.5px;font-weight:700;color:#2563eb;
+  margin-bottom:22px;
+  opacity:0;transform:translateY(16px);
+  animation:fadeUp .6s var(--ease) .1s forwards;
+}
+.eyebrow-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#22c55e;
+  box-shadow:0 0 0 3px rgba(34,197,94,.2);
+  animation:pulse 2s ease infinite;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,.2)}
+  50%{box-shadow:0 0 0 6px rgba(34,197,94,.08)}
+}
+
+/* Tiêu đề chính */
+.hero-title{
+  font-size:clamp(38px,7vw,72px);
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:-.03em;
+  color:#0f172a;
+  margin-bottom:8px;
+  opacity:0;transform:translateY(20px);
+  animation:fadeUp .65s var(--ease) .22s forwards;
+}
+.hero-title .accent{
+  background:linear-gradient(135deg,#2563eb 0%,#7c3aed 60%,#2563eb 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:gradientShift 4s linear infinite;
+}
+@keyframes gradientShift{
+  0%{background-position:0% center}
+  100%{background-position:200% center}
+}
+.hero-sub{
+  font-size:clamp(14px,2vw,17px);
+  font-weight:500;
+  color:#64748b;
+  line-height:1.65;
+  margin-bottom:36px;
+  max-width:540px;
+  margin-left:auto;margin-right:auto;
+  opacity:0;transform:translateY(16px);
+  animation:fadeUp .65s var(--ease) .35s forwards;
+}
+
+/* Stats nho nhỏ */
+.hero-stats{
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;flex-wrap:wrap;
+  margin-bottom:36px;
+  opacity:0;transform:translateY(14px);
+  animation:fadeUp .6s var(--ease) .45s forwards;
+}
+.hstat{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;background:rgba(255,255,255,.85);
+  border:1px solid rgba(226,232,240,.9);border-radius:999px;
+  font-size:12px;font-weight:700;color:#475569;
+  backdrop-filter:blur(6px);
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.hstat i{color:var(--primary);font-size:11px}
+.hstat b{color:#0f172a}
+
+/* Nút CTA chính */
+.hero-cta{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:15px 36px;
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  color:#fff!important;
+  border:none;border-radius:14px;
+  font-size:15px;font-weight:800;font-family:inherit;
+  cursor:pointer;text-decoration:none!important;
+  box-shadow:0 8px 24px rgba(37,99,235,.35),0 0 0 0 rgba(37,99,235,.4);
+  transition:all .25s var(--ease);
+  letter-spacing:.2px;
+  animation:ctaEntrance .65s var(--ease) .55s both, ctaGlow 3s ease-in-out 1.5s infinite;
+  position:relative;overflow:hidden;
+}
+.hero-cta::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.15),transparent);
+  opacity:0;transition:opacity .2s;
+}
+.hero-cta:hover::before{opacity:1}
+.hero-cta:hover{
+  transform:translateY(-3px) scale(1.02);
+  box-shadow:0 14px 36px rgba(37,99,235,.42),0 0 0 0 rgba(37,99,235,.3);
+  animation:none;
+}
+.hero-cta .cta-arrow{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:8px;
+  background:rgba(255,255,255,.2);
+  font-size:12px;
+  transition:transform .25s var(--ease-spring);
+}
+.hero-cta:hover .cta-arrow{transform:translateX(3px)}
+@keyframes ctaEntrance{from{opacity:0;transform:translateY(20px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes ctaGlow{
+  0%,100%{box-shadow:0 8px 24px rgba(37,99,235,.35),0 0 0 0 rgba(37,99,235,.4)}
+  50%{box-shadow:0 8px 24px rgba(37,99,235,.4),0 0 0 10px rgba(37,99,235,0)}
+}
+
+/* Scroll cue */
+.scroll-cue{
+  position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  opacity:0;animation:fadeIn .6s ease 1.3s forwards;
+  color:#94a3b8;font-size:11px;font-weight:600;cursor:pointer;
+  text-transform:uppercase;letter-spacing:.06em;
+  transition:color .2s;z-index:2;
+}
+.scroll-cue:hover{color:#64748b}
+.scroll-cue .cue-arrow{
+  width:30px;height:30px;border-radius:50%;
+  background:rgba(255,255,255,.8);border:1px solid #e2e8f0;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+  animation:bounce 2s ease-in-out 1.5s infinite;
+}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+
+/* ════════════════════════════════
+   SERVICES SECTION
+   ════════════════════════════════ */
+#services{
+  padding:64px 0 80px;
+  position:relative;
+}
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+
+.section-hdr{
+  text-align:center;margin-bottom:42px;
+}
+.section-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 13px;border-radius:999px;
+  background:var(--primary-light);
+  color:var(--primary);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.07em;
+  margin-bottom:14px;
+}
+.section-title{
+  font-size:clamp(26px,4vw,40px);font-weight:900;
+  color:#0f172a;letter-spacing:-.02em;
+  line-height:1.1;margin-bottom:12px;
+}
+.section-sub{
+  font-size:14.5px;color:#64748b;font-weight:500;
+  line-height:1.65;max-width:480px;margin:0 auto;
+}
+
+/* Service grid — bám style prod-grid của store */
+.svc-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:16px;
+}
+@media(max-width:575px){
+  .svc-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+}
+@media(min-width:900px){
+  .svc-grid{grid-template-columns:repeat(3,1fr)}
+  .svc-card:first-child,.svc-card:last-child{grid-column:span 1}
+  /* Card đầu và cuối nổi bật hơn — 2 col */
+  .svc-card.featured{grid-column:span 2}
+}
+
+.svc-card{
+  background:var(--card);
+  border:1px solid #f0f0f0;
+  border-radius:var(--radius);
+  cursor:pointer;
+  transition:all .32s var(--ease);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  position:relative;
+  text-decoration:none!important;
+  color:inherit;
+  box-shadow:var(--shadow-card);
+  /* stagger animation */
+  opacity:0;transform:translateY(24px);
+}
+.svc-card.visible{
+  animation:cardReveal .55s var(--ease) forwards;
+}
+@keyframes cardReveal{
+  to{opacity:1;transform:translateY(0)}
+}
+.svc-card:hover{
+  transform:translateY(-5px) scale(1.005);
+  box-shadow:var(--shadow-hover);
+  border-color:#bfdbfe;
+}
+
+/* Thumb */
+.svc-thumb{
+  position:relative;overflow:hidden;
+  height:150px;flex-shrink:0;
+}
+.svc-thumb-bg{
+  position:absolute;inset:0;transition:transform .4s var(--ease);
+}
+.svc-card:hover .svc-thumb-bg{transform:scale(1.07)}
+.svc-thumb-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(160deg,rgba(0,0,0,.02) 0%,rgba(0,0,0,.18) 100%);
+}
+/* Lớp icon nổi */
+.svc-thumb-ico{
+  position:absolute;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  width:64px;height:64px;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;color:#fff;
+  box-shadow:0 8px 24px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.2);
+  transition:transform .32s var(--ease-spring),box-shadow .3s;
+  backdrop-filter:blur(4px);
+}
+.svc-card:hover .svc-thumb-ico{
+  transform:translate(-50%,-54%) scale(1.08);
+  box-shadow:0 14px 30px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.2);
+}
+.svc-badge{
+  position:absolute;top:10px;left:10px;
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:7px;
+  color:#fff;font-weight:700;font-size:.52rem;
+  text-transform:uppercase;z-index:2;
+  backdrop-filter:blur(4px);
+}
+
+/* Body card */
+.svc-body{padding:14px 15px 16px;flex:1;display:flex;flex-direction:column}
+.svc-name{
+  font-size:.95rem;font-weight:800;color:#0f172a;
+  margin-bottom:6px;line-height:1.3;
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+}
+.svc-name .arrow{
+  width:22px;height:22px;border-radius:7px;
+  background:#f1f5f9;color:#94a3b8;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:10px;flex-shrink:0;
+  transition:all .2s var(--ease-spring);
+}
+.svc-card:hover .svc-name .arrow{
+  background:var(--primary);color:#fff;
+  transform:translateX(2px) rotate(-45deg) scale(1.1);
+}
+.svc-desc{
+  font-size:.8rem;font-weight:500;
+  color:#64748b;line-height:1.55;margin-bottom:12px;flex:1;
+}
+.svc-foot{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-top:11px;border-top:1px solid #f1f5f9;
+}
+.svc-tag{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 9px;border-radius:7px;
+  font-size:.68rem;font-weight:700;
+  background:#f8fafc;color:#64748b;border:1px solid #f0f0f0;
+}
+.svc-tag.green{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+.svc-tag.blue{background:#dbeafe;color:#1e40af;border-color:#bfdbfe}
+.svc-tag.purple{background:#ede9fe;color:#5b21b6;border-color:#ddd6fe}
+.svc-tag.amber{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.svc-tag.rose{background:#fce7f3;color:#9d174d;border-color:#fbcfe8}
+.svc-link{
+  font-size:.72rem;font-weight:700;color:var(--primary);
+  display:flex;align-items:center;gap:3px;
+}
+
+/* Các màu nền cho thumb */
+.bg-blue{background:linear-gradient(135deg,#1e3a8a,#3b82f6)}
+.bg-green{background:linear-gradient(135deg,#064e3b,#10b981)}
+.bg-purple{background:linear-gradient(135deg,#2e1065,#7c3aed)}
+.bg-amber{background:linear-gradient(135deg,#78350f,#f59e0b)}
+.bg-rose{background:linear-gradient(135deg,#881337,#f43f5e)}
+
+/* ════════════════════════════════
+   TRUST SECTION
+   ════════════════════════════════ */
+.trust-section{
+  background:#fff;
+  border-top:1px solid #f0f0f0;
+  border-bottom:1px solid #f0f0f0;
+  padding:40px 0;
+  margin-bottom:0;
+}
+.trust-cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:14px;
+}
+.trust-card{
+  display:flex;flex-direction:column;align-items:center;
+  padding:20px 14px;background:#f8fafc;
+  border:1px solid #f1f5f9;border-radius:12px;
+  text-align:center;transition:all .22s var(--ease);
+  opacity:0;transform:translateY(16px);
+}
+.trust-card.visible{animation:cardReveal .45s var(--ease) forwards}
+.trust-card:hover{border-color:#bfdbfe;background:#eff6ff;transform:translateY(-2px)}
+.trust-card-ico{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;margin-bottom:10px;
+}
+.trust-card-ttl{font-size:13.5px;font-weight:800;color:#0f172a;margin-bottom:3px}
+.trust-card-sub{font-size:11.5px;color:#64748b;font-weight:500}
+
+/* ════════════════════════════════
+   FOOTER — nhỏ gọn, mờ nhẹ
+   ════════════════════════════════ */
+footer{
+  background:#f8fafc;
+  border-top:1px solid #e5e7eb;
+  padding:36px 0 24px;
+}
+.footer-grid{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  flex-wrap:wrap;gap:28px;
+  margin-bottom:28px;
+}
+.footer-brand .logo-text{font-size:18px}
+.footer-brand p{
+  font-size:12px;color:#94a3b8;font-weight:500;
+  line-height:1.6;margin-top:8px;max-width:220px;
+}
+.footer-links h4{
+  font-size:11px;font-weight:800;color:#475569;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;
+}
+.footer-links ul{list-style:none;display:flex;flex-direction:column;gap:7px}
+.footer-links a{
+  font-size:12.5px;color:#64748b;font-weight:600;
+  text-decoration:none!important;transition:color .2s;
+  display:flex;align-items:center;gap:5px;
+}
+.footer-links a:hover{color:var(--primary)}
+.footer-links a i{font-size:10px;opacity:.5}
+.footer-bottom{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;
+  padding-top:20px;border-top:1px solid #f0f0f0;
+}
+.footer-bottom p,.footer-bottom a{
+  font-size:11.5px;color:#94a3b8;font-weight:500;
+  text-decoration:none!important;
+}
+.footer-bottom a:hover{color:#64748b}
+.footer-bottom-links{display:flex;gap:16px}
+.footer-social{display:flex;gap:8px}
+.social-btn{
+  width:30px;height:30px;border-radius:8px;
+  background:#f1f5f9;color:#64748b;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px;transition:all .18s;
+  text-decoration:none!important;
+}
+.social-btn:hover{background:#dbeafe;color:var(--primary);transform:translateY(-1px)}
+
+/* ════════════════════════════════
+   ANIMATIONS UTILS
+   ════════════════════════════════ */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes fadeIn{
+  from{opacity:0}to{opacity:1}
+}
+
+/* Spinner khi khởi động */
+.page-loader{
+  position:fixed;inset:0;background:#fff;z-index:9999;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  transition:opacity .5s ease,transform .5s ease;
+}
+.page-loader.out{opacity:0;pointer-events:none}
+.loader-logo{font-size:28px;font-weight:900;color:#0f172a;letter-spacing:-.5px}
+.loader-logo span{color:var(--primary)}
+.loader-bar{
+  width:120px;height:3px;background:#f1f5f9;border-radius:99px;overflow:hidden;
+}
+.loader-bar-fill{
+  height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#2563eb);border-radius:99px;
+  animation:loadFill .8s var(--ease) forwards;
+}
+@keyframes loadFill{to{width:100%}}
+
+/* Responsive misc */
+@media(max-width:575px){
+  .svc-thumb{height:120px}
+  .svc-thumb-ico{width:52px;height:52px;font-size:22px;border-radius:14px}
+  .trust-cards{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:400px){
+  .hero-stats{flex-direction:column;align-items:center}
+  .hstat{width:100%;justify-content:center}
+}
+</style>
 </head>
-<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
+<body>
 
-  <svg width="0" height="0" class="absolute">
-    <defs><clipPath id="squirclePath" clipPathUnits="objectBoundingBox"><path d="M .5,0 C .1,0 0,.1 0,.5 0,.9 .1,1 .5,1 .9,1 1,.9 1,.5 1,.1 .9,0 .5,0 Z" /></clipPath></defs>
-  </svg>
+<!-- ══ PAGE LOADER ══ -->
+<div class="page-loader" id="pageLoader">
+  <div class="loader-logo">IPA<span>VIET</span></div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
 
-  <header class="glass-effect fixed top-0 w-full z-40 h-[80px] border-b flex items-center px-6 transition-all duration-300">
-    <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-between">
-      <div class="font-black text-[22px] tracking-tight flex items-center gap-3 cursor-pointer shrink-0" onclick="switchTab('home');">
-        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-brand to-indigo-600 flex items-center justify-center text-white spatial-shadow active:scale-90 transition-transform">
-           <i data-lucide="zap" class="w-5 h-5 fill-white"></i>
-        </div>
-        <span>IPAVIET</span>
+<!-- ══ HEADER ══ -->
+<header class="header-bar">
+  <div class="header-inner">
+    <a href="/" class="logo-text">IPA<span>VIET</span></a>
+    <span class="logo-tagline">Hệ Sinh Thái Số</span>
+    <div class="hdr-spacer"></div>
+    <a href="/store" class="hbtn">
+      <i class="fa-solid fa-store"></i>Kho MMO
+    </a>
+    <a href="/store" class="hbtn blue">
+      <i class="fa-solid fa-bolt"></i>Vào cửa hàng
+    </a>
+  </div>
+</header>
+
+<!-- ══ TRUST BAR ══ -->
+<div class="trust-bar">
+  <ul class="trust-list">
+    <li class="trust-item">
+      <span class="trust-tile t-emerald"><i class="fa-solid fa-shield-halved"></i></span>
+      <span>Bảo vệ người dùng <b>toàn diện</b></span>
+    </li>
+    <li class="trust-item">
+      <span class="trust-tile t-sky"><i class="fa-solid fa-bolt"></i></span>
+      <span>Tự động hóa <b>24/7</b></span>
+    </li>
+    <li class="trust-item">
+      <span class="trust-tile t-amber"><i class="fa-solid fa-headset"></i></span>
+      <span>Hỗ trợ <b>Admin trực tiếp</b></span>
+    </li>
+    <li class="trust-item">
+      <span class="trust-tile t-violet"><i class="fa-solid fa-layer-group"></i></span>
+      <span>Hệ sinh thái <b>5 dịch vụ</b></span>
+    </li>
+  </ul>
+</div>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-dot"></span>
+      Chính thức ra mắt · Phiên bản 2.0
+    </div>
+
+    <h1 class="hero-title">
+      Hệ Sinh Thái<br>
+      <span class="accent">IPAVIET</span>
+    </h1>
+
+    <p class="hero-sub">
+      Nền tảng số toàn diện — nơi bạn tìm thấy mọi công cụ, tài nguyên và dịch vụ cần thiết để phát triển trong thế giới MMO và iOS.
+    </p>
+
+    <div class="hero-stats">
+      <span class="hstat"><i class="fa-solid fa-users"></i> <b>12.000+</b>&nbsp;người dùng</span>
+      <span class="hstat"><i class="fa-solid fa-box-archive"></i> <b>500+</b>&nbsp;sản phẩm</span>
+      <span class="hstat"><i class="fa-solid fa-star" style="color:#f59e0b"></i> <b>4.9/5</b>&nbsp;đánh giá</span>
+    </div>
+
+    <a href="#services" class="hero-cta" onclick="scrollToServices(event)">
+      Bắt đầu ngay
+      <span class="cta-arrow"><i class="fa-solid fa-arrow-down"></i></span>
+    </a>
+  </div>
+
+  <div class="scroll-cue" onclick="scrollToServices()">
+    <div class="cue-arrow"><i class="fa-solid fa-chevron-down" style="font-size:12px;color:#94a3b8"></i></div>
+    Khám phá
+  </div>
+</section>
+
+<!-- ══ TRUST STRIP ══ -->
+<div class="trust-section">
+  <div class="container">
+    <div class="trust-cards">
+      <div class="trust-card" data-delay="0">
+        <div class="trust-card-ico" style="background:#dbeafe;color:#2563eb"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="trust-card-ttl">Bảo Mật Cao</div>
+        <div class="trust-card-sub">Giao dịch an toàn & minh bạch</div>
       </div>
-      <div class="flex items-center gap-2 ml-auto shrink-0">
-        <a href="account.html" id="headerProfileBtn" class="h-10 px-4 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-brand dark:text-white active:scale-95 transition-transform backdrop-blur-md decoration-transparent">
-          Đăng Nhập
-        </a>
-        <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center active:scale-75 transition-transform duration-300 backdrop-blur-md">
-          <i data-lucide="moon" class="w-5 h-5 dark:text-yellow-400 dark:fill-yellow-400"></i>
-        </button>
+      <div class="trust-card" data-delay="60">
+        <div class="trust-card-ico" style="background:#dcfce7;color:#16a34a"><i class="fa-solid fa-bolt"></i></div>
+        <div class="trust-card-ttl">Giao Tự Động</div>
+        <div class="trust-card-sub">Nhận hàng ngay lập tức 24/7</div>
+      </div>
+      <div class="trust-card" data-delay="120">
+        <div class="trust-card-ico" style="background:#fef3c7;color:#d97706"><i class="fa-solid fa-headset"></i></div>
+        <div class="trust-card-ttl">Hỗ Trợ Liền</div>
+        <div class="trust-card-sub">Admin phản hồi trong 5 phút</div>
+      </div>
+      <div class="trust-card" data-delay="180">
+        <div class="trust-card-ico" style="background:#ede9fe;color:#7c3aed"><i class="fa-solid fa-rotate-right"></i></div>
+        <div class="trust-card-ttl">Bảo Hành 3 Ngày</div>
+        <div class="trust-card-sub">Đổi sản phẩm nếu có lỗi</div>
       </div>
     </div>
-  </header>
+  </div>
+</div>
 
-  <main id="mainContainer" class="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-hide pt-[95px] pb-[130px] relative scroll-smooth">
-    <div class="max-w-6xl mx-auto px-5 md:px-6">
-       <div class="relative group w-full mb-6">
-          <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"></i>
-          <input type="text" id="searchInput" placeholder="Tìm ứng dụng IPA, Tweak..." class="w-full h-12 pl-12 pr-4 bg-gray-200/50 dark:bg-white/10 text-[15px] font-semibold rounded-2xl outline-none focus:ring-2 focus:ring-brand/50 transition-all placeholder-gray-500 text-gray-900 dark:text-gray-100 backdrop-blur-md spatial-shadow">
-       </div>
-       <div id="dynamicContent" class="min-h-[500px]">
-          <div class="py-32 flex flex-col items-center justify-center text-gray-400 opacity-60">
-             <div class="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mb-4"></div>
-             <p class="text-sm font-bold animate-pulse tracking-wide">Đang tải dữ liệu an toàn...</p>
+<!-- ══ SERVICES SECTION ══ -->
+<section id="services">
+  <div class="container">
+    <div class="section-hdr">
+      <div class="section-eyebrow">
+        <i class="fa-solid fa-layer-group"></i> Dịch Vụ
+      </div>
+      <h2 class="section-title">Tất Cả Trong Một Hệ Sinh Thái</h2>
+      <p class="section-sub">Chọn dịch vụ phù hợp với nhu cầu của bạn — từ ứng dụng iOS đến tài nguyên MMO chuyên nghiệp.</p>
+    </div>
+
+    <div class="svc-grid">
+
+      <!-- 1. Thư viện IPA -->
+      <a href="/app-library" class="svc-card" data-delay="0">
+        <div class="svc-thumb">
+          <div class="svc-thumb-bg bg-blue"></div>
+          <div class="svc-thumb-overlay"></div>
+          <div class="svc-thumb-ico" style="background:rgba(59,130,246,.35);border:1px solid rgba(255,255,255,.2)">
+            <i class="fa-brands fa-app-store-ios"></i>
           </div>
-       </div>
+          <span class="svc-badge" style="background:rgba(34,197,94,.8)">
+            <i class="fa-solid fa-bolt" style="font-size:8px"></i> HOT
+          </span>
+        </div>
+        <div class="svc-body">
+          <div class="svc-name">
+            Thư Viện Ứng Dụng IPA
+            <span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span>
+          </div>
+          <p class="svc-desc">Kho ứng dụng và file IPA chất lượng cao, cập nhật liên tục. Cài đặt dễ dàng, không cần jailbreak.</p>
+          <div class="svc-foot">
+            <span class="svc-tag blue"><i class="fa-brands fa-apple"></i> iOS / iPadOS</span>
+            <span class="svc-link">Khám phá <i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 2. Kho MMO -->
+      <a href="/store" class="svc-card featured" data-delay="80">
+        <div class="svc-thumb">
+          <div class="svc-thumb-bg bg-green"></div>
+          <div class="svc-thumb-overlay"></div>
+          <div class="svc-thumb-ico" style="background:rgba(16,185,129,.35);border:1px solid rgba(255,255,255,.2)">
+            <i class="fa-solid fa-store"></i>
+          </div>
+          <span class="svc-badge" style="background:rgba(245,158,11,.85)">
+            <i class="fa-solid fa-fire" style="font-size:8px"></i> PHỔ BIẾN
+          </span>
+        </div>
+        <div class="svc-body">
+          <div class="svc-name">
+            Kho Tài Nguyên MMO
+            <span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span>
+          </div>
+          <p class="svc-desc">Mua bán tool, tài khoản và tài nguyên MMO chuyên nghiệp. Giao hàng tự động, bảo hành rõ ràng.</p>
+          <div class="svc-foot">
+            <span class="svc-tag green"><i class="fa-solid fa-check-circle"></i> Tự động giao</span>
+            <span class="svc-link">Mua ngay <i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 3. Phím tắt iOS -->
+      <a href="/shortcuts" class="svc-card" data-delay="160">
+        <div class="svc-thumb">
+          <div class="svc-thumb-bg bg-purple"></div>
+          <div class="svc-thumb-overlay"></div>
+          <div class="svc-thumb-ico" style="background:rgba(124,58,237,.35);border:1px solid rgba(255,255,255,.2)">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+        </div>
+        <div class="svc-body">
+          <div class="svc-name">
+            Phím Tắt iOS
+            <span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span>
+          </div>
+          <p class="svc-desc">Tiện ích và phím tắt tự động hóa cho iPhone. Tối ưu workflow, tiết kiệm hàng giờ mỗi ngày.</p>
+          <div class="svc-foot">
+            <span class="svc-tag purple"><i class="fa-solid fa-bolt"></i> Shortcuts</span>
+            <span class="svc-link">Tải về <i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 4. Dịch vụ hệ thống -->
+      <a href="/services" class="svc-card" data-delay="240">
+        <div class="svc-thumb">
+          <div class="svc-thumb-bg bg-amber"></div>
+          <div class="svc-thumb-overlay"></div>
+          <div class="svc-thumb-ico" style="background:rgba(245,158,11,.35);border:1px solid rgba(255,255,255,.2)">
+            <i class="fa-solid fa-gear"></i>
+          </div>
+        </div>
+        <div class="svc-body">
+          <div class="svc-name">
+            Dịch Vụ Hệ Thống
+            <span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span>
+          </div>
+          <p class="svc-desc">Các dịch vụ hỗ trợ hệ sinh thái: VPS, Proxy, SMS, Email và nhiều hơn nữa.</p>
+          <div class="svc-foot">
+            <span class="svc-tag amber"><i class="fa-solid fa-server"></i> Hạ tầng</span>
+            <span class="svc-link">Xem gói <i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
+          </div>
+        </div>
+      </a>
+
+      <!-- 5. Nạp tiền -->
+      <a href="/top-up" class="svc-card" data-delay="320">
+        <div class="svc-thumb">
+          <div class="svc-thumb-bg bg-rose"></div>
+          <div class="svc-thumb-overlay"></div>
+          <div class="svc-thumb-ico" style="background:rgba(244,63,94,.3);border:1px solid rgba(255,255,255,.2)">
+            <i class="fa-solid fa-building-columns"></i>
+          </div>
+        </div>
+        <div class="svc-body">
+          <div class="svc-name">
+            Nạp Tiền Tự Động
+            <span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span>
+          </div>
+          <p class="svc-desc">Cổng nạp số dư tài khoản nhanh chóng qua chuyển khoản, VNPAY và nhiều phương thức khác.</p>
+          <div class="svc-foot">
+            <span class="svc-tag rose"><i class="fa-solid fa-clock"></i> Tức thì</span>
+            <span class="svc-link">Nạp ngay <i class="fa-solid fa-chevron-right" style="font-size:9px"></i></span>
+          </div>
+        </div>
+      </a>
+
     </div>
-  </main>
-
-  <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-6">
-    <nav class="glass-effect floating-nav h-[74px] flex justify-evenly items-center pointer-events-auto px-2">
-      <button onclick="switchTab('home')" class="tab-btn active" data-tab="home"><i data-lucide="sparkles"></i><span>Home</span></button>
-      <a href="ipavip.html" class="tab-btn"><i data-lucide="crown"></i><span>App VIP</span></a>
-      <button onclick="switchTab('ipa')" class="tab-btn" data-tab="ipa"><i data-lucide="smartphone"></i><span>Kho IPA</span></button>
-      <a href="account.html" class="tab-btn"><i data-lucide="user-circle"></i><span>Tài khoản</span></a>
-      <a href="dichvu.html" class="tab-btn"><i data-lucide="shopping-bag"></i><span>Cửa hàng</span></a>
-    </nav>
   </div>
+</section>
 
-  <div id="appStoreView" class="fixed inset-0 bg-bgLight dark:bg-bgDark slide-page flex flex-col overflow-hidden">
-     <div class="flex-1 overflow-y-auto scrollbar-hide relative pb-20">
-        <div class="sticky top-0 z-20 w-full flex items-center justify-between px-4 py-4 backdrop-blur-md bg-white/70 dark:bg-black/70 border-b border-black/5 dark:border-white/5 transition-colors">
-           <button onclick="closeAppView()" class="flex items-center gap-1 text-brand font-semibold active:opacity-60 transition">
-              <i data-lucide="chevron-left" class="w-6 h-6"></i> <span class="text-[17px]">Trở lại</span>
-           </button>
-        </div>
-        <div class="absolute top-0 left-0 w-full h-[400px] overflow-hidden -z-10 opacity-30 dark:opacity-40 pointer-events-none">
-           <img id="vAppBg" class="w-full h-full object-cover blur-3xl scale-150">
-           <div class="absolute inset-0 bg-gradient-to-b from-transparent via-bgLight/80 to-bgLight dark:via-black/80 dark:to-black"></div>
-        </div>
-        
-        <div class="px-5 pt-6 pb-6 flex gap-5 relative z-10">
-           <div id="vAppIconWrapper" class="w-[110px] h-[110px] relative overflow-hidden squircle shadow-2xl bg-white dark:bg-gray-800 ring-1 ring-black/5 dark:ring-white/10 ipaviet-watermark-lg shrink-0">
-             <img id="vAppIcon" class="w-full h-full object-cover">
-           </div>
-           <div class="flex-1 pt-1 flex flex-col">
-              <h1 id="vAppTitle" class="text-[24px] font-black leading-tight text-gray-900 dark:text-white line-clamp-2">Tên Ứng Dụng</h1>
-              <p id="vAppDev" class="text-[15px] text-gray-500 dark:text-gray-400 font-medium mt-1">IPAVIET Studio</p>
-              <div class="mt-auto pt-4 flex gap-2" id="vInstallBtnWrap">
-                 <button onclick="showDownloadAction()" class="bg-brand text-white py-1.5 px-6 rounded-full font-bold text-[15px] active:scale-95 transition tracking-wide shadow-lg shadow-brand/30">CÀI ĐẶT</button>
-                 <button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-brand"><i data-lucide="share" class="w-4 h-4"></i></button>
-              </div>
-           </div>
-        </div>
-        
-        <div class="flex items-center justify-between px-8 py-4 border-y border-black/5 dark:border-white/10 mx-5 mt-2 mb-6">
-           <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">ĐÁNH GIÁ</p><p class="text-[22px] font-bold text-gray-800 dark:text-gray-200">4.8</p><div class="flex gap-0.5 text-gray-300 dark:text-gray-400 mt-1"><i data-lucide="star" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i><i data-lucide="star" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i><i data-lucide="star" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i><i data-lucide="star" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i><i data-lucide="star-half" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i></div></div><div class="w-px h-10 bg-black/5 dark:bg-white/10"></div>
-           <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">AWARDS</p><i data-lucide="award" class="w-5 h-5 text-gray-500 dark:text-gray-300 mt-1"></i><p class="text-[12px] font-bold text-gray-500 dark:text-gray-400 mt-1" id="vAwardText">Khuyên Dùng</p></div><div class="w-px h-10 bg-black/5 dark:bg-white/10"></div>
-           <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">AGES</p><p class="text-[22px] font-bold text-gray-800 dark:text-gray-200">4+</p><p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Years Old</p></div>
-        </div>
+<!-- ══ FOOTER ══ -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
 
-        <div id="vVipArea" class="hidden px-5 mb-8 animate-fluid-up"></div>
-
-        <div id="vScreenshotsArea" class="mb-8 hidden">
-            <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-4 px-5">Xem trước</h2>
-            <div class="flex gap-4 overflow-x-auto scrollbar-hide snap-x-mandatory px-5 pb-4" id="vScreenshotsList"></div>
+      <div class="footer-brand">
+        <div class="logo-text">IPA<span>VIET</span></div>
+        <p>Nền tảng hệ sinh thái số toàn diện. Kết nối — Tự động hóa — Phát triển.</p>
+        <div class="footer-social" style="margin-top:12px">
+          <a href="https://t.me/ipaviet" target="_blank" class="social-btn" title="Telegram">
+            <i class="fa-brands fa-telegram"></i>
+          </a>
+          <a href="#" class="social-btn" title="Zalo">
+            <i class="fa-solid fa-comment"></i>
+          </a>
+          <a href="mailto:support@ipaviet.com" class="social-btn" title="Email">
+            <i class="fa-solid fa-envelope"></i>
+          </a>
         </div>
+      </div>
 
-        <div class="px-5 mb-8 mt-6">
-           <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-2">Thông tin ứng dụng</h2>
-           <p class="text-[15px] text-gray-600 dark:text-gray-300 mb-1">Phiên bản <span id="vAppVersion" class="font-semibold text-gray-900 dark:text-white">1.0</span> • <span id="vAppDate" class="text-[14px]">Hôm nay</span></p>
-           <p id="vAppDesc" class="text-[14px] text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line mt-2"></p>
-        </div>
+      <div class="footer-links">
+        <h4>Dịch Vụ</h4>
+        <ul>
+          <li><a href="/app-library"><i class="fa-solid fa-chevron-right"></i> Thư viện IPA</a></li>
+          <li><a href="/store"><i class="fa-solid fa-chevron-right"></i> Kho MMO</a></li>
+          <li><a href="/shortcuts"><i class="fa-solid fa-chevron-right"></i> Phím tắt iOS</a></li>
+          <li><a href="/services"><i class="fa-solid fa-chevron-right"></i> Dịch vụ hệ thống</a></li>
+          <li><a href="/top-up"><i class="fa-solid fa-chevron-right"></i> Nạp tiền</a></li>
+        </ul>
+      </div>
 
-        <div class="px-5 mb-10">
-           <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-4">Dữ liệu tệp</h2>
-           <div class="flex flex-col">
-               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Nhà phát triển</span><span id="vInfoDev" class="text-gray-900 dark:text-white text-[15px] text-right font-medium">IPAVIET</span></div>
-               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Thể loại</span><span id="vInfoCat" class="text-gray-900 dark:text-white text-[15px] text-right font-medium capitalize">Tiện ích</span></div>
-               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Kích thước</span><span id="vInfoSize" class="text-gray-900 dark:text-white text-[15px] text-right font-medium">184.9 MB</span></div>
-               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Bundle ID</span><span id="vInfoBundle" class="text-gray-900 dark:text-white text-[15px] text-right font-medium">com.ipaviet.app</span></div>
-           </div>
-        </div>
-     </div>
+      <div class="footer-links">
+        <h4>Hỗ Trợ</h4>
+        <ul>
+          <li><a href="/terms-of-service"><i class="fa-solid fa-chevron-right"></i> Điều khoản dịch vụ</a></li>
+          <li><a href="/privacy-policy"><i class="fa-solid fa-chevron-right"></i> Chính sách bảo mật</a></li>
+          <li><a href="https://t.me/ipaviet" target="_blank"><i class="fa-solid fa-chevron-right"></i> Telegram hỗ trợ</a></li>
+          <li><a href="mailto:support@ipaviet.com"><i class="fa-solid fa-chevron-right"></i> support@ipaviet.com</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2026 <strong>IPAVIET</strong>. All rights reserved.</p>
+      <div class="footer-bottom-links">
+        <a href="/privacy-policy">Bảo mật</a>
+        <a href="/terms-of-service">Điều khoản</a>
+      </div>
+    </div>
   </div>
+</footer>
 
-  <script>
-    const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
+<script>
+/* ═══════════════════════════════════
+   IPAVIET PORTAL — Main JS
+   ═══════════════════════════════════ */
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
-      authDomain: "ipaviet-st.firebaseapp.com",
-      projectId: "ipaviet-st",
-      storageBucket: "ipaviet-st.firebasestorage.app",
-      messagingSenderId: "127619650916",
-      appId: "1:127619650916:web:fc8904c99804eeb7539671"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+// Page loader
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    document.getElementById('pageLoader').classList.add('out');
+    setTimeout(()=>document.getElementById('pageLoader').remove(),600);
+  },700);
+});
 
-    let currentUser = null; let currentCoins = 0; let isUserVip = false; 
+// Scroll to services
+function scrollToServices(e){
+  if(e) e.preventDefault();
+  document.getElementById('services').scrollIntoView({behavior:'smooth',block:'start'});
+}
 
-    auth.onAuthStateChanged(user => {
-        const headerBtn = document.getElementById('headerProfileBtn');
-        if (user) {
-            currentUser = user;
-            db.collection("users").doc(user.uid).onSnapshot(doc => {
-                if (doc.exists) {
-                    const data = doc.data(); currentCoins = data.coins || 0;
-                    if(data.vipExpire && data.vipExpire.toMillis() > Date.now()) {
-                        isUserVip = true;
-                        headerBtn.innerHTML = `<i data-lucide="crown" class="w-4 h-4 mr-1 text-yellow-500"></i> ${currentCoins} Xu`;
-                        headerBtn.className = "h-10 px-4 rounded-full bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 flex items-center justify-center font-bold text-xs text-yellow-600 dark:text-yellow-400 active:scale-95 transition-transform decoration-transparent";
-                    } else {
-                        isUserVip = false;
-                        headerBtn.innerHTML = `<i data-lucide="gem" class="w-4 h-4 mr-1"></i> ${currentCoins} Xu`;
-                        headerBtn.className = "h-10 px-4 rounded-full bg-blue-50 dark:bg-brand/20 border border-blue-200 dark:border-brand/30 flex items-center justify-center font-bold text-xs text-brand dark:text-blue-400 active:scale-95 transition-transform decoration-transparent";
-                    }
-                    lucide.createIcons();
-                }
-            });
-        } else {
-            currentUser = null; currentCoins = 0; isUserVip = false;
-            headerBtn.innerHTML = "Đăng Nhập";
-            headerBtn.className = "h-10 px-4 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-brand dark:text-white active:scale-95 transition-transform backdrop-blur-md decoration-transparent";
-        }
-    });
-
-    window.allAppsMap = {}; 
-    const DB = { ipa: [], vip: [] }; 
-    const STATE = { currentTab: 'home', currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
-
-    function getUniqueApps(apps) { 
-        const map = new Map(); 
-        apps.forEach(app => { const key = String(app.name || app.title || app.filename || Math.random()).toLowerCase().trim(); if (!map.has(key)) map.set(key, app); }); 
-        return Array.from(map.values()); 
+// ── Intersection Observer cho card animations ──
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      const el = entry.target;
+      const delay = parseInt(el.dataset.delay||0);
+      setTimeout(()=>el.classList.add('visible'), delay);
+      io.unobserve(el);
     }
-    
-    function sortItemsByDate(items) { return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0)); }
+  });
+},{threshold:.12});
 
-    // ======================================================================
-    // 🚀 TẢI DATA AN TOÀN VỚI BACKEND PROXY (SỬA LỖI PHÂN BIỆT JSON KEY)
-    // ======================================================================
-    async function loadData() {
-        try {
-            const [vipRes, ipaRes] = await Promise.allSettled([
-                fetch(`vip.json?t=${Date.now()}`).then(r => r.text()),
-                fetch(`${GOOGLE_API_URL}?action=get_ipa_data&t=${Date.now()}`).then(r => r.json())
-            ]);
+document.querySelectorAll('.svc-card,.trust-card').forEach(el=>io.observe(el));
 
-            // Data VIP
-            if (vipRes.status === 'fulfilled') {
-                try {
-                    const vipData = JSON.parse(vipRes.value);
-                    if(Array.isArray(vipData)){
-                        DB.vip = vipData.map(item => { item._id = 'vip_' + Math.random().toString(36).substr(2, 9); item._type = 'VIP'; window.allAppsMap[item._id] = item; return item; });
-                    }
-                } catch(e) { console.log("Lỗi parse vip.json"); }
-            }
+// ── Header shrink on scroll ──
+let lastY=0;
+const hdr=document.querySelector('.header-bar');
+const tbar=document.querySelector('.trust-bar');
+window.addEventListener('scroll',()=>{
+  const y=window.scrollY;
+  if(y>80){
+    // scroll down một chút — hide trust bar, keep header
+    tbar.style.transform='translateY(-100%)';
+  } else {
+    tbar.style.transform='';
+  }
+  lastY=y;
+},{passive:true});
 
-            // Data IPA từ Proxy
-            if (ipaRes.status === 'fulfilled' && ipaRes.value && Array.isArray(ipaRes.value.apps)) {
-                const mapped = ipaRes.value.apps.map(app => {
-                    let newItem = {
-                        name: app.name, title: app.name, icon: app.iconURL || 'https://placehold.co/100', iconUrl: app.iconURL,
-                        desc: app.localizedDescription || app.subtitle || 'Bản IPA Thường', description: app.localizedDescription || app.subtitle,
-                        fullDesc: app.localizedDescription, 
-                        
-                        // 👉 FIX LỖI: BẮT ĐỦ 3 LOẠI KEY MÀ APPTESTERS HAY DÙNG CHO ẢNH
-                        screenshots: app.screenshotURLs || app.screenshotUrls || app.screenshots || [],
-
-                        fileLink: app.downloadURL, downloadUrl: app.downloadURL, link: app.downloadURL, version: app.version,
-                        developer: 'IPAVIET', date: app.versionDate || new Date().toISOString(),
-                        lastSync: app.versionDate, source: 'IPAVIET', category: app.category || 'Tiện ích', 
-                        _type: 'IPA', _id: 'app_' + Math.random().toString(36).substr(2, 9)
-                    };
-                    window.allAppsMap[newItem._id] = newItem; return newItem;
-                }).filter(app => app.fileLink);
-                DB.ipa = sortItemsByDate(getUniqueApps(mapped));
-            }
-        } catch(e) { console.error("Lỗi tổng", e); }
-
-        switchTab(STATE.currentTab);
-    }
-
-    function switchTab(tabId) {
-        STATE.currentTab = tabId; STATE.currentPage = 1; STATE.currentFilter = 'all';
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
-        renderContent(); document.getElementById('mainContainer').scrollTop = 0;
-    }
-
-    function setFilter(filter) { STATE.currentFilter = filter; STATE.currentPage = 1; renderContent(); }
-
-    function renderContent() {
-        const query = document.getElementById('searchInput').value.trim().toLowerCase(); 
-        const container = document.getElementById('dynamicContent'); 
-        let html = ''; const tab = STATE.currentTab;
-
-        if (tab === 'home') {
-            let uniqueApps = DB.ipa;
-            if(query) {
-                uniqueApps = uniqueApps.filter(i => (i.name || i.title || "").toLowerCase().includes(query));
-                html = `<h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight mb-4 animate-fluid-up">Kết quả tìm kiếm</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fluid-up delay-50">${uniqueApps.length ? uniqueApps.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}</div>`;
-            } else {
-                let featured = DB.vip.slice(0, 5); 
-                if(featured.length === 0) featured = uniqueApps.slice(0, 5); 
-                const recent = uniqueApps.slice(0, 15);
-                
-                html = `
-                    <div class="mb-6 animate-fluid-up"><p class="text-[11px] font-bold text-iosGray uppercase tracking-widest mb-1">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'numeric', month:'long'})}</p><div class="flex justify-between items-end"><h1 class="text-[34px] font-black tracking-tight text-gray-900 dark:text-white">Khám phá</h1></div></div>
-                    
-                    ${featured.length ? `
-                    <div class="mb-8 animate-fluid-up delay-50">
-                        <div class="flex justify-between items-end mb-4 px-1">
-                            <h3 class="text-[20px] font-bold text-gray-900 dark:text-white tracking-tight">App Nổi Bật</h3>
-                            <a href="ipavip.html" class="text-brand text-sm font-bold active:opacity-70">Vào kho VIP <i data-lucide="chevron-right" class="w-4 h-4 inline-block"></i></a>
-                        </div>
-                        <div class="flex gap-5 overflow-x-auto snap-x-mandatory scrollbar-hide pb-6 -mx-5 px-5 md:mx-0 md:px-0">
-                            ${featured.map((i, idx) => createBigHero(i, idx)).join('')}
-                        </div>
-                    </div>` : ''}
-
-                    <div class="mt-4 animate-fluid-up delay-200"><div class="flex justify-between items-end mb-5 border-b border-black/5 dark:border-white/10 pb-3 px-1"><h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight">Mới cập nhật (Kho IPA)</h3><span class="text-brand text-sm font-bold active:opacity-70 cursor-pointer" onclick="switchTab('ipa')">Xem tất cả</span></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${recent.map((i, idx) => createGridItem(i, idx)).join('')}</div></div>
-                `;
-            }
-        } 
-        else {
-            let items = DB.ipa;
-            if(query) items = items.filter(i => (i.name || i.title || i.filename || '').toLowerCase().includes(query));
-            
-            if (STATE.currentFilter !== 'all') { 
-                items = items.filter(i => { 
-                    const nameDescCat = String(i.name + " " + (i.desc||"") + " " + (i.category||"")).toLowerCase(); 
-                    if(STATE.currentFilter === 'game') return ['game', 'trò chơi', 'hack', 'mod', 'rpg', 'moba', 'fps', 'action', 'simulator', 'bắn súng'].some(kw => nameDescCat.includes(kw));
-                    if(STATE.currentFilter === 'social') return ['social', 'mạng xã hội', 'facebook', 'tiktok', 'insta', 'zalo', 'messenger', 'youtube', 'chat', 'nhắn tin'].some(kw => nameDescCat.includes(kw));
-                    if(STATE.currentFilter === 'media') return ['media', 'giải trí', 'phim', 'nhạc', 'music', 'video', 'netflix', 'spotify', 'mp3', 'player', 'stream'].some(kw => nameDescCat.includes(kw));
-                    if(STATE.currentFilter === 'edit') return ['edit', 'chỉnh sửa', 'ảnh', 'video', 'photo', 'camera', 'capcut', 'picsart', 'lightroom', 'photoshop', 'maker'].some(kw => nameDescCat.includes(kw));
-                    if(STATE.currentFilter === 'utility') return ['utility', 'tiện ích', 'công cụ', 'tool', 'jailbreak', 'quản lý', 'adblock', 'trollstore', 'file', 'manager', 'cleaner', 'vpn'].some(kw => nameDescCat.includes(kw));
-                    return true; 
-                }); 
-            }
-
-            const filtersDef = [
-                { id: 'all', name: 'Tất cả', icon: 'layers' }, { id: 'game', name: 'Trò chơi', icon: 'gamepad-2' },
-                { id: 'social', name: 'Social', icon: 'message-circle' }, { id: 'media', name: 'Giải trí', icon: 'play-square' },
-                { id: 'edit', name: 'Chỉnh sửa', icon: 'wand-2' }, { id: 'utility', name: 'Tiện ích', icon: 'wrench' }
-            ];
-
-            let filterButtons = filtersDef.map(f => {
-                const isActive = STATE.currentFilter === f.id;
-                const baseStyle = "shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold rounded-full transition-all duration-300 active:scale-95";
-                const activeStyle = isActive ? "bg-gray-900 text-white dark:bg-white dark:text-black shadow-lg shadow-black/20 dark:shadow-white/20" : "bg-white dark:bg-cardDark text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5";
-                const iconStyle = isActive ? "text-white dark:text-black" : "text-gray-400";
-                return `<button onclick="setFilter('${f.id}')" class="${baseStyle} ${activeStyle}"><i data-lucide="${f.icon}" class="w-4 h-4 ${iconStyle}"></i>${f.name}</button>`;
-            }).join('');
-
-            const totalPages = Math.ceil(items.length / STATE.itemsPerPage); const start = (STATE.currentPage - 1) * STATE.itemsPerPage; const pagedItems = items.slice(start, start + STATE.itemsPerPage);
-            const featured = items.slice(0, 5);
-
-            html = `
-                <h1 class="text-[34px] font-black tracking-tight mb-8 text-gray-900 dark:text-white capitalize animate-fluid-up">Kho IPA Thường</h1>
-                
-                ${!query && STATE.currentFilter === 'all' && featured.length ? `<div class="mb-10 animate-fluid-up delay-50"><div class="flex gap-5 overflow-x-auto snap-x-mandatory scrollbar-hide pb-6 -mx-5 px-5 md:mx-0 md:px-0">${featured.map((i, idx) => createSubPageHero(i, idx)).join('')}</div></div>` : ''}
-
-                <div class="flex flex-col mb-4 animate-fluid-up delay-100">
-                    <div class="flex items-center gap-4 justify-between w-full border-b border-black/5 dark:border-white/10 pb-3 mb-3">
-                        <h3 class="text-[22px] font-bold tracking-tight">Tất cả File</h3>
-                    </div>
-                    <div class="flex overflow-x-auto scrollbar-hide gap-2.5 w-full pb-4 pt-1 -mx-5 px-5 md:mx-0 md:px-0">${filterButtons}</div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-4 animate-fluid-up delay-150">${pagedItems.length ? pagedItems.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}</div>
-                ${items.length > STATE.itemsPerPage ? createPagination(totalPages) : ''}
-            `;
-        }
-        container.innerHTML = html; lucide.createIcons();
-    }
-
-    function createBigHero(i, index) { 
-        let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
-        let safeName = i.name || i.title || 'Ứng dụng';
-        let safeDesc = i.desc || 'Nhấn để xem chi tiết';
-        
-        if (i._type === 'VIP') {
-            return `
-            <a href="ipavip.html" class="snap-center shrink-0 w-[85%] md:w-[28rem] h-[220px] md:h-[260px] relative rounded-[32px] overflow-hidden spatial-shadow group cursor-pointer bg-black block decoration-transparent">
-                <img src="${safeIcon}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out opacity-50" onerror="this.src='https://placehold.co/100'">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-                <div class="absolute bottom-0 left-0 w-full p-6 flex flex-col items-start gap-3">
-                    <span class="text-black text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-yellow-400 to-yellow-500 backdrop-blur-md px-3 py-1 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.5)]">VIP ĐỘC QUYỀN</span>
-                    <div class="flex flex-col w-full">
-                        <h2 class="text-[26px] font-black text-white leading-tight truncate drop-shadow-md">${safeName}</h2>
-                        <p class="text-gray-300 text-[14px] line-clamp-2 mt-1 font-medium">${safeDesc}</p>
-                    </div>
-                </div>
-            </a>`; 
-        }
-        return `
-        <div onclick="openAppView('${i._id}')" class="snap-center shrink-0 w-[85%] md:w-[28rem] h-[220px] md:h-[260px] relative rounded-[32px] overflow-hidden spatial-shadow group cursor-pointer bg-black">
-            <img src="${safeIcon}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out opacity-50" onerror="this.src='https://placehold.co/100'">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-            <div class="absolute bottom-0 left-0 w-full p-6 flex flex-col items-start gap-3">
-                <span class="text-white/70 text-[10px] font-black uppercase tracking-widest bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">IPAVIET • APP</span>
-                <div class="flex flex-col w-full">
-                    <h2 class="text-[26px] font-black text-white leading-tight truncate drop-shadow-md">${safeName}</h2>
-                    <p class="text-gray-300 text-[14px] line-clamp-2 mt-1 font-medium">${safeDesc}</p>
-                </div>
-            </div>
-        </div>`; 
-    }
-
-    function createSubPageHero(i, index) { 
-        let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
-        let safeName = i.name || i.title || 'Ứng dụng';
-        return `
-        <div onclick="openAppView('${i._id}')" class="animate-fluid-up snap-center shrink-0 w-[20rem] h-[12rem] relative rounded-[28px] overflow-hidden spatial-shadow group cursor-pointer bg-black" style="animation-delay: ${index*50}ms">
-            <img src="${safeIcon}" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-40 transition-all duration-700 ease-out" onerror="this.src='https://placehold.co/100'">
-            <div class="absolute inset-0 p-6 flex flex-col justify-end">
-                <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 relative overflow-hidden squircle shadow-md bg-white ipaviet-watermark-sm shrink-0 border border-white/10">
-                        <img src="${safeIcon}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100'">
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-bold text-white text-xl truncate drop-shadow-md">${safeName}</h4>
-                        <p class="text-[12px] text-white/70 font-semibold mt-0.5">${i.source || 'IPAVIET'}</p>
-                    </div>
-                </div>
-            </div>
-        </div>`; 
-    }
-    
-    function createGridItem(i, index) { 
-        let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
-        let safeName = i.name || i.title || 'Ứng dụng';
-        let safeDesc = i.desc || i.description || 'Nhấn để xem chi tiết';
-        
-        return `
-        <div onclick="openAppView('${i._id}')" class="animate-fluid-up flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/10 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 px-2 rounded-2xl transition-colors cursor-pointer group" style="animation-delay: ${index*30}ms">
-            <div class="w-[60px] h-[60px] relative overflow-hidden squircle shrink-0 shadow-sm bg-gray-100 dark:bg-gray-800 object-cover group-hover:scale-95 transition-transform duration-300 ipaviet-watermark-sm border border-black/5 dark:border-white/5">
-                <img src="${safeIcon}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100'"/>
-            </div>
-            <div class="flex-1 min-w-0 pt-1">
-                <h4 class="font-bold text-gray-900 dark:text-white truncate text-[16px] leading-tight">${safeName}</h4>
-                <p class="text-[13px] text-iosGray line-clamp-1 font-medium mt-0.5">${safeDesc}</p>
-            </div>
-            <button class="shrink-0 bg-brand text-white font-bold text-[13px] px-5 py-1.5 rounded-full active:scale-90 transition-transform shadow-lg shadow-brand/20">NHẬN</button>
-        </div>`; 
-    }
-    
-    function createPagination(total) { if (total <= 1) return ''; let btns = ''; let start = Math.max(1, STATE.currentPage - 2); let end = Math.min(total, start + 4); btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===1 ? 'text-gray-300 pointer-events-none' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>`; for(let p = start; p <= end; p++) { const activeClass = p === STATE.currentPage ? 'bg-brand text-white shadow-md' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'; btns += `<button onclick="changePage(${p})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${activeClass}">${p}</button>`; } btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===total ? 'text-gray-300 pointer-events-none' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>`; return `<div class="flex justify-center items-center gap-2 mt-10 w-full">${btns}</div>`; }
-    function emptyState() { return `<div class="col-span-full py-20 text-center text-iosGray flex flex-col items-center"><i data-lucide="layout-grid" class="w-12 h-12 mb-3 opacity-30"></i><p class="text-[15px] font-medium">Không tìm thấy ứng dụng</p></div>`; }
-    function changePage(p) { STATE.currentPage = p; renderContent(); document.getElementById('mainContainer').scrollTo({ top: 0, behavior: 'smooth' }); }
-    
-    document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
-
-    // ======================================================================
-    // 🚀 LOGIC TỰ ĐỘNG TÌM KIẾM ẢNH MÔ TẢ TỪ APPLE STORE (NẾU KHÔNG CÓ SẴN)
-    // ======================================================================
-    function openAppView(appId) {
-       const i = window.allAppsMap[appId]; if(!i) return; STATE.currentItem = i;
-       
-       let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
-       document.getElementById('vAppBg').src = safeIcon; 
-       document.getElementById('vAppIcon').src = safeIcon; 
-       
-       const iconWrapper = document.getElementById('vAppIconWrapper');
-       iconWrapper.className = "w-[110px] h-[110px] relative overflow-hidden squircle shadow-2xl bg-white dark:bg-gray-800 ring-1 ring-black/5 dark:ring-white/10 ipaviet-watermark-lg shrink-0";
-
-       document.getElementById('vAppTitle').innerText = i.name || i.title || 'Unknown App'; 
-       document.getElementById('vAppDev').innerText = i.developer || i.source || 'IPAVIET Studio'; 
-       document.getElementById('vAppDesc').innerText = i.fullDesc || i.description || i.desc || "Ứng dụng tuyệt vời được cung cấp bởi hệ thống IPAVIET.";
-       document.getElementById('vAppVersion').innerText = i.version || '1.0.0'; 
-       document.getElementById('vAppDate').innerText = i.date ? new Date(i.date).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN'); 
-       
-       document.getElementById('vInfoDev').innerText = i.developer || i.source || 'IPAVIET Studio'; 
-       document.getElementById('vInfoCat').innerText = i.category || 'Tiện ích'; 
-       document.getElementById('vInfoSize').innerText = i.size || (Math.random() * 200 + 50).toFixed(1) + ' MB'; 
-       document.getElementById('vInfoBundle').innerText = i.bundleId || 'com.ipaviet.' + (i.name||"app").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-       
-       document.getElementById('vAwardText').innerText = i._type === 'VIP' ? 'Siêu Phẩm' : 'Khuyên Dùng';
-       document.getElementById('vVipArea').classList.add('hidden');
-
-       const btnWrap = document.getElementById('vInstallBtnWrap');
-       if(i._type === 'VIP') {
-           btnWrap.innerHTML = `<button onclick="showDownloadAction()" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-1.5 px-6 rounded-full font-black text-[15px] active:scale-95 transition tracking-wide shadow-[0_4px_15px_rgba(234,179,8,0.4)] flex items-center"><i data-lucide="crown" class="w-4 h-4 mr-1.5"></i>TẢI VIP</button><button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-yellow-500"><i data-lucide="share" class="w-4 h-4"></i></button>`;
-       } else {
-           btnWrap.innerHTML = `<button onclick="showDownloadAction()" class="bg-brand text-white py-1.5 px-6 rounded-full font-bold text-[15px] active:scale-95 transition tracking-wide shadow-lg shadow-brand/30">CÀI ĐẶT</button><button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-brand"><i data-lucide="share" class="w-4 h-4"></i></button>`;
-       }
-
-       // XỬ LÝ ẢNH SCREENSHOTS THÔNG MINH
-       const ssArea = document.getElementById('vScreenshotsArea');
-       const ssList = document.getElementById('vScreenshotsList');
-       
-       const renderSS = (urls) => {
-           let ssHtml = '';
-           urls.forEach(url => { ssHtml += `<img src="${url}" class="screenshot-img snap-center shrink-0">`; });
-           ssList.innerHTML = ssHtml; 
-           ssArea.classList.remove('hidden');
-       };
-
-       if (Array.isArray(i.screenshots) && i.screenshots.length > 0) {
-           renderSS(i.screenshots); // Có sẵn thì render luôn
-       } else {
-           // Không có thì hiển thị Loading và tìm kiếm tự động
-           ssArea.classList.remove('hidden');
-           ssList.innerHTML = `<div class="w-full flex flex-col items-center justify-center py-10 opacity-50"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mb-2"></div><span class="text-[12px] font-bold text-gray-500">Đang tìm ảnh gốc từ Apple Store...</span></div>`;
-           
-           // Thuật toán bóc tách tên: Loại bỏ các từ khóa Mod/Hack để tìm bản gốc trên Store
-           let searchTerm = (i.name || "").replace(/hack|mod|crack|premium|pro|\+|vip|cheat/gi, '').trim();
-
-           // Tìm kiếm Đa quốc gia (Thử VN trước, nếu trượt qua Mỹ tìm)
-           async function fetchAppleScreenshots() {
-               try {
-                   // 1. Thử kho Việt Nam
-                   let resVN = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=software&limit=1&country=vn`);
-                   let dataVN = await resVN.json();
-                   if (dataVN.results && dataVN.results.length > 0 && dataVN.results[0].screenshotUrls) {
-                       return dataVN.results[0].screenshotUrls;
-                   }
-                   // 2. Thử kho Mỹ
-                   let resUS = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=software&limit=1&country=us`);
-                   let dataUS = await resUS.json();
-                   if (dataUS.results && dataUS.results.length > 0 && dataUS.results[0].screenshotUrls) {
-                       return dataUS.results[0].screenshotUrls;
-                   }
-                   return null;
-               } catch (e) { return null; }
-           }
-
-           fetchAppleScreenshots().then(urls => {
-               if (urls && urls.length > 0) {
-                   i.screenshots = urls.slice(0, 5); // Lưu lại vào cache để lần sau không tìm lại nữa
-                   renderSS(i.screenshots);
-               } else {
-                   ssArea.classList.add('hidden');
-                   ssList.innerHTML = '';
-               }
-           });
-       }
-
-       const view = document.getElementById('appStoreView'); 
-       view.classList.remove('hidden'); requestAnimationFrame(() => view.classList.add('open'));
-       lucide.createIcons();
-    }
-
-    function closeAppView() { const view = document.getElementById('appStoreView'); view.classList.remove('open'); setTimeout(() => view.classList.add('hidden'), 400); }
-
-    function showDownloadAction() {
-        if (!currentUser) { window.location.href = 'account.html'; return; }
-        const vipArea = document.getElementById('vVipArea'); vipArea.classList.remove('hidden');
-        const isAppVIP = STATE.currentItem._type === 'VIP';
-
-        if (isUserVip) {
-            vipArea.innerHTML = `<div class="bg-gradient-to-br from-yellow-500/20 to-yellow-300/10 border border-yellow-500/30 p-6 rounded-[28px] backdrop-blur-md relative spatial-shadow"><div class="flex justify-between items-center border-b border-yellow-500/20 pb-4 mb-4"><div><p class="text-[12px] font-bold text-yellow-600 dark:text-yellow-500 tracking-widest uppercase">Đặc quyền VIP</p><p class="text-[22px] font-black text-gray-900 dark:text-white">Miễn phí tải</p></div><div class="text-right flex items-center gap-2"><i data-lucide="crown" class="w-8 h-8 text-yellow-500"></i></div></div><button onclick="downloadVipApp(this)" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-400 text-black font-black py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-[0_10px_20px_-10px_rgba(234,179,8,0.5)]"><i data-lucide="zap" class="w-5 h-5"></i> TẢI XUỐNG NGAY</button></div>`;
-        } else {
-            if (isAppVIP) {
-                vipArea.innerHTML = `<div class="bg-gradient-to-br from-[#2a0808] to-black border border-red-500/30 p-6 rounded-[28px] backdrop-blur-md relative spatial-shadow"><div class="flex items-center gap-3 border-b border-white/10 pb-4 mb-4"><div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center"><i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i></div><div><p class="text-[12px] font-bold text-red-400 tracking-widest uppercase">Truy cập bị từ chối</p><p class="text-[18px] font-black text-white">Chỉ dành cho VIP</p></div></div><p class="text-sm text-gray-300 mb-5 leading-relaxed">Siêu phẩm này nằm trong bộ sưu tập độc quyền. Bạn cần nâng cấp lên Hội Viên VIP để bẻ khóa giới hạn tải xuống.</p><a href="dichvu.html" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-black py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-[0_10px_20px_-10px_rgba(239,68,68,0.4)] decoration-transparent"><i data-lucide="zap" class="w-5 h-5"></i> NÂNG CẤP VIP NGAY</a></div>`;
-            } else {
-                vipArea.innerHTML = `<div class="bg-blue-50 dark:bg-brand/10 border border-blue-200 dark:border-brand/20 p-6 rounded-[28px] backdrop-blur-md transition-colors relative spatial-shadow"><div class="flex justify-between items-center border-b border-brand/10 pb-4 mb-4"><div><p class="text-[12px] font-bold text-gray-500 tracking-widest uppercase">Phí tải App</p><p class="text-[22px] font-black text-brand">10 Xu</p></div><div class="text-right"><p class="text-[12px] font-bold text-gray-500 tracking-widest uppercase">Số dư của bạn</p><p class="text-[18px] font-bold text-gray-900 dark:text-white">${currentCoins} Xu</p></div></div><button onclick="buyAppWithCoins(this)" class="w-full bg-brand text-white font-bold py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="zap" class="w-5 h-5"></i> THANH TOÁN & TẢI XUỐNG</button><div class="mt-4 pt-4 border-t border-blue-200/50 dark:border-white/5 relative z-10 flex gap-2"><button onclick="downloadFreeStore(this)" class="flex-1 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-300 font-bold text-[13px] hover:bg-black/10 dark:hover:bg-white/10 transition flex items-center justify-center gap-2"><i data-lucide="cloud-lightning" class="w-4 h-4"></i> Tải Free (Ads)</button><a href="dichvu.html" class="flex-1 py-3 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold text-[13px] hover:bg-green-500/20 transition flex items-center justify-center gap-2 text-center decoration-transparent"><i data-lucide="wallet" class="w-4 h-4"></i> Nạp Xu</a></div></div>`;
-            }
-        }
-        lucide.createIcons(); vipArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    async function downloadVipApp(btnEl) {
-        const originalText = btnEl.innerHTML; btnEl.innerHTML = `<div class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>`; btnEl.disabled = true;
-        try { const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link; if(rawLink) { window.location.href = rawLink; } else { alert("Không tìm thấy link tải gốc."); } } catch (error) { alert("Lỗi kết nối."); }
-        setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
-    }
-
-    async function buyAppWithCoins(btnEl) {
-        const APP_PRICE = 10; 
-        if (currentCoins < APP_PRICE) { alert("Bạn không đủ Xu để tải.\nVui lòng Nạp thêm Xu hoặc nâng cấp Gói VIP để tải không giới hạn nhé!"); window.location.href = 'dichvu.html'; return; }
-        const originalText = btnEl.innerHTML; btnEl.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`; btnEl.disabled = true;
-        
-        try {
-            const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-            const appName = STATE.currentItem.name || STATE.currentItem.title || STATE.currentItem.filename || "Ứng dụng";
-            
-            if(rawLink) {
-                await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-APP_PRICE) }, { merge: true });
-                await db.collection("users").doc(currentUser.uid).collection("transactions").add({ amount: -APP_PRICE, desc: `Tải lẻ: ${appName}`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                
-                alert(`✅ Đã thanh toán ${APP_PRICE} Xu.\nHệ thống đang bắt đầu tải xuống...`);
-                window.location.href = rawLink; 
-            } else { alert("Không tìm thấy link tải gốc."); }
-        } catch (error) { alert("Lỗi kết nối mạng."); }
-        setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
-    }
-
-    async function downloadFreeStore(btnEl) {
-       const originalText = btnEl.innerHTML; btnEl.innerHTML = `<div class="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>`; btnEl.disabled = true;
-       const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-       try { const res = await fetch(GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(btoa(rawLink))); const data = await res.json(); if(data.success && data.link) { window.location.href = data.link; } else { alert("Hệ thống rút gọn link đang quá tải. Hãy thử lại sau!"); } } catch (error) { alert("Lỗi kết nối máy chủ. Hãy thử lại!"); }
-       btnEl.innerHTML = originalText; btnEl.disabled = false; 
-    }
-
-    function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
-    if(localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
-
-    loadData();
-  </script>
+// ── Parallax nhẹ cho hero blobs ──
+window.addEventListener('mousemove',e=>{
+  const cx=e.clientX/window.innerWidth-.5;
+  const cy=e.clientY/window.innerHeight-.5;
+  document.querySelectorAll('.blob').forEach((b,i)=>{
+    const strength=(i+1)*10;
+    b.style.transform=`translate(${cx*strength}px,${cy*strength*.6}px)`;
+  });
+},{passive:true});
+</script>
 </body>
 </html>
