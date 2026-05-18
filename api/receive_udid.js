@@ -4,34 +4,40 @@ export const config = {
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
-        let body = '';
-        for await (const chunk of req) {
-            body += chunk;
-        }
-        
-        // Trích xuất UDID từ dữ liệu Apple gửi lên
-        const match = body.match(/<key>UDID<\/key>[\s]*<string>([a-zA-Z0-9\-]+)<\/string>/);
-        const udid = match ? match[1] : '';
+        try {
+            let body = '';
+            for await (const chunk of req) {
+                body += chunk.toString();
+            }
+            
+            const match = body.match(/<key>UDID<\/key>[\s]*<string>([a-zA-Z0-9\-]+)<\/string>/);
+            const udid = match ? match[1] : '';
 
-        // Tự động nhận diện gói dựa vào đuôi URL ẩn từ file .mobileconfig gửi lên
-        let plan = '';
-        if (req.url && req.url.includes('?plan=')) {
-            plan = req.url.split('?plan=')[1].split('&')[0];
-        } else if (req.query && req.query.plan) {
-            plan = req.query.plan;
-        }
+            let plan = '';
+            if (req.url && req.url.includes('?plan=')) {
+                plan = req.url.split('?plan=')[1].split('&')[0];
+            } else if (req.query && req.query.plan) {
+                plan = req.query.plan;
+            }
 
-        if (udid) {
-            // Dùng mã chuyển hướng 302 để chặn Safari lưu cache bậy
-            const redirectUrl = plan 
-                ? `https://ipaviet.site/certapple/${plan}/?udid=${udid}`
-                : `https://ipaviet.site/certapple/?udid=${udid}`;
+            if (udid) {
+                const redirectUrl = plan 
+                    ? `https://ipaviet.site/certapple/${plan}/?udid=${udid}`
+                    : `https://ipaviet.site/certapple/?udid=${udid}`;
                 
-            res.redirect(302, redirectUrl);
-        } else {
-            res.status(400).send('Không trích xuất được UDID. Vui lòng thử lại.');
+                // APPLE BẮT BUỘC PHẢI DÙNG 301
+                res.setHeader('Location', redirectUrl);
+                res.status(301).end();
+            } else {
+                // Tránh lỗi 400 làm kẹt màn hình cài đặt
+                res.setHeader('Location', `https://ipaviet.site/certapple/?error=noudid`);
+                res.status(301).end();
+            }
+        } catch (e) {
+            res.setHeader('Location', `https://ipaviet.site/certapple/?error=server`);
+            res.status(301).end();
         }
     } else {
-        res.status(405).send('Phương thức không được hỗ trợ.');
+        res.status(405).send('Method Not Allowed');
     }
 }
