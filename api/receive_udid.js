@@ -9,15 +9,20 @@ export default async function handler(req, res) {
             body += chunk;
         }
         
-        // Trích xuất UDID
+        // Trích xuất UDID từ dữ liệu Apple gửi lên
         const match = body.match(/<key>UDID<\/key>[\s]*<string>([a-zA-Z0-9\-]+)<\/string>/);
         const udid = match ? match[1] : '';
 
-        // Đọc tên thư mục gói từ đuôi URL (Ví dụ: order01)
-        const plan = req.query.plan || ''; 
+        // CÁCH BẮT ĐUÔI PLAN AN TOÀN TUYỆT ĐỐI TRÊN VERCEL
+        let plan = '';
+        if (req.url && req.url.includes('?plan=')) {
+            plan = req.url.split('?plan=')[1].split('&')[0];
+        } else if (req.query && req.query.plan) {
+            plan = req.query.plan;
+        }
 
         if (udid) {
-            // Tự động búng khách về đúng thư mục gói họ vừa đứng
+            // Nếu phát hiện đuôi plan, búng về đúng thư mục đó
             const redirectUrl = plan 
                 ? `https://ipaviet.site/certapple/${plan}/?udid=${udid}`
                 : `https://ipaviet.site/certapple/?udid=${udid}`;
