@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác nhận lên đơn - VSign</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { 
+            background: #f5f5f7; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; margin: 0; padding: 20px;
+        }
+        .checkout-card { 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(25px); 
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px; padding: 40px 30px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08); 
+            width: 100%; max-width: 400px; text-align: center; 
+        }
+        .brand { font-size: 14px; color: #86868b; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+        h2 { color: #1d1d1f; margin: 0 0 5px 0; font-size: 24px; }
+        .price { font-size: 36px; font-weight: 700; color: #0071e3; margin-bottom: 30px; }
+        
+        .input-group { margin-bottom: 25px; text-align: left; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #86868b; margin-bottom: 8px; }
+        input { 
+            width: 100%; padding: 14px; border: 1px solid #d2d2d7; 
+            border-radius: 12px; font-size: 16px; box-sizing: border-box; 
+            background: #fff; color: #1d1d1f; outline: none;
+        }
+        input:focus { border-color: #0071e3; box-shadow: 0 0 0 3px rgba(0,113,227,0.1); }
+        
+        .btn-step1 { 
+            background: #1d1d1f; color: #fff; padding: 16px; 
+            border-radius: 980px; text-decoration: none; display: block; 
+            margin-bottom: 15px; font-weight: 500; font-size: 17px; transition: 0.2s;
+        }
+        .btn-step1:hover { transform: scale(1.02); }
+        
+        .btn-step2 { 
+            background: #0071e3; color: #fff; border: none; 
+            padding: 16px; border-radius: 980px; width: 100%; 
+            font-size: 17px; font-weight: 500; cursor: pointer; transition: 0.3s; 
+        }
+        .btn-step2:disabled { background: #d2d2d7; color: #fff; cursor: not-allowed; }
+        .btn-step2:hover:not(:disabled) { background: #005bb5; transform: scale(1.02); }
+    </style>
+</head>
+<body>
+
+    <div class="checkout-card">
+        <div class="brand">VSIGN CERTIFICATE</div>
+        <h2>Gói Lấy Ngay Siêu Rẻ</h2>
+        <div class="price">125.561đ</div>
+        
+        <a href="get_udid.mobileconfig" class="btn-step1">1. Lấy mã UDID tự động</a>
+        
+        <div class="input-group">
+            <label>Mã thiết bị (UDID) của bạn:</label>
+            <input type="text" id="inputUDID" placeholder="Vui lòng thực hiện Bước 1..." readonly>
+        </div>
+
+        <button id="btnSubmit" class="btn-step2" onclick="submitOrder()">2. Xác nhận lên đơn</button>
+    </div>
+
+    <script>
+        // Tự động quét thanh địa chỉ xem có mã UDID Apple gửi về không
+        const urlParams = new URLSearchParams(window.location.search);
+        const udid = urlParams.get('udid');
+        const btnSubmit = document.getElementById('btnSubmit');
+
+        if (udid) {
+            // Có UDID: Tự động điền và kích hoạt nút Bước 2
+            document.getElementById('inputUDID').value = udid;
+        } else {
+            // Chưa có UDID: Khóa nút Bước 2
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "Vui lòng lấy UDID trước";
+        }
+
+        function submitOrder() {
+            const inputUdid = document.getElementById('inputUDID').value;
+            if(!inputUdid) return;
+
+            // Chuyển trạng thái nút thành loading
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "Đang kết nối hệ thống...";
+
+            // ====== THÔNG TIN CỐ ĐỊNH CỦA GÓI 01 ======
+            const productId = "GOI_01";
+            const productName = "LẤY NGAY SIÊU RẺ";
+            const price = 125561;
+            
+            // ====== THAY LINK WEB APP GOOGLE SCRIPT CỦA BẠN VÀO ĐÂY ======
+            const scriptUrl = "https://script.google.com/macros/s/AKfyc.../exec"; 
+            
+            // Đóng gói dữ liệu gửi ngầm
+            const finalUrl = `${scriptUrl}?action=buy_mmo_pending&productId=${productId}&productName=${encodeURIComponent(productName)}&price=${price}&amount=1&udid=${inputUdid}`;
+
+            fetch(finalUrl)
+              .then(response => response.json())
+              .then(data => {
+                  if(data.success) {
+                      Swal.fire({
+                          title: 'Lên đơn thành công!',
+                          text: 'Mã đơn hàng của bạn: ' + data.orderId,
+                          icon: 'success',
+                          confirmButtonColor: '#0071e3',
+                          confirmButtonText: 'Đóng'
+                      }).then(() => {
+                          // Tùy chọn: Chuyển khách sang trang thanh toán hoặc nhóm tele
+                          window.location.href = "https://ipaviet.site";
+                      });
+                  } else {
+                      Swal.fire('Lỗi', data.error || 'Có lỗi hệ thống', 'error');
+                      btnSubmit.disabled = false;
+                      btnSubmit.innerText = "2. Xác nhận lên đơn";
+                  }
+              })
+              .catch(err => {
+                  Swal.fire('Lỗi', 'Không thể kết nối với máy chủ', 'error');
+                  btnSubmit.disabled = false;
+                  btnSubmit.innerText = "2. Xác nhận lên đơn";
+              });
+        }
+    </script>
+
+</body>
+</html>
