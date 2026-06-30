@@ -751,6 +751,10 @@ body{font-family:'Saira Semi Condensed',sans-serif;background:var(--bg);color:#1
     <h3 id="authTitle">Đăng Nhập</h3>
     <input type="email" id="aEmail" class="inp" placeholder="Email">
     <input type="password" id="aPwd" class="inp" placeholder="Mật khẩu">
+    <div id="captchaRow" style="display:none;margin-bottom:10px;">
+      <div id="mCaptchaLabel" style="font-size:12.5px;color:#64748b;margin-bottom:4px;font-weight:700;text-align:left;">Xác minh chống Bot</div>
+      <input type="number" id="mCaptchaInput" class="inp" placeholder="Kết quả">
+    </div>
     <button onclick="doAuth()" class="btn-full" id="authBtn">Đăng Nhập</button>
     <div style="text-align:center;margin-top:12px;font-size:12.5px;color:#64748b">
       <span id="authSwitch">Chưa có tài khoản? <a href="#" onclick="swReg(event)" style="color:#2563eb;font-weight:700">Đăng ký</a></span>
@@ -1145,10 +1149,44 @@ function closeDM(){
 
 // ── AUTH ──
 let REGMODE=false;
-function swReg(e){ e.preventDefault(); REGMODE=!REGMODE; document.getElementById('authTitle').textContent=REGMODE?'Đăng Ký':'Đăng Nhập'; document.getElementById('authBtn').textContent=REGMODE?'Tạo tài khoản':'Đăng Nhập'; document.getElementById('authSwitch').innerHTML=REGMODE?'Đã có tài khoản? <a href="#" onclick="swReg(event)" style="color:#2563eb;font-weight:700">Đăng nhập</a>':'Chưa có tài khoản? <a href="#" onclick="swReg(event)" style="color:#2563eb;font-weight:700">Đăng ký</a>'; }
+let captchaAns = 0;
+function generateCaptcha() {
+  const x = Math.floor(Math.random() * 9) + 1;
+  const y = Math.floor(Math.random() * 9) + 1;
+  captchaAns = x + y;
+  const label = document.getElementById('mCaptchaLabel');
+  if (label) label.innerText = `Xác minh chống Bot: ${x} + ${y} = ?`;
+  const inp = document.getElementById('mCaptchaInput');
+  if (inp) inp.value = '';
+}
+function swReg(e){
+  e.preventDefault();
+  REGMODE=!REGMODE;
+  document.getElementById('authTitle').textContent=REGMODE?'Đăng Ký':'Đăng Nhập';
+  document.getElementById('authBtn').textContent=REGMODE?'Tạo tài khoản':'Đăng Nhập';
+  document.getElementById('authSwitch').innerHTML=REGMODE?'Đã có tài khoản? <a href="#" onclick="swReg(event)" style="color:#2563eb;font-weight:700">Đăng nhập</a>':'Chưa có tài khoản? <a href="#" onclick="swReg(event)" style="color:#2563eb;font-weight:700">Đăng ký</a>';
+  const row = document.getElementById('captchaRow');
+  if (row) {
+    if (REGMODE) {
+      row.style.display = 'block';
+      generateCaptcha();
+    } else {
+      row.style.display = 'none';
+    }
+  }
+}
 async function doAuth(){
   const em=document.getElementById('aEmail').value.trim(), pw=document.getElementById('aPwd').value;
   if(!em||!pw){ ntf('Vui lòng điền đầy đủ','error'); return; }
+  if(REGMODE) {
+    const capInp = document.getElementById('mCaptchaInput');
+    const capVal = capInp ? parseInt(capInp.value) : 0;
+    if (capVal !== captchaAns) {
+      ntf('Mã xác minh chống Bot không chính xác!', 'error');
+      generateCaptcha();
+      return;
+    }
+  }
   const b=document.getElementById('authBtn'); b.textContent='Đang xử lý...'; b.disabled=true;
   try{
     if(REGMODE){ const c=await auth.createUserWithEmailAndPassword(em,pw); await db.collection('users').doc(c.user.uid).set({email:em,coins:0,createdAt:Date.now()}); ntf('Đăng ký thành công!','success'); }

@@ -223,6 +223,14 @@
                   </div>
               </div>
               
+              <div id="groupCaptcha" class="expand-anim max-h-0 opacity-0">
+                  <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1" id="captchaLabel">Mã Xác Minh Chống Bot</label>
+                  <div class="relative group">
+                      <i data-lucide="shield-alert" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-brand transition-colors"></i>
+                      <input type="number" id="captchaInput" placeholder="Nhập kết quả phép tính..." class="w-full h-14 pl-12 pr-4 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all font-medium text-gray-900 dark:text-white">
+                  </div>
+              </div>
+              
               <div id="groupTerms" class="expand-anim max-h-0 opacity-0">
                   <label class="flex items-start gap-3 mt-2 cursor-pointer group">
                       <div class="relative flex items-center justify-center mt-0.5">
@@ -310,6 +318,16 @@
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.log(err));
     
     let authMode = 'login'; 
+    let captchaAns = 0;
+    function generateCaptcha() {
+        const x = Math.floor(Math.random() * 9) + 1;
+        const y = Math.floor(Math.random() * 9) + 1;
+        captchaAns = x + y;
+        const label = document.getElementById('captchaLabel');
+        if (label) label.innerText = `Xác minh chống Bot: ${x} + ${y} = ?`;
+        const inp = document.getElementById('captchaInput');
+        if (inp) inp.value = '';
+    }
 
     auth.onAuthStateChanged(async (user) => {
         const loading = document.getElementById('loadingScreen'); 
@@ -398,6 +416,7 @@
         
         errBox.classList.add('hidden'); 
         
+        const grpCaptcha = document.getElementById('groupCaptcha');
         if (mode === 'login') { 
             slider.style.transform = 'translateX(0)'; 
             btnLog.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-900 dark:text-white transition-colors"; 
@@ -408,6 +427,7 @@
             grpUser.style.maxHeight = '0'; grpUser.style.opacity = '0'; 
             grpConfirm.style.maxHeight = '0'; grpConfirm.style.opacity = '0'; 
             grpTerms.style.maxHeight = '0'; grpTerms.style.opacity = '0'; 
+            if (grpCaptcha) { grpCaptcha.style.maxHeight = '0'; grpCaptcha.style.opacity = '0'; }
         } else { 
             slider.style.transform = 'translateX(100%)'; 
             btnLog.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-500 dark:text-gray-400 transition-colors"; 
@@ -418,6 +438,8 @@
             grpUser.style.maxHeight = '100px'; grpUser.style.opacity = '1'; 
             grpConfirm.style.maxHeight = '100px'; grpConfirm.style.opacity = '1'; 
             grpTerms.style.maxHeight = '100px'; grpTerms.style.opacity = '1'; 
+            generateCaptcha();
+            if (grpCaptcha) { grpCaptcha.style.maxHeight = '100px'; grpCaptcha.style.opacity = '1'; }
         } 
     }
 
@@ -432,8 +454,11 @@
             const username = document.getElementById('usernameInput').value.trim(); 
             const confirmPass = document.getElementById('confirmPassInput').value; 
             const termsChecked = document.getElementById('termsCheckbox').checked; 
+            const captchaInput = document.getElementById('captchaInput');
+            const captchaVal = captchaInput ? parseInt(captchaInput.value) : 0;
             if(!username) { showError("Vui lòng nhập Tên hiển thị!"); return; } 
             if(pass !== confirmPass) { showError("Mật khẩu nhập lại không khớp!"); return; } 
+            if(captchaVal !== captchaAns) { showError("Mã xác minh chống Bot không chính xác!"); generateCaptcha(); return; }
             if(!termsChecked) { showError("Bạn phải đồng ý với Điều khoản để tiếp tục!"); return; } 
         } 
         
