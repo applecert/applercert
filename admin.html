@@ -63,6 +63,9 @@
           <button onclick="switchTab('mmo_categories')" id="nav-mmo_categories" class="w-full flex items-center px-4 py-3 rounded-[12px] text-gray-600 hover:bg-gray-50 font-bold transition text-[14px]"><i data-lucide="layers" class="w-5 h-5 mr-3"></i> Quản Lý Danh Mục</button>
           <button onclick="switchTab('mmo_add_custom')" id="nav-mmo_add_custom" class="w-full flex items-center px-4 py-3 rounded-[12px] text-gray-600 hover:bg-purple-50 hover:text-purple-700 font-bold transition text-[14px]"><i data-lucide="plus-circle" class="w-5 h-5 mr-3"></i> Thêm SP / Kéo ID</button>
           <button onclick="switchTab('mmo_dealhot')" id="nav-mmo_dealhot" class="w-full flex items-center px-4 py-3 rounded-[12px] text-gray-600 hover:bg-orange-50 hover:text-orange-600 font-bold transition text-[14px] mt-2"><i data-lucide="flame" class="w-5 h-5 mr-3"></i> Cấu Hình Deal Hot</button>
+          
+          <p class="text-[10px] font-black text-purple-600 uppercase tracking-widest px-2 mb-2 mt-6">Phím Tắt & Tiện Ích</p>
+          <button onclick="switchTab('shortcuts')" id="nav-shortcuts" class="w-full flex items-center px-4 py-3 rounded-[12px] text-gray-600 hover:bg-purple-50 hover:text-purple-700 font-bold transition text-[14px]"><i data-lucide="zap" class="w-5 h-5 mr-3"></i> Quản Lý Phím Tắt</button>
       </nav>
       
       <div class="p-4 border-t border-gray-100 bg-gray-50/50 shrink-0"><button onclick="logoutAdmin()" class="w-full flex justify-center px-4 py-3.5 rounded-[12px] border border-gray-200 text-gray-600 bg-white hover:bg-red-50 hover:text-red-600 font-bold transition active:scale-95"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng Xuất</button></div>
@@ -287,6 +290,41 @@
               </div>
           </div>
 
+          <div id="tab-shortcuts" class="hidden max-w-6xl mx-auto w-full space-y-6">
+              <div class="bg-white p-4 rounded-[20px] shadow-sm border border-gray-200 flex flex-col md:flex-row gap-3 justify-between items-center">
+                  <div class="relative flex-1 w-full">
+                      <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                      <input type="text" id="searchShortcutsInput" oninput="renderShortcutsTable()" placeholder="Tìm kiếm phím tắt..." class="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-[12px] text-sm outline-none focus:border-brand transition">
+                  </div>
+                  <button onclick="openShortcutModal()" class="w-full md:w-auto bg-purple-700 hover:bg-purple-800 text-white px-5 py-2.5 rounded-[12px] text-sm font-black shadow-md flex items-center justify-center gap-2 active:scale-95 transition whitespace-nowrap">
+                      <i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm Phím Tắt Mới
+                  </button>
+              </div>
+
+              <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full">
+                  <div class="overflow-x-auto w-full max-h-[600px] scrollbar-hide">
+                      <table class="w-full text-left border-collapse min-w-[1000px] relative">
+                          <thead class="sticky top-0 z-20 bg-gray-100 text-gray-600 text-[11px] uppercase tracking-widest shadow-sm">
+                              <tr>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-16 text-center">Icon</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-48">Tên Phím Tắt</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-32">Danh Mục</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-24">Yêu cầu iOS</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-24">Trạng Thế</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-24">Lượt Tải</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-24">Đánh Giá</th>
+                                  <th class="p-3 font-bold border-b border-gray-200">Mô Tả</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 text-right w-36">Thao Tác</th>
+                              </tr>
+                          </thead>
+                          <tbody id="shortcutsTableBody" class="text-sm">
+                              <tr><td colspan="9" class="p-10 text-center text-gray-400">Đang tải danh sách phím tắt...</td></tr>
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
+
       </div>
 
       <button onclick="saveAllConfigsToServer()" id="btnGlobalSave" class="fixed bottom-8 right-8 z-50 bg-gray-900 text-white px-6 py-4 rounded-full font-black text-[13px] tracking-widest shadow-2xl flex items-center gap-2 hover:bg-black active:scale-90 transition transform translate-y-32">
@@ -317,6 +355,165 @@
       </div>
   </div>
 
+  <div id="shortcutModal" class="fixed inset-0 z-[130] hidden flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-md opacity-0 transition-opacity duration-300 ease-out" id="shortcutModalOverlay" onclick="closeShortcutModal()"></div>
+      <div class="bg-white/95 backdrop-blur-xl w-full max-w-2xl rounded-[32px] shadow-2xl border border-white/20 relative p-7 z-10 transition-all duration-300 ease-out transform scale-90 translate-y-8 opacity-0 flex flex-col max-h-[90vh]" id="shortcutPanel">
+          <div class="flex justify-between items-center mb-4 shrink-0">
+              <h3 class="text-[22px] font-black text-gray-900 tracking-tight" id="shortcutModalTitle">Thêm Phím Tắt Mới</h3>
+              <button onclick="closeShortcutModal()" class="text-gray-400 hover:text-red-500 bg-gray-50 border border-gray-100 rounded-full p-2 transition active:scale-90"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          
+          <div class="flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-hide">
+              <input type="hidden" id="shId">
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Tên Phím Tắt/Tiện Ích *</label>
+                      <input type="text" id="shName" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition" placeholder="Ví dụ: Snap Video">
+                  </div>
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Danh Mục *</label>
+                      <select id="shCategory" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition cursor-pointer">
+                          <option value="utility">Tiện ích</option>
+                          <option value="social">Mạng xã hội</option>
+                          <option value="entertainment">Giải trí</option>
+                          <option value="tools">Công cụ dev</option>
+                          <option value="other">Khác</option>
+                      </select>
+                  </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Yêu cầu iOS</label>
+                      <input type="text" id="shIosVersion" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition text-center" placeholder="15.0+">
+                  </div>
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Lượt Tải (Chuỗi)</label>
+                      <input type="text" id="shDownloads" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition text-center" placeholder="85K+">
+                  </div>
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Đánh giá (Số)</label>
+                      <input type="number" step="0.1" max="5" min="0" id="shRating" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition text-center" placeholder="4.9">
+                  </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Trạng Thái Nổi Bật</label>
+                      <select id="shPopularity" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition cursor-pointer">
+                          <option value="normal">Bình thường</option>
+                          <option value="popular">Phổ biến</option>
+                          <option value="hot">HOT</option>
+                      </select>
+                  </div>
+                  <div class="flex items-center justify-center pt-5">
+                      <label class="flex items-center gap-2 cursor-pointer select-none">
+                          <input type="checkbox" id="shIsNew" class="w-5 h-5 accent-purple-700 rounded cursor-pointer">
+                          <span class="text-sm font-bold text-gray-600">Đánh dấu MỚI</span>
+                      </label>
+                  </div>
+              </div>
+
+              <div class="h-px bg-gray-100 my-2"></div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="md:col-span-2">
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Đường dẫn Icon URL (Hoặc chọn file)</label>
+                      <div class="flex gap-2">
+                          <input type="text" id="shIconUrl" class="flex-1 px-4 py-3 rounded-[12px] border border-gray-200 text-[12px] font-medium outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition" placeholder="https://...">
+                          <label class="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 px-3 rounded-[12px] cursor-pointer flex items-center justify-center active:scale-95 transition shrink-0">
+                              <i data-lucide="upload" class="w-4 h-4"></i>
+                              <input type="file" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'shIconUrl')">
+                          </label>
+                      </div>
+                  </div>
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Xem trước Icon</label>
+                      <div class="flex items-center gap-3">
+                          <img id="shIconPreview" src="" class="w-12 h-12 rounded-[14px] object-cover border border-gray-200 bg-gray-50 p-1 hidden">
+                          <div id="shIconFallback" class="w-12 h-12 rounded-[14px] bg-purple-100 text-purple-700 flex items-center justify-center"><i data-lucide="zap" class="w-6 h-6"></i></div>
+                      </div>
+                  </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Icon thay thế (Lucide)</label>
+                      <input type="text" id="shIcon" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition" placeholder="video, battery, camera, download...">
+                  </div>
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Màu Nền Icon (Hex)</label>
+                      <div class="flex gap-2">
+                          <input type="color" id="shIconColorPicker" onchange="document.getElementById('shIconColor').value = this.value; updateIconColorPreview();" class="w-12 h-12 p-1 rounded-xl border border-gray-200 cursor-pointer bg-white">
+                          <input type="text" id="shIconColor" oninput="document.getElementById('shIconColorPicker').value = this.value; updateIconColorPreview();" class="flex-1 px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition" placeholder="#007AFF">
+                      </div>
+                  </div>
+              </div>
+
+              <div class="h-px bg-gray-100 my-2"></div>
+
+              <div>
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Mô tả ngắn *</label>
+                  <input type="text" id="shDescription" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition" placeholder="Ví dụ: Hỗ trợ tải video chất lượng cao">
+              </div>
+
+              <div>
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Chức năng chính</label>
+                  <textarea id="shMainFunction" rows="3" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition resize-none scrollbar-hide" placeholder="Nhập chức năng chi tiết..."></textarea>
+              </div>
+
+              <div>
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Lưu ý thêm</label>
+                  <textarea id="shNotes" rows="2" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition resize-none scrollbar-hide" placeholder="Nhập lưu ý, thông tin tác giả..."></textarea>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Link Nhận Phím Tắt (iCloud/App)*</label>
+                      <input type="text" id="shShortcutUrl" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[12px] font-medium outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition" placeholder="https://www.icloud.com/shortcuts/...">
+                  </div>
+                  <div>
+                      <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Link Video Hướng Dẫn (Youtube)</label>
+                      <input type="text" id="shVideoUrl" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[12px] font-medium outline-none focus:border-purple-500 bg-gray-50 focus:bg-white transition" placeholder="https://youtube.com/...">
+                  </div>
+              </div>
+
+              <div class="h-px bg-gray-100 my-2"></div>
+
+              <div class="mb-4">
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Các Bước Hướng Dẫn</label>
+                  <div id="instructionsContainer" class="space-y-2 mb-2"></div>
+                  <button type="button" onclick="addInstructionRow()" class="text-xs font-black text-purple-700 bg-purple-50 hover:bg-purple-100 px-3 py-2 rounded-xl flex items-center gap-1.5 transition active:scale-95">
+                      <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Thêm bước hướng dẫn
+                  </button>
+              </div>
+
+              <div class="mb-4">
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Các Lỗi Thường Gặp</label>
+                  <div id="commonErrorsContainer" class="space-y-2 mb-2"></div>
+                  <button type="button" onclick="addCommonErrorRow()" class="text-xs font-black text-purple-700 bg-purple-50 hover:bg-purple-100 px-3 py-2 rounded-xl flex items-center gap-1.5 transition active:scale-95">
+                      <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Thêm lỗi thường gặp
+                  </button>
+              </div>
+
+              <div class="mb-4">
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">Hình Ảnh Hướng Dẫn (Tutorial Images)</label>
+                  <div id="tutorialImagesContainer" class="grid grid-cols-3 gap-3 mb-3"></div>
+                  <label class="inline-flex items-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-black px-4 py-2.5 rounded-[12px] text-xs cursor-pointer shadow-sm active:scale-95 transition">
+                      <i data-lucide="image-plus" class="w-4 h-4"></i> Tải ảnh hướng dẫn mới
+                      <input type="file" accept="image/*" class="hidden" onchange="handleTutorialImageUpload(this)">
+                  </label>
+              </div>
+          </div>
+          
+          <div class="pt-4 shrink-0 border-t border-gray-100 flex gap-4">
+              <button onclick="closeShortcutModal()" class="w-1/3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black py-4 rounded-[16px] active:scale-95 transition text-[15px]">HỦY</button>
+              <button onclick="submitShortcutForm()" class="flex-1 bg-gradient-to-r from-purple-600 to-purple-800 text-white font-black py-4 rounded-[16px] shadow-lg shadow-purple-600/30 hover:shadow-purple-600/40 active:scale-95 transition text-[15px] flex items-center justify-center gap-2"><i data-lucide="save" class="w-5 h-5"></i> XÁC NHẬN LƯU</button>
+          </div>
+      </div>
+  </div>
+
   <div id="actionModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-300 ease-out" id="actionModalOverlay" onclick="closeActionModal()"></div>
       <div id="actionModalPanel" class="bg-white/95 backdrop-blur-xl w-full max-w-[340px] rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-white/50 p-6 transition-all duration-300 ease-out transform scale-90 translate-y-8 opacity-0">
@@ -326,6 +523,8 @@
 
   <script>
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec"; 
+    let shortcutsList = [];
+    let hasUnsavedShortcuts = false; 
     const firebaseConfig = { apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", authDomain: "ipaviet-st.firebaseapp.com", projectId: "ipaviet-st", storageBucket: "ipaviet-st.firebasestorage.app", messagingSenderId: "127619650916", appId: "1:127619650916:web:fc8904c99804eeb7539671" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -382,7 +581,11 @@
     // --- CORE DATA FETCHING ---
     async function loadAllData() {
         const icon = document.getElementById('refreshIcon'); icon.classList.add('animate-spin');
-        hasUnsavedChanges = false; toggleSaveButton(); selectedCatManager = null;
+        hasUnsavedChanges = false;
+        hasUnsavedShortcuts = false;
+        toggleSaveButton();
+        selectedCatManager = null;
+        loadShortcutsData();
         
         try { const snapshot = await db.collection("users").get(); allUsersData = []; snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); renderUserTable(); } catch (e) {}
         
@@ -1121,6 +1324,10 @@
 
     // --- CORE: LƯU TẤT CẢ LÊN MÁY CHỦ ---
     async function saveAllConfigsToServer() {
+        if (activeTab === 'shortcuts') {
+            saveShortcutsToServer();
+            return;
+        }
         renderModal('confirm', 'Lưu Dữ Liệu', 'Lưu toàn bộ thay đổi (Giá, Mô tả, Danh mục, Deal Hot) lên hệ thống?', async () => {
             closeActionModal();
             const btn = document.getElementById('btnGlobalSave');
@@ -1211,8 +1418,11 @@
         }
     }
 
+    let activeTab = 'dashboard';
     function switchTab(tab) { 
-        ['dashboard', 'users', 'transactions', 'mmo_orders', 'mmo_products', 'mmo_categories', 'mmo_add_custom', 'mmo_dealhot'].forEach(id => { 
+        activeTab = tab;
+        toggleSaveButton();
+        ['dashboard', 'users', 'transactions', 'mmo_orders', 'mmo_products', 'mmo_categories', 'mmo_add_custom', 'mmo_dealhot', 'shortcuts'].forEach(id => { 
             let el = document.getElementById('tab-' + id);
             if(el) el.classList.add('hidden'); 
             let nav = document.getElementById('nav-' + id);
@@ -1226,15 +1436,17 @@
         if(tab.includes('mmo_orders')) tabClass = "w-full flex items-center justify-between px-4 py-3 rounded-[12px] bg-red-50 text-mall font-bold transition active:scale-95 text-[14px]";
         if(tab === 'mmo_add_custom') tabClass = "w-full flex items-center px-4 py-3 rounded-[12px] bg-purple-100 text-purple-700 font-bold transition active:scale-95 text-[14px]";
         if(tab === 'mmo_dealhot') tabClass = "w-full flex items-center px-4 py-3 rounded-[12px] bg-orange-100 text-orange-700 font-bold transition active:scale-95 text-[14px] mt-2";
+        if(tab === 'shortcuts') tabClass = "w-full flex items-center px-4 py-3 rounded-[12px] bg-purple-100 text-purple-700 font-bold transition active:scale-95 text-[14px]";
         
         let navEl = document.getElementById('nav-' + tab);
         if(navEl) navEl.className = tabClass;
 
-        const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng', 'transactions': 'Nạp Tiền', 'mmo_orders': 'Đơn Mall', 'mmo_products': 'Kho Sản Phẩm', 'mmo_categories': 'Quản Lý Danh Mục', 'mmo_add_custom': 'Thêm SP / Kéo Hàng Ẩn', 'mmo_dealhot': 'Cấu Hình Deal Hot' }; 
+        const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng', 'transactions': 'Nạp Tiền', 'mmo_orders': 'Đơn Mall', 'mmo_products': 'Kho Sản Phẩm', 'mmo_categories': 'Quản Lý Danh Mục', 'mmo_add_custom': 'Thêm SP / Kéo Hàng Ẩn', 'mmo_dealhot': 'Cấu Hình Deal Hot', 'shortcuts': 'Quản Lý Phím Tắt & Tiện Ích' }; 
         document.getElementById('pageTitle').innerText = titles[tab]; 
         
         if(tab === 'mmo_products') renderConfigTable();
         if(tab === 'mmo_categories') renderCategoryManager();
+        if(tab === 'shortcuts') renderShortcutsTable();
 
         if(window.innerWidth < 768) { 
             const sidebar = document.getElementById('sidebar');
@@ -1289,6 +1501,435 @@
         document.getElementById('actionModalOverlay').classList.remove('opacity-100'); 
         document.getElementById('actionModalPanel').classList.add('scale-90', 'translate-y-8', 'opacity-0'); 
         setTimeout(() => document.getElementById('actionModal').classList.add('hidden'), 300); 
+    }
+
+    // ===================================================================
+    // PHÂN HỆ QUẢN LÝ PHÍM TẮT & TIỆN ÍCH DÀNH CHO ADMIN
+    // ===================================================================
+    let shortcutsList = [];
+    let hasUnsavedShortcuts = false;
+
+    async function loadShortcutsData() {
+        try {
+            const res = await fetch(`${GOOGLE_API_URL}?action=get_shortcuts&t=${Date.now()}`);
+            const data = await res.json();
+            if (data.success) {
+                shortcutsList = data.data || [];
+                renderShortcutsTable();
+            }
+        } catch (e) {
+            console.error("Lỗi khi tải kho phím tắt:", e);
+        }
+    }
+
+    function renderShortcutsTable() {
+        const tbody = document.getElementById('shortcutsTableBody');
+        const searchInput = document.getElementById('searchShortcutsInput').value.toLowerCase().trim();
+        
+        let filtered = shortcutsList;
+        if (searchInput) {
+            filtered = filtered.filter(s => 
+                s.name.toLowerCase().includes(searchInput) || 
+                s.category.toLowerCase().includes(searchInput) ||
+                (s.description || '').toLowerCase().includes(searchInput)
+            );
+        }
+        
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="p-10 text-center text-gray-400"><i data-lucide="inbox" class="w-10 h-10 mx-auto opacity-30 mb-2"></i>Không tìm thấy phím tắt nào.</td></tr>`;
+            lucide.createIcons();
+            return;
+        }
+        
+        let html = '';
+        filtered.forEach(s => {
+            let iconHtml = '';
+            if (s.iconUrl) {
+                iconHtml = `<img src="${s.iconUrl}" class="w-8 h-8 rounded-lg object-cover mx-auto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><div class="hidden text-center"><i data-lucide="${s.icon || 'zap'}" class="w-5 h-5 mx-auto" style="color:${s.iconColor || '#007AFF'}"></i></div>`;
+            } else {
+                iconHtml = `<i data-lucide="${s.icon || 'zap'}" class="w-6 h-6 mx-auto" style="color:${s.iconColor || '#007AFF'}"></i>`;
+            }
+            
+            let badges = '';
+            if (s.popularity === 'hot') {
+                badges += `<span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[9px] font-black border border-red-200">HOT</span> `;
+            } else if (s.popularity === 'popular') {
+                badges += `<span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[9px] font-black border border-blue-200">POPULAR</span> `;
+            }
+            if (s.isNew) {
+                badges += `<span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[9px] font-black border border-green-200">NEW</span>`;
+            }
+            if (!badges) badges = '<span class="text-gray-400">-</span>';
+            
+            html += `
+            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                <td class="p-3 text-center">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center mx-auto" style="background:${s.iconColor}20">
+                        ${iconHtml}
+                    </div>
+                </td>
+                <td class="p-3 font-bold text-gray-900">${s.name}</td>
+                <td class="p-3 font-medium text-gray-600">${s.category}</td>
+                <td class="p-3 text-center font-bold text-gray-500">${s.iosVersion || 'Any'}</td>
+                <td class="p-3 text-center">${badges}</td>
+                <td class="p-3 text-center font-bold text-gray-700">${s.downloads || '0'}</td>
+                <td class="p-3 text-center font-bold text-yellow-600">${s.rating || '5.0'} ★</td>
+                <td class="p-3 text-gray-500 max-w-xs truncate">${s.description || ''}</td>
+                <td class="p-3 text-right">
+                    <div class="flex gap-2 justify-end">
+                        <button onclick="openShortcutModal('${s.id}')" class="bg-white border border-gray-200 text-gray-600 hover:text-purple-700 hover:border-purple-300 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm active:scale-95 flex items-center gap-1"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i> Sửa</button>
+                        <button onclick="deleteShortcut('${s.id}')" class="bg-red-50 text-red-500 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 flex items-center gap-1"><i data-lucide="trash" class="w-3.5 h-3.5"></i> Xóa</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+        
+        tbody.innerHTML = html;
+        lucide.createIcons();
+    }
+
+    function openShortcutModal(id = null) {
+        document.getElementById('instructionsContainer').innerHTML = '';
+        document.getElementById('commonErrorsContainer').innerHTML = '';
+        document.getElementById('tutorialImagesContainer').innerHTML = '';
+        
+        if (id) {
+            const s = shortcutsList.find(x => String(x.id) === String(id));
+            if (!s) return;
+            
+            document.getElementById('shortcutModalTitle').innerText = "Chỉnh Sửa Phím Tắt";
+            document.getElementById('shId').value = s.id;
+            document.getElementById('shName').value = s.name;
+            document.getElementById('shCategory').value = s.category;
+            document.getElementById('shIosVersion').value = s.iosVersion || "";
+            document.getElementById('shDownloads').value = s.downloads || "";
+            document.getElementById('shRating').value = s.rating || "5.0";
+            document.getElementById('shPopularity').value = s.popularity || "normal";
+            document.getElementById('shIsNew').checked = s.isNew === true || String(s.isNew) === 'true';
+            document.getElementById('shIconUrl').value = s.iconUrl || "";
+            document.getElementById('shIcon').value = s.icon || "zap";
+            document.getElementById('shIconColor').value = s.iconColor || "#007AFF";
+            document.getElementById('shIconColorPicker').value = s.iconColor || "#007AFF";
+            document.getElementById('shDescription').value = s.description || "";
+            document.getElementById('shMainFunction').value = s.mainFunction || "";
+            document.getElementById('shNotes').value = s.notes || "";
+            document.getElementById('shShortcutUrl').value = s.shortcutUrl || "";
+            document.getElementById('shVideoUrl').value = s.videoUrl || "";
+            
+            if (s.instructions && Array.isArray(s.instructions)) {
+                s.instructions.forEach(step => addInstructionRow(step));
+            }
+            if (s.commonErrors && Array.isArray(s.commonErrors)) {
+                s.commonErrors.forEach(err => addCommonErrorRow(err));
+            }
+            if (s.tutorialImages && Array.isArray(s.tutorialImages)) {
+                s.tutorialImages.forEach(img => addTutorialImageCard(img));
+            }
+            
+            if (s.iconUrl) {
+                document.getElementById('shIconPreview').src = s.iconUrl;
+                document.getElementById('shIconPreview').classList.remove('hidden');
+                document.getElementById('shIconFallback').classList.add('hidden');
+            } else {
+                document.getElementById('shIconPreview').classList.add('hidden');
+                document.getElementById('shIconFallback').classList.remove('hidden');
+            }
+        } else {
+            document.getElementById('shortcutModalTitle').innerText = "Thêm Phím Tắt Mới";
+            document.getElementById('shId').value = "";
+            document.getElementById('shName').value = "";
+            document.getElementById('shCategory').value = "utility";
+            document.getElementById('shIosVersion').value = "15.0+";
+            document.getElementById('shDownloads').value = "10K+";
+            document.getElementById('shRating').value = "5.0";
+            document.getElementById('shPopularity').value = "normal";
+            document.getElementById('shIsNew').checked = true;
+            document.getElementById('shIconUrl').value = "";
+            document.getElementById('shIcon').value = "zap";
+            document.getElementById('shIconColor').value = "#007AFF";
+            document.getElementById('shIconColorPicker').value = "#007AFF";
+            document.getElementById('shDescription').value = "";
+            document.getElementById('shMainFunction').value = "";
+            document.getElementById('shNotes').value = "";
+            document.getElementById('shShortcutUrl').value = "";
+            document.getElementById('shVideoUrl').value = "";
+            
+            addInstructionRow("Nhấn vào nút nhận phím tắt để cài đặt.");
+            addCommonErrorRow("Lỗi không đáng tin cậy - Cho phép phím tắt chưa được tin cậy trong Cài đặt.");
+            
+            document.getElementById('shIconPreview').classList.add('hidden');
+            document.getElementById('shIconFallback').classList.remove('hidden');
+        }
+        
+        updateIconColorPreview();
+        
+        const modal = document.getElementById('shortcutModal');
+        const overlay = document.getElementById('shortcutModalOverlay');
+        const panel = document.getElementById('shortcutPanel');
+        
+        modal.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            overlay.classList.add('opacity-100');
+            panel.classList.remove('scale-90', 'translate-y-8', 'opacity-0');
+        });
+        
+        lucide.createIcons();
+    }
+
+    function closeShortcutModal() {
+        document.getElementById('shortcutModalOverlay').classList.remove('opacity-100');
+        document.getElementById('shortcutPanel').classList.add('scale-90', 'translate-y-8', 'opacity-0');
+        setTimeout(() => document.getElementById('shortcutModal').classList.add('hidden'), 300);
+    }
+
+    function updateIconColorPreview() {
+        const color = document.getElementById('shIconColor').value || "#007AFF";
+        document.getElementById('shIconFallback').style.background = color + "20";
+        document.getElementById('shIconFallback').style.color = color;
+    }
+
+    function addInstructionRow(val = "") {
+        const container = document.getElementById('instructionsContainer');
+        const index = container.children.length;
+        const row = document.createElement('div');
+        row.className = "flex gap-2 items-center";
+        row.innerHTML = `
+            <span class="text-xs font-bold text-gray-400 w-6 text-center">${index + 1}</span>
+            <input type="text" class="flex-1 px-3 py-2 rounded-[10px] border border-gray-200 text-[12px] font-medium outline-none focus:border-purple-500 bg-gray-50 focus:bg-white" value="${val.replace(/"/g, '&quot;')}" placeholder="Nhập bước hướng dẫn...">
+            <button type="button" onclick="this.parentElement.remove(); reindexInstructions();" class="text-red-500 hover:text-red-700 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        `;
+        container.appendChild(row);
+        lucide.createIcons();
+    }
+    
+    function reindexInstructions() {
+        const container = document.getElementById('instructionsContainer');
+        Array.from(container.children).forEach((row, i) => {
+            row.firstElementChild.innerText = i + 1;
+        });
+    }
+
+    function addCommonErrorRow(val = "") {
+        const container = document.getElementById('commonErrorsContainer');
+        const index = container.children.length;
+        const row = document.createElement('div');
+        row.className = "flex gap-2 items-center";
+        row.innerHTML = `
+            <span class="text-xs font-bold text-gray-400 w-6 text-center">${index + 1}</span>
+            <input type="text" class="flex-1 px-3 py-2 rounded-[10px] border border-gray-200 text-[12px] font-medium outline-none focus:border-purple-500 bg-gray-50 focus:bg-white" value="${val.replace(/"/g, '&quot;')}" placeholder="Nhập lỗi và cách sửa...">
+            <button type="button" onclick="this.parentElement.remove(); reindexCommonErrors();" class="text-red-500 hover:text-red-700 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        `;
+        container.appendChild(row);
+        lucide.createIcons();
+    }
+    
+    function reindexCommonErrors() {
+        const container = document.getElementById('commonErrorsContainer');
+        Array.from(container.children).forEach((row, i) => {
+            row.firstElementChild.innerText = i + 1;
+        });
+    }
+
+    async function handleTutorialImageUpload(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        
+        const label = input.parentElement;
+        const originalHtml = label.innerHTML;
+        label.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-purple-600 mr-2"></i> Đang tải lên...`;
+        lucide.createIcons();
+        
+        try {
+            const url = await uploadToImgbb(file);
+            addTutorialImageCard(url);
+        } catch(e) {
+            alert(e.message);
+        } finally {
+            label.innerHTML = originalHtml;
+            lucide.createIcons();
+        }
+    }
+    
+    function addTutorialImageCard(url) {
+        const container = document.getElementById('tutorialImagesContainer');
+        const card = document.createElement('div');
+        card.className = "relative rounded-xl border border-gray-200 overflow-hidden group aspect-[3/4] bg-gray-50";
+        card.innerHTML = `
+            <img src="${url}" class="w-full h-full object-cover">
+            <input type="hidden" value="${url}">
+            <button type="button" onclick="this.parentElement.remove();" class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md active:scale-90 transition">
+                <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+            </button>
+        `;
+        container.appendChild(card);
+        lucide.createIcons();
+    }
+
+    async function uploadToImgbb(file) {
+        const apiKey = "346475284c54f35a04c6bded6b6701f1";
+        const formData = new FormData();
+        formData.append("image", file);
+        
+        try {
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success && data.data && data.data.url) {
+                return data.data.url;
+            } else {
+                throw new Error("Lỗi tải ảnh");
+            }
+        } catch(e) {
+            const backupKey = "2a5f272d88ceb1ee204833084cc918a9";
+            const formDataBackup = new FormData();
+            formDataBackup.append("image", file);
+            
+            const resBackup = await fetch(`https://api.imgbb.com/1/upload?key=${backupKey}`, {
+                method: "POST",
+                body: formDataBackup
+            });
+            const dataBackup = await resBackup.json();
+            if (dataBackup.success && dataBackup.data && dataBackup.data.url) {
+                return dataBackup.data.url;
+            } else {
+                throw new Error("Tải ảnh thất bại trên cả hai khóa API!");
+            }
+        }
+    }
+
+    async function handleFileUpload(input, targetId) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        
+        const label = input.parentElement;
+        const originalHtml = label.innerHTML;
+        label.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-purple-600"></i>`;
+        lucide.createIcons();
+        
+        try {
+            const url = await uploadToImgbb(file);
+            document.getElementById(targetId).value = url;
+            if (targetId === 'shIconUrl') {
+                document.getElementById('shIconPreview').src = url;
+                document.getElementById('shIconPreview').classList.remove('hidden');
+                document.getElementById('shIconFallback').classList.add('hidden');
+            }
+        } catch(e) {
+            alert(e.message);
+        } finally {
+            label.innerHTML = originalHtml;
+            lucide.createIcons();
+        }
+    }
+
+    function submitShortcutForm() {
+        const id = document.getElementById('shId').value;
+        const name = document.getElementById('shName').value.trim();
+        const category = document.getElementById('shCategory').value;
+        const iosVersion = document.getElementById('shIosVersion').value.trim() || "15.0+";
+        const downloads = document.getElementById('shDownloads').value.trim() || "10K+";
+        const rating = parseFloat(document.getElementById('shRating').value) || 5.0;
+        const popularity = document.getElementById('shPopularity').value;
+        const isNew = document.getElementById('shIsNew').checked;
+        const iconUrl = document.getElementById('shIconUrl').value.trim();
+        const icon = document.getElementById('shIcon').value.trim() || "zap";
+        const iconColor = document.getElementById('shIconColor').value.trim() || "#007AFF";
+        const description = document.getElementById('shDescription').value.trim();
+        const mainFunction = document.getElementById('shMainFunction').value.trim();
+        const notes = document.getElementById('shNotes').value.trim();
+        const shortcutUrl = document.getElementById('shShortcutUrl').value.trim();
+        const videoUrl = document.getElementById('shVideoUrl').value.trim();
+        
+        if (!name || !description || !shortcutUrl) {
+            alert("Vui lòng điền đầy đủ các trường bắt buộc (*)");
+            return;
+        }
+        
+        // Lấy instructions
+        const instructions = [];
+        const instInputs = document.querySelectorAll('#instructionsContainer input');
+        instInputs.forEach(inp => {
+            if (inp.value.trim()) instructions.push(inp.value.trim());
+        });
+        
+        // Lấy commonErrors
+        const commonErrors = [];
+        const errInputs = document.querySelectorAll('#commonErrorsContainer input');
+        errInputs.forEach(inp => {
+            if (inp.value.trim()) commonErrors.push(inp.value.trim());
+        });
+        
+        // Lấy tutorialImages
+        const tutorialImages = [];
+        const imgInputs = document.querySelectorAll('#tutorialImagesContainer input[type="hidden"]');
+        imgInputs.forEach(inp => {
+            if (inp.value) tutorialImages.push(inp.value);
+        });
+        
+        const newShortcut = {
+            id: id || "SHORTCUT_" + Date.now(),
+            name, category, iosVersion, downloads, rating, popularity, isNew,
+            iconUrl, icon, iconColor, description, mainFunction, notes, shortcutUrl, videoUrl,
+            instructions, commonErrors, tutorialImages
+        };
+        
+        if (id) {
+            const index = shortcutsList.findIndex(x => String(x.id) === String(id));
+            if (index !== -1) shortcutsList[index] = newShortcut;
+        } else {
+            shortcutsList.unshift(newShortcut);
+        }
+        
+        closeShortcutModal();
+        renderShortcutsTable();
+        hasUnsavedShortcuts = true;
+        toggleSaveButton();
+    }
+
+    function deleteShortcut(id) {
+        renderModal('confirm', 'Xóa Phím Tắt', 'Bạn có chắc muốn xóa phím tắt này khỏi danh sách?', () => {
+            closeActionModal();
+            shortcutsList = shortcutsList.filter(x => String(x.id) !== String(id));
+            renderShortcutsTable();
+            hasUnsavedShortcuts = true;
+            toggleSaveButton();
+        }, 'Xóa bỏ');
+    }
+
+    async function saveShortcutsToServer() {
+        renderModal('confirm', 'Lưu Phím Tắt', 'Lưu toàn bộ phím tắt và tiện ích lên hệ thống?', async () => {
+            closeActionModal();
+            const btn = document.getElementById('btnGlobalSave');
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> ĐANG LƯU...`; 
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'admin_save_shortcuts');
+                formData.append('pin', adminPin);
+                formData.append('shortcuts', JSON.stringify(shortcutsList));
+
+                const res = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+                const data = await res.json();
+                
+                if(data.success) { 
+                    hasUnsavedShortcuts = false;
+                    toggleSaveButton();
+                    renderModal('success', 'Hoàn tất', 'Đã lưu kho phím tắt lên Server thành công!', closeActionModal, 'Đóng');
+                    loadShortcutsData();
+                } else {
+                    renderModal('error', 'Lỗi Server', data.error, closeActionModal, 'Đóng');
+                }
+            } catch(e) { 
+                renderModal('error', 'Lỗi mạng', e.message, closeActionModal, 'Đóng'); 
+            }
+            
+            btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI MÁY CHỦ`; 
+            btn.disabled = false; 
+            lucide.createIcons();
+        }, 'Lưu Phím Tắt');
     }
 
     // RUN INITIALIZATION
