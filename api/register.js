@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Cấu hình khởi tạo Firebase Admin SDK
-if (!admin.apps.length) {
+if (!admin.getApps().length) {
   try {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
