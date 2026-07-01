@@ -1,20 +1,25 @@
 module.exports = async function handler(req, res) {
-  let admin = null;
-  let getFirestore = null;
-  let importError = null;
-
+  const rawValue = process.env.FIREBASE_SERVICE_ACCOUNT;
+  let first30 = rawValue ? rawValue.substring(0, 30) : 'undefined';
+  let last30 = rawValue ? rawValue.substring(rawValue.length - 30) : 'undefined';
+  
+  let parseError = null;
+  let parsedJson = null;
   try {
-    admin = require('firebase-admin');
-    const firestoreModule = require('firebase-admin/firestore');
-    getFirestore = firestoreModule.getFirestore;
+    if (rawValue) {
+      parsedJson = JSON.parse(rawValue);
+    }
   } catch (err) {
-    importError = { message: err.message, stack: err.stack };
+    parseError = { message: err.message, stack: err.stack };
   }
 
   res.status(200).json({
-    hasServiceAccount: !!process.env.FIREBASE_SERVICE_ACCOUNT,
-    importError,
-    hasAdmin: !!admin,
-    nodeVersion: process.version
+    hasServiceAccount: !!rawValue,
+    length: rawValue ? rawValue.length : 0,
+    first30,
+    last30,
+    parseError,
+    parsedSuccessfully: !!parsedJson,
+    parsedKeys: parsedJson ? Object.keys(parsedJson) : null
   });
 };
