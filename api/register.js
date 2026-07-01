@@ -1,18 +1,20 @@
-const admin = require('firebase-admin');
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
 const fs = require('fs');
 const path = require('path');
 
 // Cấu hình khởi tạo Firebase Admin SDK
-if (!admin.getApps().length) {
+if (!getApps().length) {
   try {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-      admin.initializeApp({
-        credential: admin.cert(serviceAccount)
+      initializeApp({
+        credential: cert(serviceAccount)
       });
     } else if (process.env.FIREBASE_PRIVATE_KEY) {
-      admin.initializeApp({
-        credential: admin.cert({
+      initializeApp({
+        credential: cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
           privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
@@ -31,8 +33,8 @@ if (!admin.getApps().length) {
         throw new Error("Không tìm thấy file serviceAccountKey.json hoặc serviceAccountKey.json.json!");
       }
       
-      admin.initializeApp({
-        credential: admin.cert(serviceAccount)
+      initializeApp({
+        credential: cert(serviceAccount)
       });
     }
   } catch (err) {
@@ -40,8 +42,6 @@ if (!admin.getApps().length) {
   }
 }
 
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
-const { getAuth } = require('firebase-admin/auth');
 const db = getFirestore();
 
 module.exports = async function handler(req, res) {

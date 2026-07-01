@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 
 module.exports = async function handler(req, res) {
@@ -20,10 +20,10 @@ module.exports = async function handler(req, res) {
 
   // 1. Try to initialize
   try {
-    if (!admin.getApps().length) {
+    if (!getApps().length) {
       if (parsedAccount) {
-        admin.initializeApp({
-          credential: admin.cert(parsedAccount)
+        initializeApp({
+          credential: cert(parsedAccount)
         });
         initSuccess = true;
       } else {
