@@ -1,25 +1,53 @@
+const admin = require('firebase-admin');
+const { getFirestore } = require('firebase-admin/firestore');
+
 module.exports = async function handler(req, res) {
+  let initError = null;
+  let getFirestoreError = null;
+  let initSuccess = false;
+  let getFirestoreSuccess = false;
+
   const rawValue = process.env.FIREBASE_SERVICE_ACCOUNT;
-  let first30 = rawValue ? rawValue.substring(0, 30) : 'undefined';
-  let last30 = rawValue ? rawValue.substring(rawValue.length - 30) : 'undefined';
-  
-  let parseError = null;
-  let parsedJson = null;
+  let parsedAccount = null;
+
   try {
     if (rawValue) {
-      parsedJson = JSON.parse(rawValue);
+      parsedAccount = JSON.parse(rawValue);
     }
   } catch (err) {
-    parseError = { message: err.message, stack: err.stack };
+    // Ignore parse error here, we report it later
+  }
+
+  // 1. Try to initialize
+  try {
+    if (!admin.getApps().length) {
+      if (parsedAccount) {
+        admin.initializeApp({
+          credential: admin.cert(parsedAccount)
+        });
+        initSuccess = true;
+      } else {
+        throw new Error("No service account JSON string available in process.env");
+      }
+    } else {
+      initSuccess = true; // Already initialized
+    }
+  } catch (err) {
+    initError = { message: err.message, stack: err.stack, code: err.code };
+  }
+
+  // 2. Try to call getFirestore
+  try {
+    const db = getFirestore();
+    getFirestoreSuccess = !!db;
+  } catch (err) {
+    getFirestoreError = { message: err.message, stack: err.stack, code: err.code };
   }
 
   res.status(200).json({
-    hasServiceAccount: !!rawValue,
-    length: rawValue ? rawValue.length : 0,
-    first30,
-    last30,
-    parseError,
-    parsedSuccessfully: !!parsedJson,
-    parsedKeys: parsedJson ? Object.keys(parsedJson) : null
+    initSuccess,
+    initError,
+    getFirestoreSuccess,
+    getFirestoreError
   });
 };
