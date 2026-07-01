@@ -1,4 +1,6 @@
 const admin = require('firebase-admin');
+const fs = require('fs');
+const path = require('path');
 
 // Cấu hình khởi tạo Firebase Admin SDK
 if (!admin.apps.length) {
@@ -6,11 +8,11 @@ if (!admin.apps.length) {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
+        credential: admin.cert(serviceAccount)
       });
     } else if (process.env.FIREBASE_PRIVATE_KEY) {
       admin.initializeApp({
-        credential: admin.credential.cert({
+        credential: admin.cert({
           projectId: process.env.FIREBASE_PROJECT_ID,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
           privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
@@ -18,9 +20,19 @@ if (!admin.apps.length) {
       });
     } else {
       // Hỗ trợ chạy thử cục bộ với file serviceAccountKey.json nằm ở thư mục gốc của dự án
-      const serviceAccount = require('../serviceAccountKey.json');
+      let serviceAccount;
+      const keyPath1 = path.join(process.cwd(), 'serviceAccountKey.json');
+      const keyPath2 = path.join(process.cwd(), 'serviceAccountKey.json.json');
+      if (fs.existsSync(keyPath1)) {
+        serviceAccount = require(keyPath1);
+      } else if (fs.existsSync(keyPath2)) {
+        serviceAccount = require(keyPath2);
+      } else {
+        throw new Error("Không tìm thấy file serviceAccountKey.json hoặc serviceAccountKey.json.json!");
+      }
+      
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
+        credential: admin.cert(serviceAccount)
       });
     }
   } catch (err) {
@@ -28,7 +40,9 @@ if (!admin.apps.length) {
   }
 }
 
-const db = admin.firestore();
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
+const db = getFirestore();
 
 export default async function handler(req, res) {
   // CORS Headers
@@ -80,7 +94,8 @@ export default async function handler(req, res) {
     }
 
     // 2. Tạo tài khoản trong Firebase Authentication thông qua Admin SDK (Bỏ qua cấu hình chặn Client Sign-up)
-    const userRecord = await admin.auth().createUser({
+    const auth = getAuth();
+    const userRecord = await auth.createUser({
       email: email,
       password: password,
       displayName: username,
@@ -91,7 +106,7 @@ export default async function handler(req, res) {
       email: email.toLowerCase().trim(),
       username: username.trim(),
       coins: 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
 
     return res.status(200).json({
