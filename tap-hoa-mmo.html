@@ -14,6 +14,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <style>
 :root{
   --primary:#2563eb;--primary-dark:#1d4ed8;--danger:#dc3545;
@@ -751,9 +752,8 @@ body{font-family:'Saira Semi Condensed',sans-serif;background:var(--bg);color:#1
     <h3 id="authTitle">Đăng Nhập</h3>
     <input type="email" id="aEmail" class="inp" placeholder="Email">
     <input type="password" id="aPwd" class="inp" placeholder="Mật khẩu">
-    <div id="captchaRow" style="display:none;margin-bottom:10px;">
-      <div id="mCaptchaLabel" style="font-size:12.5px;color:#64748b;margin-bottom:4px;font-weight:700;text-align:left;">Xác minh chống Bot</div>
-      <input type="number" id="mCaptchaInput" class="inp" placeholder="Kết quả">
+    <div id="captchaRow" style="display:none;margin-bottom:10px;justify-content:center;">
+      <div id="turnstileWidget"></div>
     </div>
     <button onclick="doAuth()" class="btn-full" id="authBtn">Đăng Nhập</button>
     <div style="text-align:center;margin-top:12px;font-size:12.5px;color:#64748b">
@@ -1149,16 +1149,9 @@ function closeDM(){
 
 // ── AUTH ──
 let REGMODE=false;
-let captchaAns = 0;
-function generateCaptcha() {
-  const x = Math.floor(Math.random() * 9) + 1;
-  const y = Math.floor(Math.random() * 9) + 1;
-  captchaAns = x + y;
-  const label = document.getElementById('mCaptchaLabel');
-  if (label) label.innerText = `Xác minh chống Bot: ${x} + ${y} = ?`;
-  const inp = document.getElementById('mCaptchaInput');
-  if (inp) inp.value = '';
-}
+const TURNSTILE_SITE_KEY = "0x4AAAAAADuG_qcsGlFOiiqT"; // Thay thế bằng Site Key Turnstile thật từ Cloudflare Console
+let turnstileWidgetId = null;
+
 function swReg(e){
   e.preventDefault();
   REGMODE=!REGMODE;
@@ -1168,8 +1161,19 @@ function swReg(e){
   const row = document.getElementById('captchaRow');
   if (row) {
     if (REGMODE) {
-      row.style.display = 'block';
-      generateCaptcha();
+      row.style.display = 'flex';
+      if (window.turnstile) {
+        setTimeout(() => {
+          if (turnstileWidgetId === null) {
+            turnstileWidgetId = turnstile.render('#turnstileWidget', {
+              sitekey: TURNSTILE_SITE_KEY,
+              theme: 'light'
+            });
+          } else {
+            turnstile.reset(turnstileWidgetId);
+          }
+        }, 100);
+      }
     } else {
       row.style.display = 'none';
     }
@@ -1178,21 +1182,60 @@ function swReg(e){
 async function doAuth(){
   const em=document.getElementById('aEmail').value.trim(), pw=document.getElementById('aPwd').value;
   if(!em||!pw){ ntf('Vui lòng điền đầy đủ','error'); return; }
+  
+  let captchaToken = '';
   if(REGMODE) {
-    const capInp = document.getElementById('mCaptchaInput');
-    const capVal = capInp ? parseInt(capInp.value) : 0;
-    if (capVal !== captchaAns) {
-      ntf('Mã xác minh chống Bot không chính xác!', 'error');
-      generateCaptcha();
+    if (window.turnstile && turnstileWidgetId !== null) {
+      captchaToken = turnstile.getResponse(turnstileWidgetId);
+      if (!captchaToken) {
+        ntf('Vui lòng hoàn thành xác minh chống Bot!', 'error');
+        return;
+      }
+    } else {
+      ntf('Đang tải thư viện bảo mật. Vui lòng thử lại sau vài giây!', 'error');
       return;
     }
   }
+
   const b=document.getElementById('authBtn'); b.textContent='Đang xử lý...'; b.disabled=true;
   try{
-    if(REGMODE){ const c=await auth.createUserWithEmailAndPassword(em,pw); await db.collection('users').doc(c.user.uid).set({email:em,coins:0,createdAt:Date.now()}); ntf('Đăng ký thành công!','success'); }
-    else{ await auth.signInWithEmailAndPassword(em,pw); ntf('Đăng nhập thành công!','success'); }
+    if(REGMODE){
+      // Đăng ký thông qua API Serverless chống spam
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: em,
+          password: pw,
+          username: em.split('@')[0], // Tên hiển thị mặc định từ email
+          captchaToken: captchaToken,
+          captchaType: 'turnstile'
+        })
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Đăng ký thất bại!');
+      }
+
+      await auth.signInWithEmailAndPassword(em, pw);
+      ntf('Đăng ký thành công!','success');
+    }
+    else{ 
+      await auth.signInWithEmailAndPassword(em,pw); 
+      ntf('Đăng nhập thành công!','success'); 
+    }
     closeMod('loginMod');
-  } catch(err){ const m={'auth/user-not-found':'Tài khoản không tồn tại','auth/wrong-password':'Sai mật khẩu','auth/email-already-in-use':'Email đã dùng','auth/weak-password':'Mật khẩu quá yếu'}; ntf(m[err.code]||err.message,'error'); }
+  } catch(err){ 
+    console.error(err);
+    const m={'auth/user-not-found':'Tài khoản không tồn tại','auth/wrong-password':'Sai mật khẩu','auth/email-already-in-use':'Email đã dùng','auth/weak-password':'Mật khẩu quá yếu'}; 
+    ntf(m[err.code] || err.message || 'Có lỗi xảy ra, vui lòng thử lại!','error'); 
+    if (REGMODE && window.turnstile && turnstileWidgetId !== null) {
+      turnstile.reset(turnstileWidgetId);
+    }
+  }
   b.disabled=false; b.textContent=REGMODE?'Tạo tài khoản':'Đăng Nhập';
 }
 document.getElementById('aPwd').addEventListener('keydown',e=>{ if(e.key==='Enter') doAuth(); });

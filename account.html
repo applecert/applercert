@@ -12,6 +12,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   
   <script>
     tailwind.config = {
@@ -223,12 +224,8 @@
                   </div>
               </div>
               
-              <div id="groupCaptcha" class="expand-anim max-h-0 opacity-0">
-                  <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1" id="captchaLabel">Mã Xác Minh Chống Bot</label>
-                  <div class="relative group">
-                      <i data-lucide="shield-alert" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-brand transition-colors"></i>
-                      <input type="number" id="captchaInput" placeholder="Nhập kết quả phép tính..." class="w-full h-14 pl-12 pr-4 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all font-medium text-gray-900 dark:text-white">
-                  </div>
+              <div id="groupCaptcha" class="expand-anim max-h-0 opacity-0 flex justify-center py-2">
+                  <div id="turnstileWidget"></div>
               </div>
               
               <div id="groupTerms" class="expand-anim max-h-0 opacity-0">
@@ -318,16 +315,8 @@
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.log(err));
     
     let authMode = 'login'; 
-    let captchaAns = 0;
-    function generateCaptcha() {
-        const x = Math.floor(Math.random() * 9) + 1;
-        const y = Math.floor(Math.random() * 9) + 1;
-        captchaAns = x + y;
-        const label = document.getElementById('captchaLabel');
-        if (label) label.innerText = `Xác minh chống Bot: ${x} + ${y} = ?`;
-        const inp = document.getElementById('captchaInput');
-        if (inp) inp.value = '';
-    }
+    const TURNSTILE_SITE_KEY = "0x4AAAAAADuG_qcsGlFOiiqT"; // Thay thế bằng Site Key Turnstile thật từ Cloudflare Console
+    let turnstileWidgetId = null;
 
     auth.onAuthStateChanged(async (user) => {
         const loading = document.getElementById('loadingScreen'); 
@@ -438,8 +427,22 @@
             grpUser.style.maxHeight = '100px'; grpUser.style.opacity = '1'; 
             grpConfirm.style.maxHeight = '100px'; grpConfirm.style.opacity = '1'; 
             grpTerms.style.maxHeight = '100px'; grpTerms.style.opacity = '1'; 
-            generateCaptcha();
-            if (grpCaptcha) { grpCaptcha.style.maxHeight = '100px'; grpCaptcha.style.opacity = '1'; }
+            if (grpCaptcha) { 
+                grpCaptcha.style.maxHeight = '100px'; grpCaptcha.style.opacity = '1'; 
+                // Render Turnstile khi chuyển sang tab đăng ký
+                if (window.turnstile) {
+                    setTimeout(() => {
+                        if (turnstileWidgetId === null) {
+                            turnstileWidgetId = turnstile.render('#turnstileWidget', {
+                                sitekey: TURNSTILE_SITE_KEY,
+                                theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+                            });
+                        } else {
+                            turnstile.reset(turnstileWidgetId);
+                        }
+                    }, 100);
+                }
+            }
         } 
     }
 
@@ -450,16 +453,27 @@
         const btn = document.getElementById('submitBtn'); 
         const errBox = document.getElementById('authError'); 
         
+        let username = '';
+        let captchaToken = '';
+
         if (authMode === 'register') { 
-            const username = document.getElementById('usernameInput').value.trim(); 
+            username = document.getElementById('usernameInput').value.trim(); 
             const confirmPass = document.getElementById('confirmPassInput').value; 
             const termsChecked = document.getElementById('termsCheckbox').checked; 
-            const captchaInput = document.getElementById('captchaInput');
-            const captchaVal = captchaInput ? parseInt(captchaInput.value) : 0;
             if(!username) { showError("Vui lòng nhập Tên hiển thị!"); return; } 
             if(pass !== confirmPass) { showError("Mật khẩu nhập lại không khớp!"); return; } 
-            if(captchaVal !== captchaAns) { showError("Mã xác minh chống Bot không chính xác!"); generateCaptcha(); return; }
             if(!termsChecked) { showError("Bạn phải đồng ý với Điều khoản để tiếp tục!"); return; } 
+            
+            if (window.turnstile) {
+                captchaToken = turnstile.getResponse(turnstileWidgetId);
+                if (!captchaToken) {
+                    showError("Vui lòng hoàn thành xác minh chống Bot!");
+                    return;
+                }
+            } else {
+                showError("Đang tải thư viện bảo mật. Vui lòng thử lại sau vài giây!");
+                return;
+            }
         } 
         
         btn.disabled = true; 
@@ -470,17 +484,41 @@
             if (authMode === 'login') { 
                 await auth.signInWithEmailAndPassword(email, pass); 
             } else { 
-                const userCred = await auth.createUserWithEmailAndPassword(email, pass); 
-                const username = document.getElementById('usernameInput').value.trim(); 
-                await db.collection("users").doc(userCred.user.uid).set({ email: email, username: username, coins: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); 
+                // Đăng ký thông qua API Serverless chống spam
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: pass,
+                        username: username,
+                        captchaToken: captchaToken,
+                        captchaType: 'turnstile'
+                    })
+                });
+
+                const data = await res.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'Đăng ký thất bại!');
+                }
+
+                // Đăng ký thành công -> tiến hành Đăng nhập client-side để đồng bộ Firebase State
+                await auth.signInWithEmailAndPassword(email, pass); 
             } 
         } catch (error) { 
+            console.error(error);
             if(error.code === 'auth/email-already-in-use') showError("Email này đã được sử dụng!"); 
             else if(error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') showError("Sai email hoặc mật khẩu!"); 
             else if(error.code === 'auth/weak-password') showError("Mật khẩu phải từ 6 ký tự trở lên!"); 
-            else showError("Lỗi kết nối. Vui lòng thử lại!"); 
+            else showError(error.message || "Lỗi kết nối. Vui lòng thử lại!"); 
+            
             btn.disabled = false; 
-            btn.innerText = authMode === 'login' ? "ĐĂNG NHẬP VÀO HỆ THỐNG" : "ĐĂNG KÝ TÀI KHOẢN MỚI"; 
+            btn.innerText = authMode === 'login' ? "ĐĂNG NHẬP VÀO HỆ THỐNG" : "ĐĂNG KÝ TÀI KHOẢN MỚI";
+            if (authMode === 'register' && window.turnstile && turnstileWidgetId !== null) {
+                turnstile.reset(turnstileWidgetId);
+            }
         } 
     }
 
