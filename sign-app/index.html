@@ -474,11 +474,20 @@
                 const id = new URLSearchParams(window.location.search).get('download'); 
                 if (id) this.loadFromFirestore(id);
 
-                const popupUntil = localStorage.getItem('vsign_popup_until');
-                if (!popupUntil || Date.now() > parseInt(popupUntil)) {
+                const appParam = new URLSearchParams(window.location.search).get('app');
+                if (appParam && this.ipaUrlMap[appParam]) {
+                    this.selectApp(appParam);
                     setTimeout(() => {
-                        this.showVsignPopup = true;
-                    }, 1000);
+                        const element = document.querySelector('.input-group');
+                        if (element) element.scrollIntoView({ behavior: 'smooth' });
+                    }, 500);
+                } else {
+                    const popupUntil = localStorage.getItem('vsign_popup_until');
+                    if (!popupUntil || Date.now() > parseInt(popupUntil)) {
+                        setTimeout(() => {
+                            this.showVsignPopup = true;
+                        }, 1000);
+                    }
                 }
             },
             methods: {
