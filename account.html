@@ -331,6 +331,16 @@
     db.settings({ experimentalForceLongPolling: true });
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.log(err));
     
+    // Xử lý kết quả trả về từ Google redirect (nếu có lỗi xảy ra)
+    auth.getRedirectResult().then((result) => {
+        if (result && result.user) {
+            console.log("Redirect success:", result.user);
+        }
+    }).catch(err => {
+        console.error("Lỗi redirect:", err);
+        showError("Lỗi liên kết Google: " + err.message);
+    });
+
     let authMode = 'login'; 
     const TURNSTILE_SITE_KEY = "0x4AAAAAADuG_qcsGlFOiiqT"; // Thay thế bằng Site Key Turnstile thật từ Cloudflare Console
     let turnstileWidgetId = null;
@@ -542,9 +552,20 @@
     async function loginWithGoogle() {
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
-            await auth.signInWithRedirect(provider);
+            // Thử đăng nhập bằng popup trước (nhanh, không cần chuyển hướng trang)
+            await auth.signInWithPopup(provider);
         } catch (error) {
-            showError("Đăng nhập bằng Google thất bại: " + error.message);
+            console.warn("Popup login failed, trying redirect:", error);
+            // Nếu bị chặn popup hoặc lỗi thiết bị di động, chuyển sang redirect
+            if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+                try {
+                    await auth.signInWithRedirect(provider);
+                } catch (redirectError) {
+                    showError("Đăng nhập bằng Google thất bại: " + redirectError.message);
+                }
+            } else {
+                showError("Đăng nhập bằng Google thất bại: " + error.message);
+            }
         }
     }
 
