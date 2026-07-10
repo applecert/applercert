@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+<title>Cài Đặt VSign Pro — Hướng dẫn cài đặt từng bước</title>
+<meta name="description" content="Trang hướng dẫn cài đặt và ký ứng dụng VSign Pro từng bước trực tiếp trên iPhone.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Google Fonts: Inter (surrogate for SF Pro Text/Display), JetBrains Mono (Monospace) -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="minimalist-modern.css">
+
+<!-- Vue, JSZip, and Axios for signing operations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.8/axios.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+/* ════════════════════════════════════════════════
+   APPLE DESIGN SYSTEM STYLING — DESIGN.md SPEC
+   ════════════════════════════════════════════════ */
+:root {
+  --apple-primary: #0066cc;
+  --apple-primary-focus: #0071e3;
+  --apple-primary-on-dark: #2997ff;
+  --apple-ink: #1d1d1f;
+  --apple-body: #1d1d1f;
+  --apple-body-on-dark: #ffffff;
+  --apple-body-muted: #cccccc;
+  --apple-ink-muted-80: #333333;
+  --apple-ink-muted-48: #7a7a7a;
+  --apple-divider-soft: #f0f0f0;
+  --apple-hairline: #e0e0e0;
+  --apple-canvas: #ffffff;
+  --apple-canvas-parchment: #f5f5f7;
+  --apple-surface-pearl: #fafafc;
+  --apple-surface-tile-1: #272729;
+  --apple-surface-black: #000000;
+  
+  --apple-rounded-sm: 8px;
+  --apple-rounded-md: 11px;
+  --apple-rounded-lg: 18px;
+  --apple-rounded-pill: 9999px;
+  
+  --apple-spacing-section: 80px;
+  --apple-product-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0px;
+  --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1.0);
+}
+
+body {
+  font-family: "SF Pro Text", "Inter", -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  color: var(--apple-body);
+  background: var(--apple-canvas);
+  -webkit-font-smoothing: antialiased;
+  padding-top: 96px; /* offset for navbars */
+}
+
+/* Global Nav (44px) */
+.global-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: var(--apple-surface-black);
+  z-index: 800;
+  display: flex;
+  align-items: center;
+}
+.global-nav-inner {
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.global-nav-logo {
+  color: var(--apple-body-on-dark);
+  font-size: 14px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.global-nav-links {
+  display: flex;
+  gap: 24px;
+}
+.global-nav-link {
+  color: #adadad;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.12px;
+}
+.global-nav-link:hover {
+  color: var(--apple-body-on-dark);
+}
+
+/* Sub Nav (52px) */
+.sub-nav-frosted {
+  position: fixed;
+  top: 44px;
+  left: 0;
+  right: 0;
+  height: 52px;
+  background: rgba(245, 245, 247, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  z-index: 799;
+  display: flex;
+  align-items: center;
+}
+.sub-nav-inner {
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sub-nav-title {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.231px;
+  color: var(--apple-ink);
+  text-decoration: none;
+}
+.sub-nav-link {
+  color: var(--apple-ink);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.12px;
+}
+
+/* Apple Stepper Progress Indicator */
+.apple-stepper {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 48px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+  border-bottom: 1px solid var(--apple-divider-soft);
+  padding-bottom: 16px;
+  width: 100%;
+  max-width: 600px;
+}
+.step-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--apple-ink-muted-48);
+  cursor: default;
+  font-weight: 500;
+}
+.step-tab.active {
+  color: var(--apple-primary);
+  font-weight: 700;
+}
+.step-tab.completed {
+  color: var(--apple-ink);
+}
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--apple-ink-muted-48);
+}
+.step-tab.active .step-dot {
+  background: var(--apple-primary);
+}
+.step-tab.completed .step-dot {
+  background: var(--apple-ink);
+}
+
+/* Setup Form Elements */
+.input-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--apple-ink);
+  margin-bottom: 8px;
+  text-align: left;
+  display: block;
+}
+.apple-input-text {
+  width: 100%;
+  height: 44px;
+  padding: 12px 20px;
+  font-size: 17px;
+  border: 1px solid var(--apple-hairline);
+  border-radius: var(--apple-rounded-pill);
+  outline: none;
+  background: var(--apple-canvas);
+  color: var(--apple-ink);
+  transition: border-color 0.2s;
+  margin-bottom: 24px;
+}
+.apple-input-text:focus {
+  border-color: var(--apple-primary);
+}
+
+.file-row-btn {
+  width: 100%;
+  min-height: 80px;
+  border: 1px dashed var(--apple-hairline);
+  border-radius: var(--apple-rounded-lg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  background: var(--apple-surface-pearl);
+  transition: border-color 0.2s;
+  margin-bottom: 24px;
+  padding: 16px;
+}
+.file-row-btn:hover {
+  border-color: var(--apple-primary);
+}
+.file-row-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--apple-ink);
+  margin-bottom: 4px;
+}
+.file-row-desc {
+  font-size: 12px;
+  color: var(--apple-ink-muted-48);
+}
+
+/* Progress bar styling */
+.progress-container {
+  width: 100%;
+  height: 4px;
+  background: var(--apple-divider-soft);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--apple-primary);
+  width: 0%;
+  transition: width 0.3s;
+}
+
+/* Wizard Box styling */
+.wizard-box {
+  width: 100%;
+  max-width: 500px;
+  background: var(--apple-canvas);
+  border: 1px solid var(--apple-hairline);
+  border-radius: var(--apple-rounded-lg);
+  padding: 32px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Primary Pill Button */
+.btn-primary-pill {
+  background: var(--apple-primary);
+  color: var(--apple-body-on-dark) !important;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  padding: 11px 22px;
+  border-radius: var(--apple-rounded-pill);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none !important;
+  transition: transform 0.2s var(--ease-apple);
+}
+.btn-primary-pill:active {
+  transform: scale(0.95);
+}
+.btn-primary-pill:disabled {
+  background: var(--apple-divider-soft);
+  color: var(--apple-ink-muted-48) !important;
+  cursor: not-allowed;
+}
+
+/* Footer Section */
+.apple-footer {
+  background: var(--apple-canvas-parchment);
+  color: var(--apple-ink-muted-80);
+  padding: 64px 22px;
+  margin-top: 80px;
+}
+.apple-footer-inner {
+  max-width: 1024px;
+  margin: 0 auto;
+}
+.footer-divider {
+  height: 1px;
+  background: var(--apple-hairline);
+  margin: 24px 0;
+}
+.fine-print {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.12px;
+  color: var(--apple-ink-muted-48);
+}
+</style>
+</head>
+<body>
+
+<div id="wizardApp">
+  <!-- ══ GLOBAL NAV ══ -->
+  <div class="global-nav">
+    <div class="global-nav-inner">
+      <a href="index.html" class="global-nav-logo">
+        <i class="fa-brands fa-apple"></i> IPAVIET
+      </a>
+      <div class="global-nav-links">
+        <a href="index.html" class="global-nav-link">Trang chủ</a>
+        <a href="tap-hoa-mmo.html" class="global-nav-link">Cửa hàng</a>
+        <a href="dichvu.html" class="global-nav-link">Dịch vụ</a>
+        <a href="phim-tat.html" class="global-nav-link">Phím tắt</a>
+      </div>
+      <div style="width:20px;"></div> <!-- Spacer -->
+    </div>
+  </div>
+
+  <!-- ══ SUB NAV ══ -->
+  <div class="sub-nav-frosted">
+    <div class="sub-nav-inner">
+      <a href="vsign.html" class="sub-nav-title">Cài đặt VSign Pro</a>
+      <a href="vsign.html" class="sub-nav-link"><i class="fa-solid fa-chevron-left"></i> Quay lại</a>
+    </div>
+  </div>
+
+  <!-- ══ WIZARD CONTAINER (LIGHT TILE) ══ -->
+  <section class="product-tile tile-light" style="padding-top: 60px;">
+    <!-- Stepper indicator -->
+    <div class="apple-stepper">
+      <div class="step-tab" :class="{ active: currentStep === 1, completed: currentStep > 1 }">
+        <span class="step-dot"></span> 01 Nhập Cert
+      </div>
+      <div class="step-tab" :class="{ active: currentStep === 2, completed: currentStep > 2 }">
+        <span class="step-dot"></span> 02 Ký & Cài đặt
+      </div>
+      <div class="step-tab" :class="{ active: currentStep === 3 }">
+        <span class="step-dot"></span> 03 Tin Cậy
+      </div>
+    </div>
+
+    <!-- STEP 1: UPLOAD CERTIFICATE -->
+    <div class="wizard-box" v-if="currentStep === 1">
+      <div style="margin-bottom: 24px;">
+        <h2 style="font-size: 28px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.2px;">Nhập Chứng Chỉ Apple</h2>
+        <p style="font-size: 14px; color: var(--apple-ink-muted-48);">Tải tệp ZIP chứa chứng chỉ .p12 & .mobileprovision cá nhân của bạn để ký VSign.</p>
+      </div>
+
+      <div style="text-align: left;">
+        <label class="input-label">Tệp tin chứng chỉ (ZIP)</label>
+        <div class="file-row-btn" @click="triggerFileInput">
+          <i class="fa-solid fa-file-zipper" style="font-size: 24px; color: var(--apple-primary); margin-bottom: 8px;"></i>
+          <span class="file-row-title">{{ certZipText }}</span>
+          <span class="file-row-desc">Nhấp để chọn file .zip chứng chỉ</span>
+        </div>
+        <input type="file" ref="certInput" style="display: none;" accept=".zip" @change="handleFileChange">
+
+        <label class="input-label">Mật khẩu chứng chỉ</label>
+        <input type="text" class="apple-input-text" v-model="password" placeholder="Nhập mật khẩu (thường là 1 hoặc mật khẩu riêng)">
+      </div>
+
+      <button class="btn-primary-pill" style="width: 100%; justify-content: center;" :disabled="!canProgressStep1" @click="nextToStep2">
+        Ký Ứng Dụng <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+
+    <!-- STEP 2: SIGNING & LOADING -->
+    <div class="wizard-box" v-if="currentStep === 2">
+      <div style="margin-bottom: 24px;">
+        <h2 style="font-size: 28px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.2px;">Tiến Hành Ký VSign</h2>
+        <p style="font-size: 14px; color: var(--apple-ink-muted-48);">Chúng tôi đang ký VSign Pro bằng chứng chỉ của bạn...</p>
+      </div>
+
+      <div style="margin: 32px 0;">
+        <!-- Status Indicator Icon -->
+        <div style="margin-bottom: 16px;">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size: 40px; color: var(--apple-primary);" v-if="signingState === 'processing'"></i>
+          <i class="fa-solid fa-circle-check" style="font-size: 40px; color: #34c759;" v-if="signingState === 'completed'"></i>
+          <i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: #ff3b30;" v-if="signingState === 'error'"></i>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="progress-container">
+          <div class="progress-bar-fill" :style="{ width: progressPercentage + '%' }"></div>
+        </div>
+        
+        <p style="font-size: 14px; font-weight: 600; color: var(--apple-ink);">
+          {{ statusMessage }}
+        </p>
+        <p style="font-size: 12px; color: var(--apple-ink-muted-48); margin-top: 8px;" v-if="logText">
+          Log: {{ logText }}
+        </p>
+      </div>
+
+      <!-- Action Button after completion -->
+      <div style="display:flex; flex-direction:column; gap:12px;" v-if="signingState === 'completed'">
+        <button class="btn-primary-pill" style="width: 100%; justify-content: center; font-weight: 600;" @click="triggerInstall">
+          <i class="fa-solid fa-download"></i> CÀI ĐẶT VSIGN PRO
+        </button>
+        <button class="btn-secondary-pill" style="width: 100%; justify-content: center;" @click="currentStep = 3">
+          Bước Tiếp Theo (Tin cậy app) <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Retry in case of failure -->
+      <button class="btn-primary-pill" style="width: 100%; justify-content: center;" v-if="signingState === 'error'" @click="resetToStep1">
+        Thử Lại <i class="fa-solid fa-arrow-rotate-right"></i>
+      </button>
+    </div>
+
+    <!-- STEP 3: TRUST THE DEVELOPER CERTIFICATE -->
+    <div class="wizard-box" v-if="currentStep === 3" style="max-width: 600px;">
+      <div style="margin-bottom: 24px;">
+        <h2 style="font-size: 28px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.2px;">Tin Cậy Nhà Phát Triển</h2>
+        <p style="font-size: 14px; color: var(--apple-ink-muted-48);">Bạn cần cấu hình tin cậy trên iPhone để mở ứng dụng sau khi cài.</p>
+      </div>
+
+      <div style="text-align: left; margin: 24px 0;">
+        <div style="display:flex; gap:16px; margin-bottom: 20px;">
+          <div style="width:32px; height:32px; border-radius:50%; background:rgba(0,102,204,0.08); color:var(--apple-primary); display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0;">1</div>
+          <div style="padding-top:4px;">
+            <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Mở Cài đặt hệ thống</div>
+            <p style="font-size:13.5px; color:var(--apple-ink-muted-80);">Truy cập vào ứng dụng <b>Cài đặt (Settings)</b> trên màn hình iPhone.</p>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:16px; margin-bottom: 20px;">
+          <div style="width:32px; height:32px; border-radius:50%; background:rgba(0,102,204,0.08); color:var(--apple-primary); display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0;">2</div>
+          <div style="padding-top:4px;">
+            <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Đi tới Quản lý thiết bị</div>
+            <p style="font-size:13.5px; color:var(--apple-ink-muted-80);">Vào mục <b>Cài đặt chung (General)</b> -> <b>Quản lý VPN & Thiết bị (VPN & Device Management)</b>.</p>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:16px; margin-bottom: 20px;">
+          <div style="width:32px; height:32px; border-radius:50%; background:rgba(0,102,204,0.08); color:var(--apple-primary); display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0;">3</div>
+          <div style="padding-top:4px;">
+            <div style="font-weight:600; font-size:15px; margin-bottom:4px;">Nhấn Tin Cậy Nhà Phát Triển</div>
+            <p style="font-size:13.5px; color:var(--apple-ink-muted-80);">Chọn tên chứng chỉ của bạn bên dưới mục "ỨNG DỤNG NHÀ PHÁT TRIỂN DOANH NGHIỆP" và nhấn <b>Tin cậy (Trust)</b>.</p>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary-pill" style="width: 100%; justify-content: center;" @click="finishInstallation">
+        Hoàn Tất Quy Trình <i class="fa-solid fa-circle-check"></i>
+      </button>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══ -->
+  <footer class="apple-footer">
+    <div class="apple-footer-inner">
+      <div style="font-size: 14px; font-weight: 600; color: var(--apple-ink); margin-bottom: 8px;">IPAVIET</div>
+      <p style="font-size: 12px; color: var(--apple-ink-muted-48); line-height: 1.5;">Hệ sinh thái dịch vụ chứng chỉ Apple, VSign và tài nguyên MMO tự động uy tín hàng đầu tại Việt Nam.</p>
+      <div class="footer-divider"></div>
+      <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;" class="fine-print">
+        <div>&copy; 2026 IPAVIET. Sideload installer.</div>
+        <div>
+          <a href="privacy-policy.html" class="global-nav-link" style="color: var(--apple-ink-muted-48); font-size: 12px; margin-right: 14px;">Chính sách bảo mật</a>
+          <a href="terms-of-service.html" class="global-nav-link" style="color: var(--apple-ink-muted-48); font-size: 12px;">Điều khoản dịch vụ</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script>
+new Vue({
+  el: '#wizardApp',
+  data: {
+    currentStep: 1,
+    certZip: null,
+    certZipText: 'Chọn file ZIP chứa chứng chỉ',
+    password: '',
+    p12: null,
+    mobileprovision: null,
+    
+    ipa: null,
+    vsignIpaUrl: 'AppIPAVIET_user.ipa', // backend direct VSign IPA path
+    
+    signingState: 'processing', // processing, completed, error
+    progressPercentage: 0,
+    statusMessage: 'Đang chuẩn bị...',
+    logText: '',
+    jobId: '',
+    directInstallLink: ''
+  },
+  computed: {
+    canProgressStep1() {
+      return this.certZip && this.password;
+    }
+  },
+  mounted() {
+    this.fetchVsignIpa();
+    // Hide loader
+    const loader = document.getElementById('pageLoader');
+    if (loader) {
+      loader.classList.add('hidden');
+      setTimeout(() => loader.style.display = 'none', 400);
+    }
+  },
+  methods: {
+    triggerFileInput() {
+      this.$refs.certInput.click();
+    },
+    async handleFileChange(e) {
+      const file = e.target.files[0];
+      if (file && file.name.toLowerCase().endsWith('.zip')) {
+        this.certZip = file;
+        this.certZipText = file.name;
+        try {
+          const zip = new JSZip();
+          const content = await zip.loadAsync(file);
+          this.p12 = null; 
+          this.mobileprovision = null;
+          for (const [name, f] of Object.entries(content.files)) {
+            if (name.toLowerCase().endsWith('.p12')) {
+              this.p12 = new File([await f.async('blob')], name);
+            }
+            if (name.toLowerCase().endsWith('.mobileprovision')) {
+              this.mobileprovision = new File([await f.async('blob')], name);
+            }
+          }
+        } catch (error) {
+          alert('Lỗi đọc ZIP chứng chỉ! Vui lòng kiểm tra lại file.');
+          this.certZip = null;
+          this.certZipText = 'Chọn file ZIP chứa chứng chỉ';
+        }
+      } else {
+        alert('Vui lòng chọn đúng tệp tin .zip!');
+      }
+    },
+    async fetchVsignIpa() {
+      try {
+        const response = await fetch(this.vsignIpaUrl);
+        const blob = await response.blob();
+        this.ipa = new File([blob], 'vsign.ipa', { type: 'application/octet-stream' });
+      } catch (e) {
+        console.error('Lỗi nạp IPA VSign mặc định!', e);
+      }
+    },
+    nextToStep2() {
+      if (!this.canProgressStep1) return;
+      this.currentStep = 2;
+      this.signingState = 'processing';
+      this.progressPercentage = 10;
+      this.statusMessage = 'Đang bắt đầu ký ứng dụng...';
+      this.uploadAndSign();
+    },
+    resetToStep1() {
+      this.currentStep = 1;
+      this.progressPercentage = 0;
+      this.statusMessage = 'Đang chuẩn bị...';
+      this.logText = '';
+    },
+    async uploadAndSign() {
+      if (!this.ipa) {
+        // Fallback fetch if not loaded yet
+        await this.fetchVsignIpa();
+        if (!this.ipa) {
+          this.signingState = 'error';
+          this.statusMessage = 'Lỗi nạp ứng dụng VSign IPA!';
+          return;
+        }
+      }
+      
+      const fd = new FormData();
+      fd.append('ipa', this.ipa, this.ipa.name);
+      fd.append('p12', this.p12, this.p12.name);
+      fd.append('mp', this.mobileprovision, this.mobileprovision.name);
+      fd.append('password', this.password);
+
+      try {
+        this.progressPercentage = 30;
+        this.statusMessage = 'Đang upload tệp lên máy chủ ký...';
+        
+        const resp = await axios.post('https://sign.ipasign.cc/api/sign', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: e => {
+            if (e.lengthComputable) {
+              this.progressPercentage = 30 + Math.round((e.loaded / e.total) * 30); // 30% to 60%
+            }
+          }
+        });
+        
+        this.jobId = resp.data.task_id || resp.data;
+        this.progressPercentage = 65;
+        this.statusMessage = 'Upload hoàn tất. Máy chủ đang đóng gói IPA...';
+        this.pollStatus();
+      } catch (e) {
+        this.signingState = 'error';
+        this.statusMessage = 'Lỗi kết nối máy chủ ký! Vui lòng kiểm tra file ZIP/Mật khẩu hoặc thử lại.';
+      }
+    },
+    pollStatus() {
+      const timer = setInterval(async () => {
+        try {
+          const res = await axios.get(`https://sign.ipasign.cc/api/status/${this.jobId}`);
+          const d = res.data;
+          this.logText = d.msg || 'Đang xử lý...';
+          
+          if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
+            clearInterval(timer);
+            this.progressPercentage = 100;
+            this.signingState = 'completed';
+            this.statusMessage = 'Ký thành công! Ứng dụng đã sẵn sàng để cài đặt.';
+            
+            const downloadUrl = `https://sign.ipasign.cc/download/${this.jobId}`;
+            const originalPlistUrl = downloadUrl.replace('/download', '/plist');
+            const workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
+            this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(workerApi + '?plist=' + originalPlistUrl)}`;
+            
+            // Automatically prompt install
+            this.triggerInstall();
+          } else if (d.status === 'FAILURE') {
+            clearInterval(timer);
+            this.signingState = 'error';
+            this.statusMessage = 'Ký thất bại: ' + (d.msg || 'Lỗi chứng chỉ!');
+          } else {
+            // Processing
+            if (this.progressPercentage < 95) {
+              this.progressPercentage += 5;
+            }
+          }
+        } catch (e) {
+          // Keep polling in case of transient network error
+        }
+      }, 3000);
+    },
+    triggerInstall() {
+      if (this.directInstallLink) {
+        window.location.href = this.directInstallLink;
+      }
+    },
+    finishInstallation() {
+      window.location.href = 'vsign.html';
+    }
+  }
+});
+</script>
+</body>
+</html>
