@@ -420,10 +420,24 @@ body {
 
       <!-- Action Button after completion -->
       <div style="display:flex; flex-direction:column; gap:12px;" v-if="signingState === 'completed'">
-        <a :href="directInstallLink" class="btn-primary-pill" style="width: 100%; justify-content: center; font-weight: 600; display: inline-flex;">
+        <a :href="directInstallLink" @click="triggerInstall($event)" class="btn-primary-pill" style="width: 100%; justify-content: center; font-weight: 600; display: inline-flex;">
           <i class="fa-solid fa-download"></i> CÀI ĐẶT VSIGN PRO
         </a>
-        <button class="btn-secondary-pill" style="width: 100%; justify-content: center;" @click="currentStep = 3">
+        
+        <!-- Fallback section -->
+        <div v-if="showFallback" style="margin-top: 12px; padding: 14px; background: rgba(255, 59, 48, 0.05); border: 1px solid rgba(255, 59, 48, 0.2); border-radius: var(--apple-rounded-sm); text-align: left;">
+          <p style="font-size: 14px; font-weight: 600; color: #ff3b30; margin-bottom: 8px;">
+            ⚠️ Không thấy thông báo cài đặt?
+          </p>
+          <p style="font-size: 13px; color: var(--apple-ink-muted-80); margin-bottom: 12px; line-height: 1.4;">
+            Nếu bạn đang dùng Chrome, Zalo, Facebook hoặc trình duyệt chặn popup, hãy mở liên kết tải trực tiếp dưới đây để cài đặt:
+          </p>
+          <a :href="downloadUrl" target="_blank" class="btn-secondary-pill" style="width: 100%; justify-content: center; border-color: #ff3b30; color: #ff3b30 !important; font-size: 14px; padding: 8px 16px;">
+            Mở Trang Tải Trực Tiếp <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
+
+        <button class="btn-secondary-pill" style="width: 100%; justify-content: center; margin-top: 8px;" @click="currentStep = 3">
           Bước Tiếp Theo (Tin cậy app) <i class="fa-solid fa-chevron-right"></i>
         </button>
       </div>
@@ -509,7 +523,9 @@ new Vue({
     statusMessage: 'Đang chuẩn bị...',
     logText: '',
     jobId: '',
-    directInstallLink: ''
+    directInstallLink: '',
+    showFallback: false,
+    downloadUrl: ''
   },
   computed: {
     canProgressStep1() {
@@ -632,6 +648,7 @@ new Vue({
             this.statusMessage = 'Ký thành công! Ứng dụng đã sẵn sàng để cài đặt.';
             
             const downloadUrl = `https://ipa.ipasign.cc/download/${this.jobId}`;
+            this.downloadUrl = downloadUrl;
             const originalPlistUrl = downloadUrl.replace('/download', '/plist');
             const workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
             this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(workerApi + '?plist=' + originalPlistUrl)}`;
@@ -650,7 +667,9 @@ new Vue({
         }
       }, 3000);
     },
-    triggerInstall() {
+    triggerInstall(e) {
+      if (e) e.preventDefault();
+      this.showFallback = true;
       if (this.directInstallLink) {
         window.location.href = this.directInstallLink;
       }
