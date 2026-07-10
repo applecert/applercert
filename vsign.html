@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+<title>VSign — Ứng dụng Ký IPA trực tiếp trên iOS</title>
+<meta name="description" content="Trang giới thiệu và tải ứng dụng VSign chính thức. Ký file IPA và cài đặt trực tiếp trên iPhone không cần máy tính.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Google Fonts: Inter (surrogate for SF Pro Text/Display), JetBrains Mono (Monospace) -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="minimalist-modern.css">
+
+<style>
+/* ════════════════════════════════════════════════
+   APPLE DESIGN SYSTEM STYLING — DESIGN.md SPEC
+   ════════════════════════════════════════════════ */
+:root {
+  --apple-primary: #0066cc;
+  --apple-primary-focus: #0071e3;
+  --apple-primary-on-dark: #2997ff;
+  --apple-ink: #1d1d1f;
+  --apple-body: #1d1d1f;
+  --apple-body-on-dark: #ffffff;
+  --apple-body-muted: #cccccc;
+  --apple-ink-muted-80: #333333;
+  --apple-ink-muted-48: #7a7a7a;
+  --apple-divider-soft: #f0f0f0;
+  --apple-hairline: #e0e0e0;
+  --apple-canvas: #ffffff;
+  --apple-canvas-parchment: #f5f5f7;
+  --apple-surface-pearl: #fafafc;
+  --apple-surface-tile-1: #272729;
+  --apple-surface-tile-2: #2a2a2c;
+  --apple-surface-tile-3: #252527;
+  --apple-surface-black: #000000;
+  
+  /* Radii */
+  --apple-rounded-none: 0px;
+  --apple-rounded-sm: 8px;
+  --apple-rounded-md: 11px;
+  --apple-rounded-lg: 18px;
+  --apple-rounded-pill: 9999px;
+  
+  /* Spacing */
+  --apple-spacing-xxs: 4px;
+  --apple-spacing-xs: 8px;
+  --apple-spacing-sm: 12px;
+  --apple-spacing-md: 17px;
+  --apple-spacing-lg: 24px;
+  --apple-spacing-xl: 32px;
+  --apple-spacing-xxl: 48px;
+  --apple-spacing-section: 80px;
+
+  /* The Single Allowed Product Shadow */
+  --apple-product-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0px;
+  
+  --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1.0);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: "SF Pro Text", "Inter", -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  color: var(--apple-body);
+  background: var(--apple-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Hierarchy */
+.hero-display {
+  font-family: "SF Pro Display", "Inter", -apple-system, sans-serif !important;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.07;
+  letter-spacing: -0.28px;
+}
+
+.display-lg {
+  font-family: "SF Pro Display", "Inter", -apple-system, sans-serif !important;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.2px;
+}
+
+.display-md {
+  font-family: "SF Pro Text", "Inter", -apple-system, sans-serif !important;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+}
+
+.lead {
+  font-family: "SF Pro Display", "Inter", -apple-system, sans-serif !important;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.14;
+  letter-spacing: 0.196px;
+}
+
+.tagline {
+  font-family: "SF Pro Display", "Inter", -apple-system, sans-serif !important;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.19;
+  letter-spacing: 0.231px;
+}
+
+.body-strong {
+  font-weight: 600;
+  letter-spacing: -0.374px;
+}
+
+.fine-print {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.12px;
+  color: var(--apple-ink-muted-48);
+}
+
+/* Apple Buttons System */
+.btn-primary-pill {
+  background: var(--apple-primary);
+  color: var(--apple-body-on-dark) !important;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  padding: 11px 22px;
+  border-radius: var(--apple-rounded-pill);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none !important;
+  transition: transform 0.2s var(--ease-apple);
+}
+.btn-primary-pill:active {
+  transform: scale(0.95);
+}
+.btn-primary-pill:focus {
+  outline: 2px solid var(--apple-primary-focus);
+  outline-offset: 2px;
+}
+
+.btn-secondary-pill {
+  background: transparent;
+  color: var(--apple-primary) !important;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.47;
+  letter-spacing: -0.374px;
+  padding: 11px 22px;
+  border-radius: var(--apple-rounded-pill);
+  border: 1px solid var(--apple-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none !important;
+  transition: transform 0.2s var(--ease-apple);
+}
+.btn-secondary-pill:active {
+  transform: scale(0.95);
+}
+
+.btn-dark-utility {
+  background: var(--apple-ink);
+  color: var(--apple-body-on-dark) !important;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.29;
+  letter-spacing: -0.224px;
+  padding: 8px 15px;
+  border-radius: var(--apple-rounded-sm);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none !important;
+  transition: transform 0.2s var(--ease-apple);
+}
+.btn-dark-utility:active {
+  transform: scale(0.95);
+}
+
+/* Global Nav (44px) */
+.global-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: var(--apple-surface-black);
+  z-index: 800;
+  display: flex;
+  align-items: center;
+}
+.global-nav-inner {
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.global-nav-logo {
+  color: var(--apple-body-on-dark);
+  font-size: 14px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.global-nav-links {
+  display: flex;
+  gap: 24px;
+}
+.global-nav-link {
+  color: #adadad;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.12px;
+  transition: color 0.2s;
+}
+.global-nav-link:hover {
+  color: var(--apple-body-on-dark);
+}
+
+/* Sub Nav (52px) */
+.sub-nav-frosted {
+  position: fixed;
+  top: 44px;
+  left: 0;
+  right: 0;
+  height: 52px;
+  background: rgba(245, 245, 247, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  z-index: 799;
+  display: flex;
+  align-items: center;
+}
+.sub-nav-inner {
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sub-nav-title {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.231px;
+  color: var(--apple-ink);
+  text-decoration: none;
+}
+.sub-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.sub-nav-link {
+  color: var(--apple-ink);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.12px;
+}
+.sub-nav-link:hover {
+  color: var(--apple-primary);
+}
+
+/* Product Tiles Stack */
+.product-tile {
+  width: 100%;
+  padding: var(--apple-spacing-section) 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.tile-light {
+  background: var(--apple-canvas);
+  color: var(--apple-ink);
+}
+
+.tile-parchment {
+  background: var(--apple-canvas-parchment);
+  color: var(--apple-ink);
+}
+
+.tile-dark {
+  background: var(--apple-surface-tile-1);
+  color: var(--apple-body-on-dark);
+}
+
+/* Specific elements inside Tiles */
+.tile-eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--apple-ink-muted-48);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tile-dark .tile-eyebrow {
+  color: var(--apple-body-muted);
+}
+
+.tile-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--apple-primary);
+  display: inline-block;
+}
+.tile-dark .tile-eyebrow-dot {
+  background: var(--apple-primary-on-dark);
+}
+
+.tile-headline {
+  margin-bottom: 12px;
+  max-width: 800px;
+}
+
+.tile-subcopy {
+  margin-bottom: 24px;
+  max-width: 600px;
+}
+
+.tile-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+/* Product Rendering & Surface Shadow */
+.product-render-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.product-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--apple-rounded-lg);
+  box-shadow: var(--apple-product-shadow); /* Exactly one drop-shadow */
+}
+
+/* Grid System for Features */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.store-utility-card {
+  background: var(--apple-canvas);
+  border: 1px solid var(--apple-hairline);
+  border-radius: var(--apple-rounded-lg);
+  padding: 24px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.tile-dark .store-utility-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.card-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--apple-canvas-parchment);
+  color: var(--apple-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.tile-dark .card-icon {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--apple-primary-on-dark);
+}
+
+.card-headline {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.24;
+  letter-spacing: -0.374px;
+}
+
+.card-desc {
+  font-size: 14px;
+  color: var(--apple-ink-muted-48);
+  line-height: 1.43;
+}
+.tile-dark .card-desc {
+  color: var(--apple-body-muted);
+}
+
+/* Steps Timeline */
+.steps-list {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: left;
+}
+.step-row {
+  display: flex;
+  gap: 24px;
+  padding-bottom: 32px;
+  position: relative;
+}
+.step-num-circle {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--apple-primary);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 102, 204, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tile-dark .step-num-circle {
+  color: var(--apple-primary-on-dark);
+  background: rgba(41, 151, 255, 0.12);
+}
+.step-detail {
+  padding-top: 8px;
+}
+.step-headline {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  letter-spacing: -0.374px;
+}
+.step-desc {
+  font-size: 17px;
+  color: var(--apple-ink-muted-48);
+  line-height: 1.47;
+}
+.tile-dark .step-desc {
+  color: var(--apple-body-muted);
+}
+
+/* Inline text links */
+.text-link {
+  color: var(--apple-primary) !important;
+  text-decoration: none;
+  font-weight: 400;
+}
+.text-link:hover {
+  text-decoration: underline;
+}
+.tile-dark .text-link {
+  color: var(--apple-primary-on-dark) !important;
+}
+
+/* FAQs */
+.faq-wrap {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.faq-row {
+  border-bottom: 1px solid var(--apple-hairline);
+  padding: 18px 0;
+  text-align: left;
+}
+.faq-question {
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--apple-ink);
+  padding: 10px 0;
+}
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s var(--ease-apple);
+  color: var(--apple-ink-muted-80);
+  font-size: 17px;
+  line-height: 1.47;
+}
+.faq-row.active .faq-answer {
+  max-height: 200px;
+  padding: 8px 0 16px;
+}
+.faq-row-icon {
+  font-size: 14px;
+  color: var(--apple-ink-muted-48);
+  transition: transform 0.3s;
+}
+.faq-row.active .faq-row-icon {
+  transform: rotate(45deg);
+  color: var(--apple-primary);
+}
+
+/* Footer Section */
+.apple-footer {
+  background: var(--apple-canvas-parchment);
+  color: var(--apple-ink-muted-80);
+  padding: 64px 22px;
+}
+.apple-footer-inner {
+  max-width: 1024px;
+  margin: 0 auto;
+}
+.footer-divider {
+  height: 1px;
+  background: var(--apple-hairline);
+  margin: 24px 0;
+}
+
+.page-loader {
+  position: fixed;
+  inset: 0;
+  background: var(--apple-canvas);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .4s var(--ease-apple), visibility .4s;
+}
+.page-loader.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+.loader {
+  display: flex;
+  gap: 4px;
+}
+
+/* Mobile responsive collapse */
+@media (max-width: 768px) {
+  body {
+    zoom: 100% !important; /* Reset zoom on mobile */
+  }
+  .global-nav-links {
+    display: none; /* Hide global links on mobile */
+  }
+  .sub-nav-actions .sub-nav-link {
+    display: none; /* Hide secondary link in subnav on mobile */
+  }
+  .hero-display {
+    font-size: 34px;
+  }
+  .display-lg {
+    font-size: 28px;
+  }
+  .lead {
+    font-size: 20px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ PAGE LOADER ══ -->
+<div class="page-loader" id="pageLoader">
+  <div class="loader">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter" style="height:24px; width:24px;">
+      <path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="#1d1d1f" d="M 32,4 V 60"></path>
+    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter" style="height:24px; width:24px;">
+      <path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="#1d1d1f" d="M 20,60 V 4 H 40 A 14,14 0 0 1 40,32 H 20"></path>
+    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter" style="height:24px; width:24px;">
+      <path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="#1d1d1f" d="M 12,60 L 32,6 L 52,60 M 20,42 H 44"></path>
+    </svg>
+  </div>
+</div>
+
+<!-- ══ GLOBAL NAV ══ -->
+<div class="global-nav">
+  <div class="global-nav-inner">
+    <a href="index.html" class="global-nav-logo">
+      <i class="fa-brands fa-apple"></i> IPAVIET
+    </a>
+    <div class="global-nav-links">
+      <a href="index.html" class="global-nav-link">Trang chủ</a>
+      <a href="tap-hoa-mmo.html" class="global-nav-link">Cửa hàng</a>
+      <a href="dichvu.html" class="global-nav-link">Dịch vụ</a>
+      <a href="phim-tat.html" class="global-nav-link">Phím tắt</a>
+    </div>
+    <div style="width:20px;"></div> <!-- Spacer -->
+  </div>
+</div>
+
+<!-- ══ SUB NAV ══ -->
+<div class="sub-nav-frosted">
+  <div class="sub-nav-inner">
+    <a href="vsign.html" class="sub-nav-title">VSign Pro</a>
+    <div class="sub-nav-actions">
+      <a href="#huong-dan" class="sub-nav-link">Hướng dẫn cài</a>
+      <a href="sign-app/index.html?app=vsign" class="btn-primary-pill" style="font-size: 12px; padding: 6px 14px;">Cài Đặt</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TILE 1: HERO (LIGHT TILE) ══ -->
+<section class="product-tile tile-light" style="padding-top: 140px;">
+  <div class="tile-eyebrow">
+    <span class="tile-eyebrow-dot"></span> Sideload Độc Quyền
+  </div>
+  <h1 class="hero-display tile-headline">VSign Pro</h1>
+  <p class="lead tile-subcopy">Ký file IPA và cài đặt ứng dụng trực tiếp trên iPhone. Không cần máy tính.</p>
+  
+  <div class="tile-actions">
+    <a href="sign-app/index.html?app=vsign" class="btn-primary-pill">Cài Đặt Ngay</a>
+    <a href="AppIPAVIET_user.ipa" class="btn-secondary-pill">Tải IPA Gốc</a>
+  </div>
+
+  <div class="product-render-container" style="max-width: 440px; margin: 0 auto;">
+    <!-- Featured app card mock representing the product on a surface -->
+    <img src="https://i.ibb.co/cSmzsSRv/T-n-D-n-13-Copy-Copy-Copy-Original.png" class="product-image" alt="VSign App Icon" style="width: 240px; height: 240px; border-radius: 48px;">
+  </div>
+</section>
+
+<!-- ══ TILE 2: FEATURES (PARCHMENT TILE) ══ -->
+<section class="product-tile tile-parchment" id="tinh-nang">
+  <div class="tile-eyebrow">
+    <span class="tile-eyebrow-dot"></span> Hiệu năng vượt trội
+  </div>
+  <h2 class="display-lg tile-headline">Trải Nghiệm Sự Tự Do Sideload</h2>
+  <p class="lead tile-subcopy" style="font-size: 21px; max-width: 540px;">Công cụ ký ứng dụng tối giản, tin cậy và được phát triển tối ưu riêng cho hệ điều hành iOS.</p>
+
+  <div class="features-grid">
+    <!-- Feature Card 1 -->
+    <div class="store-utility-card">
+      <div class="card-icon"><i class="fa-solid fa-bolt"></i></div>
+      <h3 class="card-headline">Ký IPA Siêu Tốc</h3>
+      <p class="card-desc">Sử dụng thuật toán nén và ký luồng song song giúp hoàn thành quá trình đóng gói IPA dưới 10 giây.</p>
+    </div>
+
+    <!-- Feature Card 2 -->
+    <div class="store-utility-card" style="border-color: var(--apple-primary);">
+      <div class="card-icon" style="background: rgba(0, 102, 204, 0.08); color: var(--apple-primary);"><i class="fa-solid fa-mobile-screen-button"></i></div>
+      <h3 class="card-headline" style="color: var(--apple-primary);">Không Cần Máy Tính</h3>
+      <p class="card-desc">Hoạt động hoàn toàn độc lập trên Safari của iPhone. Cài đặt trực tiếp qua giao thức OTA an toàn của Apple.</p>
+    </div>
+
+    <!-- Feature Card 3 -->
+    <div class="store-utility-card">
+      <div class="card-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <h3 class="card-headline">Bảo Hành Chứng Chỉ</h3>
+      <p class="card-desc">Tương thích hoàn hảo với chứng chỉ nhà phát triển cá nhân Apple. Đảm bảo ứng dụng chạy bền bỉ.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TILE 3: INSTRUCTIONS (DARK TILE) ══ -->
+<section class="product-tile tile-dark" id="huong-dan">
+  <div class="tile-eyebrow">
+    <span class="tile-eyebrow-dot"></span> Quy trình đơn giản
+  </div>
+  <h2 class="display-lg tile-headline" style="color: var(--apple-body-on-dark);">Cài Đặt Trong 4 Bước</h2>
+  <p class="lead tile-subcopy" style="color: var(--apple-body-muted); font-size: 21px; max-width: 540px;">Quy trình tự cài đặt VSign Pro bằng chứng chỉ cá nhân của bạn.</p>
+
+  <div class="steps-list">
+    <!-- Step 1 -->
+    <div class="step-row">
+      <div class="step-num-circle">01</div>
+      <div class="step-detail">
+        <h4 class="step-headline">Mở Cổng Ký Trực Tuyến</h4>
+        <p class="step-desc">Truy cập vào liên kết cài đặt ở đầu trang để mở cổng cài VSign trực tuyến trên thiết bị.</p>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-row">
+      <div class="step-num-circle">02</div>
+      <div class="step-detail">
+        <h4 class="step-headline">Nhập Chứng Chỉ Apple (P12)</h4>
+        <p class="step-desc">Tải tệp chứng chỉ cá nhân P12 và Mobileprovision lên và điền mật khẩu chứng chỉ.</p>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-row">
+      <div class="step-num-circle">03</div>
+      <div class="step-detail">
+        <h4 class="step-headline">Nhấn Ký & Cài Đặt</h4>
+        <p class="step-desc">Nhấn "KÝ ỨNG DỤNG" và đợi vài giây, sau đó nhấn "Cài đặt" khi popup của iOS hiển thị.</p>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step-row">
+      <div class="step-num-circle">04</div>
+      <div class="step-detail">
+        <h4 class="step-headline">Tin Cậy Nhà Phát Triển</h4>
+        <p class="step-desc">Vào Cài đặt chung của iPhone -> Quản lý VPN & Thiết bị -> Chọn chứng chỉ của bạn và chọn "Tin cậy".</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TILE 4: FAQ (LIGHT TILE) ══ -->
+<section class="product-tile tile-light" id="faq">
+  <h2 class="display-lg tile-headline">Giải Đáp Thắc Mắc</h2>
+  <p class="lead tile-subcopy" style="font-size: 21px;">Những câu hỏi thường gặp nhất khi sử dụng VSign Pro.</p>
+
+  <div class="faq-wrap">
+    <div class="faq-row">
+      <button class="faq-question">
+        <span>VSign hoạt động như thế nào?</span>
+        <span class="faq-row-icon"><i class="fa-solid fa-plus"></i></span>
+      </button>
+      <div class="faq-answer">
+        VSign hoạt động bằng cách sử dụng chứng chỉ Apple Developer để đóng gói và ký lại các tệp tin IPA, giúp các ứng dụng này chạy trực tiếp trên iPhone của bạn dưới tư cách ứng dụng phát triển cá nhân mà không bị Apple chặn.
+      </div>
+    </div>
+
+    <div class="faq-row">
+      <button class="faq-question">
+        <span>Chứng chỉ Apple P12 lấy ở đâu?</span>
+        <span class="faq-icon"><i class="fa-solid fa-plus"></i></span>
+      </button>
+      <div class="faq-answer">
+        Bạn có thể mua chứng chỉ nhà phát triển Apple chính hãng trực tiếp từ Apple hoặc thông qua dịch vụ cung cấp chứng chỉ tự động 24/7 tại trang chủ <a href="index.html" class="text-link">IPAVIET</a>.
+      </div>
+    </div>
+
+    <div class="faq-row">
+      <button class="faq-question">
+        <span>Tôi có thể ký các app nào khác ngoài VSign?</span>
+        <span class="faq-icon"><i class="fa-solid fa-plus"></i></span>
+      </button>
+      <div class="faq-answer">
+        Hoàn toàn được. Sau khi cài VSign Pro thành công lên thiết bị, bạn có thể nhập và ký bất kỳ file IPA nào (Game Mod, App Premium, Tweak Facebook/Tiktok) trực tiếp bên trong ứng dụng VSign.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER (PARCHMENT) ══ -->
+<footer class="apple-footer">
+  <div class="apple-footer-inner">
+    <div style="font-size: 14px; font-weight: 600; color: var(--apple-ink); margin-bottom: 8px;">IPAVIET</div>
+    <p style="font-size: 12px; color: var(--apple-ink-muted-48); line-height: 1.5;">Hệ sinh thái dịch vụ chứng chỉ Apple, VSign và tài nguyên MMO tự động uy tín hàng đầu tại Việt Nam.</p>
+    <div class="footer-divider"></div>
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;" class="fine-print">
+      <div>&copy; 2026 IPAVIET. Được phân tích theo thiết kế chuẩn Apple.</div>
+      <div>
+        <a href="privacy-policy.html" class="global-nav-link" style="color: var(--apple-ink-muted-48); font-size: 12px; margin-right: 14px;">Chính sách bảo mật</a>
+        <a href="terms-of-service.html" class="global-nav-link" style="color: var(--apple-ink-muted-48); font-size: 12px;">Điều khoản dịch vụ</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// FAQ Accordion Interaction
+document.querySelectorAll('.faq-row').forEach(row => {
+  const btn = row.querySelector('.faq-question');
+  btn.addEventListener('click', () => {
+    const isActive = row.classList.contains('active');
+    
+    // Close other FAQs
+    document.querySelectorAll('.faq-row').forEach(el => el.classList.remove('active'));
+    
+    if (!isActive) {
+      row.classList.add('active');
+    }
+  });
+});
+
+// Remove loader
+window.addEventListener('load', () => {
+  const loader = document.getElementById('pageLoader');
+  if (loader) {
+    loader.classList.add('hidden');
+    setTimeout(() => {
+      loader.style.display = 'none';
+    }, 400);
+  }
+});
+</script>
+</body>
+</html>
