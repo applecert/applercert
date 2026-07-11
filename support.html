@@ -44,10 +44,7 @@
     .glass-effect-header { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); }
     .dark .glass-effect-header { background: rgba(10, 14, 26, 0.7); border-bottom: 1px solid rgba(255,255,255,0.05); }
     
-    .chat-container { height: calc(100vh - 170px); }
-    @media (max-width: 768px) {
-      .chat-container { height: calc(100vh - 190px); }
-    }
+    /* Removed hardcoded chat-container heights to support flexbox dynamic sizing */
     
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -156,7 +153,7 @@
   <!-- ==========================================
        MAIN CHAT INTERFACE
        ========================================== -->
-  <main id="chatMain" class="flex-1 pt-[80px] pb-[130px] max-w-4xl mx-auto w-full flex flex-col hidden">
+  <main id="chatMain" class="flex-1 pt-[80px] pb-[130px] max-w-4xl mx-auto w-full flex flex-col hidden h-full min-h-0">
     <!-- User Quick Summary Card -->
     <div class="px-4 py-3 bg-gray-100 dark:bg-white/5 border-b border-black/5 dark:border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">
       <div class="flex items-center gap-2">
@@ -176,7 +173,7 @@
     </div>
 
     <!-- Messages Container -->
-    <div id="chatMessages" class="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4 chat-container scroll-smooth">
+    <div id="chatMessages" class="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4 scroll-smooth min-h-0">
       <!-- Welcome message will be appended programmatically -->
     </div>
 
@@ -258,6 +255,67 @@
       { id: 'acc_capcut', name: 'CapCut Pro (1T)', price: 40000, type: 'CapCut' }
     ];
 
+    // ==========================================
+    // CHAT HISTORY STORAGE (LOCAL STORAGE BY UID)
+    // ==========================================
+    function getChatHistory() {
+      if (!currentUser) return [];
+      try {
+        const history = localStorage.getItem('chat_history_' + currentUser.uid);
+        return history ? JSON.parse(history) : [];
+      } catch(e) {
+        return [];
+      }
+    }
+
+    function saveMessageToHistory(sender, content, isHtml) {
+      if (!currentUser) return;
+      const history = getChatHistory();
+      // Keep last 50 messages to prevent storage bloat
+      if (history.length > 50) history.shift();
+      history.push({ sender, content, isHtml, timestamp: Date.now() });
+      localStorage.setItem('chat_history_' + currentUser.uid, JSON.stringify(history));
+    }
+
+    function loadChatHistory() {
+      if (!currentUser) return;
+      const history = getChatHistory();
+      const chatMessages = document.getElementById('chatMessages');
+      chatMessages.innerHTML = '';
+      
+      if (history.length === 0) {
+        triggerGreeting();
+      } else {
+        history.forEach(msg => {
+          appendMessage(msg.sender, msg.content, msg.isHtml, [], false);
+        });
+        
+        // Append action options at the bottom if the last message was from the bot
+        const lastMsg = history[history.length - 1];
+        if (lastMsg && lastMsg.sender === 'bot') {
+          const lastEl = chatMessages.lastElementChild;
+          if (lastEl) {
+            const optionsArea = lastEl.querySelector('.msg-options-area');
+            if (optionsArea && optionsArea.children.length === 0) {
+              const defaultOptions = [
+                { label: '👑 Mua VIP Kho IPA', type: 'yellow', action: () => handleQuickAction('buy_vip') },
+                { label: '💰 Nạp tiền tài khoản', type: 'primary', action: () => handleQuickAction('deposit') },
+                { label: '🛒 Mua Tài Khoản Premium', type: 'secondary', action: () => handleQuickAction('buy_accounts') }
+              ];
+              defaultOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = `px-3.5 py-1.5 rounded-full text-xs font-black shadow-sm border bg-white dark:bg-cardDark border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-200 active:scale-95 transition-transform`;
+                btn.innerText = opt.label;
+                btn.onclick = () => opt.action();
+                optionsArea.appendChild(btn);
+              });
+            }
+          }
+        }
+        scrollChatToBottom();
+      }
+    }
+
     // Listen to Firebase Auth state
     auth.onAuthStateChanged(user => {
       const authGate = document.getElementById('authGate');
@@ -283,9 +341,9 @@
           }
         });
 
-        // Trigger bot greeting once
+        // Load chat history if present, otherwise trigger greeting
         if (document.getElementById('chatMessages').children.length === 0) {
-          triggerGreeting();
+          loadChatHistory();
         }
       }
     });
@@ -344,7 +402,7 @@
     // CHAT ENGINE ACTIONS
     // ==========================================
     
-    function appendMessage(sender, content, isHtml = false, options = []) {
+    function appendMessage(sender, content, isHtml = false, options = [], shouldSave = true) {
       const chatMessages = document.getElementById('chatMessages');
       
       // Container
@@ -403,6 +461,10 @@
       
       lucide.createIcons();
       scrollChatToBottom();
+      
+      if (shouldSave) {
+        saveMessageToHistory(sender, content, isHtml);
+      }
     }
 
     function scrollChatToBottom() {
