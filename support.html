@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="vi" class="antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Trợ Lý Hỗ Trợ AI - IPAVIET</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="minimalist-modern.css">
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  
+  <script>
+    tailwind.config = { 
+      darkMode: 'class', 
+      theme: { 
+        extend: { 
+          fontFamily: { 
+            sans: ['Poppins', 'sans-serif'], 
+            mono: ['"JetBrains Mono"', 'monospace'] 
+          }, 
+          colors: { 
+            brand: '#0052FF', 
+            brandDark: '#4D7CFF',
+            bgLight: '#FAFAFA', 
+            bgDark: '#090E1A', 
+            cardLight: '#FFFFFF', 
+            cardDark: '#0F172A', 
+          } 
+        } 
+      } 
+    }
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); }
+  </script>
+
+  <style>
+    @import url('fonts.css');
+    
+    body { -webkit-tap-highlight-color: transparent; font-family: 'Poppins', sans-serif !important; }
+    .glass-effect-header { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+    .dark .glass-effect-header { background: rgba(10, 14, 26, 0.7); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    
+    .chat-container { height: calc(100vh - 170px); }
+    @media (max-width: 768px) {
+      .chat-container { height: calc(100vh - 190px); }
+    }
+    
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .bubble-user {
+      background: linear-gradient(135deg, #0052FF, #4D7CFF);
+      color: #ffffff;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .bubble-bot {
+      background: rgba(0, 0, 0, 0.04);
+      color: #1e293b;
+      border-bottom-left-radius: 4px;
+    }
+    .dark .bubble-bot {
+      background: rgba(255, 255, 255, 0.06);
+      color: #f1f5f9;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Bouncing typing animation */
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      background-color: currentColor;
+      border-radius: 50%;
+      display: inline-block;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+    
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+    
+    .floating-nav { margin: 0 auto; border-radius: 35px; width: calc(100% - 32px); max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); background: rgba(255,255,255,0.85); backdrop-filter: blur(25px); border: 1px solid rgba(0,0,0,0.05);}
+    .dark .floating-nav { box-shadow: 0 20px 40px rgba(0,0,0,0.9); background: rgba(30,30,30,0.85); border: 1px solid rgba(255,255,255,0.1); }
+    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; color: #8E8E93; transition: all 0.3s; background: none; border: none; cursor: pointer; text-decoration: none;}
+    .tab-btn.active { color: #2563eb; }
+    .dark .tab-btn.active { color: #1d4ed8; }
+    .tab-btn.active i { transform: translateY(-4px) scale(1.15); filter: drop-shadow(0 4px 6px rgba(37,99,235,0.4)); }
+    .tab-btn.active span { opacity: 1; font-weight: 800; transform: translateY(-2px); }
+    .tab-btn span { font-size: 0.6rem; font-weight: 700; opacity: 0.8; }
+    
+    .quick-chip {
+      transition: all 0.2s;
+    }
+    .quick-chip:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
+
+  <!-- ==========================================
+       HEADER BAR
+       ========================================== -->
+  <header class="glass-effect-header fixed top-0 w-full z-40 h-[80px] flex items-center px-6 transition-all duration-300">
+    <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-between">
+      <div class="header-logo-crt shrink-0" onclick="window.location.href='index.html'" style="cursor:pointer">
+        <span class="loader-letter">I</span>
+        <span class="loader-letter">P</span>
+        <span class="loader-letter">A</span>
+        <span class="loader-letter">V</span>
+        <span class="loader-letter">I</span>
+        <span class="loader-letter">E</span>
+        <span class="loader-letter">T</span>
+        <span class="loader-letter">&nbsp;</span>
+        <span class="loader-letter" style="color: #eab308;">A</span>
+        <span class="loader-letter" style="color: #eab308;">I</span>
+        <div class="crt-loader-sweep"></div>
+      </div>
+      
+      <div class="flex items-center gap-2 ml-auto shrink-0">
+        <!-- Profile Widget inside Header -->
+        <div id="headerProfile" class="hidden md:flex items-center gap-3 bg-gray-200/50 dark:bg-white/10 px-4 py-1.5 rounded-2xl backdrop-blur-md">
+          <div class="flex flex-col text-right">
+            <span id="profileEmail" class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate max-w-[150px]">...</span>
+            <span id="profileCoins" class="text-[10px] font-black text-brand dark:text-brandDark">Ví: 0đ</span>
+          </div>
+        </div>
+        <button onclick="toggleTheme()" class="w-10 h-10 rounded-2xl bg-gray-200/50 dark:bg-white/10 flex items-center justify-center active:scale-75 transition-transform duration-300 backdrop-blur-md">
+          <i id="themeIcon" data-lucide="moon" class="w-5 h-5 dark:text-yellow-400 dark:fill-yellow-400"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       AUTH REQUIRED BARRIER
+       ========================================== -->
+  <div id="authGate" class="flex-1 flex flex-col items-center justify-center px-6 pt-[80px] pb-[130px] text-center hidden">
+    <div class="w-20 h-20 rounded-[28px] bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mb-6 animate-pulse">
+      <i data-lucide="shield-alert" class="w-10 h-10"></i>
+    </div>
+    <h2 class="text-2xl font-black mb-2 tracking-tight">Yêu Cầu Đăng Nhập</h2>
+    <p class="text-gray-500 dark:text-gray-400 text-sm max-w-sm mb-6 leading-relaxed">Bạn cần đăng nhập tài khoản để trợ lý ảo AI có thể nhận dạng số dư, gia hạn gói VIP và kết nối nạp tiền chính xác cho bạn.</p>
+    <a href="account.html" class="px-8 py-3.5 bg-brand text-white font-black rounded-2xl active:scale-95 transition-transform shadow-[0_10px_20px_rgba(0,82,255,0.4)] text-[15px] flex items-center gap-2">
+      <i data-lucide="log-in" class="w-5 h-5"></i> Đăng Nhập Ngay
+    </a>
+  </div>
+
+  <!-- ==========================================
+       MAIN CHAT INTERFACE
+       ========================================== -->
+  <main id="chatMain" class="flex-1 pt-[80px] pb-[130px] max-w-4xl mx-auto w-full flex flex-col hidden">
+    <!-- User Quick Summary Card -->
+    <div class="px-4 py-3 bg-gray-100 dark:bg-white/5 border-b border-black/5 dark:border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">
+      <div class="flex items-center gap-2">
+        <i data-lucide="user" class="w-4 h-4 text-brand"></i>
+        <span>Tài khoản: <span id="chatUserEmail" class="text-gray-900 dark:text-white">...</span></span>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-1">
+          <i data-lucide="wallet" class="w-4 h-4 text-emerald-500"></i>
+          <span>Số dư: <span id="chatUserCoins" class="text-emerald-600 dark:text-emerald-400">0đ</span></span>
+        </div>
+        <div class="flex items-center gap-1">
+          <i data-lucide="crown" class="w-4 h-4 text-yellow-500"></i>
+          <span>VIP: <span id="chatUserVip" class="text-yellow-600 dark:text-yellow-400">Đang kiểm tra...</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="chatMessages" class="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4 chat-container scroll-smooth">
+      <!-- Welcome message will be appended programmatically -->
+    </div>
+
+    <!-- Input Area & Recommendation Chips -->
+    <div class="p-4 bg-white/70 dark:bg-[#090e1a]/70 backdrop-blur-md border-t border-black/5 dark:border-white/5 shrink-0 space-y-3">
+      <!-- Quick Actions Slider -->
+      <div class="flex gap-2 overflow-x-auto scrollbar-hide py-1">
+        <button onclick="handleQuickAction('buy_vip')" class="quick-chip shrink-0 px-4 py-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-full text-xs font-black flex items-center gap-1.5"><i data-lucide="crown" class="w-3.5 h-3.5"></i> Mua VIP IPA</button>
+        <button onclick="handleQuickAction('deposit')" class="quick-chip shrink-0 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-black flex items-center gap-1.5"><i data-lucide="wallet" class="w-3.5 h-3.5"></i> Nạp tiền ví</button>
+        <button onclick="handleQuickAction('vsign')" class="quick-chip shrink-0 px-4 py-2 bg-brand/10 border border-brand/20 text-brand dark:text-blue-400 rounded-full text-xs font-black flex items-center gap-1.5"><i data-lucide="smartphone" class="w-3.5 h-3.5"></i> Hướng dẫn VSign</button>
+        <button onclick="handleQuickAction('contact')" class="quick-chip shrink-0 px-4 py-2 bg-gray-500/10 border border-gray-500/20 text-gray-700 dark:text-gray-300 rounded-full text-xs font-black flex items-center gap-1.5"><i data-lucide="headphones" class="w-3.5 h-3.5"></i> Liên hệ Admin</button>
+      </div>
+
+      <!-- Text input container -->
+      <div class="flex gap-2 items-center">
+        <input type="text" id="chatInput" placeholder="Nhập câu hỏi hoặc yêu cầu của bạn..." class="flex-1 h-12 px-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/50 outline-none focus:border-brand dark:focus:border-brandDark text-[14px] font-bold text-gray-900 dark:text-white placeholder:font-normal" onkeydown="if(event.key === 'Enter') sendMessage();">
+        <button onclick="sendMessage()" class="w-12 h-12 bg-brand text-white rounded-xl active:scale-90 transition-transform flex items-center justify-center shadow-lg shadow-brand/20"><i data-lucide="send" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================
+       BOTTOM NAVIGATION BAR
+       ========================================== -->
+  <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-6">
+    <nav class="floating-nav h-[74px] flex justify-evenly items-center pointer-events-auto px-2">
+      <a href="index.html" class="tab-btn"><i data-lucide="sparkles"></i><span>Home</span></a>
+      <a href="ipavip.html" class="tab-btn"><i data-lucide="crown"></i><span>App VIP</span></a>
+      <a href="app-library/index.html" class="tab-btn"><i data-lucide="smartphone"></i><span>Kho IPA</span></a>
+      <a href="account.html" class="tab-btn"><i data-lucide="user-circle"></i><span>Tài khoản</span></a>
+      <button class="tab-btn active"><i data-lucide="headset"></i><span>Hỗ trợ AI</span></button>
+    </nav>
+  </div>
+
+  <!-- ==========================================
+       JAVASCRIPT CHATBOT IMPLEMENTATION
+       ========================================== -->
+  <script>
+    const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
+    const BANK_ID = "ACB"; 
+    const ACC_NO = "22703611"; 
+    const ACC_NAME = "TRAN NGUYEN MINH QUI"; 
+
+    const firebaseConfig = { 
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", 
+      authDomain: "ipaviet-st.firebaseapp.com", 
+      projectId: "ipaviet-st", 
+      storageBucket: "ipaviet-st.firebasestorage.app", 
+      messagingSenderId: "127619650916", 
+      appId: "1:127619650916:web:fc8904c99804eeb7539671" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(); 
+    const db = firebase.firestore();
+    db.settings({ experimentalForceLongPolling: true });
+
+    let currentUser = null;
+    let userData = {};
+    let pollingInterval = null;
+    let activeDepositOrder = null;
+
+    // Chatbot Flow State Machine
+    const chatState = {
+      currentFlow: null, // 'vip_select', 'deposit_select', 'account_select', 'confirm_purchase'
+      payload: null      // Holds package metadata, amounts, etc.
+    };
+
+    // VIP Packages definitions
+    const VIP_PACKAGES = [
+      { id: 'vip_7', name: 'VIP 7 Ngày', price: 19000, value: 7 },
+      { id: 'vip_30', name: 'VIP 30 Ngày', price: 39000, value: 30 },
+      { id: 'vip_365', name: 'VIP 365 Ngày', price: 199000, value: 365 }
+    ];
+
+    // Premium accounts definitions
+    const PREMIUM_ACCOUNTS = [
+      { id: 'acc_spotify', name: 'Spotify Premium (1T)', price: 30000, type: 'Spotify' },
+      { id: 'acc_netflix', name: 'Netflix Premium (1T)', price: 65000, type: 'Netflix' },
+      { id: 'acc_capcut', name: 'CapCut Pro (1T)', price: 40000, type: 'CapCut' }
+    ];
+
+    // Listen to Firebase Auth state
+    auth.onAuthStateChanged(user => {
+      const authGate = document.getElementById('authGate');
+      const chatMain = document.getElementById('chatMain');
+      
+      if (!user) {
+        authGate.classList.remove('hidden');
+        chatMain.classList.add('hidden');
+        currentUser = null;
+      } else {
+        authGate.classList.add('hidden');
+        chatMain.classList.remove('hidden');
+        currentUser = user;
+        
+        // Listen to User profile document changes
+        db.collection("users").doc(user.uid).onSnapshot(doc => {
+          if (doc.exists) {
+            userData = doc.data();
+            updateProfileWidgets();
+          } else {
+            userData = { coins: 0 };
+            updateProfileWidgets();
+          }
+        });
+
+        // Trigger bot greeting once
+        if (document.getElementById('chatMessages').children.length === 0) {
+          triggerGreeting();
+        }
+      }
+    });
+
+    function updateProfileWidgets() {
+      if(!currentUser) return;
+      const email = currentUser.email || "Hội viên IPAVIET";
+      const coins = userData.coins || 0;
+      
+      // Header widget
+      document.getElementById('profileEmail').innerText = email;
+      document.getElementById('profileCoins').innerText = `Ví: ${coins.toLocaleString('vi-VN')}đ`;
+      document.getElementById('headerProfile').classList.remove('hidden');
+      document.getElementById('headerProfile').classList.add('flex');
+      
+      // Chat Top Info Widget
+      document.getElementById('chatUserEmail').innerText = email;
+      document.getElementById('chatUserCoins').innerText = `${coins.toLocaleString('vi-VN')}đ`;
+      
+      let vipText = "Chưa đăng ký";
+      if (userData.vipExpire && userData.vipExpire.toMillis() > Date.now()) {
+        const expDate = new Date(userData.vipExpire.toMillis());
+        vipText = expDate.toLocaleDateString('vi-VN');
+      }
+      document.getElementById('chatUserVip').innerText = vipText;
+    }
+
+    // Toggle light/dark theme
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      const isDark = html.classList.contains('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      
+      const icon = document.getElementById('themeIcon');
+      if (isDark) {
+        icon.setAttribute('data-lucide', 'sun');
+        icon.className = 'w-5 h-5 text-yellow-400 fill-yellow-400';
+      } else {
+        icon.setAttribute('data-lucide', 'moon');
+        icon.className = 'w-5 h-5 text-gray-600';
+      }
+      lucide.createIcons();
+    }
+    
+    // Set theme icon on load
+    if(document.documentElement.classList.contains('dark')) {
+      const icon = document.getElementById('themeIcon');
+      if(icon) {
+        icon.setAttribute('data-lucide', 'sun');
+        icon.className = 'w-5 h-5 text-yellow-400 fill-yellow-400';
+      }
+    }
+
+    // ==========================================
+    // CHAT ENGINE ACTIONS
+    // ==========================================
+    
+    function appendMessage(sender, content, isHtml = false, options = []) {
+      const chatMessages = document.getElementById('chatMessages');
+      
+      // Container
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} w-full animate-fluid-up`;
+      
+      // Bubble
+      let bubbleHtml = '';
+      if (sender === 'user') {
+        bubbleHtml = `
+          <div class="max-w-[80%] rounded-[20px] px-4 py-3 text-sm font-bold bubble-user shadow-md">
+            ${isHtml ? content : escapeHtml(content)}
+          </div>
+        `;
+      } else {
+        let avatarIcon = 'bot';
+        if (content.includes('💎') || content.includes('👑')) avatarIcon = 'gem';
+        if (content.includes('⚠️') || content.includes('❌')) avatarIcon = 'alert-triangle';
+        
+        bubbleHtml = `
+          <div class="flex items-start gap-2.5 max-w-[85%]">
+            <div class="w-8 h-8 rounded-full bg-brand/10 dark:bg-white/10 flex items-center justify-center text-brand dark:text-blue-400 shrink-0 shadow-sm border border-brand/10">
+              <i data-lucide="${avatarIcon}" class="w-4 h-4"></i>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-[10px] font-black text-gray-400 tracking-wider">TRỢ LÝ IPAVIET</span>
+              <div class="rounded-[20px] px-4 py-3 text-sm font-bold bubble-bot shadow-sm space-y-2 leading-relaxed font-sans">
+                ${isHtml ? content : formatTextLineBreaks(escapeHtml(content))}
+              </div>
+              <div class="msg-options-area flex flex-wrap gap-2 mt-1"></div>
+            </div>
+          </div>
+        `;
+      }
+      
+      msgDiv.innerHTML = bubbleHtml;
+      chatMessages.appendChild(msgDiv);
+      
+      // Append buttons/options if any
+      if (sender === 'bot' && options.length > 0) {
+        const optionsArea = msgDiv.querySelector('.msg-options-area');
+        options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = `px-3.5 py-1.5 rounded-full text-xs font-black shadow-sm border ${
+            opt.type === 'primary' 
+            ? 'bg-brand border-brand text-white active:scale-95 transition-transform' 
+            : opt.type === 'yellow'
+            ? 'bg-yellow-500 border-yellow-500 text-black active:scale-95 transition-transform shadow-[0_4px_10px_rgba(234,179,8,0.3)]'
+            : 'bg-white dark:bg-cardDark border-gray-200 dark:border-white/10 text-gray-800 dark:text-gray-200 active:scale-95 transition-transform'
+          }`;
+          btn.innerText = opt.label;
+          btn.onclick = () => opt.action();
+          optionsArea.appendChild(btn);
+        });
+      }
+      
+      lucide.createIcons();
+      scrollChatToBottom();
+    }
+
+    function scrollChatToBottom() {
+      const chatMessages = document.getElementById('chatMessages');
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTypingIndicator() {
+      const chatMessages = document.getElementById('chatMessages');
+      
+      // Remove any existing one
+      hideTypingIndicator();
+      
+      const typingDiv = document.createElement('div');
+      typingDiv.id = 'typingIndicator';
+      typingDiv.className = 'flex justify-start w-full animate-fluid-up';
+      typingDiv.innerHTML = `
+        <div class="flex items-start gap-2.5 max-w-[80%]">
+          <div class="w-8 h-8 rounded-full bg-brand/10 dark:bg-white/10 flex items-center justify-center text-brand dark:text-blue-400 shrink-0 shadow-sm border border-brand/10">
+            <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-[10px] font-black text-gray-400 tracking-wider">TRỢ LÝ IPAVIET</span>
+            <div class="rounded-[20px] px-4 py-3 text-sm bubble-bot shadow-sm typing-dots text-gray-500">
+              <span></span>
+              <span class="mx-0.5"></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      chatMessages.appendChild(typingDiv);
+      lucide.createIcons();
+      scrollChatToBottom();
+    }
+
+    function hideTypingIndicator() {
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) {
+        indicator.remove();
+      }
+    }
+
+    function triggerGreeting() {
+      showTypingIndicator();
+      setTimeout(() => {
+        hideTypingIndicator();
+        const userName = currentUser.email ? currentUser.email.split('@')[0] : 'Sếp';
+        appendMessage('bot', `Xin chào **${userName}**! 👋 Tôi là trợ lý ảo AI hỗ trợ nạp tiền và gia hạn VIP tự động của IPAVIET.\n\nHôm nay sếp cần tôi hỗ trợ gì ạ? Sếp có thể click nhanh các nút gợi ý bên dưới hoặc chat trực tiếp với tôi nha!`, false, [
+          { label: '👑 Mua VIP Kho IPA', type: 'yellow', action: () => handleQuickAction('buy_vip') },
+          { label: '💰 Nạp tiền tài khoản', type: 'primary', action: () => handleQuickAction('deposit') },
+          { label: '🛒 Mua Tài Khoản (CapCut, Spotify...)', type: 'secondary', action: () => handleQuickAction('buy_accounts') }
+        ]);
+      }, 800);
+    }
+
+    // ==========================================
+    // QUICK ACTION ROUTER
+    // ==========================================
+    
+    function handleQuickAction(actionId) {
+      if(!currentUser) return;
+      
+      // Cancel previous operations/polls
+      if(pollingInterval) clearInterval(pollingInterval);
+      activeDepositOrder = null;
+      chatState.currentFlow = null;
+      chatState.payload = null;
+
+      if (actionId === 'buy_vip') {
+        appendMessage('user', 'Tôi muốn mua gói VIP Kho IPA.');
+        showTypingIndicator();
+        setTimeout(() => {
+          hideTypingIndicator();
+          chatState.currentFlow = 'vip_select';
+          appendMessage('bot', 'Hiện tại tôi đang hỗ trợ kích hoạt tự động 3 gói VIP đặc quyền dưới đây, sếp xem qua rồi chọn một gói phù hợp nhé! Gói VIP sẽ giúp tải vô hạn app hack/mod ở Kho VIP.', false, [
+            { label: 'Gói 7 Ngày (19k)', type: 'secondary', action: () => selectVipPackage(7) },
+            { label: 'Gói 30 Ngày (39k) ⭐', type: 'primary', action: () => selectVipPackage(30) },
+            { label: 'Gói 365 Ngày (199k)', type: 'yellow', action: () => selectVipPackage(365) }
+          ]);
+        }, 800);
+        
+      } else if (actionId === 'deposit') {
+        appendMessage('user', 'Tôi muốn nạp tiền vào ví.');
+        showTypingIndicator();
+        setTimeout(() => {
+          hideTypingIndicator();
+          chatState.currentFlow = 'deposit_select';
+          appendMessage('bot', 'Sếp muốn nạp bao nhiêu tiền vào ví ạ? Mức nạp càng lớn sẽ được nhận thêm ưu đãi cộng xu thưởng nhiều hơn nhé!', false, [
+            { label: 'Nạp 10.000đ', type: 'secondary', action: () => selectDepositAmount(10000, 10000) },
+            { label: 'Nạp 20.000đ (+10% xu)', type: 'secondary', action: () => selectDepositAmount(20000, 22000) },
+            { label: 'Nạp 50.000đ (+20% xu) 🔥', type: 'primary', action: () => selectDepositAmount(50000, 60000) },
+            { label: 'Nạp 100.000đ (+50% xu) 👑', type: 'yellow', action: () => selectDepositAmount(100000, 150000) }
+          ]);
+        }, 800);
+        
+      } else if (actionId === 'buy_accounts') {
+        appendMessage('user', 'Tôi muốn mua tài khoản Premium giá rẻ.');
+        showTypingIndicator();
+        setTimeout(() => {
+          hideTypingIndicator();
+          chatState.currentFlow = 'account_select';
+          appendMessage('bot', 'Sếp có thể chọn trực tiếp các tài khoản Premium dưới đây để trợ lý kiểm tra kho và xuất thông tin ngay lập tức:', false, [
+            { label: 'Spotify (30k/Tháng)', type: 'secondary', action: () => selectPremiumAccount('Spotify', 30000) },
+            { label: 'Netflix (65k/Tháng)', type: 'secondary', action: () => selectPremiumAccount('Netflix', 65000) },
+            { label: 'CapCut Pro (40k/Tháng)', type: 'secondary', action: () => selectPremiumAccount('CapCut', 40000) }
+          ]);
+        }, 800);
+        
+      } else if (actionId === 'vsign') {
+        appendMessage('user', 'Cách tải VSign và ký cài đặt IPA.');
+        showTypingIndicator();
+        setTimeout(() => {
+          hideTypingIndicator();
+          const guideHtml = `
+            <div class="space-y-2">
+              <p class="font-black text-brand dark:text-blue-400">📲 CÁCH CÀI ĐẶT VSIGN CHÍNH CHỦ:</p>
+              <ol class="list-decimal list-inside space-y-1 text-xs">
+                <li>Truy cập trực tiếp trang cài đặt: <a href="vsign.html" class="underline text-brand dark:text-blue-400 font-bold">Cài đặt VSign</a>.</li>
+                <li>Chọn <b>Cài đặt trực tiếp</b> và chấp nhận thông báo hệ thống của iOS.</li>
+                <li>Vào Cài đặt máy > VPN & Quản lý thiết bị > Chọn cấu hình IPAVIET và bấm <b>Tin Cậy (Trust)</b>.</li>
+              </ol>
+              <p class="font-black text-yellow-500 mt-2">✍️ CÁCH KÝ APP KHÔNG LO BỊ THU HỒI:</p>
+              <ul class="list-disc list-inside space-y-1 text-xs">
+                <li>Mua tệp Chứng Chỉ liên kết thiết bị tại Cửa Hàng.</li>
+                <li>Tải tệp .IPA bạn muốn cài từ trang web hoặc các nguồn khác.</li>
+                <li>Mở ứng dụng VSign, nhập chứng chỉ đã mua (file .p12 và .mobileprovision) vào thiết bị.</li>
+                <li>Chọn file .IPA và nhấn <b>Ký ứng dụng</b>, sau đó nhấn <b>Cài đặt</b> để hoàn thành.</li>
+              </ul>
+            </div>
+          `;
+          appendMessage('bot', guideHtml, true, [
+            { label: 'Tải App VSign ngay', type: 'primary', action: () => { window.location.href = 'vsign.html'; } },
+            { label: 'Mua Chứng Chỉ', type: 'secondary', action: () => { window.location.href = 'dichvu.html'; } }
+          ]);
+        }, 800);
+        
+      } else if (actionId === 'contact') {
+        appendMessage('user', 'Yêu cầu gặp Admin hỗ trợ.');
+        showTypingIndicator();
+        setTimeout(() => {
+          hideTypingIndicator();
+          appendMessage('bot', 'Nếu gặp bất kỳ vấn đề gì liên quan tới thanh toán bị lỗi hoặc thắc mắc dịch vụ, sếp hãy bấm nút liên hệ trực tiếp với admin hỗ trợ qua Telegram nhé. Admin trực tuyến thường xuyên để xử lý đơn hàng ạ!', false, [
+            { label: 'Chat Telegram Admin', type: 'primary', action: () => { window.open('https://t.me/ipaviet', '_blank'); } }
+          ]);
+        }, 800);
+      }
+    }
+
+    // ==========================================
+    // VIP PURCHASE WORKFLOW
+    // ==========================================
+    
+    function selectVipPackage(days) {
+      const pkg = VIP_PACKAGES.find(p => p.value === days);
+      if(!pkg) return;
+      
+      appendMessage('user', `Chọn gói ${pkg.name} (${pkg.price.toLocaleString()}đ)`);
+      showTypingIndicator();
+      
+      setTimeout(() => {
+        hideTypingIndicator();
+        const currentCoins = userData.coins || 0;
+        
+        if (currentCoins >= pkg.price) {
+          chatState.currentFlow = 'confirm_purchase';
+          chatState.payload = { type: 'vip', package: pkg };
+          
+          appendMessage('bot', `Ví của sếp đang có **${currentCoins.toLocaleString()}đ**, đủ điều kiện thanh toán gói **${pkg.name} (${pkg.price.toLocaleString()}đ)**.\n\nSếp xác nhận thực hiện mua gói VIP này luôn chứ ạ?`, false, [
+            { label: 'Đồng Ý Mua Ngay ✅', type: 'primary', action: () => executeVipPurchase() },
+            { label: 'Hủy bỏ', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+        } else {
+          const diff = pkg.price - currentCoins;
+          chatState.currentFlow = 'vip_insufficient';
+          chatState.payload = { type: 'vip', package: pkg, diff: diff };
+          
+          appendMessage('bot', `Gói **${pkg.name}** có giá là **${pkg.price.toLocaleString()}đ** nhưng ví của sếp hiện có **${currentCoins.toLocaleString()}đ** (Còn thiếu **${diff.toLocaleString()}đ**).\n\nSếp có muốn trợ lý tạo nhanh mã thanh toán nạp **${diff.toLocaleString()}đ** để gia hạn VIP ngay lập tức không ạ?`, false, [
+            { label: `Nạp đúng ${diff.toLocaleString()}đ`, type: 'primary', action: () => generateDepositInvoice(diff) },
+            { label: 'Nạp số tiền lớn hơn để hưởng ưu đãi', type: 'secondary', action: () => handleQuickAction('deposit') },
+            { label: 'Hủy bỏ', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+        }
+      }, 800);
+    }
+
+    async function executeVipPurchase() {
+      if(chatState.currentFlow !== 'confirm_purchase' || !chatState.payload || chatState.payload.type !== 'vip') return;
+      const pkg = chatState.payload.package;
+      
+      showTypingIndicator();
+      try {
+        const userCoins = userData.coins || 0;
+        if (userCoins < pkg.price) {
+          hideTypingIndicator();
+          appendMessage('bot', '❌ Lỗi giao dịch: Số dư xu trong ví không đủ. Vui lòng nạp thêm tiền.');
+          return;
+        }
+        
+        // Firestore Deduct coins
+        await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-pkg.price) }, { merge: true });
+        
+        // Firestore Add VIP Date
+        let exp = new Date();
+        if (userData.vipExpire && userData.vipExpire.toMillis() > Date.now()) {
+          exp = new Date(userData.vipExpire.toMillis());
+        }
+        exp.setDate(exp.getDate() + pkg.value);
+        await db.collection("users").doc(currentUser.uid).set({ vipExpire: firebase.firestore.Timestamp.fromDate(exp) }, { merge: true });
+        
+        // Notify Admin Telegram
+        const msg = `👑 *BOT AI CHỐT ĐƠN VIP!*\n👤 UID: \`${currentUser.uid}\`\n📦 Gói mua: *${pkg.name}*\n💎 Thanh toán: -${pkg.price.toLocaleString()}đ\n⏰ Hạn dùng: +${pkg.value} ngày`;
+        fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
+        
+        hideTypingIndicator();
+        appendMessage('bot', `🎉 **Thanh toán thành công!**\n\nGiao dịch trừ **-${pkg.price.toLocaleString()}đ** đã hoàn tất. Tài khoản của sếp được gia hạn thêm **+${pkg.value} ngày VIP**.\n\nHạn dùng VIP mới: **${exp.toLocaleDateString('vi-VN')}**.\n\nCảm ơn sếp đã tin tưởng ủng hộ dịch vụ của IPAVIET!`, false, [
+          { label: 'Tải ứng dụng ngay 📲', type: 'primary', action: () => { window.location.href = 'ipavip.html'; } }
+        ]);
+        
+        chatState.currentFlow = null;
+        chatState.payload = null;
+      } catch(e) {
+        hideTypingIndicator();
+        appendMessage('bot', '❌ Đã xảy ra lỗi kết nối cơ sở dữ liệu. Vui lòng thử lại hoặc liên hệ Admin!');
+      }
+    }
+
+    // ==========================================
+    // PREMIUM ACCOUNT PURCHASE WORKFLOW
+    // ==========================================
+    
+    function selectPremiumAccount(name, price) {
+      const pAcc = PREMIUM_ACCOUNTS.find(a => a.type === name);
+      if(!pAcc) return;
+      
+      appendMessage('user', `Chọn mua tài khoản ${pAcc.name}`);
+      showTypingIndicator();
+      
+      setTimeout(() => {
+        hideTypingIndicator();
+        const currentCoins = userData.coins || 0;
+        
+        if (currentCoins >= pAcc.price) {
+          chatState.currentFlow = 'confirm_purchase';
+          chatState.payload = { type: 'account', account: pAcc };
+          
+          appendMessage('bot', `Ví của sếp đang có **${currentCoins.toLocaleString()}đ**, đủ điều kiện thanh toán gói **${pAcc.name} (${pAcc.price.toLocaleString()}đ)**.\n\nSếp đồng ý thực hiện thanh toán mua tài khoản này chứ?`, false, [
+            { label: 'Đồng Ý Mua ✅', type: 'primary', action: () => executeAccountPurchase() },
+            { label: 'Hủy bỏ', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+        } else {
+          const diff = pAcc.price - currentCoins;
+          chatState.currentFlow = 'account_insufficient';
+          chatState.payload = { type: 'account', account: pAcc, diff: diff };
+          
+          appendMessage('bot', `Gói **${pAcc.name}** có giá là **${pAcc.price.toLocaleString()}đ** nhưng ví của sếp chỉ có **${currentCoins.toLocaleString()}đ** (Còn thiếu **${diff.toLocaleString()}đ**).\n\nSếp có muốn tạo nhanh mã thanh toán nạp **${diff.toLocaleString()}đ** để lấy tài khoản ngay lập tức không?`, false, [
+            { label: `Nạp đúng ${diff.toLocaleString()}đ`, type: 'primary', action: () => generateDepositInvoice(diff) },
+            { label: 'Nạp số tiền lớn hơn để hưởng ưu đãi', type: 'secondary', action: () => handleQuickAction('deposit') },
+            { label: 'Hủy bỏ', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+        }
+      }, 800);
+    }
+
+    async function executeAccountPurchase() {
+      if(chatState.currentFlow !== 'confirm_purchase' || !chatState.payload || chatState.payload.type !== 'account') return;
+      const pAcc = chatState.payload.account;
+      
+      showTypingIndicator();
+      try {
+        const userCoins = userData.coins || 0;
+        if (userCoins < pAcc.price) {
+          hideTypingIndicator();
+          appendMessage('bot', '❌ Lỗi giao dịch: Số dư xu trong ví không đủ. Vui lòng nạp thêm.');
+          return;
+        }
+
+        // Call API Google Script to query inventory
+        const res = await fetch(`${GOOGLE_API_URL}?action=get_account&type=${pAcc.type}&uid=${currentUser.uid}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          // Firestore Deduct coins
+          await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-pAcc.price) }, { merge: true });
+          
+          // Notify Admin
+          const msg = `🛒 *BOT AI CHỐT ĐƠN ACCOUNT!*\n👤 UID: \`${currentUser.uid}\`\n📦 Loại Acc: *${pAcc.name}*\n💎 Thanh toán: -${pAcc.price.toLocaleString()}đ\n🔑 Đã xuất kho: \`${data.account}\``;
+          fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
+
+          hideTypingIndicator();
+          
+          const successHtml = `
+            <div class="space-y-2 text-left font-sans">
+              <p class="text-green-500 font-black">🎉 THANH TOÁN THÀNH CÔNG!</p>
+              <p>Bot đã trích xu mua thành công gói <b>${pAcc.name}</b>.</p>
+              <div class="bg-black/10 dark:bg-white/5 border border-black/5 dark:border-white/10 p-3 rounded-xl mt-2 relative">
+                <span class="text-[10px] text-gray-400 font-bold block">Thông tin đăng nhập tài khoản:</span>
+                <span id="botExtractedAcc" class="text-xs font-black text-emerald-600 dark:text-emerald-400 select-all block break-words mt-1">${data.account}</span>
+              </div>
+            </div>
+          `;
+          appendMessage('bot', successHtml, true, [
+            { label: 'Sao chép tài khoản 📋', type: 'primary', action: () => {
+              navigator.clipboard.writeText(data.account);
+              alert("Đã sao chép tài khoản vào khay nhớ tạm!");
+            }},
+            { label: 'Tiếp tục hỗ trợ', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+          
+          chatState.currentFlow = null;
+          chatState.payload = null;
+        } else {
+          hideTypingIndicator();
+          appendMessage('bot', `❌ Kho hàng hết tài khoản: ${data.error}. Vui lòng thử lại sau hoặc liên hệ Admin để bổ sung kho!`, false, [
+            { label: 'Chọn dịch vụ khác', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+        }
+      } catch(e) {
+        hideTypingIndicator();
+        appendMessage('bot', '❌ Lỗi kết nối máy chủ dịch vụ. Vui lòng liên hệ Admin hỗ trợ.');
+      }
+    }
+
+    // ==========================================
+    // DEPOSIT & AUTO-POLLING WORKFLOW
+    // ==========================================
+    
+    function selectDepositAmount(amount, coins) {
+      appendMessage('user', `Nạp gói ${amount.toLocaleString()}đ`);
+      generateDepositInvoice(amount, coins);
+    }
+
+    async function generateDepositInvoice(amount, coinsInput = null) {
+      showTypingIndicator();
+      
+      const coins = coinsInput || amount; // Default 1:1 if not set
+      const orderId = "IPA" + Math.floor(100000 + Math.random() * 900000); 
+      activeDepositOrder = { id: orderId, amount: amount, coins: coins, isChecking: false, isCredited: false };
+      
+      try {
+        // Register order to Google Sheet database
+        const regUrl = `${GOOGLE_API_URL}?action=create_order&orderId=${orderId}&uid=${currentUser.uid}&amount=${amount}&coins=${coins}`;
+        await fetch(regUrl);
+        
+        // Generate VietQR url
+        const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.png?amount=${amount}&addInfo=${orderId}&accountName=${encodeURIComponent(ACC_NAME)}`;
+        
+        hideTypingIndicator();
+        
+        const invoiceHtml = `
+          <div class="space-y-4 text-left w-full max-w-sm font-sans">
+            <p class="font-black text-brand dark:text-blue-400">📄 THÔNG TIN ĐƠN NẠP TIỀN:</p>
+            <div class="bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 p-4 rounded-2xl space-y-2 text-xs">
+              <div class="flex justify-between"><span>Ngân hàng:</span><span class="font-bold text-gray-800 dark:text-white">${BANK_ID} Bank</span></div>
+              <div class="flex justify-between"><span>Chủ TK:</span><span class="font-bold text-gray-800 dark:text-white">${ACC_NAME}</span></div>
+              <div class="flex justify-between items-center">
+                <span>Số tài khoản:</span>
+                <span class="font-black text-gray-800 dark:text-white">${ACC_NO}</span>
+              </div>
+              <div class="flex justify-between items-center text-yellow-600 dark:text-yellow-400 font-bold">
+                <span>Nội dung chuyển khoản:</span>
+                <span class="font-black bg-yellow-500/10 px-2 py-0.5 rounded select-all">${orderId}</span>
+              </div>
+              <div class="flex justify-between items-center text-red-500 font-black">
+                <span>Số tiền nạp:</span>
+                <span>${amount.toLocaleString('vi-VN')} đ</span>
+              </div>
+            </div>
+            
+            <div class="flex flex-col items-center py-2 bg-white rounded-2xl border border-gray-200">
+              <img src="${qrUrl}" class="w-48 h-48 object-contain">
+              <span class="text-[10px] text-gray-400 font-bold mt-1">Quét mã QR VietQR để chuyển nhanh</span>
+            </div>
+            
+            <div class="flex items-center gap-2 text-xs font-black text-yellow-600 dark:text-yellow-400 animate-pulse">
+              <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
+              <span id="depositStatusText">🔍 Trợ lý đang quét lịch sử ngân hàng tự động...</span>
+            </div>
+          </div>
+        `;
+        
+        appendMessage('bot', invoiceHtml, true, [
+          { label: 'Copy STK 📋', type: 'secondary', action: () => {
+            navigator.clipboard.writeText(ACC_NO);
+            alert("Đã sao chép Số Tài Khoản: " + ACC_NO);
+          }},
+          { label: 'Copy Nội Dung 📋', type: 'secondary', action: () => {
+            navigator.clipboard.writeText(orderId);
+            alert("Đã sao chép Nội Dung: " + orderId);
+          }},
+          { label: 'Copy Số Tiền 📋', type: 'secondary', action: () => {
+            navigator.clipboard.writeText(amount);
+            alert("Đã sao chép Số Tiền: " + amount);
+          }}
+        ]);
+        
+        // Start payment checking interval
+        let checkCount = 0;
+        const maxChecks = 50;
+        
+        if (pollingInterval) clearInterval(pollingInterval);
+        
+        pollingInterval = setInterval(async () => {
+          if (!activeDepositOrder || activeDepositOrder.isCredited || activeDepositOrder.isChecking) return;
+          
+          checkCount++;
+          if (checkCount > maxChecks) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+            const statusEl = document.getElementById('depositStatusText');
+            if (statusEl) {
+              statusEl.innerText = "❌ Hết giờ quét tự động. Liên hệ Admin nếu đã chuyển!";
+              statusEl.parentElement.classList.remove('text-yellow-600', 'dark:text-yellow-400', 'animate-pulse');
+              statusEl.parentElement.classList.add('text-red-500');
+            }
+            return;
+          }
+          
+          activeDepositOrder.isChecking = true;
+          try {
+            const checkUrl = `${GOOGLE_API_URL}?action=check_stc_payment&orderId=${orderId}&amount=${amount}&t=${Date.now()}`;
+            const res = await fetch(checkUrl);
+            const data = await res.json();
+            
+            if (data.success && !activeDepositOrder.isCredited) {
+              activeDepositOrder.isCredited = true;
+              clearInterval(pollingInterval);
+              pollingInterval = null;
+              
+              // Firestore Credit Coins
+              const txRef = db.collection("users").doc(currentUser.uid).collection("transactions").doc(orderId);
+              const txSnap = await txRef.get();
+              
+              if (!txSnap.exists) {
+                await db.collection("users").doc(currentUser.uid).set({
+                  coins: firebase.firestore.FieldValue.increment(coins),
+                  totalDeposited: firebase.firestore.FieldValue.increment(amount)
+                }, { merge: true });
+                
+                await txRef.set({
+                  amount: coins,
+                  desc: `Nạp ví qua bot AI (${orderId})`,
+                  timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Show success inside chat
+                const statusEl = document.getElementById('depositStatusText');
+                if (statusEl) {
+                  statusEl.innerHTML = "✅ Thanh toán thành công! Hệ thống đã ghi nhận.";
+                  statusEl.parentElement.classList.remove('text-yellow-600', 'dark:text-yellow-400', 'animate-pulse');
+                  statusEl.parentElement.classList.add('text-green-500');
+                }
+                
+                showTypingIndicator();
+                setTimeout(() => {
+                  hideTypingIndicator();
+                  
+                  // If they deposited to buy VIP, offer VIP activation immediately!
+                  if (chatState.currentFlow === 'vip_insufficient' && chatState.payload) {
+                    const pkg = chatState.payload.package;
+                    chatState.currentFlow = 'confirm_purchase';
+                    chatState.payload = { type: 'vip', package: pkg };
+                    
+                    appendMessage('bot', `🎉 Thần tài gõ cửa! Hệ thống nhận được khoản chuyển khoản và đã cộng **+${coins.toLocaleString()}đ** vào ví của sếp.\n\nHiện tại ví sếp đã đủ tiền, sếp có muốn **kích hoạt gói ${pkg.name}** ngay lập tức không ạ?`, false, [
+                      { label: 'Kích Hoạt VIP Ngay 👑', type: 'primary', action: () => executeVipPurchase() },
+                      { label: 'Hủy bỏ', type: 'secondary', action: () => triggerGreeting() }
+                    ]);
+                  } else if (chatState.currentFlow === 'account_insufficient' && chatState.payload) {
+                    const pAcc = chatState.payload.account;
+                    chatState.currentFlow = 'confirm_purchase';
+                    chatState.payload = { type: 'account', account: pAcc };
+                    
+                    appendMessage('bot', `🎉 Thành công! Tiền nạp **+${coins.toLocaleString()}đ** đã được nạp vào ví của sếp.\n\nSếp có muốn tiến hành **thanh toán mua tài khoản ${pAcc.name}** luôn chứ?`, false, [
+                      { label: 'Thanh Toán Mua Ngay 🛒', type: 'primary', action: () => executeAccountPurchase() },
+                      { label: 'Hủy bỏ', type: 'secondary', action: () => triggerGreeting() }
+                    ]);
+                  } else {
+                    appendMessage('bot', `🎉 **Nạp tiền thành công!**\n\nVí tài khoản của sếp được cộng **+${coins.toLocaleString()}đ** số dư. Sếp có thể dùng số dư này mua các gói VIP hoặc tài khoản Premium tại cửa hàng nhé!`, false, [
+                      { label: 'Gia Hạn Gói VIP 👑', type: 'primary', action: () => handleQuickAction('buy_vip') },
+                      { label: 'Xem Cửa Hàng 🛒', type: 'secondary', action: () => { window.location.href = 'dichvu.html'; } }
+                    ]);
+                  }
+                }, 1000);
+              }
+            }
+          } catch(e) {
+          } finally {
+            if (activeDepositOrder) activeDepositOrder.isChecking = false;
+          }
+        }, 4500);
+        
+      } catch(e) {
+        hideTypingIndicator();
+        appendMessage('bot', '❌ Lỗi kết nối khởi tạo hóa đơn nạp tiền. Vui lòng liên hệ Admin để chuyển khoản trực tiếp.');
+      }
+    }
+
+    // ==========================================
+    // FREE TEXT & KEYWORD MATCHER ENGINE
+    // ==========================================
+    
+    function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      
+      input.value = '';
+      appendMessage('user', text);
+      scrollChatToBottom();
+      
+      showTypingIndicator();
+      setTimeout(() => {
+        hideTypingIndicator();
+        processBotResponse(text);
+      }, 900);
+    }
+
+    function processBotResponse(rawText) {
+      const text = rawText.toLowerCase().trim();
+      
+      // State-based handling first
+      if (chatState.currentFlow === 'vip_select') {
+        if (text.includes('7') || text.includes('tuần') || text.includes('tuan')) {
+          selectVipPackage(7); return;
+        } else if (text.includes('30') || text.includes('tháng') || text.includes('thang')) {
+          selectVipPackage(30); return;
+        } else if (text.includes('365') || text.includes('năm') || text.includes('nam')) {
+          selectVipPackage(365); return;
+        }
+      }
+      
+      if (chatState.currentFlow === 'deposit_select') {
+        if (text.includes('10')) {
+          selectDepositAmount(10000, 10000); return;
+        } else if (text.includes('20')) {
+          selectDepositAmount(20000, 22000); return;
+        } else if (text.includes('50')) {
+          selectDepositAmount(50000, 60000); return;
+        } else if (text.includes('100')) {
+          selectDepositAmount(100000, 150000); return;
+        }
+      }
+
+      // Keyword queries matching
+      if (text.includes('vip') || text.includes('mua vip') || text.includes('gói') || text.includes('gia han') || text.includes('cuoc')) {
+        chatState.currentFlow = 'vip_select';
+        appendMessage('bot', 'Chào sếp, sếp muốn kích hoạt hay tìm hiểu gói VIP nào dưới đây ạ? Hãy chọn gói tương ứng hoặc gõ yêu cầu nhé!', false, [
+          { label: 'Gói 7 Ngày (19k)', type: 'secondary', action: () => selectVipPackage(7) },
+          { label: 'Gói 30 Ngày (39k) ⭐', type: 'primary', action: () => selectVipPackage(30) },
+          { label: 'Gói 365 Ngày (199k)', type: 'yellow', action: () => selectVipPackage(365) }
+        ]);
+        return;
+      }
+      
+      if (text.includes('nạp') || text.includes('nap') || text.includes('nộp') || text.includes('chuyen khoan') || text.includes('stk') || text.includes('qr')) {
+        chatState.currentFlow = 'deposit_select';
+        appendMessage('bot', 'Sếp muốn tạo đơn nạp ví bao nhiêu tiền ạ? Chọn mức gợi ý nhanh để trợ lý cấp mã hóa đơn chuyển khoản ngay nha:', false, [
+          { label: 'Nạp 10k', type: 'secondary', action: () => selectDepositAmount(10000, 10000) },
+          { label: 'Nạp 20k (+10%)', type: 'secondary', action: () => selectDepositAmount(20000, 22000) },
+          { label: 'Nạp 50k (+20%) 🔥', type: 'primary', action: () => selectDepositAmount(50000, 60000) },
+          { label: 'Nạp 100k (+50%) 👑', type: 'yellow', action: () => selectDepositAmount(100000, 150000) }
+        ]);
+        return;
+      }
+      
+      if (text.includes('vsign') || text.includes('sign') || text.includes('ký') || text.includes('cai app') || text.includes('ipa') || text.includes('thu hoi')) {
+        const guideHtml = `
+          <div class="space-y-2">
+            <p class="font-black text-brand">📲 HƯỚNG DẪN CÀI ĐẶT VSIGN CHÍNH CHỦ:</p>
+            <ol class="list-decimal list-inside space-y-1 text-xs">
+              <li>Truy cập trực tiếp trang cài đặt: <a href="vsign.html" class="underline text-brand font-bold">Cài đặt VSign</a>.</li>
+              <li>Chọn <b>Cài đặt trực tiếp</b> và xác nhận.</li>
+              <li>Vào VPN & Quản lý thiết bị của iOS, tin cậy chứng chỉ để khởi chạy.</li>
+            </ol>
+            <p class="font-black text-yellow-500 mt-2">✍️ CÁCH KÝ ỨNG DỤNG:</p>
+            <p class="text-xs leading-relaxed">Sếp tải tệp IPA cần cài, import tệp Chứng chỉ (mua từ web) vào VSign để thực hiện ký số (sign) và cài đặt trực tiếp không lo bị Apple khóa chứng chỉ.</p>
+          </div>
+        `;
+        appendMessage('bot', guideHtml, true, [
+          { label: 'Trang Cài VSign', type: 'primary', action: () => { window.location.href = 'vsign.html'; } },
+          { label: 'Mua Chứng Chỉ', type: 'secondary', action: () => { window.location.href = 'dichvu.html'; } }
+        ]);
+        return;
+      }
+      
+      if (text.includes('admin') || text.includes('zalo') || text.includes('telegram') || text.includes('hỗ trợ') || text.includes('hotro') || text.includes('liên hệ') || text.includes('lhe')) {
+        appendMessage('bot', 'Sếp muốn nhắn tin trực tiếp với quản trị viên đúng không ạ? Hãy kết nối với chúng tôi qua kênh hỗ trợ dưới đây nhé:', false, [
+          { label: 'Telegram Admin Hỗ Trợ 💬', type: 'primary', action: () => { window.open('https://t.me/ipaviet', '_blank'); } }
+        ]);
+        return;
+      }
+      
+      if (text.includes('hello') || text.includes('chào') || text.includes('hi') || text.includes('lo') || text.includes('ad')) {
+        appendMessage('bot', 'Xin chào sếp! Chúc sếp một ngày tốt lành. Tôi có thể giúp gì được cho sếp hôm nay ạ?', false, [
+          { label: '👑 Mua VIP Kho IPA', type: 'yellow', action: () => handleQuickAction('buy_vip') },
+          { label: '💰 Nạp tiền tài khoản', type: 'primary', action: () => handleQuickAction('deposit') },
+          { label: '📲 Tải App VSign', type: 'secondary', action: () => handleQuickAction('vsign') }
+        ]);
+        return;
+      }
+
+      // Default fallback response
+      appendMessage('bot', 'Hiện tại tôi chưa hiểu rõ câu hỏi của sếp lắm. Sếp vui lòng chọn một trong các thao tác hỗ trợ nhanh bên dưới hoặc liên hệ trực tiếp với admin để được giải quyết nhanh nhất nhé!', false, [
+        { label: '👑 Mua VIP Kho IPA', type: 'yellow', action: () => handleQuickAction('buy_vip') },
+        { label: '💰 Nạp tiền ví', type: 'primary', action: () => handleQuickAction('deposit') },
+        { label: '💬 Chat với Admin', type: 'secondary', action: () => handleQuickAction('contact') }
+      ]);
+    }
+
+    // ==========================================
+    // UTILS
+    // ==========================================
+    
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    function formatTextLineBreaks(text) {
+      return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+  </script>
+</body>
+</html>
