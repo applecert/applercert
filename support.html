@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Trợ Lý Hỗ Trợ AI - IPAVIET</title>
   
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="minimalist-modern.css">
@@ -20,7 +19,7 @@
       theme: { 
         extend: { 
           fontFamily: { 
-            sans: ['Poppins', 'sans-serif'], 
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Segoe UI"', 'Roboto', 'sans-serif'], 
             mono: ['"JetBrains Mono"', 'monospace'] 
           }, 
           colors: { 
@@ -40,7 +39,7 @@
   <style>
     @import url('fonts.css');
     
-    body { -webkit-tap-highlight-color: transparent; font-family: 'Poppins', sans-serif !important; }
+    body { -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif !important; }
     .glass-effect-header { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.05); }
     .dark .glass-effect-header { background: rgba(10, 14, 26, 0.7); border-bottom: 1px solid rgba(255,255,255,0.05); }
     
@@ -83,6 +82,20 @@
       40% { transform: scale(1); }
     }
     
+    @keyframes smoothSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .animate-message-fade {
+      animation: smoothSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    
     .floating-nav { margin: 0 auto; border-radius: 35px; width: calc(100% - 32px); max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); background: rgba(255,255,255,0.85); backdrop-filter: blur(25px); border: 1px solid rgba(0,0,0,0.05);}
     .dark .floating-nav { box-shadow: 0 20px 40px rgba(0,0,0,0.9); background: rgba(30,30,30,0.85); border: 1px solid rgba(255,255,255,0.1); }
     .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; color: #8E8E93; transition: all 0.3s; background: none; border: none; cursor: pointer; text-decoration: none;}
@@ -105,7 +118,7 @@
   <!-- ==========================================
        HEADER BAR
        ========================================== -->
-  <header class="glass-effect-header fixed top-0 w-full z-40 h-[80px] flex items-center px-6 transition-all duration-300">
+  <header class="glass-effect-header fixed top-0 w-full z-40 h-[calc(80px+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] flex items-center px-6 transition-all duration-300">
     <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-between">
       <div class="header-logo-crt shrink-0" onclick="window.location.href='index.html'" style="cursor:pointer">
         <span class="loader-letter">I</span>
@@ -129,6 +142,12 @@
             <span id="profileCoins" class="text-[10px] font-black text-brand dark:text-brandDark">Ví: 0đ</span>
           </div>
         </div>
+        
+        <!-- New Chat Button -->
+        <button onclick="resetConversation()" class="h-10 px-3.5 rounded-2xl bg-gray-200/50 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all duration-300 backdrop-blur-md">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Chat mới</span>
+        </button>
+
         <button onclick="toggleTheme()" class="w-10 h-10 rounded-2xl bg-gray-200/50 dark:bg-white/10 flex items-center justify-center active:scale-75 transition-transform duration-300 backdrop-blur-md">
           <i id="themeIcon" data-lucide="moon" class="w-5 h-5 dark:text-yellow-400 dark:fill-yellow-400"></i>
         </button>
@@ -139,7 +158,7 @@
   <!-- ==========================================
        AUTH REQUIRED BARRIER
        ========================================== -->
-  <div id="authGate" class="flex-1 flex flex-col items-center justify-center px-6 pt-[80px] pb-[130px] text-center hidden">
+  <div id="authGate" class="flex-1 flex flex-col items-center justify-center px-6 pt-[calc(80px+env(safe-area-inset-top,0px))] pb-[calc(16px+env(safe-area-inset-bottom,0px))] text-center hidden">
     <div class="w-20 h-20 rounded-[28px] bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mb-6 animate-pulse">
       <i data-lucide="shield-alert" class="w-10 h-10"></i>
     </div>
@@ -153,7 +172,7 @@
   <!-- ==========================================
        MAIN CHAT INTERFACE
        ========================================== -->
-  <main id="chatMain" class="flex-1 pt-[80px] pb-[130px] max-w-4xl mx-auto w-full flex flex-col hidden h-full min-h-0">
+  <main id="chatMain" class="flex-1 pt-[calc(80px+env(safe-area-inset-top,0px))] pb-[env(safe-area-inset-bottom,0px)] max-w-4xl mx-auto w-full flex flex-col hidden h-full min-h-0">
     <!-- User Quick Summary Card -->
     <div class="px-4 py-3 bg-gray-100 dark:bg-white/5 border-b border-black/5 dark:border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">
       <div class="flex items-center gap-2">
@@ -178,7 +197,7 @@
     </div>
 
     <!-- Input Area & Recommendation Chips -->
-    <div class="p-4 bg-white/70 dark:bg-[#090e1a]/70 backdrop-blur-md border-t border-black/5 dark:border-white/5 shrink-0 space-y-3">
+    <div class="p-4 pb-[calc(16px+env(safe-area-inset-bottom,0px))] bg-white/70 dark:bg-[#090e1a]/70 backdrop-blur-md border-t border-black/5 dark:border-white/5 shrink-0 space-y-3">
       <!-- Quick Actions Slider -->
       <div class="flex gap-2 overflow-x-auto scrollbar-hide py-1">
         <button onclick="handleQuickAction('buy_vip')" class="quick-chip shrink-0 px-4 py-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-full text-xs font-black flex items-center gap-1.5"><i data-lucide="crown" class="w-3.5 h-3.5"></i> Mua VIP IPA</button>
@@ -187,26 +206,15 @@
         <button onclick="handleQuickAction('contact')" class="quick-chip shrink-0 px-4 py-2 bg-gray-500/10 border border-gray-500/20 text-gray-700 dark:text-gray-300 rounded-full text-xs font-black flex items-center gap-1.5"><i data-lucide="headphones" class="w-3.5 h-3.5"></i> Liên hệ Admin</button>
       </div>
 
-      <!-- Text input container -->
-      <div class="flex gap-2 items-center">
-        <input type="text" id="chatInput" placeholder="Nhập câu hỏi hoặc yêu cầu của bạn..." class="flex-1 h-12 px-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/50 outline-none focus:border-brand dark:focus:border-brandDark text-[14px] font-bold text-gray-900 dark:text-white placeholder:font-normal" onkeydown="if(event.key === 'Enter') sendMessage();">
-        <button onclick="sendMessage()" class="w-12 h-12 bg-brand text-white rounded-xl active:scale-90 transition-transform flex items-center justify-center shadow-lg shadow-brand/20"><i data-lucide="send" class="w-5 h-5"></i></button>
-      </div>
+      <!-- Text input container wrapped in form for iOS done key submit -->
+      <form onsubmit="event.preventDefault(); sendMessage();" class="flex gap-2 items-center">
+        <input type="text" id="chatInput" placeholder="Nhập câu hỏi hoặc yêu cầu của bạn..." class="flex-1 h-12 px-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/50 outline-none focus:border-brand dark:focus:border-brandDark text-[14px] font-bold text-gray-900 dark:text-white placeholder:font-normal">
+        <button type="submit" class="w-12 h-12 bg-brand text-white rounded-xl active:scale-90 transition-transform flex items-center justify-center shadow-lg shadow-brand/20"><i data-lucide="send" class="w-5 h-5"></i></button>
+      </form>
     </div>
   </main>
 
-  <!-- ==========================================
-       BOTTOM NAVIGATION BAR
-       ========================================== -->
-  <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-6">
-    <nav class="floating-nav h-[74px] flex justify-evenly items-center pointer-events-auto px-2">
-      <a href="index.html" class="tab-btn"><i data-lucide="sparkles"></i><span>Home</span></a>
-      <a href="ipavip.html" class="tab-btn"><i data-lucide="crown"></i><span>App VIP</span></a>
-      <a href="app-library/index.html" class="tab-btn"><i data-lucide="smartphone"></i><span>Kho IPA</span></a>
-      <a href="account.html" class="tab-btn"><i data-lucide="user-circle"></i><span>Tài khoản</span></a>
-      <button class="tab-btn active"><i data-lucide="headset"></i><span>Hỗ trợ AI</span></button>
-    </nav>
-  </div>
+
 
   <!-- ==========================================
        JAVASCRIPT CHATBOT IMPLEMENTATION
@@ -258,6 +266,21 @@
     // ==========================================
     // CHAT HISTORY STORAGE (LOCAL STORAGE BY UID)
     // ==========================================
+    function resetConversation() {
+      if (!currentUser) return;
+      if (confirm('Bạn có muốn xóa toàn bộ lịch sử nhắn tin để bắt đầu cuộc trò chuyện mới?')) {
+        localStorage.removeItem('chat_history_' + currentUser.uid);
+        chatState.currentFlow = null;
+        chatState.payload = null;
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          pollingInterval = null;
+        }
+        activeDepositOrder = null;
+        loadChatHistory();
+      }
+    }
+
     function getChatHistory() {
       if (!currentUser) return [];
       try {
@@ -268,12 +291,12 @@
       }
     }
 
-    function saveMessageToHistory(sender, content, isHtml) {
+    function saveMessageToHistory(sender, content, isHtml, timestamp = Date.now()) {
       if (!currentUser) return;
       const history = getChatHistory();
       // Keep last 50 messages to prevent storage bloat
       if (history.length > 50) history.shift();
-      history.push({ sender, content, isHtml, timestamp: Date.now() });
+      history.push({ sender, content, isHtml, timestamp });
       localStorage.setItem('chat_history_' + currentUser.uid, JSON.stringify(history));
     }
 
@@ -287,7 +310,7 @@
         triggerGreeting();
       } else {
         history.forEach(msg => {
-          appendMessage(msg.sender, msg.content, msg.isHtml, [], false);
+          appendMessage(msg.sender, msg.content, msg.isHtml, [], false, msg.timestamp);
         });
         
         // Append action options at the bottom if the last message was from the bot
@@ -402,36 +425,44 @@
     // CHAT ENGINE ACTIONS
     // ==========================================
     
-    function appendMessage(sender, content, isHtml = false, options = [], shouldSave = true) {
+    function appendMessage(sender, content, isHtml = false, options = [], shouldSave = true, timestamp = null) {
       const chatMessages = document.getElementById('chatMessages');
       
       // Container
       const msgDiv = document.createElement('div');
-      msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} w-full animate-fluid-up`;
+      msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} w-full animate-message-fade`;
       
+      // Calculate time
+      const time = timestamp ? new Date(timestamp) : new Date();
+      const timeStr = time.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
       // Bubble
       let bubbleHtml = '';
       if (sender === 'user') {
         bubbleHtml = `
-          <div class="max-w-[80%] rounded-[20px] px-4 py-3 text-sm font-bold bubble-user shadow-md">
-            ${isHtml ? content : escapeHtml(content)}
+          <div class="flex flex-col items-end gap-1 max-w-[80%]">
+            <div class="rounded-[20px] px-4 py-3 text-sm font-bold bubble-user shadow-md">
+              ${isHtml ? content : escapeHtml(content)}
+            </div>
+            <span class="text-[9px] text-gray-400 dark:text-gray-500 font-bold px-1">${timeStr}</span>
           </div>
         `;
       } else {
-        let avatarIcon = 'bot';
-        if (content.includes('💎') || content.includes('👑')) avatarIcon = 'gem';
-        if (content.includes('⚠️') || content.includes('❌')) avatarIcon = 'alert-triangle';
-        
         bubbleHtml = `
           <div class="flex items-start gap-2.5 max-w-[85%]">
-            <div class="w-8 h-8 rounded-full bg-brand/10 dark:bg-white/10 flex items-center justify-center text-brand dark:text-blue-400 shrink-0 shadow-sm border border-brand/10">
-              <i data-lucide="${avatarIcon}" class="w-4 h-4"></i>
+            <div class="w-8 h-8 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center text-gray-900 dark:text-white shrink-0 shadow-sm border border-black/5 dark:border-white/5">
+              <svg class="w-4.5 h-4.5 fill-none stroke-current" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="11" width="18" height="10" rx="2" />
+                <circle cx="12" cy="5" r="2" />
+                <path d="M12 7v4M8 15h.01M16 15h.01M12 19h2" />
+              </svg>
             </div>
-            <div class="flex flex-col gap-1">
+            <div class="flex flex-col gap-1 w-full">
               <span class="text-[10px] font-black text-gray-400 tracking-wider">TRỢ LÝ IPAVIET</span>
               <div class="rounded-[20px] px-4 py-3 text-sm font-bold bubble-bot shadow-sm space-y-2 leading-relaxed font-sans">
                 ${isHtml ? content : formatTextLineBreaks(escapeHtml(content))}
               </div>
+              <span class="text-[9px] text-gray-400 dark:text-gray-500 font-bold px-1">${timeStr}</span>
               <div class="msg-options-area flex flex-wrap gap-2 mt-1"></div>
             </div>
           </div>
@@ -463,7 +494,7 @@
       scrollChatToBottom();
       
       if (shouldSave) {
-        saveMessageToHistory(sender, content, isHtml);
+        saveMessageToHistory(sender, content, isHtml, time.getTime());
       }
     }
 
@@ -480,11 +511,15 @@
       
       const typingDiv = document.createElement('div');
       typingDiv.id = 'typingIndicator';
-      typingDiv.className = 'flex justify-start w-full animate-fluid-up';
+      typingDiv.className = 'flex justify-start w-full animate-message-fade';
       typingDiv.innerHTML = `
         <div class="flex items-start gap-2.5 max-w-[80%]">
-          <div class="w-8 h-8 rounded-full bg-brand/10 dark:bg-white/10 flex items-center justify-center text-brand dark:text-blue-400 shrink-0 shadow-sm border border-brand/10">
-            <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
+          <div class="w-8 h-8 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center text-gray-900 dark:text-white shrink-0 shadow-sm border border-black/5 dark:border-white/5">
+            <svg class="w-4.5 h-4.5 fill-none stroke-current" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="11" width="18" height="10" rx="2" />
+              <circle cx="12" cy="5" r="2" />
+              <path d="M12 7v4M8 15h.01M16 15h.01M12 19h2" />
+            </svg>
           </div>
           <div class="flex flex-col gap-1">
             <span class="text-[10px] font-black text-gray-400 tracking-wider">TRỢ LÝ IPAVIET</span>
@@ -498,7 +533,6 @@
       `;
       
       chatMessages.appendChild(typingDiv);
-      lucide.createIcons();
       scrollChatToBottom();
     }
 
@@ -836,7 +870,7 @@
             </div>
             
             <div class="flex flex-col items-center py-2 bg-white rounded-2xl border border-gray-200">
-              <img src="${qrUrl}" class="w-48 h-48 object-contain">
+              <img src="${qrUrl}" class="w-48 h-48 object-contain" onload="scrollChatToBottom()">
               <span class="text-[10px] text-gray-400 font-bold mt-1">Quét mã QR VietQR để chuyển nhanh</span>
             </div>
             
