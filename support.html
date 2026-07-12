@@ -901,6 +901,357 @@
       scrollChatToBottom();
     }
 
+    async function handleSearchShortcuts(query) {
+      if (!query || !query.trim()) return;
+      showTypingIndicator();
+      
+      try {
+        const response = await fetch(`${GOOGLE_API_URL}?action=get_shortcuts`);
+        const result = await response.json();
+        
+        hideTypingIndicator();
+        
+        if (result.success && Array.isArray(result.data)) {
+          const list = result.data;
+          const cleanQuery = removeVietnameseAccents(query.toLowerCase().trim());
+          
+          const filtered = list.filter(item => {
+            const nameClean = removeVietnameseAccents(item.name.toLowerCase());
+            const descClean = removeVietnameseAccents((item.description || '').toLowerCase());
+            return nameClean.includes(cleanQuery) || descClean.includes(cleanQuery);
+          });
+          
+          if (filtered.length === 0) {
+            appendMessage('bot', `🔍 Không tìm thấy phím tắt nào khớp với từ khóa **"${query}"**.\n\nSếp có muốn thử tìm từ khóa khác không ạ?`, false, [
+              { label: 'Tìm từ khóa khác 🔍', type: 'primary', action: () => handleQuickAction('search_shortcuts') },
+              { label: 'Quay lại Menu 🏡', type: 'secondary', action: () => triggerGreeting() }
+            ]);
+            return;
+          }
+          
+          appendMessage('bot', `🎉 Trợ lý tìm thấy **${filtered.length}** phím tắt phù hợp với từ khóa **"${query}"**:`);
+          
+          const itemsToRender = filtered.slice(0, 3);
+          itemsToRender.forEach(item => {
+            const iconHtml = item.iconUrl 
+              ? `<img src="${item.iconUrl}" class="w-12 h-12 rounded-xl object-cover shrink-0 border border-black/10 dark:border-white/10" onerror="this.style.display='none'"/>` 
+              : `<div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"><i data-lucide="zap" class="w-6 h-6"></i></div>`;
+            
+            const cardHtml = `
+              <div class="p-4 rounded-3xl bg-white dark:bg-cardDark border border-black/5 dark:border-white/5 shadow-sm space-y-3">
+                <div class="flex gap-3 items-center">
+                  ${iconHtml}
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-black text-gray-900 dark:text-white truncate">${item.name}</h4>
+                    <p class="text-[11px] text-gray-400 font-bold">iOS ${item.iosVersion || 'Tất cả'} | Lượt tải: ${item.downloads || '0'}</p>
+                  </div>
+                </div>
+                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">${item.description || 'Không có mô tả cho phím tắt này.'}</p>
+                ${item.notes ? `<p class="text-[10px] text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 p-2 rounded-xl font-medium">⚠️ Lưu ý: ${item.notes}</p>` : ''}
+              </div>
+            `;
+            
+            appendMessage('bot', cardHtml, true, [
+              { label: 'Tải Phím Tắt 📥', type: 'primary', action: () => { window.open(item.shortcutUrl, '_blank'); } }
+            ]);
+          });
+          
+          if (filtered.length > 3) {
+            appendMessage('bot', `*Vẫn còn một số phím tắt khác nữa. Sếp truy cập trang [Phím Tắt](phim-tat.html) để xem toàn bộ danh mục nha!*`);
+          }
+          
+          chatState.currentFlow = null;
+        } else {
+          appendMessage('bot', '❌ Gặp sự cố kết nối dữ liệu kho phím tắt. Sếp vui lòng thử lại sau.');
+        }
+      } catch(e) {
+        hideTypingIndicator();
+        appendMessage('bot', '❌ Lỗi kết nối mạng khi tải dữ liệu phím tắt: ' + e.message);
+      }
+      scrollChatToBottom();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function handleSearchIpa(query) {
+      if (!query || !query.trim()) return;
+      showTypingIndicator();
+      
+      try {
+        const response = await fetch(`${GOOGLE_API_URL}?action=get_ipa_data`);
+        const result = await response.json();
+        
+        hideTypingIndicator();
+        
+        const list = result.apps || [];
+        const cleanQuery = removeVietnameseAccents(query.toLowerCase().trim());
+        
+        const filtered = list.filter(item => {
+          const nameClean = removeVietnameseAccents((item.name || '').toLowerCase());
+          const bundleClean = removeVietnameseAccents((item.bundleID || item.bundleIdentifier || '').toLowerCase());
+          const descClean = removeVietnameseAccents((item.localizedDescription || '').toLowerCase());
+          return nameClean.includes(cleanQuery) || bundleClean.includes(cleanQuery) || descClean.includes(cleanQuery);
+        });
+        
+        if (filtered.length === 0) {
+          appendMessage('bot', `🔍 Không tìm thấy ứng dụng IPA nào khớp với **"${query}"** trong kho.\n\nSếp có muốn thử tìm từ khóa khác không?`, false, [
+            { label: 'Tìm ứng dụng khác 🔍', type: 'primary', action: () => handleQuickAction('search_ipa') },
+            { label: 'Quay lại Menu 🏡', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+          return;
+        }
+        
+        appendMessage('bot', `🎉 Tìm thấy **${filtered.length}** file IPA tương ứng với **"${query}"**:`);
+        
+        const itemsToRender = filtered.slice(0, 3);
+        itemsToRender.forEach(item => {
+          const sizeMb = item.size ? `${(item.size / (1024 * 1024)).toFixed(1)} MB` : 'Chưa rõ dung lượng';
+          const iconUrl = item.icon || item.iconURL || 'https://placehold.co/100';
+          
+          const cardHtml = `
+            <div class="p-4 rounded-3xl bg-white dark:bg-cardDark border border-black/5 dark:border-white/5 shadow-sm space-y-3">
+              <div class="flex gap-3 items-center">
+                <div class="w-14 h-14 relative overflow-hidden squircle shadow-sm bg-gray-50 border border-black/5 shrink-0">
+                  <img src="${iconUrl}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100'"/>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-gray-900 dark:text-white truncate">${item.name}</h4>
+                  <p class="text-[11px] text-gray-400 font-bold">Version: ${item.version || 'Mới nhất'} | ${sizeMb}</p>
+                  <p class="text-[10px] text-gray-400 font-mono truncate">${item.bundleID || item.bundleIdentifier || ''}</p>
+                </div>
+              </div>
+              ${item.localizedDescription ? `<p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-white/5 p-2 rounded-2xl font-medium"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline-block text-green-500 mr-1"></i>Mod: ${item.localizedDescription}</p>` : ''}
+            </div>
+          `;
+          
+          appendMessage('bot', cardHtml, true, [
+            { label: 'Tải IPA 📥', type: 'primary', action: () => { window.open(item.down || item.downloadURL, '_blank'); } },
+            { label: 'Ký & Cài VSign ✍️', type: 'secondary', action: () => { window.location.href = 'vsign.html'; } }
+          ]);
+        });
+        
+        if (filtered.length > 3) {
+          appendMessage('bot', `*Vẫn còn một số ứng dụng khác. Sếp truy cập trang [Kho VIP](ipavip.html) để tìm kiếm và cài đặt đầy đủ hơn nhé!*`);
+        }
+        
+        chatState.currentFlow = null;
+      } catch(e) {
+        hideTypingIndicator();
+        appendMessage('bot', '❌ Lỗi mạng khi kết nối máy chủ tải danh sách IPA: ' + e.message);
+      }
+      scrollChatToBottom();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function handleSearchMmo(query) {
+      if (!query || !query.trim()) return;
+      showTypingIndicator();
+      
+      try {
+        const response = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
+        const result = await response.json();
+        
+        hideTypingIndicator();
+        
+        if (result.success) {
+          const kingMmo = result.kingmmoProducts || [];
+          const custom = result.customProducts || [];
+          const configs = result.configs || {};
+          
+          const allProducts = [];
+          
+          kingMmo.forEach(p => {
+            const cfg = configs[p.id] || {};
+            if (cfg.isHidden) return;
+            
+            allProducts.push({
+              id: p.id,
+              name: cfg.name || p.name,
+              price: cfg.price || p.price,
+              originalPrice: p.originalPrice,
+              stock: cfg.stock !== undefined && cfg.stock !== "" ? parseInt(cfg.stock) : p.stock,
+              cat: cfg.cat || p.cat,
+              desc: cfg.desc || p.desc,
+              icon: cfg.icon || '',
+              isCustom: false
+            });
+          });
+          
+          custom.forEach(p => {
+            if (p.isHidden) return;
+            allProducts.push({
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              originalPrice: p.fakePrice,
+              stock: p.stock,
+              cat: p.cat,
+              desc: p.desc,
+              icon: p.icon || '',
+              isCustom: true
+            });
+          });
+          
+          const cleanQuery = removeVietnameseAccents(query.toLowerCase().trim());
+          const filtered = allProducts.filter(p => {
+            const nameClean = removeVietnameseAccents(p.name.toLowerCase());
+            const descClean = removeVietnameseAccents(p.desc.toLowerCase());
+            const catClean = removeVietnameseAccents(p.cat.toLowerCase());
+            return nameClean.includes(cleanQuery) || descClean.includes(cleanQuery) || catClean.includes(cleanQuery);
+          });
+          
+          if (filtered.length === 0) {
+            appendMessage('bot', `🛒 Hiện tại không tìm thấy gói tài nguyên nào khớp với từ khóa **"${query}"**.\n\nSếp có muốn tìm dịch vụ khác không ạ?`, false, [
+              { label: 'Tìm dịch vụ khác 🔍', type: 'primary', action: () => handleQuickAction('search_mmo') },
+              { label: 'Quay lại Menu 🏡', type: 'secondary', action: () => triggerGreeting() }
+            ]);
+            return;
+          }
+          
+          appendMessage('bot', `🎉 Trợ lý tìm thấy **${filtered.length}** gói tài nguyên MMO phù hợp cho sếp:`);
+          
+          const itemsToRender = filtered.slice(0, 3);
+          itemsToRender.forEach(p => {
+            const isOutOfStock = p.stock <= 0;
+            const stockText = isOutOfStock 
+              ? `<span class="text-red-500 font-bold">Hết hàng ❌</span>` 
+              : `<span class="text-green-500 font-bold">Còn hàng (${p.stock})</span>`;
+            
+            const imgHtml = p.icon
+              ? `<img src="${p.icon}" class="w-14 h-14 rounded-2xl object-cover shrink-0 border border-black/10 dark:border-white/10" onerror="this.style.display='none'"/>`
+              : `<div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0"><i data-lucide="shopping-bag" class="w-6 h-6"></i></div>`;
+            
+            const cardHtml = `
+              <div class="p-4 rounded-3xl bg-white dark:bg-cardDark border border-black/5 dark:border-white/5 shadow-sm space-y-3">
+                <div class="flex gap-3 items-center">
+                  ${imgHtml}
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-black text-gray-900 dark:text-white truncate text-[15px]">${p.name}</h4>
+                    <p class="text-[11px] text-gray-400 font-bold">${p.cat} | ${stockText}</p>
+                  </div>
+                </div>
+                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3">${p.desc || 'Sản phẩm chính hãng chất lượng cao.'}</p>
+                <div class="flex items-center justify-between border-t border-black/5 dark:border-white/5 pt-2 mt-2">
+                  <span class="text-xs text-gray-400 font-medium">Đơn giá:</span>
+                  <span class="text-lg font-black text-blue-600 dark:text-blue-400">${p.price.toLocaleString('vi-VN')}đ</span>
+                </div>
+              </div>
+            `;
+            
+            const buttons = [];
+            if (!isOutOfStock) {
+              buttons.push({ label: 'Mua Ngay 🛒', type: 'primary', action: () => initiateMmoPurchase(p) });
+            } else {
+              buttons.push({ label: 'Yêu cầu Nhập Hàng 📞', type: 'secondary', action: () => handleQuickAction('contact') });
+            }
+            
+            appendMessage('bot', cardHtml, true, buttons);
+          });
+          
+          if (filtered.length > 3) {
+            appendMessage('bot', `*Vẫn còn một số gói dịch vụ khác. Sếp truy cập trang [Tạp Hóa MMO](tap-hoa-mmo.html) để xem đầy đủ nhất nhé!*`);
+          }
+          
+          chatState.currentFlow = null;
+        } else {
+          appendMessage('bot', '❌ Gặp lỗi tải danh sách sản phẩm MMO: ' + result.error);
+        }
+      } catch(e) {
+        hideTypingIndicator();
+        appendMessage('bot', '❌ Lỗi kết nối mạng khi tải sản phẩm MMO: ' + e.message);
+      }
+      scrollChatToBottom();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function initiateMmoPurchase(p) {
+      if (!currentUser) return;
+      const currentCoins = userData.coins || 0;
+      
+      appendMessage('user', `Tôi muốn mua gói "${p.name}"`);
+      showTypingIndicator();
+      
+      setTimeout(() => {
+        hideTypingIndicator();
+        if (currentCoins >= p.price) {
+          chatState.currentFlow = 'mmo_purchase_confirm';
+          chatState.payload = { type: 'mmo', product: p };
+          
+          appendMessage('bot', `Ví của sếp đang có **${currentCoins.toLocaleString()}đ**, đủ xu để mua gói **${p.name} (${p.price.toLocaleString()}đ)**.\n\nSếp có đồng ý thanh toán trừ ví và lấy tài khoản ngay lập tức chứ ạ?`, false, [
+            { label: 'Đồng Ý Mua ✅', type: 'primary', action: () => executeMmoPurchase() },
+            { label: 'Hủy bỏ', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+        } else {
+          const diff = p.price - currentCoins;
+          chatState.currentFlow = 'mmo_insufficient';
+          chatState.payload = { type: 'mmo', product: p, diff: diff };
+          
+          appendMessage('bot', `Gói **${p.name}** có giá là **${p.price.toLocaleString()}đ** nhưng ví của sếp hiện có **${currentCoins.toLocaleString()}đ** (Còn thiếu **${diff.toLocaleString()}đ**).\n\nSếp có muốn trợ lý tạo nhanh mã QR nạp ví **${diff.toLocaleString()}đ** để mua sản phẩm này ngay không ạ?`, false, [
+            { label: `Nạp đúng ${diff.toLocaleString()}đ`, type: 'primary', action: () => generateDepositInvoice(diff) },
+            { label: 'Hủy bỏ', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+        }
+      }, 600);
+      scrollChatToBottom();
+    }
+
+    async function executeMmoPurchase() {
+      if (chatState.currentFlow !== 'mmo_purchase_confirm' || !chatState.payload || chatState.payload.type !== 'mmo') return;
+      const p = chatState.payload.product;
+      
+      showTypingIndicator();
+      try {
+        const userCoins = userData.coins || 0;
+        if (userCoins < p.price) {
+          hideTypingIndicator();
+          appendMessage('bot', '❌ Lỗi giao dịch: Số dư xu trong ví của sếp không đủ. Vui lòng nạp thêm.');
+          return;
+        }
+        
+        // 1. Khấu trừ coins trên Firestore
+        await db.collection("users").doc(currentUser.uid).set({ 
+          coins: firebase.firestore.FieldValue.increment(-p.price) 
+        }, { merge: true });
+        
+        // 2. Gọi Apps Script tạo đơn và cấp tài khoản tự động (hoặc pending để admin giao)
+        const actionUrl = `${GOOGLE_API_URL}?action=buy_mmo_pending&uid=${currentUser.uid}&productId=${p.id}&productName=${encodeURIComponent(p.name)}&price=${p.price}&amount=1`;
+        const res = await fetch(actionUrl);
+        const data = await res.json();
+        
+        hideTypingIndicator();
+        
+        if (data.success) {
+          appendMessage('bot', `🎉 **Mua tài nguyên thành công!**\n\nGiao dịch trừ **-${p.price.toLocaleString()}đ** hoàn tất. Tài khoản đã được bàn giao cho sếp.\n\nSếp vui lòng truy cập trang **[Lịch Sử Mua](account.html)** để nhận thông tin đăng nhập và sử dụng dịch vụ nhé!`, false, [
+            { label: 'Xem Lịch Sử Mua 📑', type: 'primary', action: () => { window.location.href = 'account.html'; } },
+            { label: 'Quay lại Menu 🏡', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+        } else {
+          // Hoàn xu nếu bị lỗi đơn hàng
+          await db.collection("users").doc(currentUser.uid).set({ 
+            coins: firebase.firestore.FieldValue.increment(p.price) 
+          }, { merge: true });
+          appendMessage('bot', `❌ **Lỗi máy chủ giao hàng**: ${data.error || 'Vui lòng liên hệ Admin để nhận thủ công.'}`);
+        }
+        
+        chatState.currentFlow = null;
+        chatState.payload = null;
+      } catch(e) {
+        hideTypingIndicator();
+        appendMessage('bot', '❌ Gặp sự cố kết nối mạng trong quá trình mua hàng: ' + e.message);
+      }
+      scrollChatToBottom();
+    }
+
+    function handleMmoPurchaseConfirm(text) {
+      if (text.includes('đúng') || text.includes('co') || text.includes('yes') || text.includes('ok') || text.includes('dong y') || text.includes('đồng ý') || text.includes('mua')) {
+        executeMmoPurchase();
+      } else {
+        appendMessage('bot', 'Đã hủy bỏ giao dịch mua tài nguyên.');
+        chatState.currentFlow = null;
+        chatState.payload = null;
+        triggerGreeting();
+      }
+    }
+
     // VIP Packages definitions
     const VIP_PACKAGES = [
       { id: 'vip_7', name: 'VIP 7 Ngày', price: 19000, value: 7 },
@@ -1209,7 +1560,9 @@
         appendMessage('bot', `Xin chào **${userName}**! 👋 Tôi là trợ lý ảo AI hỗ trợ nạp tiền và gia hạn VIP tự động của IPAVIET.\n\nHôm nay sếp cần tôi hỗ trợ gì ạ? Sếp có thể click nhanh các nút gợi ý bên dưới hoặc chat trực tiếp với tôi nha!`, false, [
           { label: '👑 Mua VIP Kho IPA', type: 'yellow', action: () => handleQuickAction('buy_vip') },
           { label: '💰 Nạp tiền tài khoản', type: 'primary', action: () => handleQuickAction('deposit') },
-          { label: '🛒 Mua Tài Khoản (CapCut, Spotify...)', type: 'secondary', action: () => handleQuickAction('buy_accounts') }
+          { label: '🔍 Tìm Phím Tắt', type: 'secondary', action: () => handleQuickAction('search_shortcuts') },
+          { label: '📲 Tìm File IPA', type: 'secondary', action: () => handleQuickAction('search_ipa') },
+          { label: '🛒 Mua Tài Nguyên MMO', type: 'secondary', action: () => handleQuickAction('search_mmo') }
         ]);
       }, 800);
     }
@@ -1255,18 +1608,48 @@
         }, 800);
         
       } else if (actionId === 'buy_accounts') {
-        appendMessage('user', 'Tôi muốn mua tài khoản Premium giá rẻ.');
+        // Chuyển hướng mua tài khoản cũ sang phân hệ tìm kiếm MMO mới cho đồng bộ
+        handleQuickAction('search_mmo');
+        
+      } else if (actionId === 'search_shortcuts') {
+        appendMessage('user', 'Tôi muốn tìm Phím Tắt.');
         showTypingIndicator();
         setTimeout(() => {
           hideTypingIndicator();
-          chatState.currentFlow = 'account_select';
-          appendMessage('bot', 'Sếp có thể chọn trực tiếp các tài khoản Premium dưới đây để trợ lý kiểm tra kho và xuất thông tin ngay lập tức:', false, [
-            { label: 'Spotify (30k/Tháng)', type: 'secondary', action: () => selectPremiumAccount('Spotify', 30000) },
-            { label: 'Netflix (65k/Tháng)', type: 'secondary', action: () => selectPremiumAccount('Netflix', 65000) },
-            { label: 'CapCut Pro (40k/Tháng)', type: 'secondary', action: () => selectPremiumAccount('CapCut', 40000) }
+          chatState.currentFlow = 'search_shortcuts';
+          appendMessage('bot', 'Sếp muốn tìm phím tắt nào ạ? Sếp gõ từ khóa tên phím tắt (ví dụ: *xem pin*, *tải tiktok*...) hoặc chọn gợi ý bên dưới:', false, [
+            { label: '🔋 Xem Pin', type: 'secondary', action: () => { appendMessage('user', 'Xem Pin'); handleSearchShortcuts('Xem Pin'); } },
+            { label: '🎥 Tải TikTok', type: 'secondary', action: () => { appendMessage('user', 'Tải TikTok'); handleSearchShortcuts('Tải TikTok'); } },
+            { label: 'Quay lại Menu 🏡', type: 'primary', action: () => triggerGreeting() }
           ]);
         }, 800);
-        
+
+      } else if (actionId === 'search_ipa') {
+        appendMessage('user', 'Tôi muốn tìm file ứng dụng IPA.');
+        showTypingIndicator();
+        setTimeout(() => {
+          hideTypingIndicator();
+          chatState.currentFlow = 'search_ipa';
+          appendMessage('bot', 'Sếp muốn tìm ứng dụng IPA nào ạ? Sếp vui lòng nhập tên app cần tìm (ví dụ: *TikTok*, *Spotify*, *Facebook*...):', false, [
+            { label: 'Tiktok Mod 👑', type: 'secondary', action: () => { appendMessage('user', 'TikTok'); handleSearchIpa('TikTok'); } },
+            { label: 'Spotify Pro 🎵', type: 'secondary', action: () => { appendMessage('user', 'Spotify'); handleSearchIpa('Spotify'); } },
+            { label: 'Quay lại Menu 🏡', type: 'primary', action: () => triggerGreeting() }
+          ]);
+        }, 800);
+
+      } else if (actionId === 'search_mmo') {
+        appendMessage('user', 'Tôi muốn mua tài nguyên MMO.');
+        showTypingIndicator();
+        setTimeout(() => {
+          hideTypingIndicator();
+          chatState.currentFlow = 'search_mmo';
+          appendMessage('bot', 'Sếp muốn mua tài nguyên/tài khoản MMO nào ạ? Sếp nhập tên dịch vụ (ví dụ: *CapCut Pro*, *Canva*, *Netflix*...) hoặc chọn gợi ý bên dưới:', false, [
+            { label: 'CapCut Pro 🎬', type: 'secondary', action: () => { appendMessage('user', 'CapCut'); handleSearchMmo('CapCut'); } },
+            { label: 'Spotify Premium 🎵', type: 'secondary', action: () => { appendMessage('user', 'Spotify'); handleSearchMmo('Spotify'); } },
+            { label: 'Quay lại Menu 🏡', type: 'primary', action: () => triggerGreeting() }
+          ]);
+        }, 800);
+
       } else if (actionId === 'vsign') {
         appendMessage('user', 'Cách tải VSign và ký cài đặt IPA.');
         showTypingIndicator();
@@ -1733,6 +2116,26 @@
         return;
       }
       
+      // ==========================================
+      // B. HỆ THỐNG PHÂN LUỒNG HỘI THOẠI THEO TRẠNG THÁI (STATE FLOWS)
+      // ==========================================
+      if (chatState.currentFlow === 'search_shortcuts') {
+        handleSearchShortcuts(rawText);
+        return;
+      }
+      if (chatState.currentFlow === 'search_ipa') {
+        handleSearchIpa(rawText);
+        return;
+      }
+      if (chatState.currentFlow === 'search_mmo') {
+        handleSearchMmo(rawText);
+        return;
+      }
+      if (chatState.currentFlow === 'mmo_purchase_confirm') {
+        handleMmoPurchaseConfirm(text);
+        return;
+      }
+      
       // 1. Check for dynamic recharge amount extraction (e.g. "nạp 11k", "11k")
       const hasDepositKeyword = text.includes('nạp') || text.includes('nap') || text.includes('ví') || text.includes('vi') || text.includes('chuyển') || text.includes('chuyen') || text.includes('stk') || text.includes('qr');
       const extractedAmount = extractRechargeAmount(rawText);
@@ -1792,6 +2195,38 @@
       }
 
       // Keyword queries matching
+      
+      // A1. Nhận diện các ý định đặc biệt (Shortcuts, IPA, MMO) từ khóa tự do
+      if (text.includes('phím tắt') || text.includes('phim tat') || text.includes('tải phím') || text.includes('tai phim')) {
+        let cleanQuery = rawText.replace(/phím tắt|phim tat|tải phím|tai phim|tìm|tim/gi, '').trim();
+        if (cleanQuery) {
+          handleSearchShortcuts(cleanQuery);
+        } else {
+          handleQuickAction('search_shortcuts');
+        }
+        return;
+      }
+      
+      if (text.includes('tìm app') || text.includes('tim app') || text.includes('tìm ipa') || text.includes('tim ipa') || text.includes('tải app') || text.includes('tai app') || text.includes('tải ipa') || text.includes('tai ipa') || text.includes('cài app') || text.includes('cai app')) {
+        let cleanQuery = rawText.replace(/tìm app|tim app|tìm ipa|tim ipa|tải app|tai app|tải ipa|tai ipa|cài app|cai app|tìm|tim|tải|tai|cài|cai/gi, '').trim();
+        if (cleanQuery) {
+          handleSearchIpa(cleanQuery);
+        } else {
+          handleQuickAction('search_ipa');
+        }
+        return;
+      }
+      
+      if (text.includes('mua tài nguyên') || text.includes('mua tai nguyen') || text.includes('mua tài khoản') || text.includes('mua tai khoan') || text.startsWith('mua ')) {
+        let cleanQuery = rawText.replace(/mua tài nguyên|mua tai nguyen|mua tài khoản|mua tai khoan|mua|tìm|tim|gói|goi/gi, '').trim();
+        if (cleanQuery) {
+          handleSearchMmo(cleanQuery);
+        } else {
+          handleQuickAction('search_mmo');
+        }
+        return;
+      }
+
       if (text.includes('vip') || text.includes('mua vip') || text.includes('gói') || text.includes('gia han') || text.includes('cuoc')) {
         chatState.currentFlow = 'vip_select';
         appendMessage('bot', 'Chào sếp, sếp muốn kích hoạt hay tìm hiểu gói VIP nào dưới đây ạ? Hãy chọn gói tương ứng hoặc gõ yêu cầu nhé!', false, [
