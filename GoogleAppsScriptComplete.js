@@ -1141,6 +1141,44 @@ function doPost(e) {
       return output.setContent(JSON.stringify({ success: true }));
     }
     
+    // 6. Dạy AI trực tiếp một cặp Q&A từ khung Chat
+    if (action === 'admin_teach_single_qa') {
+      var question = parameter.question ? parameter.question.toString().trim() : "";
+      var answer = parameter.answer ? parameter.answer.toString().trim() : "";
+      
+      if (!question || !answer) {
+        return output.setContent(JSON.stringify({ success: false, error: "Thiếu từ khóa hoặc câu trả lời" }));
+      }
+      
+      var qaSheet = ss.getSheetByName("AI_Knowledge");
+      if (!qaSheet) {
+        qaSheet = ss.insertSheet("AI_Knowledge");
+        qaSheet.appendRow(["Question", "Answer"]);
+        qaSheet.setFrozenRows(1);
+        qaSheet.getRange("A1:B1").setFontWeight("bold");
+      }
+      
+      var data = qaSheet.getDataRange().getValues();
+      var foundRow = -1;
+      var cleanQuestion = question.toLowerCase().trim();
+      
+      for (var i = 1; i < data.length; i++) {
+        if (data[i][0] && data[i][0].toString().toLowerCase().trim() === cleanQuestion) {
+          foundRow = i + 1;
+          break;
+        }
+      }
+      
+      if (foundRow !== -1) {
+        qaSheet.getRange(foundRow, 2).setValue(answer);
+      } else {
+        qaSheet.appendRow([question, answer]);
+      }
+      
+      ss.flush();
+      return output.setContent(JSON.stringify({ success: true }));
+    }
+    
     return output.setContent(JSON.stringify({ error: "Lệnh POST không hợp lệ!" }));
   } catch (err) {
     return output.setContent(JSON.stringify({ success: false, error: err.toString() }));

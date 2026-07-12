@@ -756,6 +756,7 @@
     };
 
     let aiKnowledgeBase = [];
+    let isAdminAuthenticated = sessionStorage.getItem('isAdminAuthenticated') === 'true';
 
     async function loadAIKnowledgeBase() {
       try {
@@ -850,6 +851,54 @@
       }
       
       return null;
+    }
+
+    async function verifyAdminPinInChat(pin) {
+      showTypingIndicator();
+      try {
+        const res = await fetch(`${GOOGLE_API_URL}?action=verify_pin&pin=${pin}`);
+        const data = await res.json();
+        hideTypingIndicator();
+        if (data.success) {
+          isAdminAuthenticated = true;
+          sessionStorage.setItem('isAdminAuthenticated', 'true');
+          sessionStorage.setItem('adminPinInChat', pin);
+          appendMessage('bot', `🔑 **Xác thực Admin thành công!** Chào sếp, em đã sẵn sàng học thêm kiến thức mới.\n\nSếp hãy dạy em bằng cách nhắn tin theo cú pháp:\n👉 **dạy: [từ khóa hoặc câu hỏi] = [câu trả lời của AI]**\n*(Ví dụ: dạy: lỗi cert = Sếp vui lòng mua cert riêng nhé)*`);
+        } else {
+          appendMessage('bot', `❌ **Mã PIN Admin không chính xác.** Vui lòng kiểm tra lại.`);
+        }
+      } catch(e) {
+        hideTypingIndicator();
+        appendMessage('bot', `❌ Lỗi kết nối máy chủ để xác thực Admin.`);
+      }
+      scrollChatToBottom();
+    }
+
+    async function teachAIInChat(pin, question, answer) {
+      showTypingIndicator();
+      try {
+        const formData = new FormData();
+        formData.append('action', 'admin_teach_single_qa');
+        formData.append('pin', pin);
+        formData.append('question', question);
+        formData.append('answer', answer);
+
+        const res = await fetch(GOOGLE_API_URL, { method: 'POST', body: formData });
+        const data = await res.json();
+        hideTypingIndicator();
+        
+        if (data.success) {
+          appendMessage('bot', `✅ **Đã học thành công!** Từ nay em đã thông minh hơn rồi ạ:\n\n💬 **Hỏi**: *"${question}"*\n🤖 **Đáp**: *"${answer}"*\n\nEm đã lưu vào cơ sở dữ liệu và sẽ tự động phản hồi khách hàng theo quy tắc này ngay lập tức!`);
+          // Cập nhật lại bộ nhớ đệm AI Q&A tại client ngay lập tức
+          loadAIKnowledgeBase();
+        } else {
+          appendMessage('bot', `❌ **Dạy AI thất bại**: ${data.error || "Mã PIN không đúng hoặc thiếu quyền."}`);
+        }
+      } catch(e) {
+        hideTypingIndicator();
+        appendMessage('bot', `❌ Lỗi kết nối mạng khi gửi dữ liệu dạy AI: ${e.message}`);
+      }
+      scrollChatToBottom();
     }
 
     // VIP Packages definitions
@@ -1628,6 +1677,61 @@
 
     function processBotResponse(rawText) {
       const text = rawText.toLowerCase().trim();
+      
+      // ==========================================
+      // A. HỆ THỐNG DẠY AI TRỰC TIẾP TỪ KHUNG CHAT
+      // ==========================================
+      
+      // 1. Xác thực Admin trong chat: /admin [mã pin]
+      if (text.startsWith('/admin ')) {
+        const pin = rawText.substring(7).trim();
+        verifyAdminPinInChat(pin);
+        return;
+      }
+
+      // 2. Dạy AI trực tiếp một câu: /day [mã pin] [câu hỏi] = [câu trả lời]
+      if (text.startsWith('/day ') || text.startsWith('/teach ')) {
+        const cmd = text.startsWith('/day ') ? '/day ' : '/teach ';
+        const content = rawText.substring(cmd.length).trim();
+        const firstSpace = content.indexOf(' ');
+        if (firstSpace === -1) {
+          appendMessage('bot', `❌ Cú pháp dạy AI trực tiếp:\n**/day [mã PIN] [từ khóa/câu hỏi] = [câu trả lời]**`);
+          return;
+        }
+        const pin = content.substring(0, firstSpace).trim();
+        const qaPart = content.substring(firstSpace).trim();
+        const eqIndex = qaPart.indexOf('=');
+        if (eqIndex === -1) {
+          appendMessage('bot', `❌ Thiếu dấu "=" để ngăn cách câu hỏi và câu trả lời!`);
+          return;
+        }
+        const question = qaPart.substring(0, eqIndex).trim();
+        const answer = qaPart.substring(eqIndex + 1).trim();
+        teachAIInChat(pin, question, answer);
+        return;
+      }
+
+      // 3. Dạy AI bằng hội thoại (khi đã xác thực Admin trước đó)
+      const isTeachPrefix = text.startsWith('dạy:') || text.startsWith('teach:') || text.startsWith('dạy ') || text.startsWith('teach ');
+      if (isAdminAuthenticated && isTeachPrefix) {
+        let prefixLength = 0;
+        if (text.startsWith('dạy:')) prefixLength = 4;
+        else if (text.startsWith('teach:')) prefixLength = 6;
+        else if (text.startsWith('dạy ')) prefixLength = 4;
+        else if (text.startsWith('teach ')) prefixLength = 6;
+
+        const content = rawText.substring(prefixLength).trim();
+        const eqIndex = content.indexOf('=');
+        if (eqIndex === -1) {
+          appendMessage('bot', `❌ Sếp vui lòng dùng dấu "=" để ngăn cách câu hỏi và trả lời.\n*(Ví dụ: dạy: lỗi cert = Sếp vui lòng mua cert riêng)*`);
+          return;
+        }
+        const question = content.substring(0, eqIndex).trim();
+        const answer = content.substring(eqIndex + 1).trim();
+        const pin = sessionStorage.getItem('adminPinInChat') || '';
+        teachAIInChat(pin, question, answer);
+        return;
+      }
       
       // 1. Check for dynamic recharge amount extraction (e.g. "nạp 11k", "11k")
       const hasDepositKeyword = text.includes('nạp') || text.includes('nap') || text.includes('ví') || text.includes('vi') || text.includes('chuyển') || text.includes('chuyen') || text.includes('stk') || text.includes('qr');
