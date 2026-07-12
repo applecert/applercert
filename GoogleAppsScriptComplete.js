@@ -776,12 +776,15 @@ function doGet(e) {
                                 var baseOriginalPrice = parseInt((plan.final_price !== undefined && plan.final_price !== null) ? plan.final_price : plan.price) || 0;
                                 var autoMarkedUpPrice = Math.floor(baseOriginalPrice * 1.23);
 
-                                var stock = 9999;
-                                if (plan.stock_count !== undefined && plan.stock_count !== null) {
-                                    stock = parseInt(plan.stock_count);
-                                } else if (plan.in_stock === false) {
-                                    stock = 0;
-                                }
+                                 var stock = 9999;
+                                 if (plan.in_stock === false) {
+                                     stock = 0;
+                                 } else if (plan.stock_count !== undefined && plan.stock_count !== null && plan.stock_count !== "") {
+                                     stock = parseInt(plan.stock_count);
+                                     if (stock === 0 && plan.in_stock !== false) {
+                                         stock = 9999;
+                                     }
+                                 }
 
                                 var planDesc = plan.description || p.description || "Sản phẩm chính hãng.";
 
@@ -893,6 +896,28 @@ function doGet(e) {
         sendTelegramMsg("🛒 *KHÁCH VỪA MUA MALL*\n📦 SP: " + e.parameter.productName + "\n💳 Đơn: `" + orderId + "`\n💰 Giá trị: " + finalPrice.toLocaleString() + "đ");
         return output.setContent(JSON.stringify({success: true, orderId: orderId}));
       } catch(err) { return output.setContent(JSON.stringify({success: false, error: "Lỗi tạo đơn: " + err.message})); } finally { lock.releaseLock(); }
+    }
+
+    if (action === 'get_user_cert_orders') {
+      if (!sheetCertApple) return output.setContent(JSON.stringify({success: true, data: []}));
+      var data = sheetCertApple.getDataRange().getValues();
+      var result = [];
+      for (var i = 1; i < data.length; i++) {
+        if (String(data[i][1]) === String(e.parameter.uid)) {
+          result.push({
+            orderId: data[i][0],
+            productId: data[i][2],
+            amount: data[i][3],
+            status: data[i][4],
+            udid: data[i][5],
+            time: data[i][6],
+            productName: data[i][7],
+            price: data[i][8],
+            paymentStatus: data[i][9]
+          });
+        }
+      }
+      return output.setContent(JSON.stringify({success: true, data: result.reverse()}));
     }
 
     if (action === 'get_user_mmo_orders') {
