@@ -947,32 +947,40 @@
             return;
           }
           
-          appendMessage('bot', `🎉 Trợ lý tìm thấy **${filtered.length}** phím tắt phù hợp với từ khóa **"${query}"**:`);
-          
+          window.lastFilteredShortcuts = filtered;
           const itemsToRender = filtered.slice(0, 3);
-          itemsToRender.forEach(item => {
+          let listHtml = `
+            <div class="space-y-2 text-left font-sans w-full">
+              <p class="text-xs text-gray-500 font-bold mb-1">🎉 Trợ lý tìm thấy <b>${filtered.length}</b> phím tắt:</p>
+              <div class="flex flex-col gap-2">
+          `;
+          
+          itemsToRender.forEach((item, index) => {
             const iconHtml = item.iconUrl 
-              ? `<img src="${item.iconUrl}" class="w-12 h-12 rounded-xl object-cover shrink-0 border border-black/10 dark:border-white/10" onerror="this.style.display='none'"/>` 
-              : `<div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"><i data-lucide="zap" class="w-6 h-6"></i></div>`;
+              ? `<img src="${item.iconUrl}" class="w-10 h-10 rounded-xl object-cover shrink-0 border border-black/10 dark:border-white/10" onerror="this.style.display='none'"/>` 
+              : `<div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0"><i data-lucide="zap" class="w-5 h-5"></i></div>`;
             
-            const cardHtml = `
-              <div class="p-4 rounded-3xl bg-white dark:bg-cardDark border border-black/5 dark:border-white/5 shadow-sm space-y-3">
-                <div class="flex gap-3 items-center">
-                  ${iconHtml}
-                  <div class="flex-1 min-w-0">
-                    <h4 class="font-black text-gray-900 dark:text-white truncate">${item.name}</h4>
-                    <p class="text-[11px] text-gray-400 font-bold">iOS ${item.iosVersion || 'Tất cả'} | Lượt tải: ${item.downloads || '0'}</p>
-                  </div>
+            listHtml += `
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl">
+                ${iconHtml}
+                <div class="flex-1 min-w-0">
+                  <h5 class="text-xs font-black text-gray-900 dark:text-white truncate">${item.name}</h5>
+                  <p class="text-[10px] text-gray-400 font-bold">iOS ${item.iosVersion || 'Tất cả'} | Lượt tải: ${item.downloads || '0'}</p>
+                  <p class="text-[10px] text-gray-500 dark:text-gray-400 leading-normal line-clamp-1 mt-0.5">${item.description || 'Không có mô tả.'}</p>
                 </div>
-                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">${item.description || 'Không có mô tả cho phím tắt này.'}</p>
-                ${item.notes ? `<p class="text-[10px] text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-500/10 p-2 rounded-xl font-medium">⚠️ Lưu ý: ${item.notes}</p>` : ''}
+                <button onclick="window.open(window.lastFilteredShortcuts[${index}].shortcutUrl, '_blank')" class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center shrink-0 shadow-sm active:scale-75 transition-transform" title="Tải về">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                </button>
               </div>
             `;
-            
-            appendMessage('bot', cardHtml, true, [
-              { label: 'Tải Phím Tắt 📥', type: 'primary', action: () => { window.open(item.shortcutUrl, '_blank'); } }
-            ]);
           });
+          
+          listHtml += `
+              </div>
+            </div>
+          `;
+          
+          appendMessage('bot', listHtml, true);
           
           if (filtered.length > 3) {
             appendMessage('bot', `*Vẫn còn một số phím tắt khác nữa. Sếp truy cập trang [Phím Tắt](phim-tat.html) để xem toàn bộ danh mục nha!*`);
@@ -1018,34 +1026,46 @@
           return;
         }
         
-        appendMessage('bot', `🎉 Tìm thấy **${filtered.length}** file IPA tương ứng với **"${query}"**:`);
-        
+        window.lastFilteredIpa = filtered;
         const itemsToRender = filtered.slice(0, 3);
-        itemsToRender.forEach(item => {
+        let listHtml = `
+          <div class="space-y-2 text-left font-sans w-full">
+            <p class="text-xs text-gray-500 font-bold mb-1">🎉 Tìm thấy <b>${filtered.length}</b> file IPA tương ứng với <b>"${query}"</b>:</p>
+            <div class="flex flex-col gap-2">
+        `;
+        
+        itemsToRender.forEach((item, index) => {
           const sizeMb = item.size ? `${(item.size / (1024 * 1024)).toFixed(1)} MB` : 'Chưa rõ dung lượng';
           const iconUrl = item.icon || item.iconURL || 'https://placehold.co/100';
           
-          const cardHtml = `
-            <div class="p-4 rounded-3xl bg-white dark:bg-cardDark border border-black/5 dark:border-white/5 shadow-sm space-y-3">
-              <div class="flex gap-3 items-center">
-                <div class="w-14 h-14 relative overflow-hidden squircle shadow-sm bg-gray-50 border border-black/5 shrink-0">
-                  <img src="${iconUrl}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100'"/>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <h4 class="font-bold text-gray-900 dark:text-white truncate">${item.name}</h4>
-                  <p class="text-[11px] text-gray-400 font-bold">Version: ${item.version || 'Mới nhất'} | ${sizeMb}</p>
-                  <p class="text-[10px] text-gray-400 font-mono truncate">${item.bundleID || item.bundleIdentifier || ''}</p>
-                </div>
+          listHtml += `
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl">
+              <div class="w-10 h-10 relative overflow-hidden squircle shadow-sm bg-gray-50 border border-black/5 shrink-0">
+                <img src="${iconUrl}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100'"/>
               </div>
-              ${item.localizedDescription ? `<p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-white/5 p-2 rounded-2xl font-medium"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline-block text-green-500 mr-1"></i>Mod: ${item.localizedDescription}</p>` : ''}
+              <div class="flex-1 min-w-0">
+                <h5 class="text-xs font-black text-gray-900 dark:text-white truncate">${item.name}</h5>
+                <p class="text-[10px] text-gray-400 font-bold">Version: ${item.version || 'Mới nhất'} | ${sizeMb}</p>
+                ${item.localizedDescription ? `<p class="text-[9px] text-green-600 dark:text-green-400 font-bold mt-0.5 truncate">🔧 Mod: ${item.localizedDescription}</p>` : ''}
+              </div>
+              <div class="flex gap-1.5 shrink-0">
+                <button onclick="window.open(window.lastFilteredIpa[${index}].down || window.lastFilteredIpa[${index}].downloadURL, '_blank')" class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center shadow-sm active:scale-75 transition-transform" title="Tải IPA">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                </button>
+                <button onclick="window.location.href='vsign.html'" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 flex items-center justify-center active:scale-75 transition-transform" title="Ký VSign">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487zm0 0L19.5 7.125"/></svg>
+                </button>
+              </div>
             </div>
           `;
-          
-          appendMessage('bot', cardHtml, true, [
-            { label: 'Tải IPA 📥', type: 'primary', action: () => { window.open(item.down || item.downloadURL, '_blank'); } },
-            { label: 'Ký & Cài VSign ✍️', type: 'secondary', action: () => { window.location.href = 'vsign.html'; } }
-          ]);
         });
+        
+        listHtml += `
+            </div>
+          </div>
+        `;
+        
+        appendMessage('bot', listHtml, true);
         
         if (filtered.length > 3) {
           appendMessage('bot', `*Vẫn còn một số ứng dụng khác. Sếp truy cập trang [Kho VIP](ipavip.html) để tìm kiếm và cài đặt đầy đủ hơn nhé!*`);
@@ -1140,45 +1160,47 @@
             return;
           }
           
-          appendMessage('bot', `🎉 Trợ lý tìm thấy **${filtered.length}** gói tài nguyên MMO phù hợp cho sếp:`);
-          
+          window.lastFilteredProducts = filtered;
           const itemsToRender = filtered.slice(0, 3);
-          itemsToRender.forEach(p => {
+          let listHtml = `
+            <div class="space-y-2 text-left font-sans w-full">
+              <p class="text-xs text-gray-500 font-bold mb-1">🎉 Trợ lý tìm thấy <b>${filtered.length}</b> gói tài nguyên MMO:</p>
+              <div class="flex flex-col gap-2">
+          `;
+          
+          itemsToRender.forEach((p, index) => {
             const isOutOfStock = p.stock <= 0;
             const stockText = isOutOfStock 
-              ? `<span class="text-red-500 font-bold">Hết hàng ❌</span>` 
-              : `<span class="text-green-500 font-bold">Còn hàng (${p.stock})</span>`;
+              ? `<span class="text-red-500 font-bold">Hết</span>` 
+              : `<span class="text-green-500 font-bold">Còn (${p.stock})</span>`;
             
             const imgHtml = p.icon
-              ? `<img src="${p.icon}" class="w-14 h-14 rounded-2xl object-cover shrink-0 border border-black/10 dark:border-white/10" onerror="this.style.display='none'"/>`
-              : `<div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0"><i data-lucide="shopping-bag" class="w-6 h-6"></i></div>`;
+              ? `<img src="${p.icon}" class="w-10 h-10 rounded-xl object-cover shrink-0 border border-black/10 dark:border-white/10" onerror="this.style.display='none'"/>`
+              : `<div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0"><i data-lucide="shopping-bag" class="w-5 h-5"></i></div>`;
             
-            const cardHtml = `
-              <div class="p-4 rounded-3xl bg-white dark:bg-cardDark border border-black/5 dark:border-white/5 shadow-sm space-y-3">
-                <div class="flex gap-3 items-center">
-                  ${imgHtml}
-                  <div class="flex-1 min-w-0">
-                    <h4 class="font-black text-gray-900 dark:text-white truncate text-[15px]">${p.name}</h4>
-                    <p class="text-[11px] text-gray-400 font-bold">${p.cat} | ${stockText}</p>
-                  </div>
+            const actionHtml = isOutOfStock 
+              ? `<button onclick="handleQuickAction('contact')" class="px-3 py-1.5 rounded-xl bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 font-bold text-xs shrink-0 active:scale-95 transition-transform">Yêu cầu 📞</button>`
+              : `<button onclick="initiateMmoPurchase(window.lastFilteredProducts[${index}])" class="px-3 py-1.5 rounded-xl bg-brand text-white font-bold text-xs shrink-0 shadow-sm active:scale-95 transition-transform">Mua 🛒</button>`;
+            
+            listHtml += `
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl">
+                ${imgHtml}
+                <div class="flex-1 min-w-0">
+                  <h5 class="text-xs font-black text-gray-900 dark:text-white truncate">${p.name}</h5>
+                  <p class="text-[10px] text-gray-400 font-bold">${p.cat} | ${stockText}</p>
+                  <p class="text-[12px] font-black text-blue-600 dark:text-blue-400 mt-0.5">${p.price.toLocaleString('vi-VN')}đ</p>
                 </div>
-                <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3">${p.desc || 'Sản phẩm chính hãng chất lượng cao.'}</p>
-                <div class="flex items-center justify-between border-t border-black/5 dark:border-white/5 pt-2 mt-2">
-                  <span class="text-xs text-gray-400 font-medium">Đơn giá:</span>
-                  <span class="text-lg font-black text-blue-600 dark:text-blue-400">${p.price.toLocaleString('vi-VN')}đ</span>
-                </div>
+                ${actionHtml}
               </div>
             `;
-            
-            const buttons = [];
-            if (!isOutOfStock) {
-              buttons.push({ label: 'Mua Ngay 🛒', type: 'primary', action: () => initiateMmoPurchase(p) });
-            } else {
-              buttons.push({ label: 'Yêu cầu Nhập Hàng 📞', type: 'secondary', action: () => handleQuickAction('contact') });
-            }
-            
-            appendMessage('bot', cardHtml, true, buttons);
           });
+          
+          listHtml += `
+              </div>
+            </div>
+          `;
+          
+          appendMessage('bot', listHtml, true);
           
           if (filtered.length > 3) {
             appendMessage('bot', `*Vẫn còn một số gói dịch vụ khác. Sếp truy cập trang [Tạp Hóa MMO](tap-hoa-mmo.html) để xem đầy đủ nhất nhé!*`);
@@ -1376,35 +1398,50 @@
         
         allOrders.sort((a, b) => new Date(b.time) - new Date(a.time));
         
-        appendMessage('bot', `📋 Dưới đây là danh sách **${Math.min(5, allOrders.length)}** đơn hàng gần nhất của sếp. Hãy bấm chọn một đơn để kiểm tra trạng thái chi tiết nha:`);
+        window.lastFilteredOrders = allOrders.slice(0, 5);
+        const recentOrders = window.lastFilteredOrders;
         
-        const recentOrders = allOrders.slice(0, 5);
-        recentOrders.forEach(ord => {
+        let listHtml = `
+          <div class="space-y-2 text-left font-sans w-full">
+            <p class="text-xs text-gray-500 font-bold mb-1">📋 Dưới đây là danh sách <b>${recentOrders.length}</b> đơn hàng gần nhất của sếp:</p>
+            <div class="flex flex-col gap-2">
+        `;
+        
+        recentOrders.forEach((ord, index) => {
           const typeLabel = ord.type === 'mmo' ? '🛒 MMO' : '🍎 Cert';
-          const timeStr = ord.time ? new Date(ord.time).toLocaleString('vi-VN') : 'Mới đây';
+          const timeStr = ord.time ? new Date(ord.time).toLocaleDateString('vi-VN') : 'Mới đây';
           
-          let statusText = 'Chờ xử lý ⏳';
-          if (ord.status === 'COMPLETED' || ord.status === 'SUCCESS' || ord.status === 'DONE') statusText = 'Hoàn thành ✅';
-          if (ord.status === 'FAILED') statusText = 'Thất bại ❌';
+          let statusText = '<span class="text-yellow-600 dark:text-yellow-400 font-bold">Chờ xử lý ⏳</span>';
+          if (ord.status === 'COMPLETED' || ord.status === 'SUCCESS' || ord.status === 'DONE') {
+            statusText = '<span class="text-green-600 dark:text-green-400 font-bold">Hoàn thành ✅</span>';
+          }
+          if (ord.status === 'FAILED') {
+            statusText = '<span class="text-red-500 font-bold">Thất bại ❌</span>';
+          }
           
-          const cardHtml = `
-            <div class="p-3 rounded-2xl bg-white dark:bg-cardDark border border-black/5 dark:border-white/5 shadow-sm space-y-1 text-left font-sans">
-              <div class="flex justify-between items-center mb-1">
-                <span class="text-[10px] font-black text-gray-400 dark:text-gray-500">${ord.id}</span>
-                <span class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300">${typeLabel}</span>
+          listHtml += `
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl">
+              <div class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-400 flex items-center justify-center shrink-0 border border-black/5 text-xs font-black">
+                ${ord.type === 'mmo' ? '🛒' : '🍎'}
               </div>
-              <h5 class="text-xs font-black text-gray-900 dark:text-white truncate">${ord.productName}</h5>
-              <div class="flex justify-between items-center text-[10px] text-gray-500 font-bold mt-1.5">
-                <span>Trạng thái: ${statusText}</span>
-                <span class="text-[9px] text-gray-400 font-normal">${timeStr}</span>
+              <div class="flex-1 min-w-0">
+                <h5 class="text-xs font-black text-gray-900 dark:text-white truncate">${ord.productName}</h5>
+                <p class="text-[9px] text-gray-400 font-mono truncate">${ord.id} | ${timeStr}</p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold mt-0.5">Trạng thái: ${statusText}</p>
               </div>
+              <button onclick="showOrderDetails(window.lastFilteredOrders[${index}])" class="px-3 py-1.5 rounded-xl bg-brand text-white font-bold text-xs shrink-0 shadow-sm active:scale-95 transition-transform">
+                Chi tiết 🔍
+              </button>
             </div>
           `;
-          
-          appendMessage('bot', cardHtml, true, [
-            { label: `Kiểm tra đơn này 🔍`, type: 'primary', action: () => showOrderDetails(ord) }
-          ]);
         });
+        
+        listHtml += `
+            </div>
+          </div>
+        `;
+        
+        appendMessage('bot', listHtml, true);
         
       } catch(e) {
         hideTypingIndicator();
