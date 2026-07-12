@@ -83,6 +83,9 @@
           
           <p class="text-[10px] font-black text-purple-600 uppercase tracking-widest px-2 mb-2 mt-6">Phím Tắt & Tiện Ích</p>
           <button onclick="switchTab('shortcuts')" id="nav-shortcuts" class="w-full flex items-center px-4 py-3 rounded-[12px] text-gray-600 hover:bg-purple-50 hover:text-purple-700 font-bold transition text-[14px]"><i data-lucide="zap" class="w-5 h-5 mr-3"></i> Quản Lý Phím Tắt</button>
+          
+          <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest px-2 mb-2 mt-6">Trí Tuệ Nhân Tạo</p>
+          <button onclick="switchTab('ai_knowledge')" id="nav-ai_knowledge" class="w-full flex items-center px-4 py-3 rounded-[12px] text-gray-600 hover:bg-blue-50 hover:text-blue-700 font-bold transition text-[14px]"><i data-lucide="brain" class="w-5 h-5 mr-3"></i> Trợ Lý AI Tự Học</button>
       </nav>
       
       <div class="p-4 border-t border-gray-100 bg-gray-50/50 shrink-0"><button onclick="logoutAdmin()" class="w-full flex justify-center px-4 py-3.5 rounded-[12px] border border-gray-200 text-gray-600 bg-white hover:bg-red-50 hover:text-red-600 font-bold transition active:scale-95"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Đăng Xuất</button></div>
@@ -342,6 +345,35 @@
               </div>
           </div>
 
+          <div id="tab-ai_knowledge" class="hidden max-w-6xl mx-auto w-full space-y-6">
+              <div class="bg-white p-4 rounded-[20px] shadow-sm border border-gray-200 flex flex-col md:flex-row gap-3 justify-between items-center">
+                  <div class="relative flex-1 w-full">
+                      <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                      <input type="text" id="searchAIInput" oninput="renderAITable()" placeholder="Tìm kiếm câu hỏi hoặc câu trả lời..." class="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-[12px] text-sm outline-none focus:border-brand transition">
+                  </div>
+                  <button onclick="openAIModal()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-[12px] text-sm font-black shadow-md flex items-center justify-center gap-2 active:scale-95 transition whitespace-nowrap">
+                      <i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm Quy Tắc AI Mới
+                  </button>
+              </div>
+
+              <div class="bg-white rounded-[24px] shadow-sm border border-gray-200 overflow-hidden w-full">
+                  <div class="overflow-x-auto w-full max-h-[600px] scrollbar-hide">
+                      <table class="w-full text-left border-collapse min-w-[800px] relative">
+                          <thead class="sticky top-0 z-20 bg-gray-100 text-gray-600 text-[11px] uppercase tracking-widest shadow-sm">
+                              <tr>
+                                  <th class="p-3 font-bold border-b border-gray-200 w-1/3">Từ khóa/Câu hỏi (Học)</th>
+                                  <th class="p-3 font-bold border-b border-gray-200">Nội dung câu trả lời của AI</th>
+                                  <th class="p-3 font-bold border-b border-gray-200 text-right w-36">Thao Tác</th>
+                              </tr>
+                          </thead>
+                          <tbody id="aiTableBody" class="text-sm">
+                              <tr><td colspan="3" class="p-10 text-center text-gray-400">Đang tải tri thức AI...</td></tr>
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
+
       </div>
 
       <button onclick="saveAllConfigsToServer()" id="btnGlobalSave" class="fixed bottom-8 right-8 z-50 bg-gray-900 text-white px-6 py-4 rounded-full font-black text-[13px] tracking-widest shadow-2xl flex items-center gap-2 hover:bg-black active:scale-90 transition transform translate-y-32">
@@ -531,6 +563,28 @@
       </div>
   </div>
 
+  <div id="aiModal" class="fixed inset-0 z-[130] hidden flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-md opacity-0 transition-opacity duration-300 ease-out" id="aiModalOverlay" onclick="closeAIModal()"></div>
+      <div class="bg-white/95 backdrop-blur-xl w-full max-w-lg rounded-[32px] shadow-2xl border border-white/20 relative p-7 z-10 transition-all duration-300 ease-out transform scale-90 translate-y-8 opacity-0 flex flex-col max-h-[90vh]" id="aiPanel">
+          <div class="flex justify-between items-center mb-4 shrink-0"><h3 class="text-[20px] font-black text-gray-900 tracking-tight flex items-center gap-2"><i data-lucide="brain" class="w-5 h-5 text-blue-600"></i> <span id="aiModalTitle">Thêm Quy Tắc AI</span></h3><button onclick="closeAIModal()" class="text-gray-400 hover:text-red-500 bg-gray-50 border border-gray-100 rounded-full p-2 transition active:scale-90"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+          <div class="flex-1 overflow-y-auto pr-2 space-y-4 scrollbar-hide">
+              <input type="hidden" id="aiIndex">
+              <div>
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Từ Khóa/Câu Hỏi Dạy AI (Viết thường, không dấu hoặc có dấu)*</label>
+                  <input type="text" id="aiQuestion" class="w-full px-4 py-3 rounded-[12px] border border-gray-200 text-[13px] font-bold outline-none focus:border-blue-500 bg-gray-50 focus:bg-white transition" placeholder="Ví dụ: nap tien, nap 11k, nap vi...">
+              </div>
+              <div>
+                  <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Câu trả lời tương ứng của AI *</label>
+                  <textarea id="aiAnswer" rows="6" class="w-full bg-gray-50 p-4 rounded-[12px] text-[13px] text-gray-800 border border-gray-200 outline-none focus:border-blue-500 focus:bg-white transition leading-relaxed" placeholder="Nhập câu trả lời để AI tự động phản hồi khách hàng..."></textarea>
+              </div>
+          </div>
+          <div class="pt-4 shrink-0 border-t border-gray-100 flex gap-4">
+              <button onclick="closeAIModal()" class="w-1/3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black py-4 rounded-[16px] active:scale-95 transition text-[15px]">HỦY</button>
+              <button onclick="saveAIChanges()" id="btnSaveAI" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-black py-4 rounded-[16px] shadow-lg shadow-blue-600/30 hover:shadow-blue-600/40 active:scale-95 transition text-[15px] flex items-center justify-center gap-2"><i data-lucide="save" class="w-5 h-5"></i> XÁC NHẬN LƯU</button>
+          </div>
+      </div>
+  </div>
+
   <div id="actionModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-300 ease-out" id="actionModalOverlay" onclick="closeActionModal()"></div>
       <div id="actionModalPanel" class="bg-white/95 backdrop-blur-xl w-full max-w-[340px] rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-white/50 p-6 transition-all duration-300 ease-out transform scale-90 translate-y-8 opacity-0">
@@ -542,6 +596,8 @@
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec"; 
     let shortcutsList = [];
     let hasUnsavedShortcuts = false; 
+    let aiKnowledgeState = [];
+    let hasUnsavedAI = false; 
     const firebaseConfig = { apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", authDomain: "ipaviet-st.firebaseapp.com", projectId: "ipaviet-st", storageBucket: "ipaviet-st.firebasestorage.app", messagingSenderId: "127619650916", appId: "1:127619650916:web:fc8904c99804eeb7539671" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -600,9 +656,11 @@
         const icon = document.getElementById('refreshIcon'); icon.classList.add('animate-spin');
         hasUnsavedChanges = false;
         hasUnsavedShortcuts = false;
+        hasUnsavedAI = false;
         toggleSaveButton();
         selectedCatManager = null;
         loadShortcutsData();
+        loadAIKnowledgeData();
         
         try { const snapshot = await db.collection("users").get(); allUsersData = []; snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() })); renderUserTable(); } catch (e) {}
         
@@ -681,7 +739,7 @@
 
     function toggleSaveButton() {
         const btn = document.getElementById('btnGlobalSave');
-        if(hasUnsavedChanges) { btn.classList.add('btn-unsaved'); btn.classList.remove('translate-y-32'); } 
+        if(hasUnsavedChanges || hasUnsavedShortcuts || hasUnsavedAI) { btn.classList.add('btn-unsaved'); btn.classList.remove('translate-y-32'); } 
         else { btn.classList.remove('btn-unsaved'); btn.classList.add('translate-y-32'); }
     }
 
@@ -1345,6 +1403,10 @@
             saveShortcutsToServer();
             return;
         }
+        if (activeTab === 'ai_knowledge') {
+            saveAIKnowledgeToServer();
+            return;
+        }
         renderModal('confirm', 'Lưu Dữ Liệu', 'Lưu toàn bộ thay đổi (Giá, Mô tả, Danh mục, Deal Hot) lên hệ thống?', async () => {
             closeActionModal();
             const btn = document.getElementById('btnGlobalSave');
@@ -1439,7 +1501,7 @@
     function switchTab(tab) { 
         activeTab = tab;
         toggleSaveButton();
-        ['dashboard', 'users', 'transactions', 'mmo_orders', 'mmo_products', 'mmo_categories', 'mmo_add_custom', 'mmo_dealhot', 'shortcuts'].forEach(id => { 
+        ['dashboard', 'users', 'transactions', 'mmo_orders', 'mmo_products', 'mmo_categories', 'mmo_add_custom', 'mmo_dealhot', 'shortcuts', 'ai_knowledge'].forEach(id => { 
             let el = document.getElementById('tab-' + id);
             if(el) el.classList.add('hidden'); 
             let nav = document.getElementById('nav-' + id);
@@ -1454,16 +1516,18 @@
         if(tab === 'mmo_add_custom') tabClass = "w-full flex items-center px-4 py-3 rounded-[12px] bg-purple-100 text-purple-700 font-bold transition active:scale-95 text-[14px]";
         if(tab === 'mmo_dealhot') tabClass = "w-full flex items-center px-4 py-3 rounded-[12px] bg-orange-100 text-orange-700 font-bold transition active:scale-95 text-[14px] mt-2";
         if(tab === 'shortcuts') tabClass = "w-full flex items-center px-4 py-3 rounded-[12px] bg-purple-100 text-purple-700 font-bold transition active:scale-95 text-[14px]";
+        if(tab === 'ai_knowledge') tabClass = "w-full flex items-center px-4 py-3 rounded-[12px] bg-blue-100 text-blue-700 font-bold transition active:scale-95 text-[14px]";
         
         let navEl = document.getElementById('nav-' + tab);
         if(navEl) navEl.className = tabClass;
 
-        const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng', 'transactions': 'Nạp Tiền', 'mmo_orders': 'Đơn Mall', 'mmo_products': 'Kho Sản Phẩm', 'mmo_categories': 'Quản Lý Danh Mục', 'mmo_add_custom': 'Thêm SP / Kéo Hàng Ẩn', 'mmo_dealhot': 'Cấu Hình Deal Hot', 'shortcuts': 'Quản Lý Phím Tắt & Tiện Ích' }; 
+        const titles = { 'dashboard': 'Tổng Quan', 'users': 'Khách Hàng', 'transactions': 'Nạp Tiền', 'mmo_orders': 'Đơn Mall', 'mmo_products': 'Kho Sản Phẩm', 'mmo_categories': 'Quản Lý Danh Mục', 'mmo_add_custom': 'Thêm SP / Kéo Hàng Ẩn', 'mmo_dealhot': 'Cấu Hình Deal Hot', 'shortcuts': 'Quản Lý Phím Tắt & Tiện Ích', 'ai_knowledge': 'Trợ Lý AI Tự Học' }; 
         document.getElementById('pageTitle').innerText = titles[tab]; 
         
         if(tab === 'mmo_products') renderConfigTable();
         if(tab === 'mmo_categories') renderCategoryManager();
         if(tab === 'shortcuts') renderShortcutsTable();
+        if(tab === 'ai_knowledge') renderAITable();
 
         if(window.innerWidth < 768) { 
             const sidebar = document.getElementById('sidebar');
@@ -1945,6 +2009,176 @@
             btn.disabled = false; 
             lucide.createIcons();
         }, 'Lưu Phím Tắt');
+    }
+
+    // ===================================================================
+    // PHÂN HỆ QUẢN LÝ TRỢ LÝ AI TỰ HỌC DÀNH CHO ADMIN
+    // ===================================================================
+    async function loadAIKnowledgeData() {
+        try {
+            const res = await fetch(`${GOOGLE_API_URL}?action=get_ai_qa`);
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                aiKnowledgeState = data;
+            } else {
+                aiKnowledgeState = [];
+            }
+            renderAITable();
+        } catch(e) {
+            console.error("Lỗi khi tải tri thức AI:", e);
+            aiKnowledgeState = [];
+            renderAITable();
+        }
+    }
+
+    function renderAITable() {
+        const tbody = document.getElementById('aiTableBody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+
+        const searchQuery = document.getElementById('searchAIInput').value.trim().toLowerCase();
+
+        const filtered = aiKnowledgeState.filter(item => {
+            return item.question.toLowerCase().includes(searchQuery) || item.answer.toLowerCase().includes(searchQuery);
+        });
+
+        if(filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="p-10 text-center text-gray-400"><i data-lucide="inbox" class="w-10 h-10 mx-auto opacity-30 mb-2"></i>Không tìm thấy quy tắc AI nào.</td></tr>`;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        filtered.forEach((item, index) => {
+            const realIndex = aiKnowledgeState.indexOf(item);
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-gray-50 border-b border-gray-100 transition";
+            tr.innerHTML = `
+                <td class="p-3 font-bold text-gray-900">${escapeHtml(item.question)}</td>
+                <td class="p-3 text-gray-600 max-w-xl truncate">${escapeHtml(item.answer)}</td>
+                <td class="p-3 text-right">
+                    <div class="flex gap-2 justify-end">
+                        <button onclick="editAIRule(${realIndex})" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Sửa"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button onclick="deleteAIRule(${realIndex})" class="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition" title="Xóa"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function openAIModal(index = -1) {
+        const modal = document.getElementById('aiModal');
+        const overlay = document.getElementById('aiModalOverlay');
+        const panel = document.getElementById('aiPanel');
+        
+        document.getElementById('aiIndex').value = index;
+        
+        if (index === -1) {
+            document.getElementById('aiModalTitle').innerText = "Thêm Quy Tắc AI Mới";
+            document.getElementById('aiQuestion').value = '';
+            document.getElementById('aiAnswer').value = '';
+        } else {
+            document.getElementById('aiModalTitle').innerText = "Chỉnh Sửa Quy Tắc AI";
+            document.getElementById('aiQuestion').value = aiKnowledgeState[index].question;
+            document.getElementById('aiAnswer').value = aiKnowledgeState[index].answer;
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            overlay.classList.remove('opacity-0');
+            panel.classList.remove('opacity-0', 'scale-90', 'translate-y-8');
+        }, 10);
+    }
+
+    function closeAIModal() {
+        const modal = document.getElementById('aiModal');
+        const overlay = document.getElementById('aiModalOverlay');
+        const panel = document.getElementById('aiPanel');
+        
+        overlay.classList.add('opacity-0');
+        panel.classList.add('opacity-0', 'scale-90', 'translate-y-8');
+        setTimeout(() => {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    function editAIRule(index) {
+        openAIModal(index);
+    }
+
+    function deleteAIRule(index) {
+        renderModal('confirm', 'Xóa Quy Tắc AI', 'Bạn có chắc muốn xóa câu hỏi/câu trả lời này khỏi danh sách học của AI?', () => {
+            closeActionModal();
+            aiKnowledgeState.splice(index, 1);
+            renderAITable();
+            hasUnsavedAI = true;
+            toggleSaveButton();
+        }, 'Xóa bỏ');
+    }
+
+    function saveAIChanges() {
+        const index = parseInt(document.getElementById('aiIndex').value);
+        const question = document.getElementById('aiQuestion').value.trim();
+        const answer = document.getElementById('aiAnswer').value.trim();
+
+        if (!question || !answer) {
+            alert('Vui lòng nhập đầy đủ cả từ khóa/câu hỏi và câu trả lời!');
+            return;
+        }
+
+        if (index === -1) {
+            aiKnowledgeState.push({ question, answer });
+        } else {
+            aiKnowledgeState[index] = { question, answer };
+        }
+
+        renderAITable();
+        hasUnsavedAI = true;
+        toggleSaveButton();
+        closeAIModal();
+    }
+
+    async function saveAIKnowledgeToServer() {
+        renderModal('confirm', 'Lưu Tri thức AI', 'Đồng bộ toàn bộ quy tắc tự học của AI lên Google Sheets?', async () => {
+            closeActionModal();
+            const btn = document.getElementById('btnGlobalSave');
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> ĐANG LƯU...`; 
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'admin_save_ai_qa');
+                formData.append('pin', adminPin);
+                formData.append('qaList', JSON.stringify(aiKnowledgeState));
+
+                const res = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+                const data = await res.json();
+                
+                if(data.success) { 
+                    hasUnsavedAI = false;
+                    toggleSaveButton();
+                    renderModal('success', 'Hoàn tất', 'Đã đồng bộ cơ sở tri thức AI lên Google Sheets thành công!', closeActionModal, 'Đóng');
+                    loadAIKnowledgeData();
+                } else {
+                    renderModal('error', 'Lỗi Server', data.error, closeActionModal, 'Đóng');
+                }
+            } catch(e) { 
+                renderModal('error', 'Lỗi mạng', e.message, closeActionModal, 'Đóng'); 
+            }
+            
+            btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> LƯU THAY ĐỔI MÁY CHỦ`; 
+            btn.disabled = false; 
+            lucide.createIcons();
+        }, 'Lưu Tri Thức');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
     // RUN INITIALIZATION

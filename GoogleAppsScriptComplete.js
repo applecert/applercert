@@ -1112,6 +1112,35 @@ function doPost(e) {
       return output.setContent(JSON.stringify({ success: true }));
     }
     
+    // 5. Đồng bộ và lưu trữ cơ sở tri thức AI Q&A
+    if (action === 'admin_save_ai_qa') {
+      var qaStr = parameter.qaList;
+      if (!qaStr) {
+        return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu tri thức AI" }));
+      }
+      
+      var qaList = JSON.parse(qaStr);
+      var qaSheet = ss.getSheetByName("AI_Knowledge");
+      if (!qaSheet) {
+        qaSheet = ss.insertSheet("AI_Knowledge");
+      }
+      
+      qaSheet.clearContents();
+      qaSheet.appendRow(["Question", "Answer"]);
+      qaSheet.setFrozenRows(1);
+      qaSheet.getRange("A1:B1").setFontWeight("bold");
+      
+      for (var i = 0; i < qaList.length; i++) {
+        var item = qaList[i];
+        qaSheet.appendRow([
+          item.question,
+          item.answer
+        ]);
+      }
+      ss.flush();
+      return output.setContent(JSON.stringify({ success: true }));
+    }
+    
     return output.setContent(JSON.stringify({ error: "Lệnh POST không hợp lệ!" }));
   } catch (err) {
     return output.setContent(JSON.stringify({ success: false, error: err.toString() }));
