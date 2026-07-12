@@ -1247,13 +1247,26 @@
         
         // 2. Gọi Apps Script tạo đơn và cấp tài khoản tự động (hoặc pending để admin giao)
         const actionUrl = `${GOOGLE_API_URL}?action=buy_mmo_pending&uid=${currentUser.uid}&productId=${p.id}&productName=${encodeURIComponent(p.name)}&price=${p.price}&amount=1`;
+        console.log("Calling Apps Script buy_mmo_pending URL:", actionUrl);
+        
         const res = await fetch(actionUrl);
         const data = await res.json();
+        console.log("Apps Script buy_mmo_pending response data:", data);
         
         hideTypingIndicator();
         
         if (data.success) {
-          appendMessage('bot', `🎉 **Mua tài nguyên thành công!**\n\nGiao dịch trừ **-${p.price.toLocaleString()}đ** hoàn tất. Tài khoản đã được bàn giao cho sếp.\n\nSếp vui lòng truy cập trang **[Lịch Sử Mua](account.html)** để nhận thông tin đăng nhập và sử dụng dịch vụ nhé!`, false, [
+          const successMmoHtml = `
+            <div class="space-y-2 text-left font-sans">
+              <p class="text-green-500 font-black text-sm">🎉 THANH TOÁN THÀNH CÔNG!</p>
+              <p class="text-xs text-gray-700 dark:text-gray-300">Giao dịch mua gói <b>${p.name}</b> đã hoàn tất và trừ <b>-${p.price.toLocaleString()}đ</b> từ ví của sếp.</p>
+              <div class="p-3 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-[11px] text-gray-500 font-bold leading-relaxed">
+                👉 Sếp vui lòng truy cập trang <a href="account.html" class="underline text-brand dark:text-blue-400 font-bold">Lịch Sử Mua</a> hoặc chọn tra cứu đơn hàng để lấy thông tin tài khoản nhé!
+              </div>
+            </div>
+          `;
+          
+          appendMessage('bot', successMmoHtml, true, [
             { label: 'Xem Lịch Sử Mua 📑', type: 'primary', action: () => { window.location.href = 'account.html'; } },
             { label: 'Quay lại Menu 🏡', type: 'secondary', action: () => triggerGreeting() }
           ]);
@@ -1268,6 +1281,7 @@
         chatState.currentFlow = null;
         chatState.payload = null;
       } catch(e) {
+        console.error("Error during MMO purchase flow:", e);
         hideTypingIndicator();
         appendMessage('bot', '❌ Gặp sự cố kết nối mạng trong quá trình mua hàng: ' + e.message);
       }
