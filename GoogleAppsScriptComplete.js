@@ -699,7 +699,7 @@ function doGet(e) {
           if (res.status === "success") {
             for (var i = 0; i < res.transactions.length; i++) {
               var tx = res.transactions[i];
-              if (tx.type === "IN" && tx.description.toUpperCase().includes(orderId)) {
+              if (tx.type === "IN" && tx.description && tx.description.toUpperCase().includes(orderId)) {
                 var realAmount = parseInt(tx.amount);
                 
                 sheetThuNgan.getRange(rowToUpdate, 3, 1, 3).setValues([[realAmount, realAmount, "CLAIMED"]]);
@@ -1003,205 +1003,270 @@ function doGet(e) {
 }
 
 // ===================================================================
-// HÀM doPost(e) - XỬ LÝ CÁC YÊU CẦU LƯU DỮ LIỆU TỪ ADMIN
+// HÀM doPost(e) - XỬ LÝ WEBHOOK NGÂN HÀNG & LƯU DỮ LIỆU TỪ ADMIN
 // ===================================================================
 function doPost(e) {
   var output = ContentService.createTextOutput().setMimeType(ContentService.MimeType.JSON);
   
   try {
-    var parameter = e.parameter;
-    var action = parameter.action;
-    var pin = parameter.pin;
-    
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    // Bảo mật: Xác thực mã PIN Admin
-    if (String(pin) !== String(SECRET_ADMIN_PASS)) {
-      return output.setContent(JSON.stringify({ success: false, error: "Sai mã PIN Admin!" }));
-    }
-    
-    // 1. Phê duyệt bàn giao hàng thủ công
-    if (action === 'admin_manual_fulfill') {
-      var row = parseInt(parameter.row);
-      var accountData = parameter.accountData;
-      var sheetDonMMO = ss.getSheetByName("DonMMO");
-      if (row > 1 && row <= sheetDonMMO.getLastRow()) {
-        sheetDonMMO.getRange(row, 5).setValue("COMPLETED"); 
-        sheetDonMMO.getRange(row, 6).setValue(accountData); 
-        
-        var orderId = sheetDonMMO.getRange(row, 1).getValue();
-        var pName = sheetDonMMO.getRange(row, 8).getValue();
-        sendTelegramMsg("📦 *BÀN GIAO THỦ CÔNG THÀNH CÔNG*\n💳 Đơn: `" + orderId + "`\n🛍️ SP: *" + pName + "*\n🔑 Tài khoản: " + accountData);
-        
-        return output.setContent(JSON.stringify({ success: true }));
-      }
-      return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ!" }));
-    }
-    
-    // 2. Xóa đơn hàng MMO
-    if (action === 'admin_delete_mmo_order') {
-      var row = parseInt(parameter.row);
-      var sheetDonMMO = ss.getSheetByName("DonMMO");
-      if (row > 1 && row <= sheetDonMMO.getLastRow()) {
-        sheetDonMMO.deleteRow(row);
-        return output.setContent(JSON.stringify({ success: true }));
-      }
-      return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ!" }));
-    }
-    
-    // 3. Đồng bộ và lưu trữ cấu hình sản phẩm MMO
-    if (action === 'admin_save_mmo_config') {
-      var configsStr = parameter.configs;
-      if (!configsStr) {
-        return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu cấu hình" }));
-      }
+    // -------------------------------------------------------------------
+    // 1. XỬ LÝ WEBHOOK TỪ NGÂN HÀNG (SIEUTHICODE) - KHÔNG CHECK PIN
+    // -------------------------------------------------------------------
+    if (e && e.postData && e.postData.contents) {
+      var postData;
+      try {
+        postData = JSON.parse(e.postData.contents);
+      } catch (err) {}
       
-      var configsList = JSON.parse(configsStr);
-      var sheetConfigMMO = ss.getSheetByName("ConfigMMO");
-      if (!sheetConfigMMO) {
-        sheetConfigMMO = ss.insertSheet("ConfigMMO");
+      // Nếu là payload webhook chứa transactions
+      if (postData && postData.transactions && Array.isArray(postData.transactions)) {
+        var lock = LockService.getScriptLock();
+        try {
+          lock.waitLock(12000);
+          var ss = SpreadsheetApp.getActiveSpreadsheet();
+          var sheetThuNgan = ss.getSheetByName("ThuNgan") || ss.getSheets()[0];
+          var dataSheet = sheetThuNgan.getDataRange().getValues();
+          var processedCount = 0;
+          
+          for (var i = 0; i < postData.transactions.length; i++) {
+            var tx = postData.transactions[i];
+            if (tx.type === "IN" || tx.type === "in") {
+              var desc = String(tx.description).toUpperCase();
+              var realAmount = parseInt(tx.amount) || 0;
+              
+              for (var row = 1; row < dataSheet.length; row++) {
+                var orderId = String(dataSheet[row][0]).trim().toUpperCase();
+                var status = String(dataSheet[row][4]).trim().toUpperCase();
+                var uid = dataSheet[row][1];
+                var coins = parseInt(dataSheet[row][6]) || 0;
+                
+                if (orderId && desc.indexOf(orderId) !== -1) {
+                  if (status === "PENDING") {
+                    var rowToUpdate = row + 1;
+                    sheetThuNgan.getRange(rowToUpdate, 3, 1, 3).setValues([[realAmount, realAmount, "CLAIMED"]]);
+                    
+                    var isVipOrder = (orderId.indexOf("IPA") === 0);
+                    if (isVipOrder) {
+                      var firebaseSuccess = updateVipOnFirestore(uid, coins);
+                      sendTelegramMsg("👑 *TỰ ĐỘNG MUA VIP THÀNH CÔNG (WEBHOOK)*\n💵 Số tiền: +" + realAmount.toLocaleString('vi-VN') + "đ\n💳 Mã đơn: `" + orderId + "`\n🔄 Firestore VIP: " + (firebaseSuccess ? "Thành công" : "Thất bại"));
+                    } else {
+                      sendTelegramMsg("💰 *TỰ ĐỘNG NẠP TIỀN VÍ THÀNH CÔNG (WEBHOOK)*\n💵 Số tiền: +" + realAmount.toLocaleString('vi-VN') + "đ\n💳 Mã đơn: `" + orderId + "`");
+                    }
+                    processedCount++;
+                  }
+                  break; 
+                }
+              }
+            }
+          }
+          return output.setContent(JSON.stringify({ success: true, processed: processedCount }));
+        } catch(lockError) {
+          sendTelegramMsg("⚠️ *WEBHOOK LỖI KHÓA HỆ THỐNG:* " + lockError.toString());
+          return output.setContent(JSON.stringify({ success: false, error: lockError.toString() }));
+        } finally {
+          lock.releaseLock();
+        }
       }
-      
-      sheetConfigMMO.clearContents();
-      sheetConfigMMO.appendRow(["ID", "Đơn Giá", "Giá Gốc (Fake)", "Icon/Hình Ảnh", "Trạng thái Ẩn (TRUE/FALSE)", "Tên Sản Phẩm", "Danh Mục", "Tồn Kho", "Mô Tả"]);
-      sheetConfigMMO.setFrozenRows(1);
-      sheetConfigMMO.getRange("A1:I1").setFontWeight("bold");
-      
-      for (var i = 0; i < configsList.length; i++) {
-        var item = configsList[i];
-        sheetConfigMMO.appendRow([
-          item.id,
-          item.price,
-          item.fakePrice,
-          item.icon,
-          item.isHidden ? "TRUE" : "FALSE",
-          item.name,
-          item.cat,
-          item.stock,
-          item.desc
-        ]);
-      }
-      ss.flush();
-      return output.setContent(JSON.stringify({ success: true }));
-    }
-    
-    // 4. Đồng bộ và lưu trữ kho phím tắt Shortcuts
-    if (action === 'admin_save_shortcuts') {
-      var shortcutsStr = parameter.shortcuts;
-      if (!shortcutsStr) {
-        return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu phím tắt" }));
-      }
-      
-      var list = JSON.parse(shortcutsStr);
-      var sheetShortcuts = ss.getSheetByName("Shortcuts");
-      if (!sheetShortcuts) {
-        sheetShortcuts = ss.insertSheet("Shortcuts");
-      }
-      
-      sheetShortcuts.clearContents();
-      sheetShortcuts.appendRow([
-        "ID", "Name", "IconUrl", "Icon", "IconColor", 
-        "IosVersion", "Category", "Popularity", "IsNew", 
-        "Rating", "Downloads", "Description", "MainFunction", 
-        "Instructions", "CommonErrors", "Notes", "ShortcutUrl", 
-        "VideoUrl", "TutorialImages"
-      ]);
-      sheetShortcuts.setFrozenRows(1);
-      sheetShortcuts.getRange("A1:S1").setFontWeight("bold");
-      
-      for (var i = 0; i < list.length; i++) {
-        var item = list[i];
-        sheetShortcuts.appendRow([
-          item.id,
-          item.name,
-          item.iconUrl,
-          item.icon,
-          item.iconColor,
-          item.iosVersion,
-          item.category,
-          item.popularity,
-          item.isNew ? "TRUE" : "FALSE",
-          item.rating,
-          item.downloads,
-          item.description,
-          item.mainFunction,
-          JSON.stringify(item.instructions || []),
-          JSON.stringify(item.commonErrors || []),
-          item.notes,
-          item.shortcutUrl,
-          item.videoUrl,
-          JSON.stringify(item.tutorialImages || [])
-        ]);
-      }
-      ss.flush();
-      return output.setContent(JSON.stringify({ success: true }));
-    }
-    
-    // 5. Đồng bộ và lưu trữ cơ sở tri thức AI Q&A
-    if (action === 'admin_save_ai_qa') {
-      var qaStr = parameter.qaList;
-      if (!qaStr) {
-        return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu tri thức AI" }));
-      }
-      
-      var qaList = JSON.parse(qaStr);
-      var qaSheet = ss.getSheetByName("AI_Knowledge");
-      if (!qaSheet) {
-        qaSheet = ss.insertSheet("AI_Knowledge");
-      }
-      
-      qaSheet.clearContents();
-      qaSheet.appendRow(["Question", "Answer"]);
-      qaSheet.setFrozenRows(1);
-      qaSheet.getRange("A1:B1").setFontWeight("bold");
-      
-      for (var i = 0; i < qaList.length; i++) {
-        var item = qaList[i];
-        qaSheet.appendRow([
-          item.question,
-          item.answer
-        ]);
-      }
-      ss.flush();
-      return output.setContent(JSON.stringify({ success: true }));
     }
 
-    // 6. Dạy AI trực tiếp một cặp Q&A từ khung Chat
-    if (action === 'admin_teach_single_qa') {
-      var question = parameter.question ? parameter.question.toString().trim() : "";
-      var answer = parameter.answer ? parameter.answer.toString().trim() : "";
+    // -------------------------------------------------------------------
+    // 2. XỬ LÝ CÁC YÊU CẦU LƯU DỮ LIỆU TỪ ADMIN - BẮT BUỘC CHECK PIN
+    // -------------------------------------------------------------------
+    if (e && e.parameter && e.parameter.action) {
+      var parameter = e.parameter;
+      var action = parameter.action;
+      var pin = parameter.pin;
       
-      if (!question || !answer) {
-        return output.setContent(JSON.stringify({ success: false, error: "Thiếu từ khóa hoặc câu trả lời" }));
+      // Bảo mật: Xác thực mã PIN Admin
+      if (String(pin) !== String(SECRET_ADMIN_PASS)) {
+        return output.setContent(JSON.stringify({ success: false, error: "Sai mã PIN Admin!" }));
       }
       
-      var qaSheet = ss.getSheetByName("AI_Knowledge");
-      if (!qaSheet) {
-        qaSheet = ss.insertSheet("AI_Knowledge");
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      
+      // Phê duyệt bàn giao hàng thủ công
+      if (action === 'admin_manual_fulfill') {
+        var row = parseInt(parameter.row);
+        var accountData = parameter.accountData;
+        var sheetDonMMO = ss.getSheetByName("DonMMO");
+        if (row > 1 && row <= sheetDonMMO.getLastRow()) {
+          sheetDonMMO.getRange(row, 5).setValue("COMPLETED"); 
+          sheetDonMMO.getRange(row, 6).setValue(accountData); 
+          
+          var orderId = sheetDonMMO.getRange(row, 1).getValue();
+          var pName = sheetDonMMO.getRange(row, 8).getValue();
+          sendTelegramMsg("📦 *BÀN GIAO THỦ CÔNG THÀNH CÔNG*\n💳 Đơn: `" + orderId + "`\n🛍️ SP: *" + pName + "*\n🔑 Tài khoản: " + accountData);
+          
+          return output.setContent(JSON.stringify({ success: true }));
+        }
+        return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ!" }));
+      }
+      
+      // Xóa đơn hàng MMO
+      if (action === 'admin_delete_mmo_order') {
+        var row = parseInt(parameter.row);
+        var sheetDonMMO = ss.getSheetByName("DonMMO");
+        if (row > 1 && row <= sheetDonMMO.getLastRow()) {
+          sheetDonMMO.deleteRow(row);
+          return output.setContent(JSON.stringify({ success: true }));
+        }
+        return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ!" }));
+      }
+      
+      // Đồng bộ và lưu trữ cấu hình sản phẩm MMO
+      if (action === 'admin_save_mmo_config') {
+        var configsStr = parameter.configs;
+        if (!configsStr) {
+          return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu cấu hình" }));
+        }
+        
+        var configsList = JSON.parse(configsStr);
+        var sheetConfigMMO = ss.getSheetByName("ConfigMMO");
+        if (!sheetConfigMMO) {
+          sheetConfigMMO = ss.insertSheet("ConfigMMO");
+        }
+        
+        sheetConfigMMO.clearContents();
+        sheetConfigMMO.appendRow(["ID", "Đơn Giá", "Giá Gốc (Fake)", "Icon/Hình Ảnh", "Trạng thái Ẩn (TRUE/FALSE)", "Tên Sản Phẩm", "Danh Mục", "Tồn Kho", "Mô Tả"]);
+        sheetConfigMMO.setFrozenRows(1);
+        sheetConfigMMO.getRange("A1:I1").setFontWeight("bold");
+        
+        for (var i = 0; i < configsList.length; i++) {
+          var item = configsList[i];
+          sheetConfigMMO.appendRow([
+            item.id,
+            item.price,
+            item.fakePrice,
+            item.icon,
+            item.isHidden ? "TRUE" : "FALSE",
+            item.name,
+            item.cat,
+            item.stock,
+            item.desc
+          ]);
+        }
+        ss.flush();
+        return output.setContent(JSON.stringify({ success: true }));
+      }
+      
+      // Đồng bộ và lưu trữ kho phím tắt Shortcuts
+      if (action === 'admin_save_shortcuts') {
+        var shortcutsStr = parameter.shortcuts;
+        if (!shortcutsStr) {
+          return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu phím tắt" }));
+        }
+        
+        var list = JSON.parse(shortcutsStr);
+        var sheetShortcuts = ss.getSheetByName("Shortcuts");
+        if (!sheetShortcuts) {
+          sheetShortcuts = ss.insertSheet("Shortcuts");
+        }
+        
+        sheetShortcuts.clearContents();
+        sheetShortcuts.appendRow([
+          "ID", "Name", "IconUrl", "Icon", "IconColor", 
+          "IosVersion", "Category", "Popularity", "IsNew", 
+          "Rating", "Downloads", "Description", "MainFunction", 
+          "Instructions", "CommonErrors", "Notes", "ShortcutUrl", 
+          "VideoUrl", "TutorialImages"
+        ]);
+        sheetShortcuts.setFrozenRows(1);
+        sheetShortcuts.getRange("A1:S1").setFontWeight("bold");
+        
+        for (var i = 0; i < list.length; i++) {
+          var item = list[i];
+          sheetShortcuts.appendRow([
+            item.id,
+            item.name,
+            item.iconUrl,
+            item.icon,
+            item.iconColor,
+            item.iosVersion,
+            item.category,
+            item.popularity,
+            item.isNew ? "TRUE" : "FALSE",
+            item.rating,
+            item.downloads,
+            item.description,
+            item.mainFunction,
+            JSON.stringify(item.instructions || []),
+            JSON.stringify(item.commonErrors || []),
+            item.notes,
+            item.shortcutUrl,
+            item.videoUrl,
+            JSON.stringify(item.tutorialImages || [])
+          ]);
+        }
+        ss.flush();
+        return output.setContent(JSON.stringify({ success: true }));
+      }
+      
+      // Đồng bộ và lưu trữ cơ sở tri thức AI Q&A
+      if (action === 'admin_save_ai_qa') {
+        var qaStr = parameter.qaList;
+        if (!qaStr) {
+          return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu tri thức AI" }));
+        }
+        
+        var qaList = JSON.parse(qaStr);
+        var qaSheet = ss.getSheetByName("AI_Knowledge");
+        if (!qaSheet) {
+          qaSheet = ss.insertSheet("AI_Knowledge");
+        }
+        
+        qaSheet.clearContents();
         qaSheet.appendRow(["Question", "Answer"]);
         qaSheet.setFrozenRows(1);
         qaSheet.getRange("A1:B1").setFontWeight("bold");
-      }
-      
-      var data = qaSheet.getDataRange().getValues();
-      var foundRow = -1;
-      var cleanQuestion = question.toLowerCase().trim();
-      
-      for (var i = 1; i < data.length; i++) {
-        if (data[i][0] && data[i][0].toString().toLowerCase().trim() === cleanQuestion) {
-          foundRow = i + 1;
-          break;
+        
+        for (var i = 0; i < qaList.length; i++) {
+          var item = qaList[i];
+          qaSheet.appendRow([
+            item.question,
+            item.answer
+          ]);
         }
+        ss.flush();
+        return output.setContent(JSON.stringify({ success: true }));
       }
-      
-      if (foundRow !== -1) {
-        qaSheet.getRange(foundRow, 2).setValue(answer);
-      } else {
-        qaSheet.appendRow([question, answer]);
+
+      // Dạy AI trực tiếp một cặp Q&A từ khung Chat
+      if (action === 'admin_teach_single_qa') {
+        var question = parameter.question ? parameter.question.toString().trim() : "";
+        var answer = parameter.answer ? parameter.answer.toString().trim() : "";
+        
+        if (!question || !answer) {
+          return output.setContent(JSON.stringify({ success: false, error: "Thiếu từ khóa hoặc câu trả lời" }));
+        }
+        
+        var qaSheet = ss.getSheetByName("AI_Knowledge");
+        if (!qaSheet) {
+          qaSheet = ss.insertSheet("AI_Knowledge");
+          qaSheet.appendRow(["Question", "Answer"]);
+          qaSheet.setFrozenRows(1);
+          qaSheet.getRange("A1:B1").setFontWeight("bold");
+        }
+        
+        var data = qaSheet.getDataRange().getValues();
+        var foundRow = -1;
+        var cleanQuestion = question.toLowerCase().trim();
+        
+        for (var i = 1; i < data.length; i++) {
+          if (data[i][0] && data[i][0].toString().toLowerCase().trim() === cleanQuestion) {
+            foundRow = i + 1;
+            break;
+          }
+        }
+        
+        if (foundRow !== -1) {
+          qaSheet.getRange(foundRow, 2).setValue(answer);
+        } else {
+          qaSheet.appendRow([question, answer]);
+        }
+        
+        ss.flush();
+        return output.setContent(JSON.stringify({ success: true }));
       }
-      
-      ss.flush();
-      return output.setContent(JSON.stringify({ success: true }));
     }
     
     return output.setContent(JSON.stringify({ error: "Lệnh POST không hợp lệ!" }));
