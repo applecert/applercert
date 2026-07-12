@@ -210,26 +210,13 @@ function parseDateInTz(dateVal, tz) {
   
   var parts = str.split(/[\s/:-T]+/);
   if (parts.length >= 6) {
-    var day, month, year, hour, min, sec;
-    if (parts[0].length === 4) { // YYYY/MM/DD
-      year = parts[0];
-      month = parts[1];
-      day = parts[2];
-    } else { // DD/MM/YYYY
-      day = parts[0];
-      month = parts[1];
-      year = parts[2];
+    var d = str.split(/[\s/:-T]+/);
+    if (d.length >= 6) {
+      var calendarStr = d[0].length === 4 
+        ? d[0] + "-" + d[1] + "-" + d[2] + " " + d[3] + ":" + d[4] + ":" + d[5]
+        : d[2] + "-" + d[1] + "-" + d[0] + " " + d[3] + ":" + d[4] + ":" + d[5];
+      return parseCalendarStrInTz(calendarStr, tz);
     }
-    hour = parts[3];
-    min = parts[4];
-    sec = parts[5];
-    
-    if (sec.indexOf('.') !== -1) {
-      sec = sec.split('.')[0];
-    }
-    
-    var calendarStr = year + "-" + month + "-" + day + " " + hour + ":" + min + ":" + sec;
-    return parseCalendarStrInTz(calendarStr, tz);
   }
   
   var t = new Date(str).getTime();
@@ -352,7 +339,7 @@ function doGet(e) {
           });
         }
       }
-      return output.setContent(JSON.stringify(qaList)).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify(qaList));
     }
 
     // =========================================================
@@ -450,14 +437,14 @@ function doGet(e) {
           tutorialImages: imgs
         });
       }
-      return output.setContent(JSON.stringify({ success: true, data: list })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true, data: list }));
     }
 
     if (action === 'register_push_token') {
       var token = e.parameter.token;
       var uid = e.parameter.uid || "";
       var platform = e.parameter.platform || "";
-      if (!token) return output.setContent(JSON.stringify({ success: false, error: "Thiếu Token" })).setHeader('Access-Control-Allow-Origin', '*');
+      if (!token) return output.setContent(JSON.stringify({ success: false, error: "Thiếu Token" }));
       
       var dataTokens = sheetTokens.getDataRange().getValues();
       var foundRow = -1;
@@ -474,17 +461,17 @@ function doGet(e) {
       } else {
         sheetTokens.appendRow([token, uid, platform, nowStr]);
       }
-      return output.setContent(JSON.stringify({ success: true })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true }));
     }
     
     if (action === 'get_push_tokens_count') {
-      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" })).setHeader('Access-Control-Allow-Origin', '*');
+      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" }));
       var count = Math.max(0, sheetTokens.getLastRow() - 1);
-      return output.setContent(JSON.stringify({ success: true, count: count })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true, count: count }));
     }
     
     if (action === 'send_push_now') {
-      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" })).setHeader('Access-Control-Allow-Origin', '*');
+      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" }));
       var title = e.parameter.title;
       var body = e.parameter.body;
       var url = e.parameter.url || "";
@@ -509,27 +496,27 @@ function doGet(e) {
         }
       } catch (err) {}
       
-      return output.setContent(JSON.stringify(result)).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify(result));
     }
     
     if (action === 'schedule_push') {
-      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" })).setHeader('Access-Control-Allow-Origin', '*');
+      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" }));
       var title = e.parameter.title;
       var body = e.parameter.body;
       var url = e.parameter.url || "";
       var timeStr = e.parameter.time;
       
       if (!title || !body || !timeStr) {
-        return output.setContent(JSON.stringify({ success: false, error: "Nhập thiếu tiêu đề, nội dung hoặc thời gian." })).setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({ success: false, error: "Nhập thiếu tiêu đề, nội dung hoặc thời gian." }));
       }
       
       var pushId = "PUSH" + Date.now();
       sheetScheduled.appendRow([pushId, title, body, url, "'" + timeStr, "PENDING", "'" + new Date().toISOString()]);
-      return output.setContent(JSON.stringify({ success: true })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true }));
     }
     
     if (action === 'get_scheduled_pushes') {
-      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" })).setHeader('Access-Control-Allow-Origin', '*');
+      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" }));
       
       try {
         checkAndSendScheduledPushes();
@@ -550,28 +537,28 @@ function doGet(e) {
           sentCount: data[i][7] !== undefined ? data[i][7] : ""
         });
       }
-      return output.setContent(JSON.stringify({ success: true, data: list.reverse() })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true, data: list.reverse() }));
     }
     
     if (action === 'delete_scheduled_push') {
-      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" })).setHeader('Access-Control-Allow-Origin', '*');
+      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" }));
       var row = parseInt(e.parameter.row);
       if (row > 1 && row <= sheetScheduled.getLastRow()) {
         sheetScheduled.deleteRow(row);
-        return output.setContent(JSON.stringify({ success: true })).setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({ success: true }));
       }
-      return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ." })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ." }));
     }
 
     if (action === 'check_coupon') {
       var codeInput = e.parameter.code ? String(e.parameter.code).trim().toUpperCase() : "";
-      if (!codeInput) return output.setContent(JSON.stringify({ success: false, error: "Vui lòng nhập mã" })).setHeader('Access-Control-Allow-Origin', '*');
+      if (!codeInput) return output.setContent(JSON.stringify({ success: false, error: "Vui lòng nhập mã" }));
 
       var couponData = sheetCoupons.getDataRange().getValues();
       for (var i = 1; i < couponData.length; i++) {
         if (String(couponData[i][0]).trim().toUpperCase() === codeInput) {
           if (String(couponData[i][3]).trim().toUpperCase() !== "ACTIVE") {
-            return output.setContent(JSON.stringify({ success: false, error: "Mã giảm giá đã hết hạn hoặc bị tắt" })).setHeader('Access-Control-Allow-Origin', '*');
+            return output.setContent(JSON.stringify({ success: false, error: "Mã giảm giá đã hết hạn hoặc bị tắt" }));
           }
           return output.setContent(JSON.stringify({
             success: true,
@@ -579,10 +566,10 @@ function doGet(e) {
             type: couponData[i][1],
             value: parseFloat(couponData[i][2]) || 0,
             desc: couponData[i][4]
-          })).setHeader('Access-Control-Allow-Origin', '*');
+          }));
         }
       }
-      return output.setContent(JSON.stringify({ success: false, error: "Mã giảm giá không tồn tại" })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: false, error: "Mã giảm giá không tồn tại" }));
     }
 
     if (action === 'check_maintenance') {
@@ -599,7 +586,7 @@ function doGet(e) {
       if (e.parameter.pin && String(e.parameter.pin) === String(SECRET_ADMIN_PASS)) {
         isMaintenance = false;
       }
-      return output.setContent(JSON.stringify({ maintenance: isMaintenance })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ maintenance: isMaintenance }));
     }
 
     if (action === 'check_version_maintenance') {
@@ -646,11 +633,11 @@ function doGet(e) {
         isMaintenance = false;
       }
       
-      return output.setContent(JSON.stringify({ success: true, maintenance: isMaintenance, msg: msg, title: title })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true, maintenance: isMaintenance, msg: msg, title: title }));
     }
 
     if (action === 'get_versions') {
-      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" })).setHeader('Access-Control-Allow-Origin', '*');
+      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({ success: false, error: "Sai PIN" }));
       var list = [];
       if (sheetPhienBan) {
         var dataVersions = sheetPhienBan.getDataRange().getValues();
@@ -664,11 +651,11 @@ function doGet(e) {
           });
         }
       }
-      return output.setContent(JSON.stringify({ success: true, versions: list.reverse() })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true, versions: list.reverse() }));
     }
 
     if (action === 'get_ipa_data') { 
-      return output.setContent(UrlFetchApp.fetch('https://raw.githubusercontent.com/apptesters-org/AppTesters_Repo/main/apps.json', { "muteHttpExceptions": true }).getContentText()).setHeader('Access-Control-Allow-Origin', '*'); 
+      return output.setContent(UrlFetchApp.fetch('https://raw.githubusercontent.com/apptesters-org/AppTesters_Repo/main/apps.json', { "muteHttpExceptions": true }).getContentText()); 
     }
     
     if (action === 'create_order') {
@@ -676,7 +663,7 @@ function doGet(e) {
       try {
         lock.waitLock(10000);
         sheetThuNgan.appendRow([e.parameter.orderId, e.parameter.uid, parseInt(e.parameter.amount), parseInt(e.parameter.amount), "PENDING", new Date().toISOString(), e.parameter.coins || "0"]);
-        return output.setContent(JSON.stringify({success: true})).setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({success: true}));
       } finally { lock.releaseLock(); }
     }
 
@@ -696,11 +683,11 @@ function doGet(e) {
             uid = dataSheet[row][1];
             coins = parseInt(dataSheet[row][6]) || 0;
             
-            if (dataSheet[row][4] === "CLAIMED") return output.setContent(JSON.stringify({success: true, amount: dataSheet[row][2], coins: coins})).setHeader('Access-Control-Allow-Origin', '*');
+            if (dataSheet[row][4] === "CLAIMED") return output.setContent(JSON.stringify({success: true, amount: dataSheet[row][2], coins: coins}));
             if (dataSheet[row][4] === "PENDING") { isPending = true; rowToUpdate = row + 1; break; }
           }
         }
-        if (!isPending) return output.setContent(JSON.stringify({success: false, error: "Đơn không tồn tại hoặc đã xử lý"})).setHeader('Access-Control-Allow-Origin', '*');
+        if (!isPending) return output.setContent(JSON.stringify({success: false, error: "Đơn không tồn tại hoặc đã xử lý"}));
         
         var resApi = UrlFetchApp.fetch("https://api.sieuthicode.net/v1/transactions/list", { 
           "headers": { "Authorization": "Bearer " + STC_TOKEN },
@@ -725,24 +712,24 @@ function doGet(e) {
                   sendTelegramMsg("💰 *NẠP TIỀN VÍ THÀNH CÔNG!*\n💵 Số tiền: +" + realAmount.toLocaleString('vi-VN') + "đ\n💳 Mã đơn: `" + orderId + "`");
                 }
                 
-                return output.setContent(JSON.stringify({success: true, amount: realAmount, coins: coins})).setHeader('Access-Control-Allow-Origin', '*');
+                return output.setContent(JSON.stringify({success: true, amount: realAmount, coins: coins}));
               }
             }
           }
         }
-        return output.setContent(JSON.stringify({success: false})).setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({success: false}));
       } catch (err) {
-        return output.setContent(JSON.stringify({success: false, error: "Hệ thống bận, thử lại sau."})).setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({success: false, error: "Hệ thống bận, thử lại sau."}));
       } finally {
         lock.releaseLock();
       }
     }
 
     if (action === 'get_user_transactions') {
-        if (!sheetThuNgan) return output.setContent(JSON.stringify({success: true, data: []})).setHeader('Access-Control-Allow-Origin', '*');
+        if (!sheetThuNgan) return output.setContent(JSON.stringify({success: true, data: []}));
         var data = sheetThuNgan.getDataRange().getValues(); var result = [];
         for (var i = 1; i < data.length; i++) { if (String(data[i][1]) === String(e.parameter.uid)) result.push({ orderId: data[i][0], amount: data[i][2], status: data[i][4], time: data[i][5] }); }
-        return output.setContent(JSON.stringify({success: true, data: result.reverse()})).setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({success: true, data: result.reverse()}));
     }
 
     if (action === 'get_kingmmo_products') {
@@ -765,7 +752,7 @@ function doGet(e) {
             var resApi = UrlFetchApp.fetch(urlProducts, optionsFetch);
             var kingMmoRaw;
             try { kingMmoRaw = JSON.parse(resApi.getContentText()); } catch(e) {
-                return output.setContent(JSON.stringify({success: false, error: "Lỗi từ Server: " + resApi.getContentText()})).setHeader('Access-Control-Allow-Origin', '*');
+                return output.setContent(JSON.stringify({success: false, error: "Lỗi từ Server: " + resApi.getContentText()}));
             }
 
             if (kingMmoRaw.success && kingMmoRaw.data && kingMmoRaw.data.products) {
@@ -814,7 +801,7 @@ function doGet(e) {
                 if (kingMmoRaw.data.pagination && kingMmoRaw.data.pagination.has_more) { page++; } else { hasMore = false; }
             } else {
                 hasMore = false;
-                if(page === 1) return output.setContent(JSON.stringify({success: false, error: kingMmoRaw.message || "Lỗi API Server"})).setHeader('Access-Control-Allow-Origin', '*');
+                if(page === 1) return output.setContent(JSON.stringify({success: false, error: kingMmoRaw.message || "Lỗi API Server"}));
             }
         }
 
@@ -838,12 +825,12 @@ function doGet(e) {
                 }
             }
         }
-        return output.setContent(JSON.stringify({ success: true, kingmmoProducts: allScannedProducts, configs: configs, customProducts: customProducts })).setHeader('Access-Control-Allow-Origin', '*');
-      } catch (error) { return output.setContent(JSON.stringify({success: false, error: error.message})).setHeader('Access-Control-Allow-Origin', '*'); }
+        return output.setContent(JSON.stringify({ success: true, kingmmoProducts: allScannedProducts, configs: configs, customProducts: customProducts }));
+      } catch (error) { return output.setContent(JSON.stringify({success: false, error: error.message})); }
     }
 
     if (action === 'buy_cert_pending') {
-      if (!sheetCertApple) return output.setContent(JSON.stringify({success: false, error: "Lỗi khởi tạo Sheet CERTAPPLE"})).setHeader('Access-Control-Allow-Origin', '*');
+      if (!sheetCertApple) return output.setContent(JSON.stringify({success: false, error: "Lỗi khởi tạo Sheet CERTAPPLE"}));
       var lock = LockService.getScriptLock();
       try {
         lock.waitLock(12000);
@@ -872,12 +859,12 @@ function doGet(e) {
         sheetCertApple.appendRow([orderId, e.parameter.uid, pId, amount, "PENDING", udid, new Date().toISOString(), e.parameter.productName, finalPrice, "PENDING_PAYMENT"]);
         var teleMsg = "🛒 *KHÁCH VỪA MUA CHỨNG CHỈ*\n📦 SP: *" + e.parameter.productName + "*\n📱 UDID: `" + udid + "`\n💰 Giá trị: " + finalPrice.toLocaleString('vi-VN') + "đ\n💳 Đơn: `" + orderId + "`";
         sendTelegramMsg(teleMsg);
-        return output.setContent(JSON.stringify({success: true, orderId: orderId})).setHeader('Access-Control-Allow-Origin', '*');
-      } catch(err) { return output.setContent(JSON.stringify({success: false, error: "Lỗi tạo đơn: " + err.message})).setHeader('Access-Control-Allow-Origin', '*'); } finally { lock.releaseLock(); }
+        return output.setContent(JSON.stringify({success: true, orderId: orderId}));
+      } catch(err) { return output.setContent(JSON.stringify({success: false, error: "Lỗi tạo đơn: " + err.message})); } finally { lock.releaseLock(); }
     }
 
     if (action === 'buy_mmo_pending') {
-      if (!sheetDonMMO) return output.setContent(JSON.stringify({success: false, error: "Chưa tạo Sheet DonMMO"})).setHeader('Access-Control-Allow-Origin', '*');
+      if (!sheetDonMMO) return output.setContent(JSON.stringify({success: false, error: "Chưa tạo Sheet DonMMO"}));
       var lock = LockService.getScriptLock();
       try {
         lock.waitLock(12000);
@@ -904,27 +891,27 @@ function doGet(e) {
         }
         sheetDonMMO.appendRow([orderId, e.parameter.uid, pId, amount, "PENDING", "", new Date().toISOString(), e.parameter.productName, finalPrice, "PAID"]);
         sendTelegramMsg("🛒 *KHÁCH VỪA MUA MALL*\n📦 SP: " + e.parameter.productName + "\n💳 Đơn: `" + orderId + "`\n💰 Giá trị: " + finalPrice.toLocaleString() + "đ");
-        return output.setContent(JSON.stringify({success: true, orderId: orderId})).setHeader('Access-Control-Allow-Origin', '*');
-      } catch(err) { return output.setContent(JSON.stringify({success: false, error: "Lỗi tạo đơn: " + err.message})).setHeader('Access-Control-Allow-Origin', '*'); } finally { lock.releaseLock(); }
+        return output.setContent(JSON.stringify({success: true, orderId: orderId}));
+      } catch(err) { return output.setContent(JSON.stringify({success: false, error: "Lỗi tạo đơn: " + err.message})); } finally { lock.releaseLock(); }
     }
 
     if (action === 'get_user_mmo_orders') {
-      if (!sheetDonMMO) return output.setContent(JSON.stringify({success: true, data: []})).setHeader('Access-Control-Allow-Origin', '*');
+      if (!sheetDonMMO) return output.setContent(JSON.stringify({success: true, data: []}));
       var data = sheetDonMMO.getDataRange().getValues(); var result = [];
       for(var i = 1; i < data.length; i++) { if(String(data[i][1]) === String(e.parameter.uid)) result.push({ orderId: data[i][0], productId: data[i][2], amount: data[i][3], status: data[i][4], accountData: data[i][5], time: data[i][6], productName: data[i][7], isPaid: data[i][9] === "PAID" }); }
-      return output.setContent(JSON.stringify({success: true, data: result.reverse()})).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({success: true, data: result.reverse()}));
     }
 
     if (action === 'admin_get_all_mmo_orders') {
-      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({success: false, error: "Sai PIN"})).setHeader('Access-Control-Allow-Origin', '*');
-      if (!sheetDonMMO) return output.setContent(JSON.stringify({success: true, data: []})).setHeader('Access-Control-Allow-Origin', '*');
+      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({success: false, error: "Sai PIN"}));
+      if (!sheetDonMMO) return output.setContent(JSON.stringify({success: true, data: []}));
       var data = sheetDonMMO.getDataRange().getValues(); var allOrders = [];
       for(var i = 1; i < data.length; i++) { allOrders.push({ row: i + 1, orderId: data[i][0], uid: data[i][1], productId: data[i][2], amount: data[i][3], status: data[i][4], accountData: data[i][5], time: data[i][6], productName: data[i][7], price: data[i][8], isPaid: data[i][9] === "PAID" }); }
-      return output.setContent(JSON.stringify({success: true, data: allOrders.reverse()})).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({success: true, data: allOrders.reverse()}));
     }
 
     if (action === 'admin_fulfill_kingmmo') {
-      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({success: false, error: "Sai PIN"})).setHeader('Access-Control-Allow-Origin', '*');
+      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({success: false, error: "Sai PIN"}));
       var rowToUpdate = parseInt(e.parameter.row);
       try {
         var urlBuy = KINGMMO_BASE_URL + "/orders/create"; 
@@ -948,29 +935,29 @@ function doGet(e) {
         if (json.success === true) {
           var accountInfo = "Tạo đơn API V1 Thành Công!\n(Trans ID: " + json.data.orders[0].trans_id + ")";
           sheetDonMMO.getRange(rowToUpdate, 5, 1, 2).setValues([["COMPLETED", accountInfo]]); 
-          return output.setContent(JSON.stringify({success: true})).setHeader('Access-Control-Allow-Origin', '*');
-        } else { return output.setContent(JSON.stringify({success: false, error: json.message || "Lỗi giao dịch API"})).setHeader('Access-Control-Allow-Origin', '*'); }
-      } catch (err) { return output.setContent(JSON.stringify({success: false, error: "Lỗi kết nối API Server: " + err.message})).setHeader('Access-Control-Allow-Origin', '*'); }
+          return output.setContent(JSON.stringify({success: true}));
+        } else { return output.setContent(JSON.stringify({success: false, error: json.message || "Lỗi giao dịch API"})); }
+      } catch (err) { return output.setContent(JSON.stringify({success: false, error: "Lỗi kết nối API Server: " + err.message})); }
     }
 
-    if (action === 'verify_pin') return output.setContent(JSON.stringify({success: String(e.parameter.pin) === String(SECRET_ADMIN_PASS)})).setHeader('Access-Control-Allow-Origin', '*');
+    if (action === 'verify_pin') return output.setContent(JSON.stringify({success: String(e.parameter.pin) === String(SECRET_ADMIN_PASS)}));
     
     if (action === 'get_admin_data') {
-      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({success: false, error: "Từ chối"})).setHeader('Access-Control-Allow-Origin', '*');
-      return output.setContent(JSON.stringify({success: true, dataThuNgan: sheetThuNgan ? sheetThuNgan.getDataRange().getValues() : []})).setHeader('Access-Control-Allow-Origin', '*');
+      if (String(e.parameter.pin) !== String(SECRET_ADMIN_PASS)) return output.setContent(JSON.stringify({success: false, error: "Từ chối"}));
+      return output.setContent(JSON.stringify({success: true, dataThuNgan: sheetThuNgan ? sheetThuNgan.getDataRange().getValues() : []}));
     }
 
     if (action === 'notify_admin') {
       var msg = e.parameter.message;
       sendTelegramMsg(msg);
-      return output.setContent(JSON.stringify({ success: true })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true }));
     }
 
     if (action === 'get_account') {
       var type = e.parameter.type;
       var uid = e.parameter.uid;
       var sheetAcc = ss.getSheetByName("Accounts");
-      if (!sheetAcc) return output.setContent(JSON.stringify({ success: false, error: "Hết hàng hoặc hệ thống chưa cấu hình Accounts." })).setHeader('Access-Control-Allow-Origin', '*');
+      if (!sheetAcc) return output.setContent(JSON.stringify({ success: false, error: "Hết hàng hoặc hệ thống chưa cấu hình Accounts." }));
       var dataAcc = sheetAcc.getDataRange().getValues();
       for (var i = 1; i < dataAcc.length; i++) {
         if (dataAcc[i][0] === type && dataAcc[i][2] !== "SOLD") {
@@ -978,15 +965,15 @@ function doGet(e) {
           sheetAcc.getRange(i + 1, 3).setValue("SOLD");
           sheetAcc.getRange(i + 1, 4).setValue(uid);
           sheetAcc.getRange(i + 1, 5).setValue(new Date().toISOString());
-          return output.setContent(JSON.stringify({ success: true, account: accValue })).setHeader('Access-Control-Allow-Origin', '*');
+          return output.setContent(JSON.stringify({ success: true, account: accValue }));
         }
       }
-      return output.setContent(JSON.stringify({ success: false, error: "Sản phẩm này đã hết hàng!" })).setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: false, error: "Sản phẩm này đã hết hàng!" }));
     }
 
-    return output.setContent(JSON.stringify({error: "Lệnh GET không hợp lệ!"})).setHeader('Access-Control-Allow-Origin', '*');
+    return output.setContent(JSON.stringify({error: "Lệnh GET không hợp lệ!"}));
   } catch (err) { 
-    return output.setContent(JSON.stringify({success: false, error: err.toString()})).setHeader('Access-Control-Allow-Origin', '*'); 
+    return output.setContent(JSON.stringify({success: false, error: err.toString()})); 
   }
 }
 
@@ -1005,8 +992,7 @@ function doPost(e) {
     
     // Bảo mật: Xác thực mã PIN Admin
     if (String(pin) !== String(SECRET_ADMIN_PASS)) {
-      return output.setContent(JSON.stringify({ success: false, error: "Sai mã PIN Admin!" }))
-        .setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: false, error: "Sai mã PIN Admin!" }));
     }
     
     // 1. Phê duyệt bàn giao hàng thủ công
@@ -1022,11 +1008,9 @@ function doPost(e) {
         var pName = sheetDonMMO.getRange(row, 8).getValue();
         sendTelegramMsg("📦 *BÀN GIAO THỦ CÔNG THÀNH CÔNG*\n💳 Đơn: `" + orderId + "`\n🛍️ SP: *" + pName + "*\n🔑 Tài khoản: " + accountData);
         
-        return output.setContent(JSON.stringify({ success: true }))
-          .setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({ success: true }));
       }
-      return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ!" }))
-        .setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ!" }));
     }
     
     // 2. Xóa đơn hàng MMO
@@ -1035,19 +1019,16 @@ function doPost(e) {
       var sheetDonMMO = ss.getSheetByName("DonMMO");
       if (row > 1 && row <= sheetDonMMO.getLastRow()) {
         sheetDonMMO.deleteRow(row);
-        return output.setContent(JSON.stringify({ success: true }))
-          .setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({ success: true }));
       }
-      return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ!" }))
-        .setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: false, error: "Dòng không hợp lệ!" }));
     }
     
     // 3. Đồng bộ và lưu trữ cấu hình sản phẩm MMO
     if (action === 'admin_save_mmo_config') {
       var configsStr = parameter.configs;
       if (!configsStr) {
-        return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu cấu hình" }))
-          .setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu cấu hình" }));
       }
       
       var configsList = JSON.parse(configsStr);
@@ -1057,7 +1038,7 @@ function doPost(e) {
       }
       
       sheetConfigMMO.clearContents();
-      sheetConfigMMO.appendRow(["ID", "Đơn Giá", "Giá Gốc (Fake)", "Icon/Hình Ảnh", "Trạng Thái Ẩn (TRUE/FALSE)", "Tên Sản Phẩm", "Danh Mục", "Tồn Kho", "Mô Tả"]);
+      sheetConfigMMO.appendRow(["ID", "Đơn Giá", "Giá Gốc (Fake)", "Icon/Hình Ảnh", "Trạng thái Ẩn (TRUE/FALSE)", "Tên Sản Phẩm", "Danh Mục", "Tồn Kho", "Mô Tả"]);
       sheetConfigMMO.setFrozenRows(1);
       sheetConfigMMO.getRange("A1:I1").setFontWeight("bold");
       
@@ -1076,16 +1057,14 @@ function doPost(e) {
         ]);
       }
       ss.flush();
-      return output.setContent(JSON.stringify({ success: true }))
-        .setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true }));
     }
     
     // 4. Đồng bộ và lưu trữ kho phím tắt Shortcuts
     if (action === 'admin_save_shortcuts') {
       var shortcutsStr = parameter.shortcuts;
       if (!shortcutsStr) {
-        return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu phím tắt" }))
-          .setHeader('Access-Control-Allow-Origin', '*');
+        return output.setContent(JSON.stringify({ success: false, error: "Thiếu dữ liệu phím tắt" }));
       }
       
       var list = JSON.parse(shortcutsStr);
@@ -1130,14 +1109,11 @@ function doPost(e) {
         ]);
       }
       ss.flush();
-      return output.setContent(JSON.stringify({ success: true }))
-        .setHeader('Access-Control-Allow-Origin', '*');
+      return output.setContent(JSON.stringify({ success: true }));
     }
     
-    return output.setContent(JSON.stringify({ error: "Lệnh POST không hợp lệ!" }))
-      .setHeader('Access-Control-Allow-Origin', '*');
+    return output.setContent(JSON.stringify({ error: "Lệnh POST không hợp lệ!" }));
   } catch (err) {
-    return output.setContent(JSON.stringify({ success: false, error: err.toString() }))
-      .setHeader('Access-Control-Allow-Origin', '*');
+    return output.setContent(JSON.stringify({ success: false, error: err.toString() }));
   }
 }
