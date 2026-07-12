@@ -1140,7 +1140,7 @@ function doPost(e) {
       ss.flush();
       return output.setContent(JSON.stringify({ success: true }));
     }
-    
+
     // 6. Dạy AI trực tiếp một cặp Q&A từ khung Chat
     if (action === 'admin_teach_single_qa') {
       var question = parameter.question ? parameter.question.toString().trim() : "";
