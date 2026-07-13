@@ -2,17 +2,7 @@
   const currentScript = document.currentScript;
   const bottomOffset = currentScript ? (currentScript.getAttribute('data-bottom') || '30px') : '30px';
   const pathPrefix = currentScript ? (currentScript.getAttribute('data-path-prefix') || '') : '';
-  const getZoomFactor = () => {
-    if (!document.body) return 1;
-    const zoomStr = window.getComputedStyle(document.body).zoom || '1';
-    if (zoomStr.includes('%')) {
-      return parseFloat(zoomStr) / 100;
-    }
-    const val = parseFloat(zoomStr);
-    return isNaN(val) ? 1 : (val > 1.5 ? val / 100 : val);
-  };
-  const bodyZoom = getZoomFactor();
-  const iframeSrc = `${pathPrefix}support.html?embed=true&zoom=${bodyZoom}&v=4`;
+  const iframeSrc = `${pathPrefix}support.html?embed=true&v=5`;
 
   // Inject Stylesheet
   const style = document.createElement('style');
@@ -26,6 +16,8 @@
       height: 55px;
       pointer-events: none;
       overflow: hidden;
+      /* Reset CSS zoom inherited from body so widget always renders at 100% scale */
+      zoom: 1 !important;
       transition: width 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
                   height 0.25s cubic-bezier(0.19, 1, 0.22, 1);
     }
@@ -101,6 +93,11 @@
     .container-wrap:hover:after {
       width: 59px;
       height: 59px;
+    }
+
+    #floatingUtilityWidget.widget-expanded .container-wrap:after {
+      opacity: 0;
+      pointer-events: none;
     }
 
     .card {
@@ -321,11 +318,6 @@
       transform: none !important;
     }
 
-    #floatingUtilityWidget.widget-expanded .container-wrap:after {
-      opacity: 0;
-      pointer-events: none;
-    }
-
     .area:nth-child(15):hover ~ .container-wrap .card,
     .area:nth-child(15):hover ~ .container-wrap .eyes .eye {
       transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(15deg)
@@ -458,16 +450,10 @@
               </div>
               <div class="eyes happy">
                 <svg fill="none" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M8.28386 16.2843C8.9917 15.7665 9.8765 14.731 12 14.731C14.1235 14.731 15.0083 15.7665 15.7161 16.2843C17.8397 17.8376 18.7542 16.4845 18.9014 15.7665C19.4323 13.1777 17.6627 11.1066 17.3088 10.5888C16.3844 9.23666 14.1235 8 12 8C9.87648 8 7.61556 9.23666 6.69122 10.5888C6.33728 11.1066 4.56771 13.1777 5.09858 15.7665C5.24582 16.4845 6.16034 17.8376 8.28386 16.2843Z"
-                  ></path>
+                  <path fill="currentColor" d="M8.28386 16.2843C8.9917 15.7665 9.8765 14.731 12 14.731C14.1235 14.731 15.0083 15.7665 15.7161 16.2843C17.8397 17.8376 18.7542 16.4845 18.9014 15.7665C19.4323 13.1777 17.6627 11.1066 17.3088 10.5888C16.3844 9.23666 14.1235 8 12 8C9.87648 8 7.61556 9.23666 6.69122 10.5888C6.33728 11.1066 4.56771 13.1777 5.09858 15.7665C5.24582 16.4845 6.16034 17.8376 8.28386 16.2843Z"></path>
                 </svg>
                 <svg fill="none" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M8.28386 16.2843C8.9917 15.7665 9.8765 14.731 12 14.731C14.1235 14.731 15.0083 15.7665 15.7161 16.2843C17.8397 17.8376 18.7542 16.4845 18.9014 15.7665C19.4323 13.1777 17.6627 11.1066 17.3088 10.5888C16.3844 9.23666 14.1235 8 12 8C9.87648 8 7.61556 9.23666 6.69122 10.5888C6.33728 11.1066 4.56771 13.1777 5.09858 15.7665C5.24582 16.4845 6.16034 17.8376 8.28386 16.2843Z"
-                  ></path>
+                  <path fill="currentColor" d="M8.28386 16.2843C8.9917 15.7665 9.8765 14.731 12 14.731C14.1235 14.731 15.0083 15.7665 15.7161 16.2843C17.8397 17.8376 18.7542 16.4845 18.9014 15.7665C19.4323 13.1777 17.6627 11.1066 17.3088 10.5888C16.3844 9.23666 14.1235 8 12 8C9.87648 8 7.61556 9.23666 6.69122 10.5888C6.33728 11.1066 4.56771 13.1777 5.09858 15.7665C5.24582 16.4845 6.16034 17.8376 8.28386 16.2843Z"></path>
                 </svg>
               </div>
             </div>
@@ -484,16 +470,6 @@
     </div>
   `;
   document.body.appendChild(widget);
-
-  // Apply inverse scale dynamically to counteract document.body zoom without WebKit iframe zoom bugs
-  const updateZoom = () => {
-    const zoomFactor = getZoomFactor();
-    const invScale = 1 / zoomFactor;
-    widget.style.transform = `scale(${invScale})`;
-    widget.style.transformOrigin = 'bottom right';
-  };
-  updateZoom();
-  window.addEventListener('resize', updateZoom);
 
   // Set chat state helper and toggle class
   const checkbox = document.getElementById('quickChatToggleCheckbox');

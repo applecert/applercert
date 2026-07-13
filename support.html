@@ -570,6 +570,8 @@
       min-height: 100% !important;
       max-height: 100% !important;
       overflow: hidden !important;
+      /* Reset zoom: 1 inside iframe so parent body zoom doesn't affect layout */
+      zoom: 1 !important;
     }
     .is-embedded header {
       display: none !important;
@@ -796,23 +798,7 @@
       document.documentElement.classList.add('is-embedded');
     }
 
-    // Neutralize parent document body zoom propagation inside iframe (WebKit/iOS Safari compatibility)
-    if (window.self !== window.top) {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const parentZoom = urlParams.get('zoom') || '1';
-        let zoomFactor = parseFloat(parentZoom) || 1;
-        if (zoomFactor > 1.5) {
-          zoomFactor = zoomFactor / 100;
-        }
-        if (zoomFactor !== 1) {
-          const invZoom = 1 / zoomFactor;
-          document.documentElement.style.zoom = invZoom;
-        }
-      } catch (e) {
-        console.warn("Failed to counteract parent zoom:", e);
-      }
-    }
+    // zoom: 1 is set in CSS for html.is-embedded - no JS zoom counteraction needed
 
     function safeRedirect(url) {
       if (window.self !== window.top) {
