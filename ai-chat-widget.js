@@ -2,22 +2,33 @@
   const currentScript = document.currentScript;
   const bottomOffset = currentScript ? (currentScript.getAttribute('data-bottom') || '30px') : '30px';
   const pathPrefix = currentScript ? (currentScript.getAttribute('data-path-prefix') || '') : '';
-  const iframeSrc = `${pathPrefix}support.html?embed=true&v=5`;
+  const iframeSrc = `${pathPrefix}support.html?embed=true&v=6`;
 
   // Inject Stylesheet
   const style = document.createElement('style');
   style.textContent = `
-    #floatingUtilityWidget {
+    /* Outer isolation wrapper – sits on <html> element directly, completely outside the body zoom scope */
+    #floatingWidgetRoot {
       position: fixed;
       bottom: ${bottomOffset};
       right: 20px;
-      z-index: 9999;
+      z-index: 2147483647;
+      pointer-events: none;
+      /* Absolutely reset any zoom that body might have set */
+      zoom: normal;
+      /* Force a new top-level composite layer so WebKit renders correctly */
+      will-change: transform;
+      isolation: isolate;
+      /* Eliminate any accidental coordinate system pollution */
+      transform: translateZ(0);
+    }
+
+    #floatingUtilityWidget {
+      position: relative;
       width: 55px;
       height: 55px;
       pointer-events: none;
       overflow: hidden;
-      /* Reset CSS zoom inherited from body so widget always renders at 100% scale */
-      zoom: 1 !important;
       transition: width 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
                   height 0.25s cubic-bezier(0.19, 1, 0.22, 1);
     }
@@ -86,7 +97,7 @@
       z-index: -20;
     }
 
-    .dark .container-wrap:after {
+    #floatingWidgetRoot.dark .container-wrap:after {
       background-color: #1e293b;
     }
 
@@ -126,7 +137,7 @@
       overflow: hidden;
     }
 
-    .dark .background-blur-balls {
+    #floatingWidgetRoot.dark .background-blur-balls {
       background-color: rgba(15, 23, 42, 0.85);
     }
 
@@ -215,7 +226,7 @@
       transition: all 0.3s ease;
     }
 
-    .dark .eyes .eye {
+    #floatingWidgetRoot.dark .eyes .eye {
       background-color: #fff;
     }
 
@@ -225,7 +236,7 @@
       gap: 0;
     }
 
-    .dark .eyes.happy {
+    #floatingWidgetRoot.dark .eyes.happy {
       color: #fff;
     }
 
@@ -266,7 +277,7 @@
       z-index: 20;
     }
 
-    .dark .chat-window-panel {
+    #floatingWidgetRoot.dark .chat-window-panel {
       background: rgba(15, 23, 42, 0.98);
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     }
@@ -298,7 +309,7 @@
       transition: background 0.2s, color 0.2s;
     }
 
-    .dark .chat-close-btn {
+    #floatingWidgetRoot.dark .chat-close-btn {
       background: rgba(255, 255, 255, 0.1);
       color: #cbd5e1;
     }
@@ -308,7 +319,7 @@
       color: #0f172a;
     }
 
-    .dark .chat-close-btn:hover {
+    #floatingWidgetRoot.dark .chat-close-btn:hover {
       background: rgba(255, 255, 255, 0.2);
       color: #fff;
     }
@@ -469,7 +480,21 @@
       <iframe src="${iframeSrc}" scrolling="no" style="width: 100%; height: 100%; border: none; border-radius: 20px; background: transparent;"></iframe>
     </div>
   `;
-  document.body.appendChild(widget);
+
+  // Mount widget in an isolation root directly on <html> — completely outside <body> zoom scope
+  const widgetRoot = document.createElement('div');
+  widgetRoot.id = 'floatingWidgetRoot';
+  // Sync dark mode class from <html> or <body>
+  const syncDarkMode = () => {
+    const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+    widgetRoot.classList.toggle('dark', isDark);
+  };
+  syncDarkMode();
+  const darkObserver = new MutationObserver(syncDarkMode);
+  darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  darkObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  widgetRoot.appendChild(widget);
+  document.documentElement.appendChild(widgetRoot);
 
   // Set chat state helper and toggle class
   const checkbox = document.getElementById('quickChatToggleCheckbox');
