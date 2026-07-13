@@ -480,7 +480,7 @@
       </label>
     </div>
   `;
-  document.body.appendChild(widget);
+  document.documentElement.appendChild(widget);
 
   // Close quick chat button click
   document.getElementById('closeQuickChatBtn').addEventListener('click', function(e) {
