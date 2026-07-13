@@ -473,14 +473,23 @@
             </div>
             <div class="container-ai-chat">
               <button class="chat-close-btn" id="closeQuickChatBtn" type="button">&times;</button>
-              <iframe src="${iframeSrc}" style="width: 320px; height: 450px; border: none; border-radius: 20px; background: transparent;"></iframe>
+              <iframe src="${iframeSrc}" scrolling="no" style="width: 320px; height: 450px; border: none; border-radius: 20px; background: transparent;"></iframe>
             </div>
           </div>
         </div>
       </label>
     </div>
   `;
-  document.documentElement.appendChild(widget);
+  document.body.appendChild(widget);
+
+  // Apply inverse zoom dynamically to counteract document.body zoom
+  const updateZoom = () => {
+    const bodyZoom = window.getComputedStyle(document.body).zoom || '1';
+    const zoomFactor = parseFloat(bodyZoom) || 1;
+    widget.style.zoom = 1 / zoomFactor;
+  };
+  updateZoom();
+  window.addEventListener('resize', updateZoom);
 
   // Close quick chat button click
   document.getElementById('closeQuickChatBtn').addEventListener('click', function(e) {
