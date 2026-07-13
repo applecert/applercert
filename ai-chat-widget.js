@@ -482,11 +482,13 @@
   `;
   document.body.appendChild(widget);
 
-  // Apply inverse zoom dynamically to counteract document.body zoom
+  // Apply inverse scale dynamically to counteract document.body zoom without WebKit iframe zoom bugs
   const updateZoom = () => {
     const bodyZoom = window.getComputedStyle(document.body).zoom || '1';
     const zoomFactor = parseFloat(bodyZoom) || 1;
-    widget.style.zoom = 1 / zoomFactor;
+    const invScale = 1 / zoomFactor;
+    widget.style.transform = `scale(${invScale})`;
+    widget.style.transformOrigin = 'bottom right';
   };
   updateZoom();
   window.addEventListener('resize', updateZoom);
