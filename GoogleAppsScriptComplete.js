@@ -104,6 +104,107 @@ function updateVipOnFirestore(uid, addedDays) {
   }
 }
 
+/**
+ * Hàm cập nhật ví coins và totalDeposited lên Firestore từ Server-side (REST API)
+ */
+function updateCoinsOnFirestore(uid, addedCoins, addedAmount) {
+  try {
+    if (!FIREBASE_PROJECT_ID || FIREBASE_PROJECT_ID === "IPAVIET-PROJECT-ID" || !FIREBASE_API_KEY || FIREBASE_API_KEY === "YOUR_FIREBASE_API_KEY") {
+      sendTelegramMsg("⚠️ Lỗi cấu hình Firebase Project ID hoặc API Key trong Apps Script.");
+      return false;
+    }
+    
+    // 1. Lấy thông tin user hiện tại từ Firestore
+    var getUrl = "https://firestore.googleapis.com/v1/projects/" + FIREBASE_PROJECT_ID + "/databases/(default)/documents/users/" + uid + "?key=" + FIREBASE_API_KEY;
+    var getRes = UrlFetchApp.fetch(getUrl, { "method": "get", "muteHttpExceptions": true });
+    
+    var currentCoins = 0;
+    var currentTotalDeposited = 0;
+    
+    if (getRes.getResponseCode() === 200) {
+      var userDoc = JSON.parse(getRes.getContentText());
+      if (userDoc.fields) {
+        if (userDoc.fields.coins) {
+          if (userDoc.fields.coins.integerValue) {
+            currentCoins = parseInt(userDoc.fields.coins.integerValue);
+          } else if (userDoc.fields.coins.doubleValue) {
+            currentCoins = parseFloat(userDoc.fields.coins.doubleValue);
+          }
+        }
+        if (userDoc.fields.totalDeposited) {
+          if (userDoc.fields.totalDeposited.integerValue) {
+            currentTotalDeposited = parseInt(userDoc.fields.totalDeposited.integerValue);
+          } else if (userDoc.fields.totalDeposited.doubleValue) {
+            currentTotalDeposited = parseFloat(userDoc.fields.totalDeposited.doubleValue);
+          }
+        }
+      }
+    }
+    
+    var newCoins = currentCoins + addedCoins;
+    var newTotalDeposited = currentTotalDeposited + addedAmount;
+    
+    // 2. Gửi lệnh cập nhật ghi đè trường coins và totalDeposited
+    var patchUrl = getUrl + "&updateMask.fieldPaths=coins&updateMask.fieldPaths=totalDeposited";
+    var patchPayload = {
+      "name": "projects/" + FIREBASE_PROJECT_ID + "/databases/(default)/documents/users/" + uid,
+      "fields": {
+        "coins": { "integerValue": newCoins },
+        "totalDeposited": { "integerValue": newTotalDeposited }
+      }
+    };
+    
+    var patchRes = UrlFetchApp.fetch(patchUrl, {
+      "method": "PATCH",
+      "contentType": "application/json",
+      "payload": JSON.stringify(patchPayload),
+      "muteHttpExceptions": true
+    });
+    
+    var responseCode = patchRes.getResponseCode();
+    if (responseCode !== 200) {
+      sendTelegramMsg("⚠️ Lỗi Firestore REST API khi cộng tiền cho UID " + uid + " (Code " + responseCode + "): " + patchRes.getContentText());
+      return false;
+    }
+    return true;
+  } catch(e) {
+    sendTelegramMsg("⚠️ Lỗi khi cập nhật coins Firestore cho UID " + uid + ": " + e.toString());
+    return false;
+  }
+}
+
+/**
+ * Hàm ghi nhận lịch sử giao dịch nạp xu vào Firestore từ Server-side (REST API)
+ */
+function createTransactionOnFirestore(uid, orderId, coinsToCredit) {
+  try {
+    if (!FIREBASE_PROJECT_ID || FIREBASE_PROJECT_ID === "IPAVIET-PROJECT-ID" || !FIREBASE_API_KEY || FIREBASE_API_KEY === "YOUR_FIREBASE_API_KEY") {
+      return false;
+    }
+    
+    var url = "https://firestore.googleapis.com/v1/projects/" + FIREBASE_PROJECT_ID + "/databases/(default)/documents/users/" + uid + "/transactions?documentId=" + orderId + "&key=" + FIREBASE_API_KEY;
+    
+    var payload = {
+      "fields": {
+        "amount": { "integerValue": coinsToCredit },
+        "desc": { "stringValue": "Nạp ví (" + orderId + ")" },
+        "timestamp": { "timestampValue": new Date().toISOString() }
+      }
+    };
+    
+    var res = UrlFetchApp.fetch(url, {
+      "method": "POST",
+      "contentType": "application/json",
+      "payload": JSON.stringify(payload),
+      "muteHttpExceptions": true
+    });
+    
+    return res.getResponseCode() === 200;
+  } catch(e) {
+    return false;
+  }
+}
+
 // ===================================================================
 // HÀM HỖ TRỢ GỬI THÔNG BÁO PUSH HÀNG LOẠT (EXPO PUSH API V2)
 // ===================================================================
@@ -702,17 +803,23 @@ function doGet(e) {
               if (tx.type === "IN" && tx.description && tx.description.toUpperCase().includes(orderId)) {
                 var realAmount = parseInt(tx.amount);
                 
-                sheetThuNgan.getRange(rowToUpdate, 3, 1, 3).setValues([[realAmount, realAmount, "CLAIMED"]]);
-                
-                var isVipOrder = (orderId.indexOf("IPA") === 0);
-                if (isVipOrder) {
-                  var firebaseSuccess = updateVipOnFirestore(uid, coins);
-                  sendTelegramMsg("👑 *MUA GÓI VIP THÀNH CÔNG!*\n💵 Số tiền: +" + realAmount.toLocaleString('vi-VN') + "đ\n💳 Mã đơn: `" + orderId + "`\n🔄 Firestore VIP: " + (firebaseSuccess ? "Thành công" : "Thất bại"));
-                } else {
-                  sendTelegramMsg("💰 *NẠP TIỀN VÍ THÀNH CÔNG!*\n💵 Số tiền: +" + realAmount.toLocaleString('vi-VN') + "đ\n💳 Mã đơn: `" + orderId + "`");
+                // Tính toán coinsToCredit dựa trên tỉ lệ coins/amount của đơn hàng để cộng đúng số coins (gồm cả khuyến mãi)
+                var coinsToCredit = realAmount;
+                var origAmount = parseInt(dataSheet[rowToUpdate - 1][2]) || 0;
+                if (origAmount > 0 && coins > 0) {
+                  var ratio = coins / origAmount;
+                  coinsToCredit = Math.floor(realAmount * ratio);
                 }
                 
-                return output.setContent(JSON.stringify({success: true, amount: realAmount, coins: coins}));
+                sheetThuNgan.getRange(rowToUpdate, 3, 1, 3).setValues([[realAmount, realAmount, "CLAIMED"]]);
+                
+                // Thực hiện cộng tiền và tạo lịch sử giao dịch trực tiếp trên Firestore ở Server-side
+                var firebaseSuccess = updateCoinsOnFirestore(uid, coinsToCredit, realAmount);
+                createTransactionOnFirestore(uid, orderId, coinsToCredit);
+                
+                sendTelegramMsg("💰 *NẠP TIỀN VÍ THÀNH CÔNG!*\n💵 Số tiền: +" + realAmount.toLocaleString('vi-VN') + "đ\n🪙 Số xu nhận: +" + coinsToCredit.toLocaleString('vi-VN') + "\n💳 Mã đơn: `" + orderId + "`\n🔄 Firestore: " + (firebaseSuccess ? "Thành công" : "Thất bại"));
+                
+                return output.setContent(JSON.stringify({success: true, amount: realAmount, coins: coinsToCredit}));
               }
             }
           }
@@ -1042,16 +1149,21 @@ function doPost(e) {
                 
                 if (orderId && desc.indexOf(orderId) !== -1) {
                   if (status === "PENDING") {
+                    var coinsToCredit = realAmount;
+                    var origAmount = parseInt(dataSheet[row][2]) || 0;
+                    if (origAmount > 0 && coins > 0) {
+                      var ratio = coins / origAmount;
+                      coinsToCredit = Math.floor(realAmount * ratio);
+                    }
+                    
                     var rowToUpdate = row + 1;
                     sheetThuNgan.getRange(rowToUpdate, 3, 1, 3).setValues([[realAmount, realAmount, "CLAIMED"]]);
                     
-                    var isVipOrder = (orderId.indexOf("IPA") === 0);
-                    if (isVipOrder) {
-                      var firebaseSuccess = updateVipOnFirestore(uid, coins);
-                      sendTelegramMsg("👑 *TỰ ĐỘNG MUA VIP THÀNH CÔNG (WEBHOOK)*\n💵 Số tiền: +" + realAmount.toLocaleString('vi-VN') + "đ\n💳 Mã đơn: `" + orderId + "`\n🔄 Firestore VIP: " + (firebaseSuccess ? "Thành công" : "Thất bại"));
-                    } else {
-                      sendTelegramMsg("💰 *TỰ ĐỘNG NẠP TIỀN VÍ THÀNH CÔNG (WEBHOOK)*\n💵 Số tiền: +" + realAmount.toLocaleString('vi-VN') + "đ\n💳 Mã đơn: `" + orderId + "`");
-                    }
+                    // Thực hiện cộng tiền và tạo lịch sử giao dịch trực tiếp trên Firestore ở Server-side
+                    var firebaseSuccess = updateCoinsOnFirestore(uid, coinsToCredit, realAmount);
+                    createTransactionOnFirestore(uid, orderId, coinsToCredit);
+                    
+                    sendTelegramMsg("💰 *TỰ ĐỘNG NẠP TIỀN VÍ THÀNH CÔNG (WEBHOOK)*\n💵 Số tiền: +" + realAmount.toLocaleString('vi-VN') + "đ\n🪙 Số xu nhận: +" + coinsToCredit.toLocaleString('vi-VN') + "\n💳 Mã đơn: `" + orderId + "`\n🔄 Firestore: " + (firebaseSuccess ? "Thành công" : "Thất bại"));
                     processedCount++;
                   }
                   break; 

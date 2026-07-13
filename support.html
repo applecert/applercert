@@ -2253,33 +2253,17 @@
               clearInterval(pollingInterval);
               pollingInterval = null;
               
-              // Firestore Credit Coins
-              const txRef = db.collection("users").doc(currentUser.uid).collection("transactions").doc(orderId);
-              const txSnap = await txRef.get();
+              // Show success inside chat
+              const statusEl = document.getElementById('depositStatusText');
+              if (statusEl) {
+                statusEl.innerHTML = "✅ Thanh toán thành công! Hệ thống đã ghi nhận.";
+                statusEl.parentElement.classList.remove('text-yellow-600', 'dark:text-yellow-400', 'animate-pulse');
+                statusEl.parentElement.classList.add('text-green-500');
+              }
               
-              if (!txSnap.exists) {
-                await db.collection("users").doc(currentUser.uid).set({
-                  coins: firebase.firestore.FieldValue.increment(coins),
-                  totalDeposited: firebase.firestore.FieldValue.increment(amount)
-                }, { merge: true });
-                
-                await txRef.set({
-                  amount: coins,
-                  desc: `Nạp ví qua bot AI (${orderId})`,
-                  timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                // Show success inside chat
-                const statusEl = document.getElementById('depositStatusText');
-                if (statusEl) {
-                  statusEl.innerHTML = "✅ Thanh toán thành công! Hệ thống đã ghi nhận.";
-                  statusEl.parentElement.classList.remove('text-yellow-600', 'dark:text-yellow-400', 'animate-pulse');
-                  statusEl.parentElement.classList.add('text-green-500');
-                }
-                
-                showTypingIndicator();
-                setTimeout(() => {
-                  hideTypingIndicator();
+              showTypingIndicator();
+              setTimeout(() => {
+                hideTypingIndicator();
                   
                   // If they deposited to buy VIP, offer VIP activation immediately!
                   if (chatState.currentFlow === 'vip_insufficient' && chatState.payload) {

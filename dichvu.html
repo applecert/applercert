@@ -868,27 +868,10 @@ document.addEventListener('click', function(e) {
                 currentOrder.isCredited = true; // Khóa vĩnh viễn đơn này trong phiên
                 clearInterval(pollingInterval); pollingInterval = null;
 
-                // 🔥 BỨC TƯỜNG THÉP FIREBASE: Bắt buộc lấy Mã Đơn làm tên tài liệu giao dịch (Không thể sinh trùng 2 lần)
-                const txRef = db.collection("users").doc(currentUser.uid).collection("transactions").doc(currentOrder.id);
-                const txSnap = await txRef.get();
+                btn.innerHTML = `Thanh toán thành công`; 
+                btn.classList.replace('bg-brand', 'bg-green-500');
 
-                if (!txSnap.exists) { // Nếu giao dịch chưa tồn tại trên hệ thống thì mới cộng
-                    await db.collection("users").doc(currentUser.uid).set({ 
-                        coins: firebase.firestore.FieldValue.increment(currentOrder.coins), 
-                        totalDeposited: firebase.firestore.FieldValue.increment(currentOrder.finalAmount) 
-                    }, { merge: true });
-                    
-                    await txRef.set({ 
-                        amount: currentOrder.coins, 
-                        desc: `Nạp ví (${currentOrder.id})`, 
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-                    });
-
-                    btn.innerHTML = `Thanh toán thành công`; 
-                    btn.classList.replace('bg-brand', 'bg-green-500');
-
-                    setTimeout(() => { closeCheckout(); renderStoreModal('success', 'Nạp Tiền Thành Công!', `Đã cộng +${currentOrder.coins.toLocaleString()}đ vào ví.`, closeActionModal, 'Tuyệt vời'); }, 1500);
-                }
+                setTimeout(() => { closeCheckout(); renderStoreModal('success', 'Nạp Tiền Thành Công!', `Đã cộng +${currentOrder.coins.toLocaleString()}đ vào ví.`, closeActionModal, 'Tuyệt vời'); }, 1500);
             }
         } catch(e) { 
         } finally {
