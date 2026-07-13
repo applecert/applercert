@@ -15,6 +15,8 @@
       z-index: 9999;
       width: 55px;
       height: 55px;
+      pointer-events: none;
+      overflow: hidden;
       transition: width 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
                   height 0.25s cubic-bezier(0.19, 1, 0.22, 1);
     }
@@ -22,6 +24,7 @@
     #floatingUtilityWidget.widget-expanded {
       width: 320px;
       height: 450px;
+      overflow: visible;
     }
 
     .container-ai-input {
@@ -29,12 +32,20 @@
       --translateY: 8px;
       position: absolute;
       left: 0;
-      right: 0;
       top: 0;
-      bottom: 0;
+      width: 55px;
+      height: 55px;
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       transform-style: preserve-3d;
+      pointer-events: auto;
+      transition: opacity 0.2s ease, visibility 0.2s;
+    }
+
+    #floatingUtilityWidget.widget-expanded .container-ai-input {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .container-wrap {
@@ -83,43 +94,9 @@
       height: 59px;
     }
 
-    #floatingUtilityWidget.widget-expanded .container-wrap:after {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .container-wrap input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-      position: absolute;
-    }
-
-    .container-wrap input:checked + .card .eyes {
-      opacity: 0;
-      visibility: hidden;
-    }
-
-    .container-wrap input:checked + .card .content-card {
-      width: 320px;
-      height: 450px;
-      border-radius: 20px;
-    }
-
-    .container-wrap input:checked + .card .background-blur-balls {
-      border-radius: 20px;
-    }
-
-    .container-wrap input:checked + .card .container-ai-chat {
-      opacity: 1;
-      visibility: visible;
-      z-index: 99999;
-      pointer-events: auto;
-    }
-
     .card {
-      width: 100%;
-      height: 100%;
+      width: 55px;
+      height: 55px;
       transform-style: preserve-3d;
       will-change: transform;
       transition: all 0.6s ease;
@@ -128,12 +105,6 @@
       align-items: center;
       transform: translateZ(50px);
       justify-content: center;
-    }
-
-    .card:hover {
-      box-shadow:
-        0 10px 40px rgba(0, 0, 60, 0.25),
-        inset 0 0 10px rgba(255, 255, 255, 0.5);
     }
 
     .background-blur-balls {
@@ -145,7 +116,6 @@
       height: 100%;
       z-index: -10;
       border-radius: 16px;
-      transition: border-radius 0.25s ease;
       background-color: rgba(255, 255, 255, 0.8);
       overflow: hidden;
     }
@@ -207,12 +177,8 @@
       height: 55px;
       display: flex;
       border-radius: 16px;
-      transition: width 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
-                  height 0.25s cubic-bezier(0.19, 1, 0.22, 1),
-                  border-radius 0.25s ease;
       overflow: hidden;
       position: relative;
-      will-change: width, height;
     }
 
     .background-blur-card {
@@ -269,21 +235,41 @@
       display: flex;
     }
 
-    .container-ai-chat {
+    /* Flat 2D Responsive Chat Panel (Isolated from 3D Transforms) */
+    .chat-window-panel {
       position: absolute;
-      top: 0;
-      left: 0;
+      bottom: 0;
+      right: 0;
       width: 320px;
+      max-width: calc(100vw - 40px);
       height: 450px;
-      padding: 0;
+      max-height: calc(100vh - 140px);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 40px rgba(0, 0, 60, 0.25);
+      pointer-events: none;
       opacity: 0;
       visibility: hidden;
-      pointer-events: none;
-      border-radius: 20px;
+      transform: scale(0.9) translateZ(0);
+      transform-origin: bottom right;
+      transition: opacity 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
+                  transform 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
+                  visibility 0.25s;
       overflow: hidden;
-      transition: opacity 0.2s ease, visibility 0.2s;
-      transform: translateZ(0);
-      will-change: opacity;
+      z-index: 20;
+    }
+
+    .dark .chat-window-panel {
+      background: rgba(15, 23, 42, 0.98);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    #floatingUtilityWidget.widget-expanded .chat-window-panel {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1) translateZ(0);
+      pointer-events: auto;
     }
 
     .chat-close-btn {
@@ -324,6 +310,11 @@
     #floatingUtilityWidget.widget-expanded .card,
     #floatingUtilityWidget.widget-expanded .eyes .eye {
       transform: none !important;
+    }
+
+    #floatingUtilityWidget.widget-expanded .container-wrap:after {
+      opacity: 0;
+      pointer-events: none;
     }
 
     .area:nth-child(15):hover ~ .container-wrap .card,
@@ -440,8 +431,7 @@
       <div class="area"></div>
       <div class="area"></div>
       <div class="area"></div>
-      <label class="container-wrap">
-        <input type="checkbox" id="quickChatToggleCheckbox" />
+      <label class="container-wrap" for="quickChatToggleCheckbox">
         <div class="card">
           <div class="background-blur-balls">
             <div class="balls">
@@ -472,13 +462,16 @@
                 </svg>
               </div>
             </div>
-            <div class="container-ai-chat">
-              <button class="chat-close-btn" id="closeQuickChatBtn" type="button">&times;</button>
-              <iframe src="${iframeSrc}" scrolling="no" style="width: 320px; height: 450px; border: none; border-radius: 20px; background: transparent;"></iframe>
-            </div>
           </div>
         </div>
       </label>
+    </div>
+
+    <input type="checkbox" id="quickChatToggleCheckbox" style="display: none;" />
+
+    <div class="chat-window-panel">
+      <button class="chat-close-btn" id="closeQuickChatBtn" type="button">&times;</button>
+      <iframe src="${iframeSrc}" scrolling="no" style="width: 100%; height: 100%; border: none; border-radius: 20px; background: transparent;"></iframe>
     </div>
   `;
   document.body.appendChild(widget);
@@ -494,6 +487,7 @@
   updateZoom();
   window.addEventListener('resize', updateZoom);
 
+  // Set chat state helper and toggle class
   const checkbox = document.getElementById('quickChatToggleCheckbox');
   const setChatState = (isOpen) => {
     checkbox.checked = isOpen;
