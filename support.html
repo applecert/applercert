@@ -796,6 +796,21 @@
       document.documentElement.classList.add('is-embedded');
     }
 
+    // Neutralize parent document body zoom propagation inside iframe (WebKit/iOS Safari compatibility)
+    if (window.self !== window.top) {
+      try {
+        const parentBody = window.parent.document.body;
+        const parentZoom = window.parent.getComputedStyle(parentBody).zoom || '1';
+        const zoomFactor = parseFloat(parentZoom) || 1;
+        if (zoomFactor !== 1) {
+          const invZoom = 1 / zoomFactor;
+          document.documentElement.style.zoom = invZoom;
+        }
+      } catch (e) {
+        console.warn("Failed to counteract parent zoom:", e);
+      }
+    }
+
     function safeRedirect(url) {
       if (window.self !== window.top) {
         window.parent.location.href = url;
