@@ -18,7 +18,7 @@
                   height 0.25s cubic-bezier(0.19, 1, 0.22, 1);
     }
 
-    #floatingUtilityWidget:has(#quickChatToggleCheckbox:checked) {
+    #floatingUtilityWidget.widget-expanded {
       width: 320px;
       height: 450px;
     }
@@ -82,7 +82,7 @@
       height: 59px;
     }
 
-    .container-wrap:has(input:checked):after {
+    #floatingUtilityWidget.widget-expanded .container-wrap:after {
       opacity: 0;
       pointer-events: none;
     }
@@ -320,8 +320,8 @@
       color: #fff;
     }
 
-    .container-wrap:has(input:checked) .card,
-    .container-wrap:has(input:checked) .eyes .eye {
+    #floatingUtilityWidget.widget-expanded .card,
+    #floatingUtilityWidget.widget-expanded .eyes .eye {
       transform: none !important;
     }
 
@@ -493,20 +493,32 @@
   updateZoom();
   window.addEventListener('resize', updateZoom);
 
+  const checkbox = document.getElementById('quickChatToggleCheckbox');
+  const setChatState = (isOpen) => {
+    checkbox.checked = isOpen;
+    if (isOpen) {
+      widget.classList.add('widget-expanded');
+    } else {
+      widget.classList.remove('widget-expanded');
+    }
+  };
+
+  checkbox.addEventListener('change', function() {
+    setChatState(checkbox.checked);
+  });
+
   // Close quick chat button click
   document.getElementById('closeQuickChatBtn').addEventListener('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
-    document.getElementById('quickChatToggleCheckbox').checked = false;
+    setChatState(false);
   });
 
   // Close quick chat when clicking outside
   document.addEventListener('click', function(e) {
-    const el = document.getElementById('floatingUtilityWidget');
-    if (el && !el.contains(e.target)) {
-      const checkbox = document.getElementById('quickChatToggleCheckbox');
+    if (widget && !widget.contains(e.target)) {
       if (checkbox && checkbox.checked) {
-        checkbox.checked = false;
+        setChatState(false);
       }
     }
   });
