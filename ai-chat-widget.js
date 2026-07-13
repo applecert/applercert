@@ -2,7 +2,8 @@
   const currentScript = document.currentScript;
   const bottomOffset = currentScript ? (currentScript.getAttribute('data-bottom') || '30px') : '30px';
   const pathPrefix = currentScript ? (currentScript.getAttribute('data-path-prefix') || '') : '';
-  const iframeSrc = `${pathPrefix}support.html?embed=true`;
+  const bodyZoom = (document.body && window.getComputedStyle(document.body).zoom) || '1';
+  const iframeSrc = `${pathPrefix}support.html?embed=true&zoom=${bodyZoom}`;
 
   // Inject Stylesheet
   const style = document.createElement('style');
