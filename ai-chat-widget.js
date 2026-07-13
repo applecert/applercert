@@ -2,8 +2,17 @@
   const currentScript = document.currentScript;
   const bottomOffset = currentScript ? (currentScript.getAttribute('data-bottom') || '30px') : '30px';
   const pathPrefix = currentScript ? (currentScript.getAttribute('data-path-prefix') || '') : '';
-  const bodyZoom = (document.body && window.getComputedStyle(document.body).zoom) || '1';
-  const iframeSrc = `${pathPrefix}support.html?embed=true&zoom=${bodyZoom}&v=3`;
+  const getZoomFactor = () => {
+    if (!document.body) return 1;
+    const zoomStr = window.getComputedStyle(document.body).zoom || '1';
+    if (zoomStr.includes('%')) {
+      return parseFloat(zoomStr) / 100;
+    }
+    const val = parseFloat(zoomStr);
+    return isNaN(val) ? 1 : (val > 1.5 ? val / 100 : val);
+  };
+  const bodyZoom = getZoomFactor();
+  const iframeSrc = `${pathPrefix}support.html?embed=true&zoom=${bodyZoom}&v=4`;
 
   // Inject Stylesheet
   const style = document.createElement('style');
@@ -478,8 +487,7 @@
 
   // Apply inverse scale dynamically to counteract document.body zoom without WebKit iframe zoom bugs
   const updateZoom = () => {
-    const bodyZoom = window.getComputedStyle(document.body).zoom || '1';
-    const zoomFactor = parseFloat(bodyZoom) || 1;
+    const zoomFactor = getZoomFactor();
     const invScale = 1 / zoomFactor;
     widget.style.transform = `scale(${invScale})`;
     widget.style.transformOrigin = 'bottom right';
