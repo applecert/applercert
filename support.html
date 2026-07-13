@@ -562,6 +562,24 @@
       15%, 45%, 85% { transform: scale(1); }
       30% { transform: scale(0.98); }
     }
+
+    /* Embedded widget styles */
+    .is-embedded header {
+      display: none !important;
+    }
+    .is-embedded #chatMain {
+      padding-top: 0 !important;
+      position: absolute !important;
+      top: 0 !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      height: 100% !important;
+      max-width: 100% !important;
+    }
+    .is-embedded #authGate {
+      padding-top: 20px !important;
+    }
   </style>
 </head>
 <body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
@@ -571,7 +589,7 @@
        ========================================== -->
   <header class="glass-effect-header fixed top-0 w-full z-40 h-[calc(80px+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] flex items-center px-6 transition-all duration-300">
     <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-between">
-      <div class="header-logo-crt shrink-0" onclick="window.location.href='index.html'" style="cursor:pointer">
+      <div class="header-logo-crt shrink-0" onclick="safeRedirect('index.html')" style="cursor:pointer">
         <span class="loader-letter">I</span>
         <span class="loader-letter">P</span>
         <span class="loader-letter">A</span>
@@ -762,6 +780,19 @@
     const auth = firebase.auth(); 
     const db = firebase.firestore();
     db.settings({ experimentalForceLongPolling: true });
+
+    // Detect if embedded inside iframe or via ?embed=true query
+    if (window.self !== window.top || new URLSearchParams(window.location.search).get('embed') === 'true') {
+      document.documentElement.classList.add('is-embedded');
+    }
+
+    function safeRedirect(url) {
+      if (window.self !== window.top) {
+        window.parent.location.href = url;
+      } else {
+        window['location']['href'] = url;
+      }
+    }
 
     let currentUser = null;
     let userData = {};
@@ -1053,7 +1084,7 @@
                 <button onclick="window.open(window.lastFilteredIpa[${index}].down || window.lastFilteredIpa[${index}].downloadURL, '_blank')" class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center shadow-sm active:scale-75 transition-transform" title="Tải IPA">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                 </button>
-                <button onclick="window.location.href='vsign.html'" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 flex items-center justify-center active:scale-75 transition-transform" title="Ký VSign">
+                <button onclick="safeRedirect('vsign.html')" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 flex items-center justify-center active:scale-75 transition-transform" title="Ký VSign">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487zm0 0L19.5 7.125"/></svg>
                 </button>
               </div>
@@ -1290,7 +1321,7 @@
           `;
           
           appendMessage('bot', successMmoHtml, true, [
-            { label: 'Xem Lịch Sử Mua 📑', type: 'primary', action: () => { window.location.href = 'account.html'; } },
+            { label: 'Xem Lịch Sử Mua 📑', type: 'primary', action: () => { safeRedirect('account.html'); } },
             { label: 'Quay lại Menu 🏡', type: 'secondary', action: () => triggerGreeting() }
           ]);
         } else {
@@ -1954,8 +1985,8 @@
             </div>
           `;
           appendMessage('bot', guideHtml, true, [
-            { label: 'Tải App VSign ngay', type: 'primary', action: () => { window.location.href = 'vsign.html'; } },
-            { label: 'Mua Chứng Chỉ', type: 'secondary', action: () => { window.location.href = 'dichvu.html'; } }
+            { label: 'Tải App VSign ngay', type: 'primary', action: () => { safeRedirect('vsign.html'); } },
+            { label: 'Mua Chứng Chỉ', type: 'secondary', action: () => { safeRedirect('dichvu.html'); } }
           ]);
         }, 800);
         
@@ -2041,7 +2072,7 @@
         
         hideTypingIndicator();
         appendMessage('bot', `🎉 **Thanh toán thành công!**\n\nGiao dịch trừ **-${pkg.price.toLocaleString()}đ** đã hoàn tất. Tài khoản của sếp được gia hạn thêm **+${pkg.value} ngày VIP**.\n\nHạn dùng VIP mới: **${exp.toLocaleDateString('vi-VN')}**.\n\nCảm ơn sếp đã tin tưởng ủng hộ dịch vụ của IPAVIET!`, false, [
-          { label: 'Tải ứng dụng ngay 📲', type: 'primary', action: () => { window.location.href = 'ipavip.html'; } }
+          { label: 'Tải ứng dụng ngay 📲', type: 'primary', action: () => { safeRedirect('ipavip.html'); } }
         ]);
         
         chatState.currentFlow = null;
@@ -2288,7 +2319,7 @@
                   } else {
                     appendMessage('bot', `🎉 **Nạp tiền thành công!**\n\nVí tài khoản của sếp được cộng **+${coins.toLocaleString()}đ** số dư. Sếp có thể dùng số dư này mua các gói VIP hoặc tài khoản Premium tại cửa hàng nhé!`, false, [
                       { label: 'Gia Hạn Gói VIP 👑', type: 'primary', action: () => handleQuickAction('buy_vip') },
-                      { label: 'Xem Cửa Hàng 🛒', type: 'secondary', action: () => { window.location.href = 'dichvu.html'; } }
+                      { label: 'Xem Cửa Hàng 🛒', type: 'secondary', action: () => { safeRedirect('dichvu.html'); } }
                     ]);
                   }
                 }, 1000);
@@ -2534,8 +2565,8 @@
           </div>
         `;
         appendMessage('bot', guideHtml, true, [
-          { label: 'Trang Cài VSign', type: 'primary', action: () => { window.location.href = 'vsign.html'; } },
-          { label: 'Mua Chứng Chỉ', type: 'secondary', action: () => { window.location.href = 'dichvu.html'; } }
+          { label: 'Trang Cài VSign', type: 'primary', action: () => { safeRedirect('vsign.html'); } },
+          { label: 'Mua Chứng Chỉ', type: 'secondary', action: () => { safeRedirect('dichvu.html'); } }
         ]);
         return;
       }
