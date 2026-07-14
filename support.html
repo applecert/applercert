@@ -940,13 +940,41 @@
             return;
           }
           
-          let responseText = `👥 **DANH SÁCH 10 THÀNH VIÊN ĐĂNG KÝ MỚI NHẤT**:\n\n`;
-          sortedUsers.slice(0, 10).forEach((u, index) => {
-            const timeStr = u.createdAt.getTime() > 0 ? u.createdAt.toLocaleString('vi-VN') : 'Không rõ';
-            responseText += `${index + 1}. **${u.email}**\n   - UID: \`${u.uid}\`\n   - Đăng ký: *${timeStr}* | Số dư: *${u.coins.toLocaleString()}đ*\n`;
+          let responseText = `
+            <div class="space-y-2 w-full">
+              <div class="flex items-center gap-1.5 font-black text-xs text-blue-600 dark:text-blue-400">
+                <i data-lucide="users" class="w-4 h-4 text-blue-500"></i>
+                <span>THÀNH VIÊN ĐĂNG KÝ MỚI NHẤT</span>
+              </div>
+              <div class="overflow-x-auto rounded-[16px] border border-gray-150 dark:border-white/10 shadow-sm bg-white dark:bg-[#0a0f1d] max-w-full">
+                <table class="w-full text-left border-collapse text-[11px] whitespace-nowrap">
+                  <thead>
+                    <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-150 dark:border-white/10 text-[10px] font-black text-gray-500 dark:text-gray-400">
+                      <th class="p-2.5">Email</th>
+                      <th class="p-2.5">Thời gian</th>
+                      <th class="p-2.5 text-right">Số dư</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-white/5 font-semibold text-gray-800 dark:text-gray-200">
+          `;
+          sortedUsers.slice(0, 10).forEach(u => {
+            const timeStr = u.createdAt.getTime() > 0 ? u.createdAt.toLocaleString('vi-VN', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}) : 'Không rõ';
+            responseText += `
+              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition">
+                <td class="p-2.5 max-w-[150px] overflow-hidden text-ellipsis font-bold text-gray-900 dark:text-white">${u.email}</td>
+                <td class="p-2.5 text-gray-500">${timeStr}</td>
+                <td class="p-2.5 text-right font-black text-emerald-600 dark:text-emerald-400">${u.coins.toLocaleString()}đ</td>
+              </tr>
+            `;
           });
+          responseText += `
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
           hideTypingIndicator();
-          appendMessage('bot', responseText);
+          appendMessage('bot', responseText, true);
           return;
         }
 
@@ -987,16 +1015,47 @@
             }
           });
           
-          let responseText = `📊 **THỐNG KÊ ĐĂNG KÝ TRONG ${numDays} NGÀY QUA**:\n\n`;
+          let responseText = `
+            <div class="space-y-2 w-full">
+              <div class="flex items-center gap-1.5 font-black text-xs text-blue-600 dark:text-blue-400">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-500"></i>
+                <span>THỐNG KÊ ĐĂNG KÝ (${numDays} NGÀY QUA)</span>
+              </div>
+              <div class="overflow-x-auto rounded-[16px] border border-gray-150 dark:border-white/10 shadow-sm bg-white dark:bg-[#0a0f1d] max-w-full">
+                <table class="w-full text-left border-collapse text-[11px]">
+                  <thead>
+                    <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-150 dark:border-white/10 text-[10px] font-black text-gray-500 dark:text-gray-400">
+                      <th class="p-2.5">Ngày</th>
+                      <th class="p-2.5 text-right">Tài khoản mới</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-white/5 font-semibold text-gray-800 dark:text-gray-200">
+          `;
           let totalCount = 0;
           Object.keys(groups).forEach(dateStr => {
             const count = groups[dateStr];
-            responseText += `- Ngày **${dateStr}**: **${count}** tài khoản mới\n`;
+            responseText += `
+              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition">
+                <td class="p-2.5 font-bold">${dateStr}</td>
+                <td class="p-2.5 text-right font-black text-blue-600 dark:text-blue-400">+${count}</td>
+              </tr>
+            `;
             totalCount += count;
           });
-          responseText += `\nTổng cộng: **${totalCount}** thành viên mới.`;
+          responseText += `
+                  </tbody>
+                  <tfoot>
+                    <tr class="bg-gray-50 dark:bg-white/5 font-black border-t border-gray-150 dark:border-white/10 text-gray-900 dark:text-white">
+                      <td class="p-2.5">Tổng cộng</td>
+                      <td class="p-2.5 text-right font-black text-blue-600 dark:text-blue-400">${totalCount} tài khoản</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          `;
           hideTypingIndicator();
-          appendMessage('bot', responseText);
+          appendMessage('bot', responseText, true);
           return;
         }
 
@@ -1012,8 +1071,19 @@
             const created = u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt)) : null;
             return created && created >= start && created <= end;
           }).length;
+          
+          let responseText = `
+            <div class="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-1 w-full text-xs font-semibold">
+              <div class="flex items-center gap-1.5 font-black text-blue-600 dark:text-blue-400">
+                <i data-lucide="bar-chart-2" class="w-4.5 h-4.5"></i>
+                <span>ĐĂNG KÝ HÔM NAY</span>
+              </div>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">Báo cáo đăng ký thành viên ngày hôm nay</p>
+              <div class="pt-2 text-2xl font-black text-blue-600 dark:text-blue-400">+${count} <span class="text-xs font-bold text-gray-500">tài khoản mới</span></div>
+            </div>
+          `;
           hideTypingIndicator();
-          appendMessage('bot', `📊 **Thống kê đăng ký hôm nay**:\n- Có **${count}** tài khoản mới đăng ký thành công.`);
+          appendMessage('bot', responseText, true);
           return;
         }
 
@@ -1027,8 +1097,19 @@
             const created = u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt)) : null;
             return created && created >= start && created <= end;
           }).length;
+          
+          let responseText = `
+            <div class="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-4 space-y-1 w-full text-xs font-semibold">
+              <div class="flex items-center gap-1.5 font-black text-gray-600 dark:text-gray-400">
+                <i data-lucide="bar-chart-2" class="w-4.5 h-4.5"></i>
+                <span>ĐĂNG KÝ HÔM QUA</span>
+              </div>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">Báo cáo đăng ký thành viên ngày hôm qua</p>
+              <div class="pt-2 text-2xl font-black text-gray-700 dark:text-gray-300">+${count} <span class="text-xs font-bold text-gray-500">tài khoản</span></div>
+            </div>
+          `;
           hideTypingIndicator();
-          appendMessage('bot', `📊 **Thống kê đăng ký hôm qua**:\n- Có **${count}** tài khoản mới đã đăng ký.`);
+          appendMessage('bot', responseText, true);
           return;
         }
 
@@ -1058,16 +1139,47 @@
             }
           });
           
-          let responseText = `💰 **DOANH THU TRONG ${numDays} NGÀY QUA**:\n\n`;
+          let responseText = `
+            <div class="space-y-2 w-full">
+              <div class="flex items-center gap-1.5 font-black text-xs text-emerald-600 dark:text-emerald-400">
+                <i data-lucide="dollar-sign" class="w-4 h-4 text-emerald-500"></i>
+                <span>BÁO CÁO DOANH THU (${numDays} NGÀY QUA)</span>
+              </div>
+              <div class="overflow-x-auto rounded-[16px] border border-gray-150 dark:border-white/10 shadow-sm bg-white dark:bg-[#0a0f1d] max-w-full">
+                <table class="w-full text-left border-collapse text-[11px]">
+                  <thead>
+                    <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-150 dark:border-white/10 text-[10px] font-black text-gray-500 dark:text-gray-400">
+                      <th class="p-2.5">Ngày</th>
+                      <th class="p-2.5 text-right">Doanh thu nạp</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-white/5 font-semibold text-gray-800 dark:text-gray-200">
+          `;
           let totalRev = 0;
           Object.keys(groups).forEach(dateStr => {
             const amount = groups[dateStr];
-            responseText += `- Ngày **${dateStr}**: **${amount.toLocaleString()}đ**\n`;
+            responseText += `
+              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition">
+                <td class="p-2.5 font-bold">${dateStr}</td>
+                <td class="p-2.5 text-right font-black text-emerald-600 dark:text-emerald-400">+${amount.toLocaleString()}đ</td>
+              </tr>
+            `;
             totalRev += amount;
           });
-          responseText += `\nTổng doanh thu: **${totalRev.toLocaleString()}đ**`;
+          responseText += `
+                  </tbody>
+                  <tfoot>
+                    <tr class="bg-gray-50 dark:bg-white/5 font-black border-t border-gray-150 dark:border-white/10 text-gray-900 dark:text-white">
+                      <td class="p-2.5">Tổng cộng</td>
+                      <td class="p-2.5 text-right font-black text-emerald-600 dark:text-emerald-400">${totalRev.toLocaleString()}đ</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          `;
           hideTypingIndicator();
-          appendMessage('bot', responseText);
+          appendMessage('bot', responseText, true);
           return;
         }
 
@@ -1088,8 +1200,20 @@
               count++;
             }
           });
+          
+          let responseText = `
+            <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-1 w-full text-xs font-semibold">
+              <div class="flex items-center gap-1.5 font-black text-emerald-600 dark:text-emerald-400">
+                <i data-lucide="dollar-sign" class="w-4.5 h-4.5"></i>
+                <span>DOANH THU HÔM NAY</span>
+              </div>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">Tổng quan doanh thu nạp tiền ngày hôm nay</p>
+              <div class="pt-2 text-2xl font-black text-emerald-600 dark:text-emerald-400">${total.toLocaleString()}đ</div>
+              <div class="text-[10px] text-gray-500 dark:text-gray-400">Số đơn thành công: <strong class="text-emerald-600 dark:text-emerald-400">${count} đơn</strong></div>
+            </div>
+          `;
           hideTypingIndicator();
-          appendMessage('bot', `💰 **Doanh thu hôm nay**:\n- Tổng: **${total.toLocaleString()}đ**\n- Số giao dịch: **${count} đơn** thành công.`);
+          appendMessage('bot', responseText, true);
           return;
         }
 
@@ -1108,8 +1232,20 @@
               count++;
             }
           });
+          
+          let responseText = `
+            <div class="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-4 space-y-1 w-full text-xs font-semibold">
+              <div class="flex items-center gap-1.5 font-black text-gray-600 dark:text-gray-400">
+                <i data-lucide="dollar-sign" class="w-4.5 h-4.5"></i>
+                <span>DOANH THU HÔM QUA</span>
+              </div>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">Tổng quan doanh thu nạp tiền ngày hôm qua</p>
+              <div class="pt-2 text-2xl font-black text-gray-700 dark:text-gray-300">${total.toLocaleString()}đ</div>
+              <div class="text-[10px] text-gray-500 dark:text-gray-400">Số đơn: <strong class="text-gray-700 dark:text-gray-300">${count} đơn</strong></div>
+            </div>
+          `;
           hideTypingIndicator();
-          appendMessage('bot', `💰 **Doanh thu hôm qua**:\n- Tổng: **${total.toLocaleString()}đ**\n- Số giao dịch: **${count} đơn**.`);
+          appendMessage('bot', responseText, true);
           return;
         }
 
@@ -1142,12 +1278,46 @@
             return;
           }
           
-          let responseText = `🏆 **BẢNG XẾP HẠNG KHÁCH NẠP TIỀN NHIỀU NHẤT**:\n\n`;
+          let responseText = `
+            <div class="space-y-2 w-full">
+              <div class="flex items-center gap-1.5 font-black text-xs text-yellow-600 dark:text-yellow-400">
+                <i data-lucide="award" class="w-4 h-4 text-yellow-500"></i>
+                <span>TOP HỘI VIÊN NẠP TIỀN NHIỀU NHẤT</span>
+              </div>
+              <div class="overflow-x-auto rounded-[16px] border border-gray-150 dark:border-white/10 shadow-sm bg-white dark:bg-[#0a0f1d] max-w-full">
+                <table class="w-full text-left border-collapse text-[11px] whitespace-nowrap">
+                  <thead>
+                    <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-150 dark:border-white/10 text-[10px] font-black text-gray-500 dark:text-gray-400">
+                      <th class="p-2.5">Hạng</th>
+                      <th class="p-2.5">Email</th>
+                      <th class="p-2.5 text-right">Tổng nạp</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-white/5 font-semibold text-gray-800 dark:text-gray-200">
+          `;
           sortedList.slice(0, 10).forEach((item, index) => {
-            responseText += `${index + 1}. **${item.email}** (UID: \`${item.uid.substring(0,6)}...\`): **${item.total.toLocaleString()}đ**\n`;
+            let medal = '';
+            if (index === 0) medal = '🥇 ';
+            else if (index === 1) medal = '🥈 ';
+            else if (index === 2) medal = '🥉 ';
+            else medal = `${index + 1}. `;
+            
+            responseText += `
+              <tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition">
+                <td class="p-2.5 font-black text-gray-500">${medal}</td>
+                <td class="p-2.5 max-w-[150px] overflow-hidden text-ellipsis font-bold">${item.email}</td>
+                <td class="p-2.5 text-right font-black text-yellow-600 dark:text-yellow-400">${item.total.toLocaleString()}đ</td>
+              </tr>
+            `;
           });
+          responseText += `
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
           hideTypingIndicator();
-          appendMessage('bot', responseText);
+          appendMessage('bot', responseText, true);
           return;
         }
 
@@ -1282,12 +1452,45 @@
               return;
             }
             
-            let responseText = `📦 **DANH SÁCH ĐƠN HÀNG MMO ĐANG CHỜ**:\n\n`;
+            let responseText = `
+              <div class="space-y-2 w-full">
+                <div class="flex items-center gap-1.5 font-black text-xs text-purple-600 dark:text-purple-400">
+                  <i data-lucide="shopping-cart" class="w-4 h-4 text-purple-500"></i>
+                  <span>ĐƠN HÀNG MMO ĐANG CHỜ DUYỆT</span>
+                </div>
+                <div class="overflow-x-auto rounded-[16px] border border-gray-150 dark:border-white/10 shadow-sm bg-white dark:bg-[#0a0f1d] max-w-full">
+                  <table class="w-full text-left border-collapse text-[11px] whitespace-nowrap">
+                    <thead>
+                      <tr class="bg-gray-50 dark:bg-white/5 border-b border-gray-150 dark:border-white/10 text-[10px] font-black text-gray-500 dark:text-gray-400">
+                        <th class="p-2.5">Dòng</th>
+                        <th class="p-2.5">Sản phẩm</th>
+                        <th class="p-2.5">Khách</th>
+                        <th class="p-2.5 text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-white/5 font-semibold text-gray-800 dark:text-gray-200">
+            `;
             pendingOrders.forEach(o => {
-              responseText += `- **Dòng ${o.row}**: SP *"${o.productName}"* | Khách: *${o.email || o.uid}* | Giá: *${o.price.toLocaleString()}đ* | Trạng thái: **${o.status}**\n`;
+              responseText += `
+                <tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition">
+                  <td class="p-2.5 font-bold text-gray-500">${o.row}</td>
+                  <td class="p-2.5 max-w-[120px] overflow-hidden text-ellipsis font-bold" title="${o.productName}">${o.productName}</td>
+                  <td class="p-2.5 max-w-[100px] overflow-hidden text-ellipsis text-gray-500">${o.email || o.uid}</td>
+                  <td class="p-2.5 text-right space-x-1">
+                    <button onclick="processBotResponse('duyệt đơn ${o.row}')" class="px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-[8px] text-[10px] font-black shadow-sm transition active:scale-95">Duyệt</button>
+                    <button onclick="processBotResponse('xóa đơn mmo ${o.row}')" class="px-2 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-[8px] text-[10px] font-black shadow-sm transition active:scale-95">Xóa</button>
+                  </td>
+                </tr>
+              `;
             });
+            responseText += `
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `;
             hideTypingIndicator();
-            appendMessage('bot', responseText);
+            appendMessage('bot', responseText, true);
           } else {
             hideTypingIndicator();
             appendMessage('bot', '📦 Trống. Không có đơn hàng MMO nào cần duyệt.');
