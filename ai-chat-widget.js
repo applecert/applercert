@@ -274,6 +274,7 @@
                   transform 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
                   visibility 0.25s;
       overflow: hidden;
+      -webkit-overflow-scrolling: touch;
       z-index: 20;
     }
 
@@ -502,8 +503,16 @@
     checkbox.checked = isOpen;
     if (isOpen) {
       widget.classList.add('widget-expanded');
+      // Lock background scroll to prevent background scroll leak on mobile devices
+      document.body.style.setProperty('overflow', 'hidden', 'important');
+      document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+      document.body.style.setProperty('touch-action', 'none');
     } else {
       widget.classList.remove('widget-expanded');
+      // Restore scroll
+      document.body.style.removeProperty('overflow');
+      document.documentElement.style.removeProperty('overflow');
+      document.body.style.removeProperty('touch-action');
     }
   };
 

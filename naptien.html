@@ -213,28 +213,74 @@
     });
 
     function initDeposit() {
-        depositOrderId = "NAP" + currentUser.uid.substring(0, 6).toUpperCase() + Math.floor(Math.random()*900 + 100);
+        const urlParams = new URLSearchParams(window.location.search);
+        const amountParam = parseInt(urlParams.get('amount')) || 0;
+        const coinsParam = parseInt(urlParams.get('coins')) || amountParam;
+        const nameParam = urlParams.get('name') || '';
+
+        let cachedOrderId = localStorage.getItem('activeDepositOrderId');
+        let cachedUid = localStorage.getItem('activeDepositUid');
+        let cachedTime = localStorage.getItem('activeDepositTime');
+        
+        const oneHour = 60 * 60 * 1000;
+        const isExpired = !cachedTime || (Date.now() - parseInt(cachedTime) > oneHour);
+        
+        if (amountParam > 0 || isExpired || cachedUid !== currentUser.uid) {
+            depositOrderId = "NAP" + currentUser.uid.substring(0, 6).toUpperCase() + Math.floor(Math.random()*900 + 100);
+            localStorage.setItem('activeDepositOrderId', depositOrderId);
+            localStorage.setItem('activeDepositUid', currentUser.uid);
+            localStorage.setItem('activeDepositTime', Date.now().toString());
+            
+            localStorage.setItem('activeDepositAmount', amountParam || 0);
+            localStorage.setItem('activeDepositCoins', coinsParam || 0);
+            localStorage.setItem('activeDepositName', nameParam || '');
+        } else {
+            depositOrderId = cachedOrderId;
+        }
+        
+        const activeAmount = parseInt(localStorage.getItem('activeDepositAmount')) || 0;
+        const activeCoins = parseInt(localStorage.getItem('activeDepositCoins')) || activeAmount;
+        const activeName = localStorage.getItem('activeDepositName') || '';
+
         document.getElementById('transferSyntax').innerText = depositOrderId;
+        
+        if (activeName) {
+            document.querySelector('header .flex-1').innerText = activeName;
+        } else {
+            document.querySelector('header .flex-1').innerText = "Nạp Tiền Tự Động";
+        }
         
         const bankId = "ACB";
         const accNo = "22703611";
         const accName = "TRAN NGUYEN MINH QUI";
-        const qrUrl = `https://img.vietqr.io/image/${bankId}-${accNo}-compact2.png?addInfo=${depositOrderId}&accountName=${encodeURIComponent(accName)}`;
+        let qrUrl = `https://img.vietqr.io/image/${bankId}-${accNo}-compact2.png?addInfo=${depositOrderId}&accountName=${encodeURIComponent(accName)}`;
+        if (activeAmount > 0) {
+            qrUrl += `&amount=${activeAmount}`;
+        }
         document.getElementById('qrImage').src = qrUrl;
 
-        fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${depositOrderId}&uid=${currentUser.uid}&amount=1&coins=1`);
+        const orderAmount = activeAmount > 0 ? activeAmount : 1;
+        const orderCoins = activeCoins > 0 ? activeCoins : 1;
+        
+        fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${depositOrderId}&uid=${currentUser.uid}&amount=${orderAmount}&coins=${orderCoins}`);
         
         if(pollingInterval) clearInterval(pollingInterval);
-        pollingInterval = setInterval(checkBankTransfer, 4000);
+        pollingInterval = setInterval(() => checkBankTransfer(orderAmount), 4000);
     }
 
-    async function checkBankTransfer() {
+    async function checkBankTransfer(amount) {
         try { 
-            let res = await fetch(`${GOOGLE_API_URL}?action=check_stc_payment&orderId=${depositOrderId}&amount=1`); 
+            let res = await fetch(`${GOOGLE_API_URL}?action=check_stc_payment&orderId=${depositOrderId}&amount=${amount}`); 
             let data = await res.json();
             
             if(data.success && data.amount > 0) { 
                 clearInterval(pollingInterval); 
+                localStorage.removeItem('activeDepositOrderId');
+                localStorage.removeItem('activeDepositUid');
+                localStorage.removeItem('activeDepositTime');
+                localStorage.removeItem('activeDepositAmount');
+                localStorage.removeItem('activeDepositCoins');
+                localStorage.removeItem('activeDepositName');
                 
                 const st = document.getElementById('pollingStatus');
                 st.className = "bg-green-50 p-4 text-center border-t border-green-100";
@@ -247,7 +293,7 @@
                 
                 loadTransactionHistory();
                 
-                renderModal('success', 'Nạp Tiền Thành Công', `Cộng <b>+${data.amount.toLocaleString()}đ</b> vào ví. Bạn có thể sang cửa hàng để mua sắm.`, () => {
+                renderModal('success', 'Nạp Tiền Thành Công', `Cộng <b>+${data.coins.toLocaleString()}đ</b> vào ví. Bạn có thể sang cửa hàng để mua sắm.`, () => {
                     closeActionModal();
                 }, 'Đã Hiểu');
             }

@@ -321,34 +321,9 @@
     // ==========================================
     // MODULE: THANH TOÁN (CÓ KHÓA CHỐNG DOUBLE)
     // ==========================================
-    async function startOrder(amount, packageName, coins) {
+    function startOrder(amount, packageName, coins) {
         if(!currentUser) return;
-        const orderId = "IPA" + Math.floor(100000 + Math.random() * 900000); 
-        
-        // Reset khóa khi tạo đơn mới
-        currentOrder = { id: orderId, originalAmount: amount, finalAmount: amount, coins: coins, name: packageName, isDiscountApplied: false, isCredited: false, isChecking: false };
-        
-        document.getElementById('chkPackageName').innerText = packageName;
-        document.getElementById('chkOriginalPrice').innerText = amount.toLocaleString('vi-VN') + "đ";
-        document.getElementById('chkContent').innerText = orderId;
-        renderPricesAndQR();
-
-        const page = document.getElementById('checkoutPage');
-        page.classList.remove('hidden'); page.classList.add('flex');
-
-        try { 
-            const finalUrl = `${GOOGLE_API_URL}?action=create_order&orderId=${orderId}&uid=${currentUser.uid}&amount=${amount}&coins=${coins}`;
-            const createRes = await fetch(finalUrl);
-            const textResponse = await createRes.text(); 
-            try {
-                const createData = JSON.parse(textResponse);
-                if(createData.success) {
-                    checkCount = 0; 
-                    if(pollingInterval) clearInterval(pollingInterval);
-                    pollingInterval = setInterval(autoCheckPayment, 4500); 
-                }
-            } catch(err) {}
-        } catch(e) {}
+        window.location.href = `naptien.html?amount=${amount}&coins=${coins}&name=${encodeURIComponent(packageName)}`;
     }
 
     function renderPricesAndQR() {
