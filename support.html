@@ -702,7 +702,7 @@
         <button type="button" onclick="toggleQuickMenu()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full text-xs font-black flex items-center gap-1.5 shadow-sm active:scale-95 transition">
           <i data-lucide="menu" class="w-3.5 h-3.5"></i> ⚡ PHÍM TẮT & TÁC VỤ AI
         </button>
-        <span class="text-[10px] text-gray-400 dark:text-gray-500 font-bold">IPAVIET Assistant</span>
+        <span id="botSubtitle" class="text-[10px] text-gray-400 dark:text-gray-500 font-bold">IPAVIET Assistant</span>
       </div>
 
       <!-- Text input container wrapped in form for iOS done key submit -->
@@ -821,6 +821,71 @@
 
     let aiKnowledgeBase = [];
     let isAdminAuthenticated = sessionStorage.getItem('isAdminAuthenticated') === 'true';
+    let adminModeEnabled = sessionStorage.getItem('adminModeEnabled') !== 'false';
+    let allUsersData = [];
+    let adminTransactionsData = [];
+
+    async function loadAllUsersDataForAdmin() {
+      if (!isAdminAuthenticated) return;
+      try {
+        const snapshot = await db.collection("users").get();
+        allUsersData = [];
+        snapshot.forEach(doc => allUsersData.push({ uid: doc.id, ...doc.data() }));
+        console.log("Admin đã tải tất cả người dùng:", allUsersData.length);
+      } catch (e) {
+        console.error("Lỗi khi tải thông tin người dùng cho Admin:", e);
+      }
+    }
+
+    async function loadAdminTransactionsData() {
+      if (!isAdminAuthenticated) return;
+      const pin = sessionStorage.getItem('adminPinInChat') || localStorage.getItem('adminPin');
+      if (!pin) return;
+      try {
+        const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pin=${pin}`);
+        const data = await res.json();
+        if (data.success && data.dataThuNgan && data.dataThuNgan.length > 1) {
+          adminTransactionsData = [];
+          for (let i = 1; i < data.dataThuNgan.length; i++) {
+            const r = data.dataThuNgan[i];
+            adminTransactionsData.push({
+              orderId: r[0],
+              uid: r[1],
+              amount: parseInt(r[2]) || 0,
+              coins: parseInt(r[3]) || 0,
+              status: r[4],
+              time: r[5] ? new Date(r[5]) : new Date()
+            });
+          }
+          console.log("Admin đã tải lịch sử giao dịch:", adminTransactionsData.length);
+        }
+      } catch (e) {
+        console.error("Lỗi khi tải giao dịch cho Admin:", e);
+      }
+    }
+
+    function toggleAdminMode(enable) {
+      adminModeEnabled = enable;
+      sessionStorage.setItem('adminModeEnabled', enable ? 'true' : 'false');
+      
+      const subtitle = document.getElementById('botSubtitle');
+      if (subtitle) {
+        if (isAdminAuthenticated && adminModeEnabled) {
+          subtitle.innerHTML = `<span class="bg-red-600 text-white px-2 py-0.5 rounded-[6px] text-[8px] font-black tracking-widest uppercase shadow-sm">ADMIN MODE</span>`;
+        } else {
+          subtitle.innerText = "IPAVIET Assistant";
+        }
+      }
+      
+      if (enable) {
+        appendMessage('bot', '👑 **Đã kích hoạt Chế độ Quản trị viên (Admin Mode).** Em đã sẵn sàng nhận lệnh của sếp tổng để thống kê và điều hành hệ thống rồi ạ!');
+        loadAllUsersDataForAdmin();
+        loadAdminTransactionsData();
+      } else {
+        appendMessage('bot', '🤖 **Đã tắt Chế độ Quản trị viên.** Em sẽ trở lại làm trợ lý ảo tư vấn khách hàng bình thường.');
+      }
+      triggerGreeting();
+    }
 
     async function loadAIKnowledgeBase() {
       try {
@@ -834,7 +899,803 @@
       }
     }
 
-    function removeVietnameseAccents(str) {
+    }
+
+    async function handleAdminNLPCommand(rawText) {
+      const text = rawText.toLowerCase().trim();
+      const pin = sessionStorage.getItem('adminPinInChat') || localStorage.getItem('adminPin');
+      if (!pin) {
+        appendMessage('bot', '❌ **Lỗi**: Hệ thống chưa có mã PIN Admin xác thực. Vui lòng xác thực bằng cách gõ `/admin [mã PIN]`');
+        return;
+      }
+      
+      showTypingIndicator();
+      
+      try {
+        // ==========================================
+        // 1. THỐNG KÊ ĐĂNG KÝ THEO SỐ NGÀY
+        // ==========================================
+        const regDaysMatch = text.match(/(?:thống kê|thong ke|đăng ký|dang ky)\s+(\d+)\s*ngày/i);
+        if (regDaysMatch) {
+          const numDays = parseInt(regDaysMatch[1], 10);
+          await loadAllUsersDataForAdmin();
+          const now = new Date();
+          const cutoffDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - numDays + 1, 0, 0, 0, 0);
+          
+          const groups = {};
+          for (let i = 0; i < numDays; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 0, 0, 0, 0);
+            const dateStr = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+            groups[dateStr] = 0;
+          }
+          
+          allUsersData.forEach(u => {
+            const created = u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt)) : null;
+            if (created && created >= cutoffDate) {
+              const dateStr = `${created.getDate()}/${created.getMonth()+1}/${created.getFullYear()}`;
+              if (groups[dateStr] !== undefined) {
+                groups[dateStr]++;
+              }
+            }
+          });
+          
+          let responseText = `📊 **THỐNG KÊ ĐĂNG KÝ TRONG ${numDays} NGÀY QUA**:\n\n`;
+          let totalCount = 0;
+          Object.keys(groups).forEach(dateStr => {
+            const count = groups[dateStr];
+            responseText += `- Ngày **${dateStr}**: **${count}** tài khoản mới\n`;
+            totalCount += count;
+          });
+          responseText += `\nTổng cộng: **${totalCount}** thành viên mới.`;
+          hideTypingIndicator();
+          appendMessage('bot', responseText);
+          return;
+        }
+
+        // ==========================================
+        // 2. THỐNG KÊ ĐĂNG KÝ HÔM NAY / HÔM QUA
+        // ==========================================
+        if (text === 'thống kê hôm nay' || text === 'thong ke hom nay' || text === 'đăng ký hôm nay' || text === 'dang ky hom nay') {
+          await loadAllUsersDataForAdmin();
+          const now = new Date();
+          const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+          const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          const count = allUsersData.filter(u => {
+            const created = u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt)) : null;
+            return created && created >= start && created <= end;
+          }).length;
+          hideTypingIndicator();
+          appendMessage('bot', `📊 **Thống kê đăng ký hôm nay**:\n- Có **${count}** tài khoản mới đăng ký thành công.`);
+          return;
+        }
+
+        if (text === 'thống kê hôm qua' || text === 'thong ke hom qua' || text === 'đăng ký hôm qua' || text === 'dang ky hom qua') {
+          await loadAllUsersDataForAdmin();
+          const now = new Date();
+          now.setDate(now.getDate() - 1);
+          const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+          const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          const count = allUsersData.filter(u => {
+            const created = u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt)) : null;
+            return created && created >= start && created <= end;
+          }).length;
+          hideTypingIndicator();
+          appendMessage('bot', `📊 **Thống kê đăng ký hôm qua**:\n- Có **${count}** tài khoản mới đã đăng ký.`);
+          return;
+        }
+
+        // ==========================================
+        // 3. DOANH THU THEO SỐ NGÀY
+        // ==========================================
+        const revDaysMatch = text.match(/(?:doanh thu|doanhthu|tiền|tien)\s+(\d+)\s*ngày/i);
+        if (revDaysMatch) {
+          const numDays = parseInt(revDaysMatch[1], 10);
+          await loadAdminTransactionsData();
+          const now = new Date();
+          const cutoffDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - numDays + 1, 0, 0, 0, 0);
+          
+          const groups = {};
+          for (let i = 0; i < numDays; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i, 0, 0, 0, 0);
+            const dateStr = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+            groups[dateStr] = 0;
+          }
+          
+          adminTransactionsData.forEach(t => {
+            if (t.status === 'CLAIMED' && t.time && t.time >= cutoffDate) {
+              const dateStr = `${t.time.getDate()}/${t.time.getMonth()+1}/${t.time.getFullYear()}`;
+              if (groups[dateStr] !== undefined) {
+                groups[dateStr] += t.amount;
+              }
+            }
+          });
+          
+          let responseText = `💰 **DOANH THU TRONG ${numDays} NGÀY QUA**:\n\n`;
+          let totalRev = 0;
+          Object.keys(groups).forEach(dateStr => {
+            const amount = groups[dateStr];
+            responseText += `- Ngày **${dateStr}**: **${amount.toLocaleString()}đ**\n`;
+            totalRev += amount;
+          });
+          responseText += `\nTổng doanh thu: **${totalRev.toLocaleString()}đ**`;
+          hideTypingIndicator();
+          appendMessage('bot', responseText);
+          return;
+        }
+
+        // ==========================================
+        // 4. DOANH THU HÔM NAY / HÔM QUA
+        // ==========================================
+        if (text === 'doanh thu hôm nay' || text === 'doanh thu hom nay' || text === 'tiền hôm nay' || text === 'tien hom nay') {
+          await loadAdminTransactionsData();
+          const now = new Date();
+          const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+          const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          
+          let total = 0;
+          let count = 0;
+          adminTransactionsData.forEach(t => {
+            if (t.status === 'CLAIMED' && t.time && t.time >= start && t.time <= end) {
+              total += t.amount;
+              count++;
+            }
+          });
+          hideTypingIndicator();
+          appendMessage('bot', `💰 **Doanh thu hôm nay**:\n- Tổng: **${total.toLocaleString()}đ**\n- Số giao dịch: **${count} đơn** thành công.`);
+          return;
+        }
+
+        if (text === 'doanh thu hôm qua' || text === 'doanh thu hom qua' || text === 'tiền hôm qua' || text === 'tien hom qua') {
+          await loadAdminTransactionsData();
+          const now = new Date();
+          now.setDate(now.getDate() - 1);
+          const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+          const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          
+          let total = 0;
+          let count = 0;
+          adminTransactionsData.forEach(t => {
+            if (t.status === 'CLAIMED' && t.time && t.time >= start && t.time <= end) {
+              total += t.amount;
+              count++;
+            }
+          });
+          hideTypingIndicator();
+          appendMessage('bot', `💰 **Doanh thu hôm qua**:\n- Tổng: **${total.toLocaleString()}đ**\n- Số giao dịch: **${count} đơn**.`);
+          return;
+        }
+
+        // ==========================================
+        // 5. AI NẠP TIỀN NHIỀU NHẤT / DANH SÁCH NẠP TIỀN
+        // ==========================================
+        if (text.includes('nạp nhiều nhất') || text.includes('nap nhieu nhat') || text.includes('nhung nguoi da nap') || text.includes('những người đã nạp')) {
+          await loadAllUsersDataForAdmin();
+          await loadAdminTransactionsData();
+          
+          const userDeposits = {};
+          adminTransactionsData.forEach(t => {
+            if (t.status === 'CLAIMED') {
+              userDeposits[t.uid] = (userDeposits[t.uid] || 0) + t.amount;
+            }
+          });
+          
+          const sortedList = Object.keys(userDeposits).map(uid => {
+            const user = allUsersData.find(u => u.uid === uid);
+            return {
+              uid: uid,
+              email: user ? user.email : 'Ẩn danh',
+              total: userDeposits[uid]
+            };
+          }).sort((a, b) => b.total - a.total);
+          
+          if (sortedList.length === 0) {
+            hideTypingIndicator();
+            appendMessage('bot', '👥 Chưa có giao dịch nạp tiền thành công nào trên hệ thống.');
+            return;
+          }
+          
+          let responseText = `🏆 **BẢNG XẾP HẠNG KHÁCH NẠP TIỀN NHIỀU NHẤT**:\n\n`;
+          sortedList.slice(0, 10).forEach((item, index) => {
+            responseText += `${index + 1}. **${item.email}** (UID: \`${item.uid.substring(0,6)}...\`): **${item.total.toLocaleString()}đ**\n`;
+          });
+          hideTypingIndicator();
+          appendMessage('bot', responseText);
+          return;
+        }
+
+        // ==========================================
+        // 6. CỘNG / TRỪ TIỀN (VÍ COINS)
+        // ==========================================
+        const moneyCmd = text.includes('cộng') || text.includes('cong') || text.includes('thêm') || text.includes('them') ||
+                         text.includes('trừ') || text.includes('tru') || text.includes('bớt') || text.includes('bot');
+        if (moneyCmd) {
+          await loadAllUsersDataForAdmin();
+          
+          const isAdd = text.includes('cộng') || text.includes('cong') || text.includes('thêm') || text.includes('them');
+          const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+          let targetId = '';
+          
+          if (emailMatch) {
+            targetId = emailMatch[0].trim();
+          } else {
+            const words = rawText.split(/\s+/);
+            for (const w of words) {
+              if (w.length > 15 && /^[a-zA-Z0-9]+$/.test(w)) {
+                targetId = w;
+                break;
+              }
+            }
+          }
+          
+          const kMatch = rawText.match(/(\d+(?:\.\d+)?)\s*k/i);
+          const numMatch = rawText.match(/(\d+(?:\.\d+)?)/);
+          let amount = 0;
+          
+          if (kMatch) {
+            amount = parseFloat(kMatch[1]) * 1000;
+          } else if (numMatch) {
+            amount = parseFloat(numMatch[1].replace(/\./g, ''));
+          }
+          
+          if (!targetId || !amount) {
+            hideTypingIndicator();
+            appendMessage('bot', '❌ **Cú pháp chưa đúng**. Sếp vui lòng ghi rõ số tiền và email/UID người nhận.\n*(Ví dụ: cộng 50k cho test@gmail.com)*');
+            return;
+          }
+          
+          const foundUser = allUsersData.find(u => 
+            (u.email || '').toLowerCase().trim() === targetId.toLowerCase().trim() ||
+            (u.uid || '').toLowerCase().trim() === targetId.toLowerCase().trim()
+          );
+          
+          if (!foundUser) {
+            hideTypingIndicator();
+            appendMessage('bot', `❌ Không tìm thấy người dùng **"${targetId}"** trong hệ thống.`);
+            return;
+          }
+          
+          const change = isAdd ? amount : -amount;
+          await db.collection("users").doc(foundUser.uid).set({
+            coins: firebase.firestore.FieldValue.increment(change)
+          }, { merge: true });
+          
+          const currentCoins = foundUser.coins || 0;
+          const newCoins = currentCoins + change;
+          
+          hideTypingIndicator();
+          appendMessage('bot', `✅ **Đã thực thi thành công!**\n- Tài khoản: **${foundUser.email}**\n- Hành động: **${isAdd ? 'Cộng' : 'Trừ'} ${amount.toLocaleString()}đ**\n- Số dư cũ: \`${currentCoins.toLocaleString()}đ\`\n- Số dư mới: **${newCoins.toLocaleString()}đ**`);
+          await loadAllUsersDataForAdmin();
+          return;
+        }
+
+        // ==========================================
+        // 7. KHÓA / MỞ KHÓA TÀI KHOẢN
+        // ==========================================
+        const blockCmd = text.includes('khóa') || text.includes('khoa') || text.includes('block') || text.includes('ban') ||
+                         text.includes('mở khóa') || text.includes('mo khoa') || text.includes('unblock') || text.includes('unban');
+        if (blockCmd) {
+          await loadAllUsersDataForAdmin();
+          
+          const isBlock = !(text.includes('mở khóa') || text.includes('mo khoa') || text.includes('unblock') || text.includes('unban'));
+          const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+          let targetId = '';
+          
+          if (emailMatch) {
+            targetId = emailMatch[0].trim();
+          } else {
+            const words = rawText.split(/\s+/);
+            for (const w of words) {
+              if (w.length > 15 && /^[a-zA-Z0-9]+$/.test(w)) {
+                targetId = w;
+                break;
+              }
+            }
+          }
+          
+          if (!targetId) {
+            hideTypingIndicator();
+            appendMessage('bot', '❌ **Cú pháp chưa đúng**. Sếp vui lòng ghi rõ email hoặc UID tài khoản cần khóa/mở khóa.\n*(Ví dụ: khóa tài khoản test@gmail.com)*');
+            return;
+          }
+          
+          const foundUser = allUsersData.find(u => 
+            (u.email || '').toLowerCase().trim() === targetId.toLowerCase().trim() ||
+            (u.uid || '').toLowerCase().trim() === targetId.toLowerCase().trim()
+          );
+          
+          if (!foundUser) {
+            hideTypingIndicator();
+            appendMessage('bot', `❌ Không tìm thấy tài khoản **"${targetId}"**.`);
+            return;
+          }
+          
+          await db.collection("users").doc(foundUser.uid).set({
+            isBlocked: isBlock
+          }, { merge: true });
+          
+          hideTypingIndicator();
+          appendMessage('bot', `✅ **Cập nhật trạng thái thành công!**\n- Tài khoản: **${foundUser.email}**\n- Trạng thái: **${isBlock ? 'ĐÃ KHÓA ❌' : 'ĐÃ MỞ KHÓA KHÔI PHỤC KÍCH HOẠT ✅'}**`);
+          await loadAllUsersDataForAdmin();
+          return;
+        }
+
+        // ==========================================
+        // 8. DUYỆT ĐƠN MMO (API & DUYỆT THỦ CÔNG)
+        // ==========================================
+        // Xem đơn hàng MMO đang chờ
+        if (text.includes('đơn mmo') || text.includes('don mmo') || text.includes('danh sách đơn') || text.includes('danh sach don')) {
+          const resMMO = await fetch(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${pin}`);
+          const dataMMO = await resMMO.json();
+          if (dataMMO.success && dataMMO.data && dataMMO.data.length > 0) {
+            const pendingOrders = dataMMO.data.filter(o => o.status === 'PENDING' || o.status === 'WAITING' || o.status === 'PAID');
+            if (pendingOrders.length === 0) {
+              hideTypingIndicator();
+              appendMessage('bot', '📦 Hiện không có đơn hàng MMO nào đang chờ duyệt.');
+              return;
+            }
+            
+            let responseText = `📦 **DANH SÁCH ĐƠN HÀNG MMO ĐANG CHỜ**:\n\n`;
+            pendingOrders.forEach(o => {
+              responseText += `- **Dòng ${o.row}**: SP *"${o.productName}"* | Khách: *${o.email || o.uid}* | Giá: *${o.price.toLocaleString()}đ* | Trạng thái: **${o.status}**\n`;
+            });
+            hideTypingIndicator();
+            appendMessage('bot', responseText);
+          } else {
+            hideTypingIndicator();
+            appendMessage('bot', '📦 Trống. Không có đơn hàng MMO nào cần duyệt.');
+          }
+          return;
+        }
+
+        // Duyệt đơn tự động qua API
+        const approveMatch = text.match(/(?:duyệt đơn|duyet don|duyệt|duyet)\s+(\d+)/i);
+        if (approveMatch) {
+          const row = approveMatch[1];
+          const resMMO = await fetch(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${pin}`);
+          const dataMMO = await resMMO.json();
+          if (dataMMO.success && dataMMO.data) {
+            const order = dataMMO.data.find(o => String(o.row) === String(row));
+            if (!order) {
+              hideTypingIndicator();
+              appendMessage('bot', `❌ Không tìm thấy đơn hàng nào ở dòng số **${row}**.`);
+              return;
+            }
+            
+            const res = await fetch(`${GOOGLE_API_URL}?action=admin_fulfill_kingmmo&pin=${pin}&row=${row}&productId=${order.productId}&amount=${order.amount || 1}`);
+            const data = await res.json();
+            hideTypingIndicator();
+            if (data.success) {
+              appendMessage('bot', `✅ **Duyệt đơn tự động thành công!**\n- Dòng: **${row}**\n- Sản phẩm: **${order.productName}**\n- Trạng thái: **Đã trả tài khoản cho khách qua hệ thống**.`);
+            } else {
+              appendMessage('bot', `❌ **Lỗi duyệt đơn qua API**: ${data.error || "Lỗi không xác định từ KingMMO."}`);
+            }
+          } else {
+            hideTypingIndicator();
+            appendMessage('bot', `❌ Không thể kết nối lấy dữ liệu đơn hàng để duyệt.`);
+          }
+          return;
+        }
+
+        // Duyệt tay thủ công trả acc
+        const manualMatch = rawText.match(/(?:duyệt tay|duyệt thủ công|duyet tay|duyet thu cong)\s+(\d+)\s*=\s*(.+)/i);
+        if (manualMatch) {
+          const row = manualMatch[1];
+          const accountData = manualMatch[2].trim();
+          
+          const formData = new FormData();
+          formData.append('action', 'admin_manual_fulfill');
+          formData.append('pin', pin);
+          formData.append('row', row);
+          formData.append('accountData', accountData);
+          
+          const res = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+          const data = await res.json();
+          hideTypingIndicator();
+          if (data.success) {
+            appendMessage('bot', `✅ **Đã duyệt đơn thủ công thành công!**\n- Dòng: **${row}**\n- Thông tin gửi khách: *"${accountData}"*`);
+          } else {
+            appendMessage('bot', `❌ **Thất bại**: ${data.error || "Lỗi không xác định từ máy chủ."}`);
+          }
+          return;
+        }
+
+        // Xóa đơn hàng
+        const deleteMatch = text.match(/(?:xóa đơn|xoa don|hủy đơn|huy don)\s+(\d+)/i);
+        if (deleteMatch) {
+          const row = deleteMatch[1];
+          const formData = new FormData();
+          formData.append('action', 'admin_delete_mmo_order');
+          formData.append('pin', pin);
+          formData.append('row', row);
+          
+          const res = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+          const data = await res.json();
+          hideTypingIndicator();
+          if (data.success) {
+            appendMessage('bot', `✅ **Đã xóa đơn hàng thành công!**\n- Đơn hàng ở dòng **${row}** đã bị hủy khỏi Google Sheets.`);
+          } else {
+            appendMessage('bot', `❌ **Xóa thất bại**: ${data.error}`);
+          }
+          return;
+        }
+
+        // ==========================================
+        // 9. QUẢN LÝ SẢN PHẨM & CẤU HÌNH DEAL HOT
+        // ==========================================
+        // Sửa giá sản phẩm MMO
+        const priceMatch = text.match(/(?:sửa giá|sua gia|đổi giá|doi gia)\s+(\w+)\s+(?:thành|=)?\s*(\d+)/i);
+        if (priceMatch) {
+          const productId = priceMatch[1];
+          const newPrice = parseInt(priceMatch[2], 10);
+          
+          const resP = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
+          const dataP = await resP.json();
+          if (dataP.success) {
+            const configs = dataP.configs || {};
+            const confKey = productId;
+            
+            const payload = [];
+            Object.keys(configs).forEach(k => {
+              if (!k.startsWith('CAT___') && k !== 'DEAL___HOT') {
+                const conf = configs[k];
+                if (k === confKey) {
+                  payload.push({ id: k, name: conf.name || productId, cat: conf.cat || 'Khác', price: newPrice, fakePrice: conf.fakePrice || 0, icon: conf.icon || "", isHidden: conf.isHidden === true || String(conf.isHidden).toLowerCase() === "true", stock: conf.stock || "", desc: conf.desc || "" });
+                } else {
+                  payload.push({ id: k, name: conf.name || "", cat: conf.cat || 'Khác', price: parseInt(conf.price) || 0, fakePrice: conf.fakePrice || 0, icon: conf.icon || "", isHidden: conf.isHidden === true || String(conf.isHidden).toLowerCase() === "true", stock: conf.stock || "", desc: conf.desc || "" });
+                }
+              }
+            });
+            
+            if (!configs[confKey]) {
+              payload.push({ id: confKey, name: productId, cat: 'Khác', price: newPrice, fakePrice: 0, icon: "", isHidden: false, stock: "999", desc: "" });
+            }
+            
+            if (configs['DEAL___HOT']) {
+              const dConf = configs['DEAL___HOT'];
+              payload.push({ id: 'DEAL___HOT', name: dConf.name || "", cat: '', price: dConf.price || 0, fakePrice: 0, icon: dConf.icon || "", isHidden: dConf.isHidden === true, stock: dConf.stock || "", desc: dConf.desc || "" });
+            }
+            
+            const formData = new FormData();
+            formData.append('action', 'admin_save_mmo_config');
+            formData.append('pin', pin);
+            formData.append('configs', JSON.stringify(payload));
+            
+            const resSave = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+            const dataSave = await resSave.json();
+            hideTypingIndicator();
+            if (dataSave.success) {
+              appendMessage('bot', `✅ **Đã sửa giá sản phẩm thành công!**\n- Mã sản phẩm: **${productId}**\n- Giá mới: **${newPrice.toLocaleString()}đ**`);
+            } else {
+              appendMessage('bot', `❌ Không thể lưu giá mới: ${dataSave.error}`);
+            }
+          } else {
+            hideTypingIndicator();
+            appendMessage('bot', `❌ Lỗi kết nối lấy thông tin sản phẩm.`);
+          }
+          return;
+        }
+
+        // Sửa kho sản phẩm MMO
+        const stockMatch = text.match(/(?:sửa kho|sua kho)\s+(\w+)\s+(?:thành|=)?\s*(\d+)/i);
+        if (stockMatch) {
+          const productId = stockMatch[1];
+          const newStock = stockMatch[2];
+          
+          const resP = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
+          const dataP = await resP.json();
+          if (dataP.success) {
+            const configs = dataP.configs || {};
+            const confKey = productId;
+            
+            const payload = [];
+            Object.keys(configs).forEach(k => {
+              if (!k.startsWith('CAT___') && k !== 'DEAL___HOT') {
+                const conf = configs[k];
+                if (k === confKey) {
+                  payload.push({ id: k, name: conf.name || productId, cat: conf.cat || 'Khác', price: conf.price || 0, fakePrice: conf.fakePrice || 0, icon: conf.icon || "", isHidden: conf.isHidden === true || String(conf.isHidden).toLowerCase() === "true", stock: newStock, desc: conf.desc || "" });
+                } else {
+                  payload.push({ id: k, name: conf.name || "", cat: conf.cat || 'Khác', price: parseInt(conf.price) || 0, fakePrice: conf.fakePrice || 0, icon: conf.icon || "", isHidden: conf.isHidden === true || String(conf.isHidden).toLowerCase() === "true", stock: conf.stock || "", desc: conf.desc || "" });
+                }
+              }
+            });
+            
+            if (!configs[confKey]) {
+              payload.push({ id: confKey, name: productId, cat: 'Khác', price: 0, fakePrice: 0, icon: "", isHidden: false, stock: newStock, desc: "" });
+            }
+            
+            if (configs['DEAL___HOT']) {
+              const dConf = configs['DEAL___HOT'];
+              payload.push({ id: 'DEAL___HOT', name: dConf.name || "", cat: '', price: dConf.price || 0, fakePrice: 0, icon: dConf.icon || "", isHidden: dConf.isHidden === true, stock: dConf.stock || "", desc: dConf.desc || "" });
+            }
+            
+            const formData = new FormData();
+            formData.append('action', 'admin_save_mmo_config');
+            formData.append('pin', pin);
+            formData.append('configs', JSON.stringify(payload));
+            
+            const resSave = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+            const dataSave = await resSave.json();
+            hideTypingIndicator();
+            if (dataSave.success) {
+              appendMessage('bot', `✅ **Đã sửa kho sản phẩm thành công!**\n- Mã sản phẩm: **${productId}**\n- Kho hàng mới: **${newStock}**`);
+            } else {
+              appendMessage('bot', `❌ Thất bại: ${dataSave.error}`);
+            }
+          } else {
+            hideTypingIndicator();
+            appendMessage('bot', `❌ Lỗi lấy sản phẩm.`);
+          }
+          return;
+        }
+
+        // Ẩn / Hiện sản phẩm MMO
+        const hideShowMatch = text.match(/(?:ẩn sản phẩm|an san pham|hiển thị sản phẩm|hien thi san pham|ẩn sp|an sp|hiển thị sp|hien thi sp)\s+(\w+)/i);
+        if (hideShowMatch) {
+          const isHide = text.includes('ẩn') || text.includes('an');
+          const productId = hideShowMatch[1];
+          
+          const resP = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
+          const dataP = await resP.json();
+          if (dataP.success) {
+            const configs = dataP.configs || {};
+            const confKey = productId;
+            
+            const payload = [];
+            Object.keys(configs).forEach(k => {
+              if (!k.startsWith('CAT___') && k !== 'DEAL___HOT') {
+                const conf = configs[k];
+                if (k === confKey) {
+                  payload.push({ id: k, name: conf.name || productId, cat: conf.cat || 'Khác', price: conf.price || 0, fakePrice: conf.fakePrice || 0, icon: conf.icon || "", isHidden: isHide, stock: conf.stock || "999", desc: conf.desc || "" });
+                } else {
+                  payload.push({ id: k, name: conf.name || "", cat: conf.cat || 'Khác', price: parseInt(conf.price) || 0, fakePrice: conf.fakePrice || 0, icon: conf.icon || "", isHidden: conf.isHidden === true || String(conf.isHidden).toLowerCase() === "true", stock: conf.stock || "", desc: conf.desc || "" });
+                }
+              }
+            });
+            
+            if (configs['DEAL___HOT']) {
+              const dConf = configs['DEAL___HOT'];
+              payload.push({ id: 'DEAL___HOT', name: dConf.name || "", cat: '', price: dConf.price || 0, fakePrice: 0, icon: dConf.icon || "", isHidden: dConf.isHidden === true, stock: dConf.stock || "", desc: dConf.desc || "" });
+            }
+            
+            const formData = new FormData();
+            formData.append('action', 'admin_save_mmo_config');
+            formData.append('pin', pin);
+            formData.append('configs', JSON.stringify(payload));
+            
+            const resSave = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+            const dataSave = await resSave.json();
+            hideTypingIndicator();
+            if (dataSave.success) {
+              appendMessage('bot', `✅ **Đã ${isHide ? 'ẩn' : 'mở hiển thị'} sản phẩm thành công!**\n- Mã sản phẩm: **${productId}**`);
+            } else {
+              appendMessage('bot', `❌ Thất bại: ${dataSave.error}`);
+            }
+          } else {
+            hideTypingIndicator();
+            appendMessage('bot', `❌ Lỗi lấy sản phẩm.`);
+          }
+          return;
+        }
+
+        // Cấu hình Deal Hot
+        const dealMatch = text.match(/(?:cấu hình deal hot|deal hot|dealhot)\s+(\w+)\s+(\d+)\s+(.+)/i);
+        if (dealMatch) {
+          const dealId = dealMatch[1];
+          const dealPrice = parseInt(dealMatch[2], 10);
+          const dealName = dealMatch[3].trim();
+          
+          const resP = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
+          const dataP = await resP.json();
+          if (dataP.success) {
+            const configs = dataP.configs || {};
+            const payload = [];
+            Object.keys(configs).forEach(k => {
+              if (!k.startsWith('CAT___') && k !== 'DEAL___HOT') {
+                const conf = configs[k];
+                payload.push({ id: k, name: conf.name || "", cat: conf.cat || 'Khác', price: parseInt(conf.price) || 0, fakePrice: conf.fakePrice || 0, icon: conf.icon || "", isHidden: conf.isHidden === true || String(conf.isHidden).toLowerCase() === "true", stock: conf.stock || "", desc: conf.desc || "" });
+              }
+            });
+            
+            const end = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            payload.push({
+              id: 'DEAL___HOT',
+              name: dealName,
+              cat: '',
+              price: dealPrice,
+              fakePrice: 0,
+              icon: dealId,
+              isHidden: false,
+              stock: end.toISOString(),
+              desc: 'HOT'
+            });
+            
+            const formData = new FormData();
+            formData.append('action', 'admin_save_mmo_config');
+            formData.append('pin', pin);
+            formData.append('configs', JSON.stringify(payload));
+            
+            const resSave = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+            const dataSave = await resSave.json();
+            hideTypingIndicator();
+            if (dataSave.success) {
+              appendMessage('bot', `✅ **Thiết lập Deal Hot mới thành công!**\n- Mã SP: **${dealId}**\n- Tên Deal: *"${dealName}"*\n- Giá Deal: **${dealPrice.toLocaleString()}đ**\n- Thời hạn kết thúc: 24 giờ sau.`);
+            } else {
+              appendMessage('bot', `❌ Cấu hình thất bại: ${dataSave.error}`);
+            }
+          } else {
+            hideTypingIndicator();
+            appendMessage('bot', `❌ Lỗi kết nối.`);
+          }
+          return;
+        }
+
+        // ==========================================
+        // 10. GỬI THÔNG BÁO PUSH HÀNG LOẠT
+        // ==========================================
+        const pushCmd = text.startsWith('gửi thông báo') || text.startsWith('gui thong bao') || text.startsWith('thông báo:') || text.startsWith('thong bao:');
+        if (pushCmd) {
+          let body = '';
+          let title = '📢 Thông báo từ IPAVIET';
+          
+          if (text.startsWith('thông báo:') || text.startsWith('thong bao:')) {
+            body = rawText.substring(rawText.indexOf(':') + 1).trim();
+          } else {
+            body = rawText.replace(/gửi thông báo|gui thong bao/gi, '').trim();
+          }
+          
+          if (!body) {
+            hideTypingIndicator();
+            appendMessage('bot', '❌ Vui lòng điền nội dung thông báo muốn gửi.');
+            return;
+          }
+          
+          const res = await fetch(`${GOOGLE_API_URL}?action=send_push_now&pin=${pin}&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`);
+          const data = await res.json();
+          hideTypingIndicator();
+          if (data.success) {
+            appendMessage('bot', `✅ **Đã phát lệnh gửi thông báo đẩy Expo!**\n- Tiêu đề: *"${title}"*\n- Nội dung: *"${body}"*\n- Trạng thái: Đang phát đến toàn bộ máy khách và báo cáo qua Telegram.`);
+          } else {
+            appendMessage('bot', `❌ Gửi thông báo thất bại: ${data.error}`);
+          }
+          return;
+        }
+
+        // ==========================================
+        // 11. QUẢN LÝ PHÍM TẮT & TIỆN ÍCH (SHORTCUTS)
+        // ==========================================
+        const addShortcutMatch = text.match(/(?:thêm phím tắt|them phim tat|thêm tiện ích|them tien ich)\s+(.+)\s+(?:link|url)\s+(https?:\/\/\S+)/i);
+        if (addShortcutMatch) {
+          const name = addShortcutMatch[1].trim();
+          const shortcutUrl = addShortcutMatch[2].trim();
+          
+          const resS = await fetch(`${GOOGLE_API_URL}?action=get_shortcuts`);
+          const dataS = await resS.json();
+          let list = Array.isArray(dataS) ? dataS : [];
+          
+          const newShortcut = {
+            id: "SHORTCUT_" + Date.now(),
+            name: name,
+            category: "Tiện Ích",
+            iosVersion: "iOS 15+",
+            downloads: "1k+",
+            rating: 5,
+            popularity: 999,
+            isNew: true,
+            iconUrl: "",
+            icon: "zap",
+            iconColor: "#007AFF",
+            description: "Tiện ích được tạo nhanh qua Trợ lý AI",
+            mainFunction: "Khởi chạy ứng dụng và liên kết nhanh.",
+            notes: "",
+            shortcutUrl: shortcutUrl,
+            videoUrl: "",
+            instructions: ["Tải xuống và cài đặt phím tắt từ liên kết.", "Cho phép chạy phím tắt không tin cậy nếu có yêu cầu."],
+            commonErrors: [],
+            tutorialImages: []
+          };
+          
+          list.unshift(newShortcut);
+          
+          const formData = new FormData();
+          formData.append('action', 'admin_save_shortcuts');
+          formData.append('pin', pin);
+          formData.append('shortcuts', JSON.stringify(list));
+          
+          const resSave = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+          const dataSave = await resSave.json();
+          hideTypingIndicator();
+          if (dataSave.success) {
+            appendMessage('bot', `✅ **Đã tạo mới và đồng bộ phím tắt thành công!**\n- Tên: **${name}**\n- Link nhận: [Bấm vào đây](${shortcutUrl})`);
+          } else {
+            appendMessage('bot', `❌ Thất bại khi lưu: ${dataSave.error}`);
+          }
+          return;
+        }
+
+        const delShortcutMatch = text.match(/(?:xóa phím tắt|xoa phim tat)\s+(.+)/i);
+        if (delShortcutMatch) {
+          const target = delShortcutMatch[1].trim();
+          
+          const resS = await fetch(`${GOOGLE_API_URL}?action=get_shortcuts`);
+          const dataS = await resS.json();
+          let list = Array.isArray(dataS) ? dataS : [];
+          
+          const initialLength = list.length;
+          list = list.filter(s => 
+            String(s.id).toLowerCase() !== target.toLowerCase() && 
+            String(s.name).toLowerCase() !== target.toLowerCase()
+          );
+          
+          if (list.length === initialLength) {
+            hideTypingIndicator();
+            appendMessage('bot', `❌ Không tìm thấy phím tắt nào khớp với **"${target}"**.`);
+            return;
+          }
+          
+          const formData = new FormData();
+          formData.append('action', 'admin_save_shortcuts');
+          formData.append('pin', pin);
+          formData.append('shortcuts', JSON.stringify(list));
+          
+          const resSave = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+          const dataSave = await resSave.json();
+          hideTypingIndicator();
+          if (dataSave.success) {
+            appendMessage('bot', `✅ **Đã xóa phím tắt thành công!**\n- Mục tiêu: **${target}**`);
+          } else {
+            appendMessage('bot', `❌ Không thể cập nhật: ${dataSave.error}`);
+          }
+          return;
+        }
+
+        // ==========================================
+        // 12. XÓA TRI THỨC AI (AI KNOWLEDGE)
+        // ==========================================
+        const delQaMatch = text.match(/(?:xóa câu hỏi|xoa cau hoi|xóa tri thức|xoa tri thuc)\s+(.+)/i);
+        if (delQaMatch) {
+          const targetQ = delQaMatch[1].trim();
+          
+          const resQA = await fetch(`${GOOGLE_API_URL}?action=get_ai_qa`);
+          const listQA = await resQA.json();
+          
+          const initialLength = listQA.length;
+          const filteredQA = listQA.filter(item => 
+            removeVietnameseAccents(item.question.toLowerCase()).trim() !== removeVietnameseAccents(targetQ.toLowerCase()).trim()
+          );
+          
+          if (filteredQA.length === initialLength) {
+            hideTypingIndicator();
+            appendMessage('bot', `❌ Không tìm thấy tri thức Q&A nào khớp với từ khóa **"${targetQ}"**.`);
+            return;
+          }
+          
+          const formData = new FormData();
+          formData.append('action', 'admin_save_ai_qa');
+          formData.append('pin', pin);
+          formData.append('qaList', JSON.stringify(filteredQA));
+          
+          const resSave = await fetch(GOOGLE_API_URL, { method: "POST", body: formData });
+          const dataSave = await resSave.json();
+          hideTypingIndicator();
+          if (dataSave.success) {
+            appendMessage('bot', `✅ **Đã xóa tri thức Q&A thành công!**\n- Câu hỏi đã gỡ: *"${targetQ}"*\n- Hệ thống đã cập nhật.`);
+            loadAIKnowledgeBase();
+          } else {
+            appendMessage('bot', `❌ Lỗi khi đồng bộ: ${dataSave.error}`);
+          }
+          return;
+        }
+
+        // Fallback if no matching command found
+        hideTypingIndicator();
+        appendMessage('bot', '🤖 **Yêu cầu không khớp với bất kỳ lệnh điều khiển nào.**\n\nSếp vui lòng kiểm tra lại cú pháp hoặc nhắn "quay lại" để xem các gợi ý nhanh.');
+      } catch (err) {
+        hideTypingIndicator();
+        appendMessage('bot', `❌ **Lỗi thực thi lệnh**: ${err.message}`);
+        console.error(err);
+      }
+      scrollChatToBottom();
+    }
       return str
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
@@ -927,7 +1788,18 @@
           isAdminAuthenticated = true;
           sessionStorage.setItem('isAdminAuthenticated', 'true');
           sessionStorage.setItem('adminPinInChat', pin);
-          appendMessage('bot', `🔑 **Xác thực Admin thành công!** Chào sếp, em đã sẵn sàng học thêm kiến thức mới.\n\nSếp hãy dạy em bằng cách nhắn tin theo cú pháp:\n👉 **dạy: [từ khóa hoặc câu hỏi] = [câu trả lời của AI]**\n*(Ví dụ: dạy: lỗi cert = Sếp vui lòng mua cert riêng nhé)*`);
+          
+          const subtitle = document.getElementById('botSubtitle');
+          if (subtitle && adminModeEnabled) {
+            subtitle.innerHTML = `<span class="bg-red-600 text-white px-2 py-0.5 rounded-[6px] text-[8px] font-black tracking-widest uppercase shadow-sm">ADMIN MODE</span>`;
+          }
+
+          appendMessage('bot', `🔑 **Xác thực đặc quyền Admin thành công!** Kính chào Sếp Tổng, em đã sẵn sàng nhận lệnh điều khiển hệ thống.\n\nSếp có thể bật/tắt chế độ Admin bất cứ lúc nào bằng nút bên dưới hoặc gõ "bật admin" / "tắt admin".`, false, [
+            { label: '👑 Bật Chế độ Admin', type: 'primary', action: () => toggleAdminMode(true) },
+            { label: 'Hủy bỏ', type: 'secondary', action: () => triggerGreeting() }
+          ]);
+          loadAllUsersDataForAdmin();
+          loadAdminTransactionsData();
         } else {
           appendMessage('bot', `❌ **Mã PIN Admin không chính xác.** Vui lòng kiểm tra lại.`);
         }
@@ -1683,6 +2555,14 @@
         currentUser = user;
         loadAIKnowledgeBase();
         
+        // Auto-authenticate as admin if cached pin exists on the same browser
+        if (user.email && user.email.toLowerCase() === "mquitran@gmail.com") {
+          const cachedPin = localStorage.getItem('adminPin');
+          if (cachedPin && !isAdminAuthenticated) {
+            verifyAdminPinInChat(cachedPin);
+          }
+        }
+        
         // Listen to User profile document changes
         db.collection("users").doc(user.uid).onSnapshot(doc => {
           if (doc.exists) {
@@ -1882,14 +2762,38 @@
       showTypingIndicator();
       setTimeout(() => {
         hideTypingIndicator();
-        const userName = currentUser.email ? currentUser.email.split('@')[0] : 'Sếp';
-        appendMessage('bot', `Xin chào **${userName}**! 👋 Tôi là trợ lý ảo AI hỗ trợ nạp tiền và gia hạn VIP tự động của IPAVIET.\n\nHôm nay sếp cần tôi hỗ trợ gì ạ? Sếp có thể click nhanh các nút gợi ý bên dưới hoặc chat trực tiếp với tôi nha!`, false, [
-          { label: '👑 Mua VIP Kho IPA', type: 'yellow', action: () => handleQuickAction('buy_vip') },
-          { label: '💰 Nạp tiền tài khoản', type: 'primary', action: () => handleQuickAction('deposit') },
-          { label: '🔍 Tìm Phím Tắt', type: 'secondary', action: () => handleQuickAction('search_shortcuts') },
-          { label: '📲 Tìm File IPA', type: 'secondary', action: () => handleQuickAction('search_ipa') },
-          { label: '🛒 Mua Tài Nguyên MMO', type: 'secondary', action: () => handleQuickAction('search_mmo') }
-        ]);
+        
+        // Sync subtitle class
+        const subtitle = document.getElementById('botSubtitle');
+        if (subtitle) {
+          if (isAdminAuthenticated && adminModeEnabled) {
+            subtitle.innerHTML = `<span class="bg-red-600 text-white px-2 py-0.5 rounded-[6px] text-[8px] font-black tracking-widest uppercase shadow-sm animate-pulse">ADMIN MODE</span>`;
+          } else {
+            subtitle.innerText = "IPAVIET Assistant";
+          }
+        }
+
+        if (isAdminAuthenticated && adminModeEnabled) {
+          appendMessage('bot', `👑 **CHẾ ĐỘ QUẢN TRỊ VIÊN (ADMIN MODE) ĐANG BẬT**\n\nKính chào Sếp Tổng! Thần thú AI đã sẵn sàng phục vụ sếp điều khiển hệ thống bằng giọng nói hoặc nhắn tin.\n\nSếp có thể gửi lệnh trực tiếp hoặc bấm các tác vụ nhanh bên dưới:\n\n👉 *Gợi ý lệnh: thống kê 7 ngày, doanh thu hôm nay, cộng 50k cho mquitran@gmail.com, khóa tài khoản test@gmail.com, gửi thông báo: Bảo trì hệ thống*`, false, [
+            { label: '📊 Thống kê hôm nay', type: 'yellow', action: () => processBotResponse('thống kê hôm nay') },
+            { label: '💰 Doanh thu hôm nay', type: 'primary', action: () => processBotResponse('doanh thu hôm nay') },
+            { label: '👥 Ai nạp nhiều nhất', type: 'secondary', action: () => processBotResponse('ai nạp nhiều nhất') },
+            { label: '❌ Tắt Chế độ Admin', type: 'secondary', action: () => toggleAdminMode(false) }
+          ]);
+        } else {
+          const userName = currentUser.email ? currentUser.email.split('@')[0] : 'Sếp';
+          const actions = [
+            { label: '👑 Mua VIP Kho IPA', type: 'yellow', action: () => handleQuickAction('buy_vip') },
+            { label: '💰 Nạp tiền tài khoản', type: 'primary', action: () => handleQuickAction('deposit') },
+            { label: '🔍 Tìm Phím Tắt', type: 'secondary', action: () => handleQuickAction('search_shortcuts') },
+            { label: '📲 Tìm File IPA', type: 'secondary', action: () => handleQuickAction('search_ipa') },
+            { label: '🛒 Mua Tài Nguyên MMO', type: 'secondary', action: () => handleQuickAction('search_mmo') }
+          ];
+          if (isAdminAuthenticated) {
+            actions.push({ label: '👑 Bật Chế độ Admin', type: 'primary', action: () => toggleAdminMode(true) });
+          }
+          appendMessage('bot', `Xin chào **${userName}**! 👋 Tôi là trợ lý ảo AI hỗ trợ nạp tiền và gia hạn VIP tự động của IPAVIET.\n\nHôm nay sếp cần tôi hỗ trợ gì ạ? Sếp có thể click nhanh các nút gợi ý bên dưới hoặc chat trực tiếp với tôi nha!`, false, actions);
+        }
       }, 800);
     }
 
@@ -2374,8 +3278,24 @@
       const text = rawText.toLowerCase().trim();
       
       // ==========================================
-      // A. HỆ THỐNG DẠY AI TRỰC TIẾP TỪ KHUNG CHAT
+      // BẬT / TẮT CHẾ ĐỘ ADMIN NHANH
       // ==========================================
+      if (isAdminAuthenticated) {
+        if (text === 'bật admin' || text === 'bat admin' || text === 'bật chế độ admin' || text === 'bat che do admin') {
+          toggleAdminMode(true);
+          return;
+        }
+        if (text === 'tắt admin' || text === 'tat admin' || text === 'tắt chế độ admin' || text === 'tat che do admin') {
+          toggleAdminMode(false);
+          return;
+        }
+      }
+
+      // Route to admin NLP execution handler if enabled
+      if (isAdminAuthenticated && adminModeEnabled) {
+        handleAdminNLPCommand(rawText);
+        return;
+      }
       
       // 1. Xác thực Admin trong chat: /admin [mã pin]
       if (text.startsWith('/admin ')) {

@@ -526,4 +526,23 @@
       }
     }
   });
+
+  // Global listener for blocked accounts (fires if firebase is loaded on current page)
+  if (typeof firebase !== 'undefined') {
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        firebase.firestore().collection("users").doc(user.uid).onSnapshot(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            if (data.isBlocked === true) {
+              alert("⚠️ Tài khoản của bạn đã bị khóa bởi Quản trị viên!");
+              firebase.auth().signOut().then(() => {
+                window.location.reload();
+              });
+            }
+          }
+        });
+      }
+    });
+  }
 })();
