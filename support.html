@@ -919,6 +919,48 @@
       
       try {
         // ==========================================
+        // 0. DANH SÁCH CHI TIẾT NGƯỜI ĐĂNG KÝ MỚI NHẤT
+        // ==========================================
+        if (text.includes('ai đã đăng ký') || text.includes('ai da dang ky') || text.includes('ai đăng ký') || text.includes('ai dang ky') || text.includes('danh sách đăng ký') || text.includes('danh sach dang ky')) {
+          await loadAllUsersDataForAdmin();
+          
+          const sortedUsers = allUsersData.map(u => {
+            const created = u.createdAt ? (u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt)) : new Date(0);
+            return {
+              email: u.email || 'Ẩn danh',
+              uid: u.uid,
+              createdAt: created,
+              coins: u.coins || 0
+            };
+          }).sort((a, b) => b.createdAt - a.createdAt);
+          
+          if (sortedUsers.length === 0) {
+            hideTypingIndicator();
+            appendMessage('bot', '👥 Chưa có người dùng nào đăng ký trên hệ thống.');
+            return;
+          }
+          
+          let responseText = `👥 **DANH SÁCH 10 THÀNH VIÊN ĐĂNG KÝ MỚI NHẤT**:\n\n`;
+          sortedUsers.slice(0, 10).forEach((u, index) => {
+            const timeStr = u.createdAt.getTime() > 0 ? u.createdAt.toLocaleString('vi-VN') : 'Không rõ';
+            responseText += `${index + 1}. **${u.email}**\n   - UID: \`${u.uid}\`\n   - Đăng ký: *${timeStr}* | Số dư: *${u.coins.toLocaleString()}đ*\n`;
+          });
+          hideTypingIndicator();
+          appendMessage('bot', responseText);
+          return;
+        }
+
+        // ==========================================
+        // 0.5. THỐNG KÊ ĐĂNG KÝ MẶC ĐỊNH (7 NGÀY)
+        // ==========================================
+        if (text === 'thống kê đăng ký' || text === 'thong ke dang ky' || text === 'đăng ký' || text === 'dang ky') {
+          // Gọi trực tiếp xử lý thống kê 7 ngày
+          hideTypingIndicator();
+          await handleAdminNLPCommand('thống kê 7 ngày');
+          return;
+        }
+
+        // ==========================================
         // 1. THỐNG KÊ ĐĂNG KÝ THEO SỐ NGÀY
         // ==========================================
         const regDaysMatch = text.match(/(?:thống kê|thong ke|đăng ký|dang ky)\s+(\d+)\s*ngày/i);
@@ -2246,6 +2288,32 @@
       
       const shouldShow = isOpen !== undefined ? isOpen : panel.classList.contains('hidden');
       if (shouldShow) {
+        const container = panel.querySelector('.grid');
+        if (container) {
+          if (isAdminAuthenticated && adminModeEnabled) {
+            container.innerHTML = `
+              <button type="button" onclick="triggerQuickMenuAction('admin_stats_today')" class="flex items-center gap-2 p-3 bg-red-500/10 hover:bg-red-500/25 border border-red-500/20 text-red-700 dark:text-red-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="bar-chart-2" class="w-4 h-4 shrink-0"></i> Thống kê hôm nay</button>
+              <button type="button" onclick="triggerQuickMenuAction('admin_rev_today')" class="flex items-center gap-2 p-3 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="dollar-sign" class="w-4 h-4 shrink-0"></i> Doanh thu hôm nay</button>
+              <button type="button" onclick="triggerQuickMenuAction('admin_top_depositors')" class="flex items-center gap-2 p-3 bg-yellow-500/10 hover:bg-yellow-500/25 border border-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="award" class="w-4 h-4 shrink-0"></i> Top nạp tiền</button>
+              <button type="button" onclick="triggerQuickMenuAction('admin_recent_users')" class="flex items-center gap-2 p-3 bg-blue-500/10 hover:bg-blue-500/25 border border-blue-500/20 text-blue-700 dark:text-blue-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="users" class="w-4 h-4 shrink-0"></i> Ai đã đăng ký</button>
+              <button type="button" onclick="triggerQuickMenuAction('admin_mmo_orders')" class="flex items-center gap-2 p-3 bg-purple-500/10 hover:bg-purple-500/25 border border-purple-500/20 text-purple-700 dark:text-purple-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="shopping-cart" class="w-4 h-4 shrink-0"></i> Đơn Mall (MMO)</button>
+              <button type="button" onclick="triggerQuickMenuAction('admin_shortcuts')" class="flex items-center gap-2 p-3 bg-sky-500/10 hover:bg-sky-500/25 border border-sky-500/20 text-sky-700 dark:text-sky-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="zap" class="w-4 h-4 shrink-0"></i> Phím tắt hệ thống</button>
+              <button type="button" onclick="triggerQuickMenuAction('admin_qa')" class="flex items-center gap-2 p-3 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-700 dark:text-rose-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="book-open" class="w-4 h-4 shrink-0"></i> Tri thức AI</button>
+              <button type="button" onclick="toggleAdminMode(false); toggleQuickMenu(false);" class="flex items-center gap-2 p-3 bg-gray-500/10 hover:bg-gray-500/25 border border-gray-500/20 text-gray-700 dark:text-gray-300 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="log-out" class="w-4 h-4 shrink-0"></i> Tắt Admin Mode</button>
+            `;
+          } else {
+            container.innerHTML = `
+              <button type="button" onclick="triggerQuickMenuAction('buy_vip')" class="flex items-center gap-2 p-3 bg-yellow-500/10 hover:bg-yellow-500/25 border border-yellow-500/20 text-yellow-700 dark:text-yellow-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="crown" class="w-4 h-4 shrink-0"></i> Mua VIP IPA</button>
+              <button type="button" onclick="triggerQuickMenuAction('deposit')" class="flex items-center gap-2 p-3 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="wallet" class="w-4 h-4 shrink-0"></i> Nạp tiền ví</button>
+              <button type="button" onclick="triggerQuickMenuAction('search_shortcuts')" class="flex items-center gap-2 p-3 bg-blue-500/10 hover:bg-blue-500/25 border border-blue-500/20 text-blue-700 dark:text-blue-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="zap" class="w-4 h-4 shrink-0"></i> Tìm Phím Tắt</button>
+              <button type="button" onclick="triggerQuickMenuAction('search_ipa')" class="flex items-center gap-2 p-3 bg-purple-500/10 hover:bg-purple-500/25 border border-purple-500/20 text-purple-700 dark:text-purple-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="smartphone" class="w-4 h-4 shrink-0"></i> Tìm File IPA</button>
+              <button type="button" onclick="triggerQuickMenuAction('search_mmo')" class="flex items-center gap-2 p-3 bg-indigo-500/10 hover:bg-indigo-500/25 border border-indigo-500/20 text-indigo-700 dark:text-indigo-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i> Mua Gói MMO</button>
+              <button type="button" onclick="triggerQuickMenuAction('order_history')" class="flex items-center gap-2 p-3 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-700 dark:text-rose-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="file-text" class="w-4 h-4 shrink-0"></i> Lịch Sử Đơn</button>
+              <button type="button" onclick="triggerQuickMenuAction('vsign')" class="flex items-center gap-2 p-3 bg-sky-500/10 hover:bg-sky-500/25 border border-sky-500/20 text-sky-700 dark:text-sky-400 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="info" class="w-4 h-4 shrink-0"></i> HD VSign</button>
+              <button type="button" onclick="triggerQuickMenuAction('contact')" class="flex items-center gap-2 p-3 bg-gray-500/10 hover:bg-gray-500/25 border border-gray-500/20 text-gray-700 dark:text-gray-300 rounded-2xl text-xs font-black transition active:scale-95"><i data-lucide="headphones" class="w-4 h-4 shrink-0"></i> Chat Admin</button>
+            `;
+          }
+        }
         panel.classList.remove('hidden');
         panel.classList.add('flex');
         if (window.lucide) lucide.createIcons();
@@ -2257,7 +2325,17 @@
 
     function triggerQuickMenuAction(actionId) {
       toggleQuickMenu(false);
-      handleQuickAction(actionId);
+      
+      if (actionId === 'admin_stats_today') { processBotResponse('thống kê hôm nay'); }
+      else if (actionId === 'admin_rev_today') { processBotResponse('doanh thu hôm nay'); }
+      else if (actionId === 'admin_top_depositors') { processBotResponse('ai nạp nhiều nhất'); }
+      else if (actionId === 'admin_recent_users') { processBotResponse('ai đã đăng ký'); }
+      else if (actionId === 'admin_mmo_orders') { processBotResponse('đơn mmo'); }
+      else if (actionId === 'admin_shortcuts') { appendMessage('bot', '📊 Hệ thống đang hoạt động với các phím tắt đã đồng bộ. Sếp có thể dùng các lệnh:\n- `thêm phím tắt [Tên] link [iCloud]` để tạo mới\n- `xóa phím tắt [Tên hoặc ID]` để loại bỏ.'); }
+      else if (actionId === 'admin_qa') { appendMessage('bot', '🤖 Tri thức tự học AI hiện có **' + aiKnowledgeBase.length + ' quy tắc**. Sếp hãy nhắn theo cú pháp:\n- `dạy: [Hỏi] = [Đáp]` để thêm mới\n- `xóa câu hỏi [Từ khóa]` để gỡ bỏ.'); }
+      else {
+        handleQuickAction(actionId);
+      }
     }
 
     async function handleOrderHistory() {
