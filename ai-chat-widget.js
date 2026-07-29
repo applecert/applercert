@@ -1,557 +1,488 @@
-(function() {
+(() => {
   const currentScript = document.currentScript;
   const bottomOffset = currentScript ? (currentScript.getAttribute('data-bottom') || '30px') : '30px';
   const pathPrefix = currentScript ? (currentScript.getAttribute('data-path-prefix') || '') : '';
-  const iframeSrc = `${pathPrefix}support.html?embed=true&v=6`;
+  const iframeSrc = `${pathPrefix}support.html?embed=true&v=7`;
+  const phosphorHref = 'https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/duotone/style.css';
 
-  // Inject Stylesheet
+  const ensureStylesheet = (href) => {
+    const hasLink = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(link => link.href === href);
+    if (hasLink) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    (document.head || document.documentElement).appendChild(link);
+  };
+
+  ensureStylesheet(phosphorHref);
+
   const style = document.createElement('style');
   style.textContent = `
-    /* Outer isolation wrapper – sits on <html> element directly, completely outside the body zoom scope */
     #floatingWidgetRoot {
       position: fixed;
-      bottom: ${bottomOffset};
       right: 20px;
+      bottom: ${bottomOffset};
       z-index: 2147483647;
       pointer-events: none;
-      /* Absolutely reset any zoom that body might have set */
-      zoom: normal;
-      /* Force a new top-level composite layer so WebKit renders correctly */
-      will-change: transform;
       isolation: isolate;
-      /* Eliminate any accidental coordinate system pollution */
-      transform: translateZ(0);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color-scheme: light dark;
     }
 
     #floatingUtilityWidget {
       position: relative;
-      width: 55px;
-      height: 55px;
-      pointer-events: none;
-      overflow: hidden;
-      transition: width 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
-                  height 0.25s cubic-bezier(0.19, 1, 0.22, 1);
-    }
-
-    #floatingUtilityWidget.widget-expanded {
-      width: 320px;
-      height: 450px;
+      width: 182px;
+      height: 60px;
+      pointer-events: auto;
       overflow: visible;
     }
 
-    .container-ai-input {
-      --perspective: 1000px;
-      --translateY: 8px;
+    #floatingUtilityWidget.widget-expanded {
+      width: min(420px, calc(100vw - 24px));
+      height: min(720px, calc(100vh - 120px));
+    }
+
+    .floating-launcher {
       position: absolute;
-      left: 0;
-      top: 0;
-      width: 55px;
-      height: 55px;
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      transform-style: preserve-3d;
-      pointer-events: auto;
-      transition: opacity 0.2s ease, visibility 0.2s;
-    }
-
-    #floatingUtilityWidget.widget-expanded .container-ai-input {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .container-wrap {
+      inset: 0;
       display: flex;
       align-items: center;
-      justify-content: center;
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translateX(-50%) translateY(-50%);
-      z-index: 9;
-      transform-style: preserve-3d;
+      gap: 12px;
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 20px;
       cursor: pointer;
-      padding: 4px;
-      transition: all 0.3s ease;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.98), rgba(79, 70, 229, 0.95));
+      color: #fff;
+      box-shadow: 0 18px 40px rgba(37, 99, 235, 0.28), 0 1px 0 rgba(255, 255, 255, 0.16) inset;
+      overflow: hidden;
+      transition: transform 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
     }
 
-    .container-wrap:hover {
-      padding: 0;
-    }
-
-    .container-wrap:active {
-      transform: translateX(-50%) translateY(-50%) scale(0.95);
-    }
-
-    .container-wrap:after {
+    .floating-launcher::before {
       content: "";
       position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translateX(-50%) translateY(-50%);
-      width: 55px;
-      height: 55px;
-      background-color: #dedfe0;
-      border-radius: 16px;
-      transition: all 0.3s ease;
-      z-index: -20;
-    }
-
-    #floatingWidgetRoot.dark .container-wrap:after {
-      background-color: #1e293b;
-    }
-
-    .container-wrap:hover:after {
-      width: 59px;
-      height: 59px;
-    }
-
-    #floatingUtilityWidget.widget-expanded .container-wrap:after {
-      opacity: 0;
+      inset: 1px;
+      border-radius: 19px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
       pointer-events: none;
     }
 
-    .card {
-      width: 55px;
-      height: 55px;
-      transform-style: preserve-3d;
-      will-change: transform;
-      transition: all 0.6s ease;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      transform: translateZ(50px);
-      justify-content: center;
+    .floating-launcher:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 48px rgba(37, 99, 235, 0.34), 0 1px 0 rgba(255, 255, 255, 0.22) inset;
     }
 
-    .background-blur-balls {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translateX(-50%) translateY(-50%);
-      width: 100%;
-      height: 100%;
-      z-index: -10;
-      border-radius: 16px;
-      background-color: rgba(255, 255, 255, 0.8);
-      overflow: hidden;
-    }
-
-    #floatingWidgetRoot.dark .background-blur-balls {
-      background-color: rgba(15, 23, 42, 0.85);
-    }
-
-    .balls {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translateX(-50%) translateY(-50%);
-      animation: rotate-background-balls 10s linear infinite;
-    }
-
-    .container-wrap:hover .balls {
-      animation-play-state: paused;
-    }
-
-    .background-blur-balls .ball {
-      width: 2.2rem;
-      height: 2.2rem;
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(12px);
-    }
-
-    .background-blur-balls .ball.violet {
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #9147ff;
-    }
-
-    .background-blur-balls .ball.green {
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #34d399;
-    }
-
-    .background-blur-balls .ball.rosa {
-      top: 50%;
-      left: 0;
-      transform: translateY(-50%);
-      background-color: #ec4899;
-    }
-
-    .background-blur-balls .ball.cyan {
-      top: 50%;
-      right: 0;
-      transform: translateY(-50%);
-      background-color: #05e0f5;
-    }
-
-    .content-card {
-      width: 55px;
-      height: 55px;
-      display: flex;
-      border-radius: 16px;
-      overflow: hidden;
+    .launcher-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      background: rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(10px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
       position: relative;
+      z-index: 1;
     }
 
-    .background-blur-card {
-      width: 100%;
-      height: 100%;
-      backdrop-filter: blur(50px);
+    .launcher-icon i {
+      font-size: 1.25rem;
     }
 
-    .eyes {
-      position: absolute;
-      left: 50%;
-      bottom: 50%;
-      transform: translateX(-50%) translateY(50%);
+    .launcher-copy {
+      min-width: 0;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 18px;
-      gap: 6px;
-      transition: opacity 0.15s ease, visibility 0.15s;
+      flex-direction: column;
+      text-align: left;
+      position: relative;
+      z-index: 1;
     }
 
-    .eyes .eye {
-      width: 9px;
-      height: 18px;
-      background-color: #1e293b;
-      border-radius: 4px;
-      animation: animate-eyes 10s infinite linear;
-      transition: all 0.3s ease;
+    .launcher-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: 0.01em;
     }
 
-    #floatingWidgetRoot.dark .eyes .eye {
-      background-color: #fff;
+    .launcher-subtitle {
+      font-size: 0.72rem;
+      line-height: 1.2;
+      color: rgba(255, 255, 255, 0.8);
     }
 
-    .eyes.happy {
-      display: none;
-      color: #1e293b;
-      gap: 0;
+    .launcher-badge {
+      margin-left: auto;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.12);
+      position: relative;
+      z-index: 1;
     }
 
-    #floatingWidgetRoot.dark .eyes.happy {
-      color: #fff;
+    .launcher-badge i {
+      font-size: 0.9rem;
     }
 
-    .eyes.happy svg {
-      width: 24px;
+    #floatingUtilityWidget.widget-expanded .floating-launcher {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px) scale(0.98);
     }
 
-    .container-wrap:hover .eyes .eye {
-      display: none;
-    }
-
-    .container-wrap:hover .eyes.happy {
-      display: flex;
-    }
-
-    /* Flat 2D Responsive Chat Panel (Isolated from 3D Transforms) */
     .chat-window-panel {
       position: absolute;
-      bottom: 0;
-      right: 0;
-      width: 320px;
-      max-width: calc(100vw - 40px);
-      height: 450px;
-      max-height: calc(100vh - 140px);
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 10px 40px rgba(0, 0, 60, 0.25);
-      pointer-events: none;
-      opacity: 0;
-      visibility: hidden;
-      transform: scale(0.9) translateZ(0);
-      transform-origin: bottom right;
-      transition: opacity 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
-                  transform 0.25s cubic-bezier(0.19, 1, 0.22, 1), 
-                  visibility 0.25s;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      border-radius: 28px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 32px 60px rgba(15, 23, 42, 0.24);
+      backdrop-filter: blur(26px) saturate(140%);
       overflow: hidden;
-      -webkit-overflow-scrolling: touch;
-      z-index: 20;
+      opacity: 0;
+      transform: translateY(18px) scale(0.975);
+      pointer-events: none;
+      transform-origin: bottom right;
+      transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
     }
 
     #floatingWidgetRoot.dark .chat-window-panel {
-      background: rgba(15, 23, 42, 0.98);
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      background: rgba(15, 23, 42, 0.94);
+      border-color: rgba(148, 163, 184, 0.16);
+      box-shadow: 0 30px 70px rgba(2, 6, 23, 0.52);
     }
 
     #floatingUtilityWidget.widget-expanded .chat-window-panel {
       opacity: 1;
-      visibility: visible;
-      transform: scale(1) translateZ(0);
+      transform: translateY(0) scale(1);
       pointer-events: auto;
     }
 
-    .chat-close-btn {
-      position: absolute;
-      top: 10px;
-      right: 12px;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.05);
-      border: none;
-      color: #64748b;
-      font-size: 16px;
-      font-weight: 700;
+    .chat-window-header {
+      padding: 14px 15px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 99999;
-      transition: background 0.2s, color 0.2s;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(248, 250, 252, 0.68));
     }
 
-    #floatingWidgetRoot.dark .chat-close-btn {
-      background: rgba(255, 255, 255, 0.1);
+    #floatingWidgetRoot.dark .chat-window-header {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.7));
+      border-bottom-color: rgba(148, 163, 184, 0.12);
+    }
+
+    .widget-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .widget-brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(99, 102, 241, 0.14));
+      color: #2563eb;
+      border: 1px solid rgba(37, 99, 235, 0.14);
+    }
+
+    #floatingWidgetRoot.dark .widget-brand-icon {
+      color: #93c5fd;
+      background: rgba(59, 130, 246, 0.16);
+      border-color: rgba(96, 165, 250, 0.14);
+    }
+
+    .widget-brand-icon i {
+      font-size: 1.1rem;
+    }
+
+    .widget-brand-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .widget-brand-title {
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.1;
+    }
+
+    #floatingWidgetRoot.dark .widget-brand-title {
+      color: #f8fafc;
+    }
+
+    .widget-brand-subtitle {
+      font-size: 0.74rem;
+      color: #64748b;
+      line-height: 1.1;
+    }
+
+    #floatingWidgetRoot.dark .widget-brand-subtitle {
+      color: #94a3b8;
+    }
+
+    .widget-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .widget-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #0f172a;
+      background: rgba(148, 163, 184, 0.14);
+      white-space: nowrap;
+    }
+
+    #floatingWidgetRoot.dark .widget-status-pill {
+      color: #e2e8f0;
+      background: rgba(148, 163, 184, 0.12);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.16);
+    }
+
+    .widget-close-btn {
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      background: rgba(148, 163, 184, 0.14);
+      color: #475569;
+      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+
+    #floatingWidgetRoot.dark .widget-close-btn {
+      background: rgba(148, 163, 184, 0.12);
       color: #cbd5e1;
     }
 
-    .chat-close-btn:hover {
-      background: rgba(0, 0, 0, 0.1);
-      color: #0f172a;
+    .widget-close-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(37, 99, 235, 0.12);
+      color: #2563eb;
     }
 
-    #floatingWidgetRoot.dark .chat-close-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      color: #fff;
+    .chat-window-body {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      background: transparent;
     }
 
-    #floatingUtilityWidget.widget-expanded .card,
-    #floatingUtilityWidget.widget-expanded .eyes .eye {
-      transform: none !important;
+    .chat-window-body iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: transparent;
     }
 
-    .area:nth-child(15):hover ~ .container-wrap .card,
-    .area:nth-child(15):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(15deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(14):hover ~ .container-wrap .card,
-    .area:nth-child(14):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(7deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(13):hover ~ .container-wrap .card,
-    .area:nth-child(13):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(0)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(12):hover ~ .container-wrap .card,
-    .area:nth-child(12):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(-7deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(11):hover ~ .container-wrap .card,
-    .area:nth-child(11):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(-15deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
+    @media (max-width: 640px) {
+      #floatingWidgetRoot {
+        right: 12px;
+      }
+
+      #floatingUtilityWidget {
+        width: 60px;
+        height: 60px;
+      }
+
+      #floatingUtilityWidget.widget-expanded {
+        width: calc(100vw - 16px);
+        height: calc(100vh - 96px);
+      }
+
+      .floating-launcher {
+        justify-content: center;
+        padding: 10px;
+      }
+
+      .launcher-copy,
+      .launcher-badge,
+      .widget-status-pill {
+        display: none;
+      }
     }
 
-    .area:nth-child(10):hover ~ .container-wrap .card,
-    .area:nth-child(10):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(0) rotateY(15deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(9):hover ~ .container-wrap .card,
-    .area:nth-child(9):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(0) rotateY(7deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(8):hover ~ .container-wrap .card,
-    .area:nth-child(8):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(0) rotateY(0)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(7):hover ~ .container-wrap .card,
-    .area:nth-child(7):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(0) rotateY(-7deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(6):hover ~ .container-wrap .card,
-    .area:nth-child(6):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(0) rotateY(-15deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-
-    .area:nth-child(5):hover ~ .container-wrap .card,
-    .area:nth-child(5):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(15deg) rotateY(15deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(4):hover ~ .container-wrap .card,
-    .area:nth-child(4):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(15deg) rotateY(7deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(3):hover ~ .container-wrap .card,
-    .area:nth-child(3):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(15deg) rotateY(0)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(2):hover ~ .container-wrap .card,
-    .area:nth-child(2):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(15deg) rotateY(-7deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-    .area:nth-child(1):hover ~ .container-wrap .card,
-    .area:nth-child(1):hover ~ .container-wrap .eyes .eye {
-      transform: perspective(var(--perspective)) rotateX(15deg) rotateY(-15deg)
-        translateZ(var(--translateY)) scale3d(1, 1, 1);
-    }
-
-    @keyframes rotate-background-balls {
-      from { transform: translateX(-50%) translateY(-50%) rotate(360deg); }
-      to { transform: translateX(-50%) translateY(-50%) rotate(0); }
-    }
-
-    @keyframes animate-eyes {
-      46% { height: 18px; }
-      48% { height: 8px; }
-      50% { height: 18px; }
-      96% { height: 18px; }
-      98% { height: 8px; }
-      100% { height: 18px; }
+    @media (prefers-reduced-motion: reduce) {
+      .floating-launcher,
+      .chat-window-panel,
+      .widget-close-btn {
+        transition: none !important;
+      }
     }
   `;
-  document.head.appendChild(style);
+  (document.head || document.documentElement).appendChild(style);
 
-  // Inject HTML Markup
-  const widget = document.createElement('div');
-  widget.id = 'floatingUtilityWidget';
-  widget.innerHTML = `
-    <div class="container-ai-input">
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <div class="area"></div>
-      <label class="container-wrap" for="quickChatToggleCheckbox">
-        <div class="card">
-          <div class="background-blur-balls">
-            <div class="balls">
-              <span class="ball rosa"></span>
-              <span class="ball violet"></span>
-              <span class="ball green"></span>
-              <span class="ball cyan"></span>
-            </div>
-          </div>
-          <div class="content-card">
-            <div class="background-blur-card">
-              <div class="eyes">
-                <span class="eye"></span>
-                <span class="eye"></span>
-              </div>
-              <div class="eyes happy">
-                <svg fill="none" viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M8.28386 16.2843C8.9917 15.7665 9.8765 14.731 12 14.731C14.1235 14.731 15.0083 15.7665 15.7161 16.2843C17.8397 17.8376 18.7542 16.4845 18.9014 15.7665C19.4323 13.1777 17.6627 11.1066 17.3088 10.5888C16.3844 9.23666 14.1235 8 12 8C9.87648 8 7.61556 9.23666 6.69122 10.5888C6.33728 11.1066 4.56771 13.1777 5.09858 15.7665C5.24582 16.4845 6.16034 17.8376 8.28386 16.2843Z"></path>
-                </svg>
-                <svg fill="none" viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M8.28386 16.2843C8.9917 15.7665 9.8765 14.731 12 14.731C14.1235 14.731 15.0083 15.7665 15.7161 16.2843C17.8397 17.8376 18.7542 16.4845 18.9014 15.7665C19.4323 13.1777 17.6627 11.1066 17.3088 10.5888C16.3844 9.23666 14.1235 8 12 8C9.87648 8 7.61556 9.23666 6.69122 10.5888C6.33728 11.1066 4.56771 13.1777 5.09858 15.7665C5.24582 16.4845 6.16034 17.8376 8.28386 16.2843Z"></path>
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </label>
-    </div>
-
-    <input type="checkbox" id="quickChatToggleCheckbox" style="display: none;" />
-
-    <div class="chat-window-panel">
-      <button class="chat-close-btn" id="closeQuickChatBtn" type="button">&times;</button>
-      <iframe src="${iframeSrc}" scrolling="no" style="width: 100%; height: 100%; border: none; border-radius: 20px; background: transparent;"></iframe>
-    </div>
-  `;
-
-  // Mount widget in an isolation root directly on <html> — completely outside <body> zoom scope
   const widgetRoot = document.createElement('div');
   widgetRoot.id = 'floatingWidgetRoot';
-  // Sync dark mode class from <html> or <body>
-  const syncDarkMode = () => {
-    const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
-    widgetRoot.classList.toggle('dark', isDark);
-  };
-  syncDarkMode();
-  const darkObserver = new MutationObserver(syncDarkMode);
-  darkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-  darkObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-  widgetRoot.appendChild(widget);
+  widgetRoot.innerHTML = `
+    <div id="floatingUtilityWidget" aria-live="polite">
+      <button
+        class="floating-launcher"
+        id="openQuickChatBtn"
+        type="button"
+        aria-label="Mở chat AI"
+        aria-expanded="false"
+        aria-controls="quickChatPanel"
+      >
+        <span class="launcher-icon" aria-hidden="true">
+          <i class="ph-duotone ph-robot"></i>
+        </span>
+        <span class="launcher-copy">
+          <span class="launcher-title">Chat AI</span>
+          <span class="launcher-subtitle">Trợ lý 24/7</span>
+        </span>
+        <span class="launcher-badge" aria-hidden="true">
+          <i class="ph-duotone ph-sparkle"></i>
+        </span>
+      </button>
+
+      <div class="chat-window-panel" id="quickChatPanel" role="dialog" aria-modal="false" aria-hidden="true" aria-label="Khung chat AI">
+        <div class="chat-window-header">
+          <div class="widget-brand">
+            <div class="widget-brand-icon" aria-hidden="true">
+              <i class="ph-duotone ph-robot"></i>
+            </div>
+            <div class="widget-brand-copy">
+              <div class="widget-brand-title">IPAVIET AI</div>
+              <div class="widget-brand-subtitle">Đang trực tuyến</div>
+            </div>
+          </div>
+          <div class="widget-header-actions">
+            <span class="widget-status-pill">
+              <span class="status-dot" aria-hidden="true"></span>
+              Online
+            </span>
+            <button class="widget-close-btn" id="closeQuickChatBtn" type="button" aria-label="Đóng chat">
+              <i class="ph-duotone ph-x"></i>
+            </button>
+          </div>
+        </div>
+        <div class="chat-window-body">
+          <iframe src="${iframeSrc}" title="IPAVIET AI Support" loading="lazy" scrolling="no"></iframe>
+        </div>
+      </div>
+    </div>
+  `;
   document.documentElement.appendChild(widgetRoot);
 
-  // Set chat state helper and toggle class
-  const checkbox = document.getElementById('quickChatToggleCheckbox');
-  const setChatState = (isOpen) => {
-    checkbox.checked = isOpen;
-    if (isOpen) {
-      widget.classList.add('widget-expanded');
-      // Lock background scroll to prevent background scroll leak on mobile devices
-      document.body.style.setProperty('overflow', 'hidden', 'important');
-      document.documentElement.style.setProperty('overflow', 'hidden', 'important');
-      document.body.style.setProperty('touch-action', 'none');
+  const widget = document.getElementById('floatingUtilityWidget');
+  const toggleButton = document.getElementById('openQuickChatBtn');
+  const closeButton = document.getElementById('closeQuickChatBtn');
+  const panel = document.getElementById('quickChatPanel');
+  const bodyNode = document.body || document.documentElement;
+  const htmlNode = document.documentElement;
+
+  if (!widget || !toggleButton || !closeButton || !panel) {
+    return;
+  }
+
+  let isOpen = false;
+
+  const lockScroll = (locked) => {
+    if (locked) {
+      bodyNode.style.setProperty('overflow', 'hidden', 'important');
+      htmlNode.style.setProperty('overflow', 'hidden', 'important');
+      bodyNode.style.setProperty('touch-action', 'none');
     } else {
-      widget.classList.remove('widget-expanded');
-      // Restore scroll
-      document.body.style.removeProperty('overflow');
-      document.documentElement.style.removeProperty('overflow');
-      document.body.style.removeProperty('touch-action');
+      bodyNode.style.removeProperty('overflow');
+      htmlNode.style.removeProperty('overflow');
+      bodyNode.style.removeProperty('touch-action');
     }
   };
 
-  checkbox.addEventListener('change', function() {
-    setChatState(checkbox.checked);
+  const syncDarkMode = () => {
+    const isDark = htmlNode.classList.contains('dark') || bodyNode.classList.contains('dark');
+    widgetRoot.classList.toggle('dark', isDark);
+  };
+
+  const setChatState = (open) => {
+    isOpen = Boolean(open);
+    widget.classList.toggle('widget-expanded', isOpen);
+    toggleButton.setAttribute('aria-expanded', String(isOpen));
+    panel.setAttribute('aria-hidden', String(!isOpen));
+    lockScroll(isOpen);
+    if (!isOpen) {
+      toggleButton.focus({ preventScroll: true });
+    }
+  };
+
+  toggleButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    setChatState(!isOpen);
   });
 
-  // Close quick chat button click
-  document.getElementById('closeQuickChatBtn').addEventListener('click', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  closeButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     setChatState(false);
   });
 
-  // Close quick chat when clicking outside
-  document.addEventListener('click', function(e) {
-    if (widget && !widget.contains(e.target)) {
-      if (checkbox && checkbox.checked) {
-        setChatState(false);
-      }
+  document.addEventListener('click', (event) => {
+    if (isOpen && !widget.contains(event.target)) {
+      setChatState(false);
     }
   });
 
-  // Global listener for blocked accounts (fires if firebase is loaded on current page)
-  if (typeof firebase !== 'undefined') {
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && isOpen) {
+      setChatState(false);
+    }
+  });
+
+  syncDarkMode();
+  const darkObserver = new MutationObserver(syncDarkMode);
+  darkObserver.observe(htmlNode, { attributes: true, attributeFilter: ['class'] });
+  if (document.body) {
+    darkObserver.observe(bodyNode, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  if (typeof firebase !== 'undefined' && firebase && typeof firebase.auth === 'function') {
     firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        firebase.firestore().collection("users").doc(user.uid).onSnapshot(doc => {
-          if (doc.exists) {
-            const data = doc.data();
-            if (data.isBlocked === true) {
-              alert("⚠️ Tài khoản của bạn đã bị khóa bởi Quản trị viên!");
-              firebase.auth().signOut().then(() => {
-                window.location.reload();
-              });
-            }
+      if (!user) return;
+      firebase.firestore().collection('users').doc(user.uid).onSnapshot(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data.isBlocked === true) {
+            alert('⚠️ Tài khoản của bạn đã bị khóa bởi Quản trị viên!');
+            firebase.auth().signOut().then(() => {
+              window.location.reload();
+            });
           }
-        });
-      }
+        }
+      });
     });
   }
 })();
