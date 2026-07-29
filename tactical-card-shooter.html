@@ -1,0 +1,2245 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Strike Deck Tactics</title>
+  <link rel="stylesheet" href="./tokens.css">
+  <style>
+    /* Hallmark · pre-emit critique: P5 H4 E5 S5 R4 V4 */
+    /* Hallmark · macrostructure: Workbench · tone: tactical command game · anchor hue: action-blue */
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      overflow-x: clip;
+    }
+
+    body {
+      margin: 0;
+      color: var(--color-paper);
+      background:
+        linear-gradient(180deg, var(--color-panel) 0%, var(--color-ink) 56%, var(--color-panel-2) 100%);
+      font-family: var(--font-body);
+      line-height: 1.47;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: var(--rule-strong) solid var(--color-focus);
+      outline-offset: var(--space-3xs);
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .game-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: var(--space-md);
+      padding: var(--space-md);
+      position: relative;
+    }
+
+    .game-shell::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.34;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 5.75rem, var(--color-faint) 5.75rem 5.8125rem),
+        repeating-linear-gradient(0deg, transparent 0 5.75rem, var(--color-faint) 5.75rem 5.8125rem);
+      z-index: 0;
+    }
+
+    .hud,
+    .cockpit,
+    .modal {
+      position: relative;
+      z-index: var(--z-base);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-md);
+      align-items: center;
+      background: var(--color-glass);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      border-radius: var(--radius-md);
+      padding: var(--space-sm);
+      backdrop-filter: blur(1.25rem);
+      box-shadow: var(--shadow-panel);
+    }
+
+    .brand {
+      min-width: 0;
+      display: grid;
+      gap: var(--space-3xs);
+    }
+
+    .brand__kicker {
+      color: var(--color-energy);
+      font-family: var(--font-outlier);
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .brand h1 {
+      margin: 0;
+      color: var(--color-paper);
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-style: normal;
+      line-height: 1.06;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+
+    .brand__copy {
+      margin: 0;
+      color: var(--color-muted);
+      max-width: 65ch;
+      font-size: var(--text-sm);
+    }
+
+    .wallet {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2xs);
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .wallet__item,
+    .pill {
+      min-height: 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2xs);
+      padding: var(--space-2xs) var(--space-xs);
+      border-radius: var(--radius-pill);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      background: color-mix(in oklch, var(--color-paper) 8%, transparent);
+      color: var(--color-paper);
+      font-size: var(--text-sm);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .wallet__item b,
+    .pill b {
+      color: var(--color-energy);
+      font-family: var(--font-outlier);
+      font-weight: 700;
+    }
+
+    .cockpit {
+      display: grid;
+      grid-template-columns: minmax(15rem, 0.78fr) minmax(0, 1.6fr) minmax(17rem, 0.9fr);
+      gap: var(--space-md);
+      min-height: 0;
+    }
+
+    .panel {
+      min-width: 0;
+      background: color-mix(in oklch, var(--color-panel-2) 86%, transparent);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      overflow: clip;
+    }
+
+    .panel__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-xs);
+      padding: var(--space-sm);
+      border-bottom: var(--rule-hairline) solid var(--color-line-dark);
+      background: color-mix(in oklch, var(--color-paper) 6%, transparent);
+    }
+
+    .panel__head h2,
+    .panel__head h3 {
+      margin: 0;
+      color: var(--color-paper);
+      font-size: var(--text-md);
+      font-style: normal;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+
+    .panel__body {
+      padding: var(--space-sm);
+    }
+
+    .side-stack {
+      display: grid;
+      align-content: start;
+      gap: var(--space-md);
+      min-width: 0;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-2xs);
+      padding: var(--space-2xs);
+      background: color-mix(in oklch, var(--color-panel) 74%, transparent);
+      border-radius: var(--radius-md);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+    }
+
+    .tab-btn,
+    .action-btn,
+    .icon-btn,
+    .small-btn {
+      min-height: 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2xs);
+      color: var(--color-paper);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      background: color-mix(in oklch, var(--color-paper) 8%, transparent);
+      border-radius: var(--radius-sm);
+      padding: var(--space-2xs) var(--space-xs);
+      line-height: 1;
+      white-space: nowrap;
+      cursor: pointer;
+      transition:
+        transform var(--dur-fast) var(--ease-out),
+        background-color var(--dur-med) var(--ease-out),
+        border-color var(--dur-med) var(--ease-out),
+        color var(--dur-med) var(--ease-out);
+    }
+
+    .tab-btn:hover,
+    .action-btn:hover,
+    .icon-btn:hover,
+    .small-btn:hover {
+      background: color-mix(in oklch, var(--color-paper) 13%, transparent);
+      border-color: var(--color-focus);
+    }
+
+    .tab-btn:active,
+    .action-btn:active,
+    .icon-btn:active,
+    .small-btn:active {
+      transform: translateY(0.0625rem);
+    }
+
+    .tab-btn[aria-selected="true"],
+    .action-btn--primary {
+      background: var(--color-accent);
+      color: var(--color-accent-ink);
+      border-color: var(--color-accent);
+    }
+
+    .action-btn--danger {
+      background: var(--color-danger);
+      color: var(--color-danger-ink);
+      border-color: var(--color-danger);
+    }
+
+    .action-btn--success {
+      background: var(--color-success);
+      color: var(--color-success-ink);
+      border-color: var(--color-success);
+    }
+
+    .arena-panel {
+      display: grid;
+      grid-template-rows: auto minmax(22rem, 1fr) auto;
+      min-height: 0;
+    }
+
+    .battle-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-sm);
+      align-items: center;
+      padding: var(--space-sm);
+      border-bottom: var(--rule-hairline) solid var(--color-line-dark);
+      background: color-mix(in oklch, var(--color-paper) 7%, transparent);
+    }
+
+    .stage-title {
+      min-width: 0;
+      display: grid;
+      gap: var(--space-3xs);
+    }
+
+    .stage-title strong {
+      color: var(--color-paper);
+      font-size: var(--text-lg);
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+
+    .stage-title span {
+      color: var(--color-muted);
+      font-size: var(--text-sm);
+    }
+
+    .battle-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: var(--space-2xs);
+    }
+
+    .battlefield {
+      position: relative;
+      min-height: 22rem;
+      padding: var(--space-sm);
+      background:
+        linear-gradient(90deg, color-mix(in oklch, var(--color-success) 12%, transparent), transparent 35%, color-mix(in oklch, var(--color-danger) 12%, transparent)),
+        var(--color-panel);
+      overflow: clip;
+    }
+
+    .grid {
+      height: 100%;
+      min-height: 25rem;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(6.5rem, 1fr));
+      gap: var(--space-2xs);
+      position: relative;
+      z-index: var(--z-base);
+    }
+
+    .cell {
+      position: relative;
+      min-width: 0;
+      border-radius: var(--radius-sm);
+      border: var(--rule-hairline) solid color-mix(in oklch, var(--color-line-dark) 70%, transparent);
+      background: color-mix(in oklch, var(--color-paper) 5%, transparent);
+      overflow: clip;
+    }
+
+    .cell::before {
+      content: attr(data-lane);
+      position: absolute;
+      top: var(--space-3xs);
+      left: var(--space-2xs);
+      color: color-mix(in oklch, var(--color-paper) 38%, transparent);
+      font-family: var(--font-outlier);
+      font-size: var(--text-xs);
+      line-height: 1;
+    }
+
+    .cell.has-cover::after {
+      content: "";
+      position: absolute;
+      right: var(--space-2xs);
+      bottom: var(--space-2xs);
+      width: 38%;
+      height: 22%;
+      border-radius: var(--radius-xs);
+      background: repeating-linear-gradient(90deg, var(--color-cover) 0 var(--space-2xs), color-mix(in oklch, var(--color-cover) 70%, var(--color-panel)) var(--space-2xs) var(--space-sm));
+      opacity: 0.92;
+    }
+
+    .cell.is-valid {
+      border-color: var(--color-target);
+      background: color-mix(in oklch, var(--color-target) 16%, transparent);
+    }
+
+    .unit {
+      position: absolute;
+      inset: var(--space-2xs);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: var(--space-3xs);
+      padding: var(--space-2xs);
+      border-radius: var(--radius-sm);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      color: var(--color-paper);
+      background: var(--color-surface-wash);
+      box-shadow: var(--shadow-card);
+      cursor: pointer;
+      transition:
+        transform var(--dur-med) var(--ease-out),
+        border-color var(--dur-med) var(--ease-out),
+        background-color var(--dur-med) var(--ease-out);
+      z-index: var(--z-float);
+    }
+
+    .unit:hover {
+      transform: translateY(-0.125rem);
+      border-color: var(--color-focus);
+    }
+
+    .unit:active {
+      transform: translateY(0.0625rem);
+    }
+
+    .unit.is-player {
+      background: color-mix(in oklch, var(--color-success) 18%, var(--color-panel-2));
+    }
+
+    .unit.is-enemy {
+      background: color-mix(in oklch, var(--color-danger) 17%, var(--color-panel-2));
+    }
+
+    .unit.is-targeted {
+      border-color: var(--color-target);
+      background: color-mix(in oklch, var(--color-target) 28%, var(--color-panel-2));
+    }
+
+    .unit.is-hit {
+      animation: hitPulse var(--dur-slow) var(--ease-out);
+    }
+
+    .unit.is-acting {
+      animation: actingPulse var(--dur-slow) var(--ease-out);
+    }
+
+    .unit__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2xs);
+      min-width: 0;
+    }
+
+    .unit__name {
+      min-width: 0;
+      color: var(--color-paper);
+      font-weight: 700;
+      font-size: var(--text-sm);
+      line-height: 1.05;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .unit__role {
+      color: var(--color-energy);
+      font-family: var(--font-outlier);
+      font-size: var(--text-xs);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .unit__silhouette {
+      align-self: center;
+      justify-self: center;
+      width: 3.5rem;
+      height: 2.25rem;
+      position: relative;
+      color: var(--color-paper);
+    }
+
+    .unit__silhouette::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 34%;
+      width: 74%;
+      height: 36%;
+      border-radius: var(--radius-pill);
+      background: currentColor;
+      opacity: 0.92;
+    }
+
+    .unit__silhouette::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 43%;
+      width: 42%;
+      height: 16%;
+      border-radius: var(--radius-pill);
+      background: currentColor;
+      transform-origin: left center;
+    }
+
+    .unit.is-enemy .unit__silhouette {
+      transform: scaleX(-1);
+    }
+
+    .bars {
+      display: grid;
+      gap: var(--space-3xs);
+    }
+
+    .bar {
+      height: 0.375rem;
+      overflow: clip;
+      border-radius: var(--radius-pill);
+      background: color-mix(in oklch, var(--color-ink) 38%, transparent);
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      transform-origin: left center;
+      transition: transform var(--dur-med) var(--ease-out);
+    }
+
+    .bar--hp > span {
+      background: var(--color-success);
+    }
+
+    .bar--shield > span {
+      background: var(--color-shield);
+    }
+
+    .status-row {
+      min-height: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3xs);
+      align-items: center;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 1rem;
+      padding: 0 var(--space-3xs);
+      border-radius: var(--radius-xs);
+      color: var(--color-ink);
+      background: var(--color-warning);
+      font-family: var(--font-outlier);
+      font-size: var(--text-xs);
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .status-chip--shield {
+      background: var(--color-shield);
+      color: var(--color-energy-ink);
+    }
+
+    .status-chip--hack {
+      background: var(--color-hack);
+      color: var(--color-energy-ink);
+    }
+
+    .shot-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: var(--z-float);
+    }
+
+    .shot {
+      position: absolute;
+      left: var(--x1);
+      top: var(--y1);
+      width: var(--distance);
+      height: var(--rule-strong);
+      transform-origin: left center;
+      transform: rotate(var(--angle)) scaleX(0);
+      background: var(--color-warning);
+      box-shadow: var(--shadow-shot);
+      animation: shotTravel var(--dur-slow) var(--ease-out) forwards;
+    }
+
+    .explosion {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: 5rem;
+      height: 5rem;
+      border-radius: var(--radius-pill);
+      transform: translate(-50%, -50%) scale(0.35);
+      border: var(--rule-strong) solid var(--color-warning);
+      background: color-mix(in oklch, var(--color-warning) 28%, transparent);
+      animation: burst var(--dur-slow) var(--ease-out) forwards;
+    }
+
+    .energy-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-sm);
+      align-items: center;
+      padding: var(--space-sm);
+      border-top: var(--rule-hairline) solid var(--color-line-dark);
+      background: color-mix(in oklch, var(--color-paper) 6%, transparent);
+    }
+
+    .energy {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-2xs);
+      min-width: 0;
+    }
+
+    .energy-dot {
+      width: 1.125rem;
+      height: 1.125rem;
+      border-radius: var(--radius-pill);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      background: color-mix(in oklch, var(--color-paper) 10%, transparent);
+    }
+
+    .energy-dot.is-full {
+      background: var(--color-energy);
+      border-color: var(--color-energy);
+    }
+
+    .hand {
+      display: grid;
+      gap: var(--space-2xs);
+    }
+
+    .card {
+      width: 100%;
+      min-height: 7.25rem;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: var(--space-xs);
+      align-items: start;
+      padding: var(--space-xs);
+      border-radius: var(--radius-md);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      color: var(--color-paper);
+      background: color-mix(in oklch, var(--color-paper) 7%, transparent);
+      text-align: left;
+      cursor: pointer;
+      transition:
+        transform var(--dur-med) var(--ease-out),
+        border-color var(--dur-med) var(--ease-out),
+        background-color var(--dur-med) var(--ease-out);
+    }
+
+    .card:hover {
+      transform: translateY(-0.125rem);
+      border-color: var(--color-focus);
+    }
+
+    .card:active {
+      transform: translateY(0.0625rem);
+    }
+
+    .card.is-selected {
+      background: color-mix(in oklch, var(--color-accent) 26%, var(--color-panel-2));
+      border-color: var(--color-focus);
+    }
+
+    .card__cost {
+      width: 2.5rem;
+      height: 2.5rem;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-pill);
+      color: var(--color-energy-ink);
+      background: var(--color-energy);
+      font-family: var(--font-outlier);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .card__meta {
+      min-width: 0;
+      display: grid;
+      gap: var(--space-3xs);
+    }
+
+    .card__title {
+      color: var(--color-paper);
+      font-weight: 800;
+      font-size: var(--text-md);
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .card__desc {
+      color: var(--color-muted);
+      font-size: var(--text-sm);
+      line-height: 1.35;
+    }
+
+    .card__type {
+      color: var(--color-energy);
+      font-family: var(--font-outlier);
+      font-size: var(--text-xs);
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .roster,
+    .stage-list,
+    .log,
+    .banner-grid,
+    .pull-results,
+    .pvp-list {
+      display: grid;
+      gap: var(--space-2xs);
+    }
+
+    .operator,
+    .stage,
+    .log__item,
+    .banner,
+    .pull,
+    .pvp {
+      min-width: 0;
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      border-radius: var(--radius-md);
+      background: color-mix(in oklch, var(--color-paper) 7%, transparent);
+      padding: var(--space-xs);
+    }
+
+    .operator {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: var(--space-xs);
+      align-items: center;
+    }
+
+    .avatar {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: var(--radius-md);
+      display: grid;
+      place-items: center;
+      color: var(--color-accent-ink);
+      background: var(--color-accent);
+      font-family: var(--font-outlier);
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .operator__copy {
+      min-width: 0;
+      display: grid;
+      gap: var(--space-3xs);
+    }
+
+    .operator__name,
+    .stage__name,
+    .pvp__name {
+      color: var(--color-paper);
+      font-weight: 800;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .operator__line,
+    .stage__line,
+    .pvp__line {
+      color: var(--color-muted);
+      font-size: var(--text-xs);
+      line-height: 1.25;
+    }
+
+    .operator__actions {
+      display: grid;
+      gap: var(--space-3xs);
+      justify-items: end;
+    }
+
+    .rarity {
+      color: var(--color-ink);
+      background: var(--color-super);
+      border-radius: var(--radius-pill);
+      padding: var(--space-3xs) var(--space-2xs);
+      font-family: var(--font-outlier);
+      font-size: var(--text-xs);
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .rarity--n {
+      background: var(--color-line);
+      color: var(--color-ink);
+    }
+
+    .rarity--r {
+      background: var(--color-rare);
+      color: var(--color-success-ink);
+    }
+
+    .rarity--sr {
+      background: var(--color-super);
+      color: var(--color-warning-ink);
+    }
+
+    .rarity--ssr {
+      background: var(--color-mythic);
+      color: var(--color-danger-ink);
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-xs);
+      align-items: center;
+    }
+
+    .stage.is-locked {
+      opacity: 0.55;
+    }
+
+    .stage.is-active {
+      border-color: var(--color-focus);
+      background: color-mix(in oklch, var(--color-accent) 16%, var(--color-panel-2));
+    }
+
+    .log {
+      max-height: 15rem;
+      overflow: auto;
+      padding-right: var(--space-3xs);
+    }
+
+    .log__item {
+      color: var(--color-muted);
+      font-size: var(--text-sm);
+      line-height: 1.35;
+    }
+
+    .log__item strong {
+      color: var(--color-paper);
+    }
+
+    .drawer {
+      display: none;
+    }
+
+    .drawer.is-open {
+      display: grid;
+      gap: var(--space-md);
+    }
+
+    .banner {
+      display: grid;
+      gap: var(--space-xs);
+    }
+
+    .banner__art {
+      min-height: 8rem;
+      position: relative;
+      overflow: clip;
+      border-radius: var(--radius-md);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      background:
+        linear-gradient(135deg, color-mix(in oklch, var(--color-warning) 24%, var(--color-panel)), var(--color-panel-3));
+    }
+
+    .banner__art::before,
+    .banner__art::after {
+      content: "";
+      position: absolute;
+      background: var(--color-paper);
+      opacity: 0.9;
+    }
+
+    .banner__art::before {
+      width: 42%;
+      height: 16%;
+      left: 18%;
+      top: 42%;
+      border-radius: var(--radius-pill);
+    }
+
+    .banner__art::after {
+      width: 30%;
+      height: 7%;
+      left: 50%;
+      top: 46%;
+      border-radius: var(--radius-pill);
+    }
+
+    .banner h3,
+    .pvp h3 {
+      margin: 0;
+      color: var(--color-paper);
+      font-size: var(--text-lg);
+      font-style: normal;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+
+    .banner p {
+      margin: 0;
+      color: var(--color-muted);
+      font-size: var(--text-sm);
+    }
+
+    .banner__actions,
+    .modal__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2xs);
+      align-items: center;
+    }
+
+    .pull {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: var(--space-xs);
+      align-items: center;
+    }
+
+    .pull__name {
+      color: var(--color-paper);
+      font-weight: 800;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: var(--space-md);
+      background: var(--color-veil);
+      z-index: var(--z-modal);
+    }
+
+    .modal.is-open {
+      display: grid;
+    }
+
+    .modal__dialog {
+      width: min(43rem, 100%);
+      max-height: min(44rem, 92vh);
+      overflow: auto;
+      color: var(--color-paper);
+      background: var(--color-panel-2);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-panel);
+    }
+
+    .modal__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-xs);
+      padding: var(--space-sm);
+      border-bottom: var(--rule-hairline) solid var(--color-line-dark);
+    }
+
+    .modal__head h2 {
+      margin: 0;
+      font-size: var(--text-xl);
+      font-style: normal;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+
+    .modal__body {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-sm);
+    }
+
+    .rulebook {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-2xs);
+    }
+
+    .rule {
+      padding: var(--space-xs);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      border-radius: var(--radius-md);
+      background: color-mix(in oklch, var(--color-paper) 6%, transparent);
+    }
+
+    .rule b {
+      display: block;
+      color: var(--color-paper);
+      margin-bottom: var(--space-3xs);
+    }
+
+    .rule span {
+      color: var(--color-muted);
+      font-size: var(--text-sm);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: var(--space-md);
+      transform: translateX(-50%) translateY(150%);
+      z-index: var(--z-modal);
+      min-width: min(28rem, calc(100vw - var(--space-xl)));
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-md);
+      border: var(--rule-hairline) solid var(--color-line-dark);
+      color: var(--color-paper);
+      background: var(--color-panel-2);
+      box-shadow: var(--shadow-panel);
+      transition: transform var(--dur-med) var(--ease-out);
+    }
+
+    .toast.is-open {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @keyframes shotTravel {
+      0% {
+        opacity: 0;
+        transform: rotate(var(--angle)) scaleX(0);
+      }
+      18% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: rotate(var(--angle)) scaleX(1);
+      }
+    }
+
+    @keyframes burst {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.35);
+      }
+      40% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.35);
+      }
+    }
+
+    @keyframes hitPulse {
+      0% {
+        transform: translateX(0);
+      }
+      30% {
+        transform: translateX(0.25rem);
+      }
+      60% {
+        transform: translateX(-0.25rem);
+      }
+      100% {
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes actingPulse {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-0.25rem);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: var(--dur-fast) !important;
+      }
+
+      .unit:hover,
+      .card:hover,
+      .tab-btn:hover,
+      .action-btn:hover,
+      .icon-btn:hover,
+      .small-btn:hover {
+        transform: none;
+      }
+    }
+
+    @media (max-width: 76rem) {
+      .cockpit {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .side-stack {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .arena-panel {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 48rem) {
+      .game-shell {
+        padding: var(--space-xs);
+      }
+
+      .hud,
+      .battle-top,
+      .energy-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .wallet,
+      .battle-controls {
+        justify-content: flex-start;
+      }
+
+      .side-stack,
+      .rulebook {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-rows: repeat(5, minmax(5.75rem, 1fr));
+      }
+
+      .cell[data-mobile-hidden="true"] {
+        display: none;
+      }
+
+      .unit {
+        inset: var(--space-3xs);
+      }
+
+      .unit__silhouette {
+        width: 2.75rem;
+        height: 1.75rem;
+      }
+
+      .brand h1 {
+        font-size: var(--text-xl);
+      }
+    }
+
+    @media (max-width: 26rem) {
+      .tabs {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .tab-btn,
+      .action-btn,
+      .small-btn {
+        width: 100%;
+      }
+
+      .battle-controls,
+      .banner__actions,
+      .modal__actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell" id="app">
+    <header class="hud" aria-label="Bảng chỉ huy">
+      <div class="brand">
+        <span class="brand__kicker">Offline HTML tactical deck shooter</span>
+        <h1>Strike Deck Tactics</h1>
+        <p class="brand__copy">Lập đội 3 đặc nhiệm, dùng thẻ để bắn, phá giáp, hồi máu, hack mục tiêu, vượt ải, quay gacha, nâng cấp và đấu PvP giả lập.</p>
+      </div>
+      <div class="wallet" aria-label="Tài nguyên">
+        <span class="wallet__item">Credits <b id="credits">0</b></span>
+        <span class="wallet__item">Gems <b id="gems">0</b></span>
+        <span class="wallet__item">Tickets <b id="tickets">0</b></span>
+        <span class="wallet__item">Rank <b id="rank">0</b></span>
+      </div>
+    </header>
+
+    <section class="cockpit" aria-label="Khu vực chơi chính">
+      <aside class="side-stack" aria-label="Đội hình và chiến dịch">
+        <section class="panel">
+          <div class="panel__head">
+            <h2>Đội đặc nhiệm</h2>
+            <button class="small-btn" id="healSquadBtn" type="button">Tiếp tế</button>
+          </div>
+          <div class="panel__body roster" id="roster"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2>Vượt ải</h2>
+            <span class="pill">Ải <b id="stageBadge">1</b></span>
+          </div>
+          <div class="panel__body stage-list" id="stageList"></div>
+        </section>
+      </aside>
+
+      <section class="panel arena-panel" aria-label="Đấu trường">
+        <div class="battle-top">
+          <div class="stage-title">
+            <strong id="battleTitle">Chiến dịch 1</strong>
+            <span id="battleSub">Tiêu diệt toàn bộ địch để nhận thưởng và mở khóa ải tiếp theo.</span>
+          </div>
+          <div class="battle-controls">
+            <button class="action-btn" id="ruleBtn" type="button">Luật chơi</button>
+            <button class="action-btn" id="restartBtn" type="button">Đánh lại</button>
+            <button class="action-btn action-btn--primary" id="endTurnBtn" type="button">Kết thúc lượt</button>
+          </div>
+        </div>
+
+        <div class="battlefield" id="battlefield">
+          <div class="shot-layer" id="shotLayer" aria-hidden="true"></div>
+          <div class="grid" id="grid" aria-label="Lưới chiến thuật 6 cột 3 hàng"></div>
+        </div>
+
+        <div class="energy-row">
+          <div class="energy" id="energy" aria-label="Năng lượng hành động"></div>
+          <div class="battle-controls">
+            <span class="pill">Lượt <b id="turn">1</b></span>
+            <span class="pill">Deck <b id="deckCount">0</b></span>
+            <span class="pill">Discard <b id="discardCount">0</b></span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-stack" aria-label="Thẻ bài và chế độ">
+        <section class="panel">
+          <div class="panel__head">
+            <h2>Thẻ trên tay</h2>
+            <button class="small-btn" id="drawBtn" type="button">Rút thẻ</button>
+          </div>
+          <div class="panel__body hand" id="hand"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head">
+            <h2>Chế độ</h2>
+          </div>
+          <div class="panel__body">
+            <div class="tabs" role="tablist" aria-label="Chọn chế độ">
+              <button class="tab-btn" role="tab" aria-selected="true" data-drawer="ops" type="button">Tác chiến</button>
+              <button class="tab-btn" role="tab" aria-selected="false" data-drawer="gacha" type="button">Gacha</button>
+              <button class="tab-btn" role="tab" aria-selected="false" data-drawer="pvp" type="button">PvP</button>
+              <button class="tab-btn" role="tab" aria-selected="false" data-drawer="log" type="button">Log</button>
+            </div>
+            <div class="drawer is-open" id="drawer-ops">
+              <div class="rulebook">
+                <div class="rule"><b>Cover</b><span>Đơn vị đứng sau vật chắn giảm sát thương nhận vào.</span></div>
+                <div class="rule"><b>Shield</b><span>Giáp hấp thụ sát thương trước máu.</span></div>
+                <div class="rule"><b>Hack</b><span>Mục tiêu bị hack gây ít sát thương trong lượt kế.</span></div>
+                <div class="rule"><b>Pity</b><span>Gacha bảo hiểm SSR sau nhiều lượt quay không ra.</span></div>
+              </div>
+            </div>
+            <div class="drawer" id="drawer-gacha">
+              <div class="banner-grid">
+                <article class="banner">
+                  <div class="banner__art" aria-hidden="true"></div>
+                  <h3>Banner Arsenal Eclipse</h3>
+                  <p>Nhận mảnh đặc nhiệm, thẻ chiến thuật hiếm và vé nâng cấp. Tỉ lệ: N 58%, R 30%, SR 10%, SSR 2%.</p>
+                  <div class="banner__actions">
+                    <button class="action-btn action-btn--primary" id="pullOneBtn" type="button">Quay x1</button>
+                    <button class="action-btn" id="pullTenBtn" type="button">Quay x10</button>
+                  </div>
+                </article>
+              </div>
+            </div>
+            <div class="drawer" id="drawer-pvp">
+              <div class="pvp-list" id="pvpList"></div>
+              <button class="action-btn action-btn--primary" id="queuePvpBtn" type="button">Ghép PvP</button>
+            </div>
+            <div class="drawer" id="drawer-log">
+              <div class="log" id="battleLog" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal__dialog">
+      <div class="modal__head">
+        <h2 id="modalTitle">Thông báo</h2>
+        <button class="icon-btn" id="closeModalBtn" type="button" aria-label="Đóng">Đóng</button>
+      </div>
+      <div class="modal__body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORAGE_KEY = "strikeDeckTacticsSaveV1";
+
+    const heroes = [
+      { id: "nova", name: "Nova", role: "Marksman", rarity: "SR", hp: 58, atk: 13, deck: ["aimed", "pierce", "overwatch"], shard: "Nova" },
+      { id: "brick", name: "Brick", role: "Vanguard", rarity: "R", hp: 82, atk: 8, deck: ["guard", "burst", "taunt"], shard: "Brick" },
+      { id: "pulse", name: "Pulse", role: "Medic", rarity: "R", hp: 62, atk: 7, deck: ["medkit", "guard", "overclock"], shard: "Pulse" },
+      { id: "vex", name: "Vex", role: "Hacker", rarity: "SSR", hp: 55, atk: 10, deck: ["hack", "emp", "pierce"], shard: "Vex" },
+      { id: "orion", name: "Orion", role: "Heavy", rarity: "SSR", hp: 74, atk: 16, deck: ["grenade", "burst", "overwatch"], shard: "Orion" }
+    ];
+
+    const cardLibrary = {
+      aimed: { id: "aimed", name: "Ngắm Chuẩn", cost: 1, type: "Bắn đơn", text: "Gây 10 sát thương. Nếu mục tiêu còn giáp, +4 sát thương.", target: "enemy" },
+      burst: { id: "burst", name: "Xả Đạn", cost: 2, type: "Bắn áp chế", text: "Gây 15 sát thương và giảm 1 sát thương địch lượt tới.", target: "enemy" },
+      pierce: { id: "pierce", name: "Đạn Xuyên", cost: 2, type: "Phá giáp", text: "Gây 12 sát thương bỏ qua giáp và cover.", target: "enemy" },
+      grenade: { id: "grenade", name: "Lựu Đạn", cost: 3, type: "Diện rộng", text: "Gây 10 sát thương toàn hàng của mục tiêu.", target: "enemy" },
+      guard: { id: "guard", name: "Khiên Cơ Động", cost: 1, type: "Phòng thủ", text: "Tạo 12 giáp cho một đồng minh.", target: "ally" },
+      taunt: { id: "taunt", name: "Hỏa Lực Che", cost: 1, type: "Chiến thuật", text: "Tạo 8 giáp cho toàn đội.", target: "none" },
+      medkit: { id: "medkit", name: "Nano Medkit", cost: 2, type: "Hồi phục", text: "Hồi 16 máu cho một đồng minh.", target: "ally" },
+      overclock: { id: "overclock", name: "Overclock", cost: 0, type: "Nhịp độ", text: "Nhận 1 năng lượng và rút 1 thẻ.", target: "none" },
+      hack: { id: "hack", name: "Hack Quang Học", cost: 2, type: "Khống chế", text: "Gây 8 sát thương và hack mục tiêu 1 lượt.", target: "enemy" },
+      emp: { id: "emp", name: "EMP Pulse", cost: 2, type: "Phá hệ thống", text: "Xóa giáp mục tiêu, gây 9 sát thương.", target: "enemy" },
+      overwatch: { id: "overwatch", name: "Overwatch", cost: 1, type: "Phản kích", text: "Tạo 6 giáp toàn đội và rút 1 thẻ.", target: "none" }
+    };
+
+    const stages = [
+      { id: 1, name: "Bến Cảng Đêm", enemy: "Đội Cướp Dữ Liệu", reward: { credits: 160, gems: 20 }, enemies: ["raider", "raider", "drone"] },
+      { id: 2, name: "Ga Metro Bỏ Hoang", enemy: "Biệt Kích Syndicate", reward: { credits: 210, gems: 25 }, enemies: ["raider", "sniper", "drone"] },
+      { id: 3, name: "Kho Tín Hiệu", enemy: "Tường Lửa Đen", reward: { credits: 260, gems: 30, tickets: 1 }, enemies: ["shield", "sniper", "drone"] },
+      { id: 4, name: "Cầu Vượt Mưa", enemy: "Đội Truy Kích", reward: { credits: 320, gems: 35 }, enemies: ["shield", "raider", "sniper"] },
+      { id: 5, name: "Trạm Radar", enemy: "Mắt Bão", reward: { credits: 420, gems: 45, tickets: 1 }, enemies: ["shield", "drone", "boss"] },
+      { id: 6, name: "Lõi Thành Phố", enemy: "Chỉ Huy Null", reward: { credits: 560, gems: 60, tickets: 2 }, enemies: ["shield", "sniper", "boss"] }
+    ];
+
+    const enemyTemplates = {
+      raider: { name: "Raider", role: "AR", hp: 42, atk: 8 },
+      drone: { name: "Drone", role: "UAV", hp: 34, atk: 7, shield: 6 },
+      sniper: { name: "Sniper", role: "DMR", hp: 38, atk: 12 },
+      shield: { name: "Bulwark", role: "DEF", hp: 60, atk: 7, shield: 14 },
+      boss: { name: "Null Captain", role: "BOSS", hp: 92, atk: 14, shield: 18 }
+    };
+
+    const gachaPool = [
+      { kind: "hero", id: "nova", rarity: "SR", amount: 12 },
+      { kind: "hero", id: "brick", rarity: "R", amount: 16 },
+      { kind: "hero", id: "pulse", rarity: "R", amount: 16 },
+      { kind: "hero", id: "vex", rarity: "SSR", amount: 20 },
+      { kind: "hero", id: "orion", rarity: "SSR", amount: 20 },
+      { kind: "card", id: "grenade", rarity: "SR", amount: 1 },
+      { kind: "card", id: "hack", rarity: "SR", amount: 1 },
+      { kind: "card", id: "emp", rarity: "SSR", amount: 1 },
+      { kind: "credits", id: "credits", rarity: "N", amount: 120 },
+      { kind: "credits", id: "credits", rarity: "R", amount: 240 }
+    ];
+
+    const pvpNames = ["Saigon Rail", "Delta Byte", "Redline 404", "Echo Yard", "Iron Lotus"];
+
+    const baseSave = {
+      credits: 900,
+      gems: 420,
+      tickets: 3,
+      rank: 1000,
+      pity: 0,
+      unlockedStage: 1,
+      activeStage: 1,
+      heroes: {
+        nova: { level: 1, shards: 20, unlocked: true },
+        brick: { level: 1, shards: 30, unlocked: true },
+        pulse: { level: 1, shards: 30, unlocked: true },
+        vex: { level: 1, shards: 0, unlocked: false },
+        orion: { level: 1, shards: 0, unlocked: false }
+      },
+      squad: ["nova", "brick", "pulse"],
+      cards: {
+        grenade: 0,
+        hack: 0,
+        emp: 0
+      }
+    };
+
+    let save = loadSave();
+    let battle = null;
+    let selectedCardId = null;
+    let toastTimer = null;
+
+    const refs = {
+      credits: document.getElementById("credits"),
+      gems: document.getElementById("gems"),
+      tickets: document.getElementById("tickets"),
+      rank: document.getElementById("rank"),
+      roster: document.getElementById("roster"),
+      stageList: document.getElementById("stageList"),
+      stageBadge: document.getElementById("stageBadge"),
+      battleTitle: document.getElementById("battleTitle"),
+      battleSub: document.getElementById("battleSub"),
+      grid: document.getElementById("grid"),
+      battlefield: document.getElementById("battlefield"),
+      shotLayer: document.getElementById("shotLayer"),
+      energy: document.getElementById("energy"),
+      turn: document.getElementById("turn"),
+      deckCount: document.getElementById("deckCount"),
+      discardCount: document.getElementById("discardCount"),
+      hand: document.getElementById("hand"),
+      log: document.getElementById("battleLog"),
+      modal: document.getElementById("modal"),
+      modalTitle: document.getElementById("modalTitle"),
+      modalBody: document.getElementById("modalBody"),
+      toast: document.getElementById("toast"),
+      pvpList: document.getElementById("pvpList")
+    };
+
+    function clone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? mergeSave(clone(baseSave), JSON.parse(raw)) : clone(baseSave);
+      } catch {
+        return clone(baseSave);
+      }
+    }
+
+    function mergeSave(base, stored) {
+      const merged = { ...base, ...stored };
+      merged.heroes = { ...base.heroes, ...(stored.heroes || {}) };
+      merged.cards = { ...base.cards, ...(stored.cards || {}) };
+      return merged;
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
+    }
+
+    function heroState(heroId) {
+      return save.heroes[heroId];
+    }
+
+    function heroPower(hero) {
+      const owned = heroState(hero.id);
+      const rarityBonus = { N: 0, R: 2, SR: 5, SSR: 9 }[hero.rarity] || 0;
+      return hero.atk + owned.level * 2 + rarityBonus;
+    }
+
+    function heroMaxHp(hero) {
+      const owned = heroState(hero.id);
+      const rarityBonus = { N: 0, R: 5, SR: 10, SSR: 15 }[hero.rarity] || 0;
+      return hero.hp + owned.level * 8 + rarityBonus;
+    }
+
+    function squadHeroes() {
+      const selected = (save.squad || []).filter((heroId) => heroState(heroId)?.unlocked);
+      if (!selected.length) {
+        const fallback = heroes.find((hero) => heroState(hero.id).unlocked);
+        if (fallback) selected.push(fallback.id);
+      }
+      save.squad = selected.slice(0, 3);
+      return save.squad.map((heroId) => heroes.find((hero) => hero.id === heroId)).filter(Boolean);
+    }
+
+    function buildDeck() {
+      const deck = [];
+      squadHeroes().forEach((hero) => {
+        hero.deck.forEach((cardId) => deck.push(cardId));
+      });
+      Object.entries(save.cards).forEach(([cardId, count]) => {
+        for (let i = 0; i < count; i += 1) deck.push(cardId);
+      });
+      deck.push("aimed", "burst", "guard", "overclock");
+      return shuffle(deck);
+    }
+
+    function shuffle(items) {
+      const array = [...items];
+      for (let i = array.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function createPlayerUnits() {
+      const positions = [
+        { row: 1, col: 1 },
+        { row: 2, col: 1 },
+        { row: 3, col: 1 }
+      ];
+      return squadHeroes().map((hero, index) => ({
+        id: hero.id,
+        team: "player",
+        name: hero.name,
+        role: hero.role,
+        maxHp: heroMaxHp(hero),
+        hp: heroMaxHp(hero),
+        atk: heroPower(hero),
+        shield: index === 1 ? 8 : 0,
+        row: positions[index].row,
+        col: positions[index].col,
+        statuses: {}
+      }));
+    }
+
+    function createEnemyUnits(stage, pvp = false) {
+      const positions = [
+        { row: 1, col: 6 },
+        { row: 2, col: 6 },
+        { row: 3, col: 6 }
+      ];
+      if (pvp) {
+        return ["nova", "brick", "vex"].map((id, index) => {
+          const hero = heroes.find((item) => item.id === id);
+          const level = Math.max(1, Math.min(8, Math.floor(save.unlockedStage + Math.random() * 3)));
+          return {
+            id: `pvp-${id}`,
+            team: "enemy",
+            name: hero.name,
+            role: hero.role,
+            maxHp: hero.hp + level * 9,
+            hp: hero.hp + level * 9,
+            atk: hero.atk + level * 2,
+            shield: index === 1 ? 14 : 4,
+            row: positions[index].row,
+            col: positions[index].col,
+            statuses: {}
+          };
+        });
+      }
+      return stage.enemies.map((enemyKey, index) => {
+        const template = enemyTemplates[enemyKey];
+        const scale = stage.id - 1;
+        return {
+          id: `enemy-${index}-${enemyKey}`,
+          team: "enemy",
+          name: template.name,
+          role: template.role,
+          maxHp: template.hp + scale * 8,
+          hp: template.hp + scale * 8,
+          atk: template.atk + scale * 2,
+          shield: template.shield || 0,
+          row: positions[index].row,
+          col: positions[index].col,
+          statuses: {}
+        };
+      });
+    }
+
+    function startBattle(stageId = save.activeStage, options = {}) {
+      const stage = stages.find((item) => item.id === stageId) || stages[0];
+      save.activeStage = stage.id;
+      const pvp = Boolean(options.pvp);
+      battle = {
+        stage,
+        pvp,
+        opponent: options.opponent || null,
+        turn: 1,
+        maxEnergy: 3,
+        energy: 3,
+        deck: buildDeck(),
+        discard: [],
+        hand: [],
+        units: [...createPlayerUnits(), ...createEnemyUnits(stage, pvp)],
+        log: []
+      };
+      selectedCardId = null;
+      drawCards(5);
+      addLog(pvp ? `PvP bắt đầu: gặp ${battle.opponent.name}.` : `Triển khai tại ${stage.name}.`);
+      render();
+      persist();
+    }
+
+    function drawCards(count) {
+      for (let i = 0; i < count; i += 1) {
+        if (!battle.deck.length) {
+          battle.deck = shuffle(battle.discard);
+          battle.discard = [];
+        }
+        const card = battle.deck.shift();
+        if (card) battle.hand.push(card);
+      }
+    }
+
+    function addLog(text) {
+      battle.log.unshift(text);
+      battle.log = battle.log.slice(0, 24);
+    }
+
+    function alive(team) {
+      return battle.units.filter((unit) => unit.team === team && unit.hp > 0);
+    }
+
+    function getUnit(id) {
+      return battle.units.find((unit) => unit.id === id);
+    }
+
+    function hasCover(unit) {
+      return unit.team === "player" ? unit.col === 1 && unit.row !== 2 : unit.col === 6 && unit.row !== 2;
+    }
+
+    function applyDamage(source, target, amount, options = {}) {
+      let damage = amount;
+      if (!options.ignoreCover && hasCover(target)) damage = Math.max(1, damage - 3);
+      if (source && source.statuses.weakened) damage = Math.max(1, damage - 4);
+      if (target.statuses.exposed) damage += 3;
+      if (!options.ignoreShield && target.shield > 0) {
+        const blocked = Math.min(target.shield, damage);
+        target.shield -= blocked;
+        damage -= blocked;
+      }
+      if (damage > 0) target.hp = Math.max(0, target.hp - damage);
+      markUnit(target.id, "is-hit");
+      if (source) animateShot(source, target);
+      return damage;
+    }
+
+    function healUnit(target, amount) {
+      target.hp = Math.min(target.maxHp, target.hp + amount);
+      markUnit(target.id, "is-acting");
+    }
+
+    function addShield(target, amount) {
+      target.shield = Math.min(40, target.shield + amount);
+      markUnit(target.id, "is-acting");
+    }
+
+    function playCard(cardIndex, targetId) {
+      const cardId = battle.hand[cardIndex];
+      const card = cardLibrary[cardId];
+      if (!card || battle.energy < card.cost) {
+        showToast("Không đủ năng lượng cho thẻ này.");
+        return;
+      }
+      const target = targetId ? getUnit(targetId) : null;
+      if (card.target === "enemy" && (!target || target.team !== "enemy" || target.hp <= 0)) return;
+      if (card.target === "ally" && (!target || target.team !== "player" || target.hp <= 0)) return;
+
+      battle.energy -= card.cost;
+      battle.hand.splice(cardIndex, 1);
+      battle.discard.push(cardId);
+      selectedCardId = null;
+
+      const actor = alive("player")[0];
+      if (card.id === "aimed") {
+        const bonus = target.shield > 0 ? 4 : 0;
+        const dealt = applyDamage(actor, target, 10 + bonus);
+        addLog(`<strong>${card.name}</strong> trúng ${target.name}, gây ${dealt} sát thương.`);
+      }
+      if (card.id === "burst") {
+        const dealt = applyDamage(actor, target, 15);
+        target.statuses.weakened = 1;
+        addLog(`<strong>${card.name}</strong> áp chế ${target.name}, gây ${dealt} sát thương.`);
+      }
+      if (card.id === "pierce") {
+        const dealt = applyDamage(actor, target, 12, { ignoreShield: true, ignoreCover: true });
+        addLog(`<strong>${card.name}</strong> xuyên giáp ${target.name}, gây ${dealt} sát thương.`);
+      }
+      if (card.id === "grenade") {
+        alive("enemy").filter((unit) => unit.row === target.row).forEach((unit) => {
+          applyDamage(actor, unit, 10, { ignoreCover: true });
+          animateExplosion(unit);
+        });
+        addLog(`<strong>${card.name}</strong> nổ hàng ${target.row}.`);
+      }
+      if (card.id === "guard") {
+        addShield(target, 12);
+        addLog(`<strong>${card.name}</strong> tạo 12 giáp cho ${target.name}.`);
+      }
+      if (card.id === "taunt") {
+        alive("player").forEach((unit) => addShield(unit, 8));
+        addLog(`<strong>${card.name}</strong> phủ giáp toàn đội.`);
+      }
+      if (card.id === "medkit") {
+        healUnit(target, 16);
+        addLog(`<strong>${card.name}</strong> hồi máu cho ${target.name}.`);
+      }
+      if (card.id === "overclock") {
+        battle.energy = Math.min(battle.maxEnergy + 1, battle.energy + 1);
+        drawCards(1);
+        addLog(`<strong>${card.name}</strong> tăng nhịp tác chiến và rút thêm thẻ.`);
+      }
+      if (card.id === "hack") {
+        const dealt = applyDamage(actor, target, 8);
+        target.statuses.weakened = 1;
+        target.statuses.hacked = 1;
+        addLog(`<strong>${card.name}</strong> hack ${target.name}, gây ${dealt} sát thương.`);
+      }
+      if (card.id === "emp") {
+        target.shield = 0;
+        const dealt = applyDamage(actor, target, 9, { ignoreShield: true });
+        target.statuses.exposed = 1;
+        addLog(`<strong>${card.name}</strong> xóa giáp ${target.name}, gây ${dealt} sát thương.`);
+      }
+      if (card.id === "overwatch") {
+        alive("player").forEach((unit) => addShield(unit, 6));
+        drawCards(1);
+        addLog(`<strong>${card.name}</strong> giữ tuyến và rút thêm thẻ.`);
+      }
+
+      removeDead();
+      checkBattleEnd();
+      render();
+    }
+
+    function removeDead() {
+      battle.units.forEach((unit) => {
+        if (unit.hp <= 0) {
+          unit.shield = 0;
+          unit.statuses = {};
+        }
+      });
+    }
+
+    function endTurn() {
+      if (!battle || !alive("enemy").length) return;
+      selectedCardId = null;
+      enemyTurn();
+      if (checkBattleEnd()) return;
+      battle.turn += 1;
+      battle.maxEnergy = Math.min(5, battle.maxEnergy + 1);
+      battle.energy = battle.maxEnergy;
+      battle.units.forEach((unit) => {
+        Object.keys(unit.statuses).forEach((key) => {
+          unit.statuses[key] -= 1;
+          if (unit.statuses[key] <= 0) delete unit.statuses[key];
+        });
+      });
+      drawCards(2);
+      addLog(`Lượt ${battle.turn}: năng lượng phục hồi, rút 2 thẻ.`);
+      render();
+    }
+
+    function enemyTurn() {
+      const players = alive("player");
+      alive("enemy").forEach((enemy) => {
+        const targets = alive("player");
+        if (!targets.length) return;
+        const target = targets.sort((a, b) => (a.hp + a.shield) - (b.hp + b.shield))[0];
+        const dealt = applyDamage(enemy, target, enemy.atk);
+        markUnit(enemy.id, "is-acting");
+        addLog(`${enemy.name} bắn ${target.name}, gây ${dealt} sát thương.`);
+      });
+      players.forEach((unit) => {
+        if (unit.hp <= 0) addLog(`${unit.name} bị hạ gục.`);
+      });
+      removeDead();
+    }
+
+    function checkBattleEnd() {
+      if (!alive("enemy").length) {
+        winBattle();
+        return true;
+      }
+      if (!alive("player").length) {
+        loseBattle();
+        return true;
+      }
+      return false;
+    }
+
+    function winBattle() {
+      const reward = battle.stage.reward;
+      save.credits += reward.credits || 0;
+      save.gems += reward.gems || 0;
+      save.tickets += reward.tickets || 0;
+      if (!battle.pvp && save.unlockedStage === battle.stage.id && battle.stage.id < stages.length) {
+        save.unlockedStage += 1;
+      }
+      if (battle.pvp) save.rank += 24;
+      addLog(battle.pvp ? "Thắng PvP, rank tăng." : `Hoàn thành ${battle.stage.name}.`);
+      persist();
+      render();
+      openModal(battle.pvp ? "PvP thắng trận" : "Vượt ải thành công", rewardMarkup(reward, battle.pvp ? 24 : 0));
+    }
+
+    function loseBattle() {
+      if (battle.pvp) save.rank = Math.max(800, save.rank - 16);
+      addLog(battle.pvp ? "Thua PvP, rank giảm nhẹ." : "Nhiệm vụ thất bại. Nâng cấp đội hình rồi thử lại.");
+      persist();
+      render();
+      openModal("Trận đấu kết thúc", `<p>Đội hình đã bị hạ. Dùng Credits để nâng cấp hoặc quay banner để kiếm thêm mảnh.</p>`);
+    }
+
+    function rewardMarkup(reward, rankGain) {
+      return `
+        <div class="rulebook">
+          <div class="rule"><b>Credits</b><span>+${reward.credits || 0}</span></div>
+          <div class="rule"><b>Gems</b><span>+${reward.gems || 0}</span></div>
+          <div class="rule"><b>Tickets</b><span>+${reward.tickets || 0}</span></div>
+          <div class="rule"><b>Rank</b><span>+${rankGain}</span></div>
+        </div>
+        <div class="modal__actions">
+          <button class="action-btn action-btn--primary" type="button" data-next-battle>Đánh tiếp</button>
+          <button class="action-btn" type="button" data-close-modal>Ở lại nâng cấp</button>
+        </div>
+      `;
+    }
+
+    function upgradeHero(heroId) {
+      const owned = heroState(heroId);
+      if (!owned.unlocked) {
+        const need = 40 - owned.shards;
+        showToast(need > 0 ? `Cần thêm ${need} mảnh để mở khóa.` : "Chưa đủ điều kiện mở khóa.");
+        return;
+      }
+      const cost = owned.level * 180;
+      const shardCost = owned.level * 6;
+      if (save.credits < cost || owned.shards < shardCost) {
+        showToast(`Cần ${cost} Credits và ${shardCost} mảnh.`);
+        return;
+      }
+      save.credits -= cost;
+      owned.shards -= shardCost;
+      owned.level += 1;
+      persist();
+      startBattle(save.activeStage);
+      showToast(`${heroes.find((hero) => hero.id === heroId).name} lên cấp ${owned.level}.`);
+    }
+
+    function toggleSquad(heroId) {
+      const owned = heroState(heroId);
+      if (!owned.unlocked) {
+        showToast("Đặc nhiệm này chưa mở khóa.");
+        return;
+      }
+      save.squad = save.squad || [];
+      if (save.squad.includes(heroId)) {
+        if (save.squad.length <= 1) {
+          showToast("Cần ít nhất 1 đặc nhiệm ra trận.");
+          return;
+        }
+        save.squad = save.squad.filter((id) => id !== heroId);
+      } else {
+        if (save.squad.length >= 3) {
+          showToast("Đội hình tối đa 3 đặc nhiệm. Cho một người dự bị trước.");
+          return;
+        }
+        save.squad.push(heroId);
+      }
+      persist();
+      startBattle(save.activeStage);
+    }
+
+    function unlockHero(heroId) {
+      const owned = heroState(heroId);
+      if (owned.unlocked || owned.shards < 40) return;
+      owned.shards -= 40;
+      owned.unlocked = true;
+      save.squad = save.squad || [];
+      if (save.squad.length < 3) save.squad.push(heroId);
+      persist();
+      startBattle(save.activeStage);
+      showToast("Đã mở khóa đặc nhiệm mới.");
+    }
+
+    function pull(times) {
+      const totalGemCost = times === 10 ? 900 : 100;
+      let ticketUses = 0;
+      let gemCost = totalGemCost;
+      if (times === 1 && save.tickets > 0) {
+        ticketUses = 1;
+        gemCost = 0;
+      }
+      if (save.gems < gemCost) {
+        showToast("Không đủ Gems để quay banner.");
+        return;
+      }
+      save.gems -= gemCost;
+      save.tickets -= ticketUses;
+      const results = [];
+      for (let i = 0; i < times; i += 1) {
+        results.push(singlePull());
+      }
+      persist();
+      render();
+      openModal("Kết quả gacha", pullMarkup(results));
+    }
+
+    function singlePull() {
+      save.pity += 1;
+      const roll = Math.random();
+      let rarity = "N";
+      if (save.pity >= 50 || roll > 0.98) rarity = "SSR";
+      else if (roll > 0.88) rarity = "SR";
+      else if (roll > 0.58) rarity = "R";
+      if (rarity === "SSR") save.pity = 0;
+      const pool = gachaPool.filter((item) => item.rarity === rarity);
+      const item = pool[Math.floor(Math.random() * pool.length)];
+      if (item.kind === "hero") {
+        const owned = heroState(item.id);
+        owned.shards += item.amount;
+        if (!owned.unlocked && owned.shards >= 40) owned.unlocked = true;
+      }
+      if (item.kind === "card") {
+        save.cards[item.id] = (save.cards[item.id] || 0) + item.amount;
+      }
+      if (item.kind === "credits") {
+        save.credits += item.amount;
+      }
+      return item;
+    }
+
+    function pullMarkup(results) {
+      const rows = results.map((item) => {
+        const name = item.kind === "hero"
+          ? `${heroes.find((hero) => hero.id === item.id).name} shards`
+          : item.kind === "card"
+            ? cardLibrary[item.id].name
+            : "Credits";
+        return `
+          <div class="pull">
+            <span class="rarity rarity--${item.rarity.toLowerCase()}">${item.rarity}</span>
+            <span class="pull__name">${name}</span>
+            <span class="pill"><b>+${item.amount}</b></span>
+          </div>
+        `;
+      }).join("");
+      return `<div class="pull-results">${rows}</div>`;
+    }
+
+    function queuePvp() {
+      const opponent = {
+        name: pvpNames[Math.floor(Math.random() * pvpNames.length)],
+        rank: save.rank + Math.floor(Math.random() * 120) - 60
+      };
+      startBattle(save.activeStage, { pvp: true, opponent });
+      showToast(`Đã ghép với ${opponent.name}.`);
+    }
+
+    function healSquad() {
+      const cost = 120;
+      if (save.credits < cost) {
+        showToast("Không đủ Credits để tiếp tế.");
+        return;
+      }
+      save.credits -= cost;
+      persist();
+      startBattle(save.activeStage);
+      showToast("Đội hình đã hồi phục và nạp lại deck.");
+    }
+
+    function render() {
+      renderWallet();
+      renderRoster();
+      renderStages();
+      renderBattle();
+      renderHand();
+      renderLog();
+      renderPvp();
+    }
+
+    function renderWallet() {
+      refs.credits.textContent = save.credits;
+      refs.gems.textContent = save.gems;
+      refs.tickets.textContent = save.tickets;
+      refs.rank.textContent = save.rank;
+      refs.stageBadge.textContent = save.activeStage;
+    }
+
+    function renderRoster() {
+      refs.roster.innerHTML = heroes.map((hero) => {
+        const owned = heroState(hero.id);
+        const unlocked = owned.unlocked;
+        const inSquad = (save.squad || []).includes(hero.id);
+        const cost = owned.level * 180;
+        const shardCost = owned.level * 6;
+        const button = unlocked
+          ? `<button class="small-btn" type="button" data-upgrade="${hero.id}">Nâng</button>`
+          : `<button class="small-btn" type="button" data-unlock="${hero.id}" ${owned.shards < 40 ? "disabled" : ""}>Mở</button>`;
+        const squadButton = unlocked
+          ? `<button class="small-btn" type="button" data-squad="${hero.id}">${inSquad ? "Dự bị" : "Ra trận"}</button>`
+          : "";
+        return `
+          <article class="operator">
+            <div class="avatar">${hero.name.slice(0, 1)}</div>
+            <div class="operator__copy">
+              <div class="operator__name">${hero.name} · ${hero.role}</div>
+              <div class="operator__line">${unlocked ? `Lv.${owned.level} · HP ${heroMaxHp(hero)} · ATK ${heroPower(hero)} · ${inSquad ? "Ra trận" : "Dự bị"}` : "Chưa mở khóa"} · Mảnh ${owned.shards}</div>
+              <div class="operator__line">${unlocked ? `Cần ${cost} Credits, ${shardCost} mảnh` : "Cần 40 mảnh để chiêu mộ"}</div>
+            </div>
+            <div class="operator__actions">
+              <span class="rarity rarity--${hero.rarity.toLowerCase()}">${hero.rarity}</span>
+              ${button}
+              ${squadButton}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderStages() {
+      refs.stageList.innerHTML = stages.map((stage) => {
+        const locked = stage.id > save.unlockedStage;
+        const active = stage.id === save.activeStage;
+        return `
+          <article class="stage ${locked ? "is-locked" : ""} ${active ? "is-active" : ""}">
+            <div>
+              <div class="stage__name">${stage.id}. ${stage.name}</div>
+              <div class="stage__line">${stage.enemy} · thưởng ${stage.reward.credits} Credits, ${stage.reward.gems} Gems</div>
+            </div>
+            <button class="small-btn" type="button" data-stage="${stage.id}" ${locked ? "disabled" : ""}>Chọn</button>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderBattle() {
+      if (!battle) return;
+      refs.battleTitle.textContent = battle.pvp ? `PvP · ${battle.opponent.name}` : `${battle.stage.id}. ${battle.stage.name}`;
+      refs.battleSub.textContent = battle.pvp ? `Đối thủ rank ${battle.opponent.rank}. Hạ đội địch để tăng rank.` : `${battle.stage.enemy}. Phần thưởng sau khi clear được cộng vào ví.`;
+      refs.turn.textContent = battle.turn;
+      refs.deckCount.textContent = battle.deck.length;
+      refs.discardCount.textContent = battle.discard.length;
+      refs.energy.innerHTML = Array.from({ length: battle.maxEnergy }, (_, index) => `<span class="energy-dot ${index < battle.energy ? "is-full" : ""}"></span>`).join("");
+
+      const selected = selectedCardId !== null ? cardLibrary[battle.hand[selectedCardId]] : null;
+      const cells = [];
+      for (let row = 1; row <= 3; row += 1) {
+        for (let col = 1; col <= 6; col += 1) {
+          const mobileHidden = col === 3 || col === 4;
+          const unit = battle.units.find((item) => item.row === row && item.col === col && item.hp > 0);
+          const cover = (col === 1 || col === 6) && row !== 2;
+          const valid = selected && unit && isValidTarget(selected, unit);
+          cells.push(`
+            <div class="cell ${cover ? "has-cover" : ""} ${valid ? "is-valid" : ""}" data-lane="${row}.${col}" data-mobile-hidden="${mobileHidden}">
+              ${unit ? unitMarkup(unit, valid) : ""}
+            </div>
+          `);
+        }
+      }
+      refs.grid.innerHTML = cells.join("");
+    }
+
+    function unitMarkup(unit, valid) {
+      const hpPct = Math.max(0, unit.hp / unit.maxHp);
+      const shieldPct = Math.min(1, unit.shield / 40);
+      const statuses = Object.keys(unit.statuses).map((key) => {
+        const label = key === "weakened" ? "SUP" : key === "hacked" ? "HACK" : "MARK";
+        const cls = key === "hacked" ? "status-chip--hack" : key === "exposed" ? "" : "status-chip--shield";
+        return `<span class="status-chip ${cls}">${label}</span>`;
+      }).join("");
+      return `
+        <button class="unit is-${unit.team} ${valid ? "is-targeted" : ""}" type="button" data-unit="${unit.id}" aria-label="${unit.name}">
+          <span class="unit__top">
+            <span class="unit__name">${unit.name}</span>
+            <span class="unit__role">${unit.role}</span>
+          </span>
+          <span class="unit__silhouette" aria-hidden="true"></span>
+          <span class="bars">
+            <span class="bar bar--hp"><span style="transform: scaleX(${hpPct})"></span></span>
+            <span class="bar bar--shield"><span style="transform: scaleX(${shieldPct})"></span></span>
+          </span>
+          <span class="status-row">${statuses}</span>
+        </button>
+      `;
+    }
+
+    function renderHand() {
+      if (!battle) return;
+      refs.hand.innerHTML = battle.hand.map((cardId, index) => {
+        const card = cardLibrary[cardId];
+        const disabled = battle.energy < card.cost;
+        return `
+          <button class="card ${selectedCardId === index ? "is-selected" : ""}" type="button" data-card="${index}" ${disabled ? "disabled" : ""}>
+            <span class="card__cost">${card.cost}</span>
+            <span class="card__meta">
+              <span class="card__type">${card.type}</span>
+              <span class="card__title">${card.name}</span>
+              <span class="card__desc">${card.text}</span>
+            </span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderLog() {
+      refs.log.innerHTML = battle.log.map((line) => `<div class="log__item">${line}</div>`).join("");
+    }
+
+    function renderPvp() {
+      refs.pvpList.innerHTML = pvpNames.slice(0, 3).map((name, index) => `
+        <article class="pvp">
+          <h3>${name}</h3>
+          <div class="pvp__line">Rank dự kiến ${save.rank + 35 - index * 18} · đội hình 3 đặc nhiệm</div>
+        </article>
+      `).join("");
+    }
+
+    function isValidTarget(card, unit) {
+      if (card.target === "enemy") return unit.team === "enemy" && unit.hp > 0;
+      if (card.target === "ally") return unit.team === "player" && unit.hp > 0;
+      return false;
+    }
+
+    function markUnit(id, className) {
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-unit="${id}"]`);
+        if (!el) return;
+        el.classList.add(className);
+        window.setTimeout(() => el.classList.remove(className), 430);
+      });
+    }
+
+    function animateShot(source, target) {
+      requestAnimationFrame(() => {
+        const from = document.querySelector(`[data-unit="${source.id}"]`);
+        const to = document.querySelector(`[data-unit="${target.id}"]`);
+        const layerRect = refs.shotLayer.getBoundingClientRect();
+        if (!from || !to) return;
+        const a = from.getBoundingClientRect();
+        const b = to.getBoundingClientRect();
+        const x1 = a.left + a.width / 2 - layerRect.left;
+        const y1 = a.top + a.height / 2 - layerRect.top;
+        const x2 = b.left + b.width / 2 - layerRect.left;
+        const y2 = b.top + b.height / 2 - layerRect.top;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const shot = document.createElement("span");
+        shot.className = "shot";
+        shot.style.setProperty("--x1", `${x1}px`);
+        shot.style.setProperty("--y1", `${y1}px`);
+        shot.style.setProperty("--distance", `${Math.hypot(dx, dy)}px`);
+        shot.style.setProperty("--angle", `${Math.atan2(dy, dx)}rad`);
+        refs.shotLayer.appendChild(shot);
+        window.setTimeout(() => shot.remove(), 460);
+      });
+    }
+
+    function animateExplosion(target) {
+      requestAnimationFrame(() => {
+        const to = document.querySelector(`[data-unit="${target.id}"]`);
+        const layerRect = refs.shotLayer.getBoundingClientRect();
+        if (!to) return;
+        const rect = to.getBoundingClientRect();
+        const explosion = document.createElement("span");
+        explosion.className = "explosion";
+        explosion.style.setProperty("--x", `${rect.left + rect.width / 2 - layerRect.left}px`);
+        explosion.style.setProperty("--y", `${rect.top + rect.height / 2 - layerRect.top}px`);
+        refs.shotLayer.appendChild(explosion);
+        window.setTimeout(() => explosion.remove(), 460);
+      });
+    }
+
+    function selectCard(index) {
+      const card = cardLibrary[battle.hand[index]];
+      if (!card || battle.energy < card.cost) return;
+      if (card.target === "none") {
+        playCard(index);
+        return;
+      }
+      selectedCardId = selectedCardId === index ? null : index;
+      render();
+    }
+
+    function handleUnitClick(unitId) {
+      if (selectedCardId === null) return;
+      playCard(selectedCardId, unitId);
+    }
+
+    function openModal(title, body) {
+      refs.modalTitle.textContent = title;
+      refs.modalBody.innerHTML = body;
+      refs.modal.classList.add("is-open");
+    }
+
+    function closeModal() {
+      refs.modal.classList.remove("is-open");
+    }
+
+    function showRules() {
+      openModal("Luật chiến đấu", `
+        <div class="rulebook">
+          <div class="rule"><b>Mục tiêu</b><span>Đánh hạ toàn bộ địch. Mỗi lượt dùng năng lượng để chơi thẻ.</span></div>
+          <div class="rule"><b>Địa hình</b><span>Ô cover ở hàng trên và dưới giảm sát thương nếu không bị đạn xuyên.</span></div>
+          <div class="rule"><b>Deck</b><span>Thẻ đến từ 3 đặc nhiệm đang mở khóa và thẻ hiếm thu được từ gacha.</span></div>
+          <div class="rule"><b>Nâng cấp</b><span>Dùng Credits và mảnh để tăng HP, ATK. Mở khóa thêm SSR để đổi nhịp deck.</span></div>
+        </div>
+      `);
+    }
+
+    function showToast(message) {
+      refs.toast.textContent = message;
+      refs.toast.classList.add("is-open");
+      clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => refs.toast.classList.remove("is-open"), 2200);
+    }
+
+    function switchDrawer(name) {
+      document.querySelectorAll(".drawer").forEach((drawer) => drawer.classList.toggle("is-open", drawer.id === `drawer-${name}`));
+      document.querySelectorAll(".tab-btn").forEach((button) => button.setAttribute("aria-selected", String(button.dataset.drawer === name)));
+    }
+
+    document.addEventListener("click", (event) => {
+      const card = event.target.closest("[data-card]");
+      if (card) selectCard(Number(card.dataset.card));
+      const unit = event.target.closest("[data-unit]");
+      if (unit) handleUnitClick(unit.dataset.unit);
+      const stageBtn = event.target.closest("[data-stage]");
+      if (stageBtn) startBattle(Number(stageBtn.dataset.stage));
+      const upgradeBtn = event.target.closest("[data-upgrade]");
+      if (upgradeBtn) upgradeHero(upgradeBtn.dataset.upgrade);
+      const unlockBtn = event.target.closest("[data-unlock]");
+      if (unlockBtn) unlockHero(unlockBtn.dataset.unlock);
+      const squadBtn = event.target.closest("[data-squad]");
+      if (squadBtn) toggleSquad(squadBtn.dataset.squad);
+      const drawerBtn = event.target.closest("[data-drawer]");
+      if (drawerBtn) switchDrawer(drawerBtn.dataset.drawer);
+      if (event.target.closest("[data-close-modal]")) closeModal();
+      if (event.target.closest("[data-next-battle]")) {
+        closeModal();
+        const next = battle.pvp ? save.activeStage : Math.min(stages.length, save.activeStage + 1);
+        startBattle(next);
+      }
+    });
+
+    document.getElementById("endTurnBtn").addEventListener("click", endTurn);
+    document.getElementById("restartBtn").addEventListener("click", () => startBattle(save.activeStage));
+    document.getElementById("drawBtn").addEventListener("click", () => {
+      if (battle.energy < 1) {
+        showToast("Cần 1 năng lượng để rút thẻ chủ động.");
+        return;
+      }
+      battle.energy -= 1;
+      drawCards(1);
+      addLog("Rút thêm 1 thẻ bằng hành động phụ.");
+      render();
+    });
+    document.getElementById("pullOneBtn").addEventListener("click", () => pull(1));
+    document.getElementById("pullTenBtn").addEventListener("click", () => pull(10));
+    document.getElementById("queuePvpBtn").addEventListener("click", queuePvp);
+    document.getElementById("healSquadBtn").addEventListener("click", healSquad);
+    document.getElementById("ruleBtn").addEventListener("click", showRules);
+    document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+    refs.modal.addEventListener("click", (event) => {
+      if (event.target === refs.modal) closeModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        selectedCardId = null;
+        closeModal();
+        render();
+      }
+    });
+
+    startBattle(save.activeStage);
+  </script>
+</body>
+</html>
