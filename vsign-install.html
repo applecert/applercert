@@ -6,641 +6,474 @@
 <title>Cài Đặt VSign Pro — Hướng dẫn cài đặt từng bước</title>
 <meta name="description" content="Trang hướng dẫn cài đặt và ký ứng dụng VSign Pro từng bước trực tiếp trên iPhone.">
 
-<!-- Fonts & Icons -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-<!-- Vue, JSZip, and Axios for signing operations -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.8/axios.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <style>
-/* ════════════════════════════════════════════════
-   LIQUID GLASS & SPATIAL DESIGN SYSTEM (2026 SPEC)
-   ════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   VSign WIZARD FLAGSHIP 2026 — MINIMAL LUXURY DESIGN SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
 :root {
-  --bg-dark: #07090e;
-  --bg-card: rgba(255, 255, 255, 0.03);
-  --bg-card-hover: rgba(255, 255, 255, 0.06);
-  
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-border-glow: rgba(255, 255, 255, 0.25);
-  --glass-highlight: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 100%);
-  
-  --accent-cyan: #00f2fe;
-  --accent-blue: #4facfe;
-  --accent-indigo: #6366f1;
-  --accent-purple: #a855f7;
-  --accent-success: #10b981;
-  --accent-error: #ef4444;
-  
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-
-  --radius-sm: 14px;
-  --radius-md: 22px;
-  --radius-lg: 32px;
-  --radius-pill: 9999px;
-
-  --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+  --v-bg: #fafafc; --v-bg-elevated: #ffffff; --v-surface: rgba(255,255,255,0.65);
+  --v-ink: #0a0a0f; --v-ink-secondary: rgba(10,10,15,0.55); --v-ink-tertiary: rgba(10,10,15,0.35);
+  --v-border: rgba(10,10,15,0.06); --v-border-strong: rgba(10,10,15,0.12);
+  --v-dark-bg: #050508; --v-dark-surface: rgba(255,255,255,0.03); --v-dark-surface-elevated: rgba(255,255,255,0.06);
+  --v-dark-border: rgba(255,255,255,0.08); --v-dark-border-strong: rgba(255,255,255,0.14);
+  --v-dark-ink: #f5f5f7; --v-dark-ink-secondary: rgba(245,245,247,0.65); --v-dark-ink-tertiary: rgba(245,245,247,0.40);
+  --v-accent: #0a84ff; --v-accent-glow: rgba(10,132,255,0.45); --v-accent-soft: rgba(10,132,255,0.12); --v-accent-dark: #2997ff;
+  --v-success: #34c759; --v-warning: #ff9f0a; --v-error: #ff453a;
+  --g-hero: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(10,132,255,0.15), transparent), radial-gradient(ellipse 60% 40% at 80% 50%, rgba(120,80,255,0.06), transparent);
+  --ease-smooth: cubic-bezier(0.23, 1, 0.32, 1); --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1); --ease-in-out-quint: cubic-bezier(0.86, 0, 0.07, 1);
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem; --space-5: 1.5rem; --space-6: 2rem; --space-8: 2.5rem; --space-10: 3.5rem; --space-12: 5rem; --space-16: 8rem;
+  --r-sm: 0.75rem; --r-md: 1.125rem; --r-lg: 1.75rem; --r-xl: 2.5rem; --r-pill: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02); --shadow-md: 0 4px 20px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04); --shadow-lg: 0 12px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.05); --shadow-glow: 0 0 40px var(--v-accent-glow), 0 0 80px rgba(10,132,255,0.15);
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; --font-mono: "JetBrains Mono", "SF Mono", monospace;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  -webkit-tap-highlight-color: transparent;
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { font-family: var(--font-sans); font-size: 16px; font-weight: 400; line-height: 1.6; color: var(--v-ink); background: var(--v-bg); overflow-x: hidden; min-height: 100vh; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  html { scroll-behavior: auto; }
 }
 
-body {
-  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
-  color: var(--text-main);
-  background-color: var(--bg-dark);
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
+body::before { content: ""; position: fixed; inset: 0; z-index: 9998; pointer-events: none; opacity: 0.025; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px 256px; }
 
-/* ══ AMBIENT BACKDROP GLOWS ══ */
-.ambient-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
+.scroll-progress { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(90deg, var(--v-accent), #7c5cff); z-index: 10000; width: 0%; transition: width 0.1s linear; box-shadow: 0 0 10px var(--v-accent-glow); }
+.cursor-glow { position: fixed; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(10,132,255,0.08) 0%, transparent 70%); pointer-events: none; z-index: 9997; transform: translate(-50%, -50%); transition: opacity 0.3s ease; mix-blend-mode: screen; }
+@media (pointer: coarse) { .cursor-glow { display: none; } }
 
-.glow-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.35;
-  animation: orbPulse 12s infinite alternate ease-in-out;
-}
+.page-loader { position: fixed; inset: 0; background: var(--v-bg); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; transition: opacity 0.8s var(--ease-out-expo), visibility 0.8s; }
+.page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.loader-logo { display: flex; gap: 2px; align-items: center; }
+.loader-logo svg { height: 32px; width: 32px; stroke: var(--v-ink); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; fill: none; opacity: 0; animation: loaderReveal 0.6s var(--ease-out-expo) forwards; }
+.loader-logo svg:nth-child(1) { animation-delay: 0.1s; } .loader-logo svg:nth-child(2) { animation-delay: 0.2s; } .loader-logo svg:nth-child(3) { animation-delay: 0.3s; }
+@keyframes loaderReveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.loader-bar { width: 120px; height: 2px; background: var(--v-border-strong); border-radius: var(--r-pill); overflow: hidden; position: relative; }
+.loader-bar::after { content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: linear-gradient(90deg, var(--v-accent), #7c5cff); animation: loaderProgress 1.5s var(--ease-in-out-quint) forwards; }
+@keyframes loaderProgress { to { width: 100%; } }
 
-.orb-1 {
-  top: -10%;
-  left: 20%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, var(--accent-blue), var(--accent-indigo));
-}
+.global-nav { position: fixed; top: 0; left: 0; right: 0; height: 48px; background: rgba(5,5,8,0.75); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 900; display: flex; align-items: center; transition: transform 0.5s var(--ease-smooth); }
+.global-nav.nav-hidden { transform: translateY(-100%); }
+.global-nav-inner { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 var(--space-5); display: flex; justify-content: space-between; align-items: center; }
+.global-nav-logo { color: var(--v-dark-ink); font-size: 14px; text-decoration: none; display: flex; align-items: center; gap: 6px; font-weight: 600; letter-spacing: -0.2px; transition: opacity 0.3s ease; }
+.global-nav-logo:hover { opacity: 0.8; }
+.global-nav-links { display: flex; gap: var(--space-5); align-items: center; }
+.global-nav-link { color: rgba(245,245,247,0.55); text-decoration: none; font-size: 12px; font-weight: 500; letter-spacing: -0.1px; transition: color 0.3s var(--ease-smooth); position: relative; }
+.global-nav-link::after { content: ""; position: absolute; bottom: -4px; left: 50%; width: 0; height: 1.5px; background: var(--v-dark-ink); transition: width 0.3s var(--ease-smooth), left 0.3s var(--ease-smooth); border-radius: var(--r-pill); }
+.global-nav-link:hover { color: var(--v-dark-ink); }
+.global-nav-link:hover::after { width: 100%; left: 0; }
 
-.orb-2 {
-  top: 40%;
-  right: -10%;
-  width: 550px;
-  height: 550px;
-  background: radial-gradient(circle, var(--accent-purple), var(--accent-indigo));
-  animation-delay: -4s;
-}
+.sub-nav-frosted { position: fixed; top: 48px; left: 0; right: 0; height: 56px; background: rgba(250,250,252,0.72); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border-bottom: 1px solid var(--v-border); z-index: 899; display: flex; align-items: center; transition: transform 0.5s var(--ease-smooth), box-shadow 0.4s ease; }
+.sub-nav-frosted.nav-hidden { transform: translateY(-104px); }
+.sub-nav-frosted.scrolled { box-shadow: 0 4px 30px rgba(0,0,0,0.04); }
+.sub-nav-inner { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 var(--space-5); display: flex; justify-content: space-between; align-items: center; }
+.sub-nav-title { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; color: var(--v-ink); text-decoration: none; transition: opacity 0.3s ease; }
+.sub-nav-title:hover { opacity: 0.7; }
+.sub-nav-actions { display: flex; align-items: center; gap: var(--space-4); }
+.sub-nav-link { color: var(--v-ink-secondary); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.3s ease; display: flex; align-items: center; gap: 6px; }
+.sub-nav-link:hover { color: var(--v-accent); }
 
-@keyframes orbPulse {
-  0% { transform: scale(1) translate(0, 0); }
-  100% { transform: scale(1.18) translate(30px, -20px); }
-}
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-sans); font-size: 15px; font-weight: 500; letter-spacing: -0.2px; text-decoration: none; border: none; cursor: pointer; overflow: hidden; transition: transform 0.3s var(--ease-spring), box-shadow 0.4s ease; will-change: transform; }
+.btn::before { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%); transform: translateX(-100%); transition: transform 0.6s var(--ease-smooth); }
+.btn:hover::before { transform: translateX(100%); }
+.btn:active { transform: scale(0.96); }
+.btn-magnetic { transition: transform 0.2s var(--ease-smooth); }
+.btn-primary-pill { background: linear-gradient(135deg, var(--v-accent), #0066cc); color: #fff !important; padding: 12px 28px; border-radius: var(--r-pill); box-shadow: 0 4px 20px rgba(10,132,255,0.25), inset 0 1px 0 rgba(255,255,255,0.15); }
+.btn-primary-pill:hover { box-shadow: 0 8px 30px rgba(10,132,255,0.4), inset 0 1px 0 rgba(255,255,255,0.2); transform: translateY(-1px); }
+.btn-primary-pill:disabled { background: var(--v-border-strong) !important; color: var(--v-ink-tertiary) !important; cursor: not-allowed; box-shadow: none; transform: none; }
+.btn-primary-pill:disabled::before { display: none; }
+.btn-secondary-pill { background: transparent; color: var(--v-accent) !important; padding: 12px 28px; border-radius: var(--r-pill); border: 1.5px solid rgba(10,132,255,0.25); backdrop-filter: blur(10px); }
+.btn-secondary-pill:hover { border-color: var(--v-accent); background: var(--v-accent-soft); transform: translateY(-1px); }
+.btn-danger-pill { background: transparent; color: var(--v-error) !important; padding: 10px 24px; border-radius: var(--r-pill); border: 1.5px solid rgba(255,69,58,0.25); backdrop-filter: blur(10px); font-size: 14px; }
+.btn-danger-pill:hover { border-color: var(--v-error); background: rgba(255,69,58,0.08); transform: translateY(-1px); }
 
-/* ══ LIQUID GLASS CARD COMPONENT ══ */
-.liquid-glass {
-  background: var(--bg-card);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), 
-              inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s var(--ease-apple);
-}
+.ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.35); transform: scale(0); animation: rippleAnim 0.6s linear; pointer-events: none; }
+@keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
-.liquid-glass::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--glass-highlight);
-  pointer-events: none;
-  opacity: 0.6;
-}
+.display-lg { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.03em; }
+.display-md { font-size: clamp(1.3rem, 3vw, 1.8rem); font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+.lead { font-size: clamp(1rem, 2vw, 1.15rem); font-weight: 400; line-height: 1.5; color: var(--v-ink-secondary); letter-spacing: -0.01em; }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.18em; color: var(--v-accent); display: inline-flex; align-items: center; gap: 8px; }
+.eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--v-accent); box-shadow: 0 0 8px var(--v-accent-glow); animation: pulseDot 3s ease-in-out infinite; }
+@keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.85); } }
 
-/* ══ NAVIGATION ══ */
-.navbar-wrapper {
-  position: fixed;
-  top: 16px;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  padding: 0 16px;
-}
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s var(--ease-out-expo), transform 0.8s var(--ease-out-expo); will-change: transform, opacity; }
+.reveal.revealed { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: 0.1s; } .reveal-delay-2 { transition-delay: 0.2s; } .reveal-delay-3 { transition-delay: 0.3s; }
 
-.glass-nav {
-  width: 100%;
-  max-width: 960px;
-  height: 54px;
-  border-radius: var(--radius-pill);
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+.text-reveal { overflow: hidden; display: block; }
+.text-reveal-inner { display: block; transform: translateY(110%); transition: transform 1s var(--ease-out-expo); }
+.text-reveal.revealed .text-reveal-inner { transform: translateY(0); }
 
-.nav-brand {
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: #fff;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  letter-spacing: -0.01em;
-}
+/* ── WIZARD LAYOUT ── */
+.wizard-section { position: relative; min-height: calc(100vh - 104px); padding: calc(48px + 56px + var(--space-10)) var(--space-5) var(--space-16); overflow: hidden; background: var(--v-bg); }
+.wizard-bg { position: absolute; inset: 0; background: var(--g-hero); z-index: 0; }
+.wizard-inner { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; }
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  list-style: none;
-}
+/* ── STEPPER ── */
+.stepper { display: flex; justify-content: center; gap: 0; margin-bottom: var(--space-10); width: 100%; position: relative; }
+.stepper::before { content: ""; position: absolute; top: 16px; left: 16.66%; right: 16.66%; height: 2px; background: var(--v-border); border-radius: var(--r-pill); z-index: 0; }
+.stepper-progress { position: absolute; top: 16px; left: 16.66%; height: 2px; background: linear-gradient(90deg, var(--v-accent), #7c5cff); border-radius: var(--r-pill); z-index: 1; transition: width 0.6s var(--ease-smooth); }
+.step-tab { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; cursor: default; }
+.step-ring { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 13px; font-weight: 700; transition: all 0.5s var(--ease-spring); position: relative; }
+.step-tab .step-ring { background: var(--v-bg-elevated); border: 2px solid var(--v-border-strong); color: var(--v-ink-tertiary); }
+.step-tab.active .step-ring { background: linear-gradient(135deg, var(--v-accent), #0066cc); border-color: transparent; color: #fff; box-shadow: 0 0 20px rgba(10,132,255,0.3); transform: scale(1.1); }
+.step-tab.completed .step-ring { background: var(--v-success); border-color: transparent; color: #fff; }
+.step-tab.completed .step-ring::after { content: "\\f00c"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 12px; }
+.step-tab.completed .step-ring span { display: none; }
+.step-label { font-size: 11px; font-weight: 600; letter-spacing: -0.2px; color: var(--v-ink-tertiary); transition: color 0.3s ease; }
+.step-tab.active .step-label { color: var(--v-accent); }
+.step-tab.completed .step-label { color: var(--v-ink-secondary); }
 
-.nav-link {
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 500;
-  transition: color 0.2s;
-}
+/* ── WIZARD CARD ── */
+.wizard-card { position: relative; background: var(--v-surface); backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%); border: 1px solid var(--v-border); border-radius: var(--r-xl); padding: var(--space-8); text-align: center; overflow: hidden; transition: transform 0.4s var(--ease-smooth), box-shadow 0.4s ease; }
+.wizard-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.05), rgba(255,255,255,0.2)); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; opacity: 0.5; }
+.wizard-card:hover { box-shadow: var(--shadow-lg); }
+.wizard-header { margin-bottom: var(--space-6); }
+.wizard-header h2 { margin-bottom: var(--space-2); }
 
-.nav-link:hover {
-  color: var(--text-main);
-}
+/* ── FILE UPLOAD ── */
+.file-upload-zone { position: relative; width: 100%; min-height: 140px; border: 2px dashed var(--v-border); border-radius: var(--r-lg); display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; background: linear-gradient(135deg, rgba(10,132,255,0.02), rgba(120,80,255,0.02)); transition: all 0.4s var(--ease-smooth); margin-bottom: var(--space-5); padding: var(--space-5); gap: var(--space-2); }
+.file-upload-zone:hover, .file-upload-zone.dragover { border-color: var(--v-accent); background: linear-gradient(135deg, var(--v-accent-soft), rgba(120,80,255,0.05)); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(10,132,255,0.08); }
+.file-upload-zone.has-file { border-style: solid; border-color: var(--v-accent); background: var(--v-accent-soft); }
+.file-upload-icon { width: 48px; height: 48px; border-radius: var(--r-md); background: linear-gradient(135deg, var(--v-accent-soft), rgba(10,132,255,0.05)); color: var(--v-accent); display: flex; align-items: center; justify-content: center; font-size: 20px; transition: transform 0.4s var(--ease-spring); }
+.file-upload-zone:hover .file-upload-icon { transform: scale(1.1) rotate(-5deg); }
+.file-upload-title { font-size: 15px; font-weight: 600; color: var(--v-ink); letter-spacing: -0.2px; }
+.file-upload-desc { font-size: 12px; color: var(--v-ink-tertiary); }
+.file-upload-name { font-size: 13px; font-weight: 600; color: var(--v-accent); margin-top: var(--space-1); }
 
-/* ══ STEPPER BAR ══ */
-.stepper-glass {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin: 0 auto 36px;
-  padding: 8px 16px;
-  border-radius: var(--radius-pill);
-  max-width: 540px;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 0.85rem;
-}
+/* ── INPUT ── */
+.input-group { text-align: left; margin-bottom: var(--space-5); }
+.input-label { display: block; font-size: 13px; font-weight: 600; color: var(--v-ink); margin-bottom: var(--space-2); letter-spacing: -0.2px; }
+.apple-input { width: 100%; height: 50px; padding: 0 var(--space-5); font-family: var(--font-sans); font-size: 15px; font-weight: 400; border: 1.5px solid var(--v-border); border-radius: var(--r-pill); outline: none; background: var(--v-bg-elevated); color: var(--v-ink); transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease; }
+.apple-input:focus { border-color: var(--v-accent); box-shadow: 0 0 0 4px var(--v-accent-soft); transform: translateY(-1px); }
+.apple-input::placeholder { color: var(--v-ink-tertiary); }
 
-.step-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-dim);
-  transition: all 0.3s ease;
-}
+/* ── PROGRESS ── */
+.progress-track { width: 100%; height: 6px; background: var(--v-border); border-radius: var(--r-pill); overflow: hidden; position: relative; margin: var(--space-5) 0; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--v-accent), #7c5cff); border-radius: var(--r-pill); width: 0%; transition: width 0.5s var(--ease-smooth); position: relative; overflow: hidden; }
+.progress-fill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
-.step-item.active {
-  color: var(--accent-cyan);
-  font-weight: 700;
-}
+/* ── STATUS ICON ── */
+.status-icon-wrap { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-4); position: relative; }
+.status-icon-wrap.processing { background: var(--v-accent-soft); }
+.status-icon-wrap.completed { background: rgba(52,199,89,0.12); }
+.status-icon-wrap.error { background: rgba(255,69,58,0.08); }
+.status-icon-wrap i { font-size: 32px; }
+.status-icon-wrap.processing i { color: var(--v-accent); animation: spin 1s linear infinite; }
+.status-icon-wrap.completed i { color: var(--v-success); }
+.status-icon-wrap.error i { color: var(--v-error); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.status-pulse { position: absolute; inset: -8px; border-radius: 50%; border: 2px solid var(--v-accent); opacity: 0; animation: statusPulse 2s ease-out infinite; }
+.status-icon-wrap.processing .status-pulse { display: block; }
+@keyframes statusPulse { 0% { transform: scale(0.8); opacity: 0.6; } 100% { transform: scale(1.3); opacity: 0; } }
 
-.step-item.completed {
-  color: var(--text-main);
-}
+/* ── TRUST STEPS ── */
+.trust-steps { display: flex; flex-direction: column; gap: var(--space-4); margin: var(--space-6) 0; }
+.trust-step { display: flex; gap: var(--space-4); align-items: flex-start; padding: var(--space-4); border-radius: var(--r-lg); background: var(--v-bg-elevated); border: 1px solid var(--v-border); transition: all 0.4s var(--ease-smooth); }
+.trust-step:hover { transform: translateX(4px); border-color: var(--v-border-strong); box-shadow: var(--shadow-sm); }
+.trust-step-num { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--v-accent), #0066cc); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 13px; font-weight: 700; flex-shrink: 0; box-shadow: 0 0 16px rgba(10,132,255,0.25); }
+.trust-step-content { padding-top: 2px; }
+.trust-step-title { font-size: 15px; font-weight: 700; color: var(--v-ink); margin-bottom: 4px; letter-spacing: -0.2px; }
+.trust-step-desc { font-size: 13.5px; color: var(--v-ink-secondary); line-height: 1.6; }
 
-.step-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  transition: all 0.3s ease;
-}
+/* ── FALLBACK BOX ── */
+.fallback-box { margin-top: var(--space-4); padding: var(--space-5); background: linear-gradient(135deg, rgba(255,69,58,0.04), rgba(255,159,10,0.03)); border: 1.5px solid rgba(255,69,58,0.15); border-radius: var(--r-lg); text-align: left; }
+.fallback-box-title { font-size: 14px; font-weight: 700; color: var(--v-error); margin-bottom: var(--space-2); display: flex; align-items: center; gap: 6px; }
+.fallback-box-desc { font-size: 13px; color: var(--v-ink-secondary); margin-bottom: var(--space-3); line-height: 1.5; }
 
-.step-item.active .step-dot {
-  background: var(--accent-cyan);
-  box-shadow: 0 0 10px var(--accent-cyan);
-}
+/* ── FOOTER ── */
+.apple-footer { background: var(--v-dark-bg); color: var(--v-dark-ink-secondary); padding: var(--space-12) var(--space-5); position: relative; overflow: hidden; }
+.apple-footer::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--v-dark-border-strong), transparent); }
+.apple-footer-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+.footer-brand { font-size: 15px; font-weight: 700; color: var(--v-dark-ink); margin-bottom: var(--space-3); letter-spacing: -0.3px; }
+.footer-desc { font-size: 13px; line-height: 1.7; color: var(--v-dark-ink-tertiary); max-width: 480px; margin-bottom: var(--space-6); }
+.footer-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--v-dark-border), transparent); margin: var(--space-6) 0; }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4); font-size: 12px; color: var(--v-dark-ink-tertiary); }
+.footer-link { color: var(--v-dark-ink-tertiary); text-decoration: none; transition: color 0.3s ease; font-size: 12px; }
+.footer-link:hover { color: var(--v-dark-ink); }
 
-.step-item.completed .step-dot {
-  background: var(--accent-indigo);
-}
+/* ── TRANSITIONS ── */
+.wizard-fade-enter-active, .wizard-fade-leave-active { transition: opacity 0.5s var(--ease-smooth), transform 0.5s var(--ease-smooth); }
+.wizard-fade-enter { opacity: 0; transform: translateY(20px) scale(0.98); }
+.wizard-fade-leave-to { opacity: 0; transform: translateY(-20px) scale(0.98); }
 
-/* ══ WIZARD BOX ══ */
-.wizard-card {
-  width: 100%;
-  max-width: 520px;
-  border-radius: var(--radius-lg);
-  padding: 36px 28px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-/* ══ FORM CONTROLS ══ */
-.input-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-  text-align: left;
-  display: block;
-}
-
-.glass-input {
-  width: 100%;
-  height: 48px;
-  padding: 12px 20px;
-  font-size: 0.95rem;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-pill);
-  outline: none;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-main);
-  transition: all 0.3s ease;
-  margin-bottom: 24px;
-}
-
-.glass-input:focus {
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.file-dropzone {
-  width: 100%;
-  min-height: 100px;
-  border: 1.5px dashed var(--glass-border);
-  border-radius: var(--radius-md);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.02);
-  transition: all 0.3s var(--ease-apple);
-  margin-bottom: 24px;
-  padding: 20px;
-}
-
-.file-dropzone:hover {
-  border-color: var(--accent-cyan);
-  background: rgba(0, 242, 254, 0.05);
-  transform: translateY(-2px);
-}
-
-.file-title {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--text-main);
-  margin-bottom: 4px;
-}
-
-.file-desc {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-}
-
-/* ══ PROGRESS BAR ══ */
-.progress-container {
-  width: 100%;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-  margin: 20px 0;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
-  width: 0%;
-  box-shadow: 0 0 12px var(--accent-cyan);
-  transition: width 0.3s ease;
-}
-
-/* ══ BUTTONS ══ */
-.btn-glass-primary {
-  width: 100%;
-  background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
-  color: #fff !important;
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 13px 24px;
-  border-radius: var(--radius-pill);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  box-shadow: 0 10px 25px rgba(79, 172, 254, 0.35);
-  cursor: pointer;
-  transition: all 0.3s var(--ease-apple);
-}
-
-.btn-glass-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 35px rgba(79, 172, 254, 0.5);
-}
-
-.btn-glass-primary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.btn-glass-secondary {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px);
-  color: var(--text-main) !important;
-  font-size: 0.92rem;
-  font-weight: 600;
-  padding: 12px 24px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--glass-border);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.3s var(--ease-apple);
-}
-
-.btn-glass-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--glass-border-glow);
-  transform: translateY(-2px);
-}
-
-/* ══ INSTRUCTION ROWS (STEP 3) ══ */
-.instruction-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-.step-badge {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(0, 242, 254, 0.1);
-  border: 1px solid rgba(0, 242, 254, 0.3);
-  color: var(--accent-cyan);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-/* ══ FOOTER ══ */
-.footer-glass {
-  margin-top: 100px;
-  border-top: 1px solid var(--glass-border);
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(20px);
-  padding: 60px 20px;
-  font-size: 0.88rem;
-  color: var(--text-dim);
-}
-
-.footer-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-/* ══ LOADER ══ */
-.page-loader {
-  position: fixed;
-  inset: 0;
-  background: var(--bg-dark);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.5s ease, visibility 0.5s ease;
-}
-
-.page-loader.hidden {
-  opacity: 0;
-  visibility: hidden;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--accent-cyan);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
+/* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-  .nav-links { display: none; }
-  .footer-inner { flex-direction: column; text-align: center; }
+  .global-nav-links { display: none; }
+  .wizard-card { padding: var(--space-5); border-radius: var(--r-lg); }
+  .step-label { font-size: 10px; }
+  .step-ring { width: 32px; height: 32px; font-size: 11px; }
+  .trust-step { padding: var(--space-3); }
+  .footer-bottom { flex-direction: column; text-align: center; }
 }
+
+a:focus-visible, button:focus-visible { outline: 2px solid var(--v-accent); outline-offset: 3px; border-radius: 4px; }
+.skip-link { position: absolute; top: -40px; left: 0; background: var(--v-accent); color: #fff; padding: 8px 16px; z-index: 10001; transition: top 0.3s; font-size: 13px; font-weight: 600; text-decoration: none; }
+.skip-link:focus { top: 0; }
 </style>
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to content</a>
+<div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+<div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
 
-<!-- Ambient Backdrop Glows -->
-<div class="ambient-bg">
-  <div class="glow-orb orb-1"></div>
-  <div class="glow-orb orb-2"></div>
-</div>
-
-<!-- Page Loader -->
-<div class="page-loader" id="pageLoader">
-  <div class="spinner"></div>
+<div class="page-loader" id="pageLoader" role="status" aria-label="Loading">
+  <div class="loader-logo">
+    <svg viewBox="0 0 64 64"><path d="M32,4 V60"/></svg>
+    <svg viewBox="0 0 64 64"><path d="M20,60 V4 H40 A14,14 0 0 1 40,32 H20"/></svg>
+    <svg viewBox="0 0 64 64"><path d="M12,60 L32,6 L52,60 M20,42 H44"/></svg>
+  </div>
+  <div class="loader-bar"></div>
 </div>
 
 <div id="wizardApp">
-  <!-- Glass Floating Navbar -->
-  <div class="navbar-wrapper">
-    <nav class="glass-nav liquid-glass">
-      <a href="index.html" class="nav-brand">
-        <i class="fa-brands fa-apple" style="color: var(--accent-cyan);"></i> IPAVIET
-      </a>
-      <ul class="nav-links">
-        <li><a href="index.html" class="nav-link">Trang chủ</a></li>
-        <li><a href="tap-hoa-mmo.html" class="nav-link">Cửa hàng</a></li>
-        <li><a href="dichvu.html" class="nav-link">Dịch vụ</a></li>
-        <li><a href="phim-tat.html" class="nav-link">Phím tắt</a></li>
-      </ul>
-      <a href="vsign.html" class="btn-glass-secondary" style="padding: 6px 16px; font-size: 0.82rem; width: auto;">
-        <i class="fa-solid fa-chevron-left"></i> Quay lại
-      </a>
-    </nav>
-  </div>
+  <nav class="global-nav" id="globalNav" aria-label="Global navigation">
+    <div class="global-nav-inner">
+      <a href="index.html" class="global-nav-logo" aria-label="IPAVIET Home"><i class="fa-brands fa-apple" aria-hidden="true"></i> IPAVIET</a>
+      <div class="global-nav-links">
+        <a href="index.html" class="global-nav-link">Trang chủ</a>
+        <a href="tap-hoa-mmo.html" class="global-nav-link">Cửa hàng</a>
+        <a href="dichvu.html" class="global-nav-link">Dịch vụ</a>
+        <a href="phim-tat.html" class="global-nav-link">Phím tắt</a>
+      </div>
+      <div style="width:20px;" aria-hidden="true"></div>
+    </div>
+  </nav>
 
-  <!-- Main Wizard Container -->
-  <section style="padding: 130px 20px 60px;">
-    <!-- Liquid Stepper Indicator -->
-    <div class="stepper-glass liquid-glass">
-      <div class="step-item" :class="{ active: currentStep === 1, completed: currentStep > 1 }">
-        <span class="step-dot"></span> 01 Nhập Cert
-      </div>
-      <div class="step-item" :class="{ active: currentStep === 2, completed: currentStep > 2 }">
-        <span class="step-dot"></span> 02 Ký & Cài đặt
-      </div>
-      <div class="step-item" :class="{ active: currentStep === 3 }">
-        <span class="step-dot"></span> 03 Tin Cậy
+  <nav class="sub-nav-frosted" id="subNav" aria-label="Product navigation">
+    <div class="sub-nav-inner">
+      <a href="vsign.html" class="sub-nav-title">Cài đặt VSign Pro</a>
+      <div class="sub-nav-actions">
+        <a href="vsign.html" class="sub-nav-link"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Quay lại</a>
       </div>
     </div>
+  </nav>
 
-    <!-- STEP 1: UPLOAD CERTIFICATE -->
-    <div class="wizard-card liquid-glass" v-if="currentStep === 1">
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 8px;" class="gradient-text">Nhập Chứng Chỉ Apple</h2>
-        <p style="font-size: 0.9rem; color: var(--text-muted);">Tải tệp ZIP chứa chứng chỉ .p12 & .mobileprovision cá nhân của bạn để ký VSign.</p>
-      </div>
+  <main id="main-content">
+    <section class="wizard-section" aria-label="Installation wizard">
+      <div class="wizard-bg" aria-hidden="true"></div>
+      <div class="wizard-inner">
 
-      <div style="text-align: left;">
-        <label class="input-label">Tệp tin chứng chỉ (ZIP)</label>
-        <div class="file-dropzone" @click="triggerFileInput">
-          <i class="fa-solid fa-file-zipper" style="font-size: 2rem; color: var(--accent-cyan); margin-bottom: 10px;"></i>
-          <span class="file-title">{{ certZipText }}</span>
-          <span class="file-desc">Nhấp để chọn file .zip chứng chỉ</span>
-        </div>
-        <input type="file" ref="certInput" style="display: none;" accept=".zip" @change="handleFileChange">
-
-        <label class="input-label">Mật khẩu chứng chỉ</label>
-        <input type="text" class="glass-input" v-model="password" placeholder="Nhập mật khẩu (thường là 1 hoặc mật khẩu riêng)">
-      </div>
-
-      <button class="btn-glass-primary" :disabled="!canProgressStep1" @click="nextToStep2">
-        Ký Ứng Dụng <i class="fa-solid fa-chevron-right"></i>
-      </button>
-    </div>
-
-    <!-- STEP 2: SIGNING & INSTALLATION -->
-    <div class="wizard-card liquid-glass" v-if="currentStep === 2">
-      <div style="margin-bottom: 20px;">
-        <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 8px;" class="gradient-text">Tiến Hành Ký VSign</h2>
-        <p style="font-size: 0.9rem; color: var(--text-muted);">Đang ký VSign Pro bằng chứng chỉ của bạn...</p>
-      </div>
-
-      <div style="margin: 32px 0;">
-        <!-- Status Indicator Icon -->
-        <div style="margin-bottom: 20px;">
-          <i class="fa-solid fa-spinner fa-spin" style="font-size: 2.8rem; color: var(--accent-cyan);" v-if="signingState === 'processing'"></i>
-          <i class="fa-solid fa-circle-check" style="font-size: 2.8rem; color: var(--accent-success);" v-if="signingState === 'completed'"></i>
-          <i class="fa-solid fa-triangle-exclamation" style="font-size: 2.8rem; color: var(--accent-error);" v-if="signingState === 'error'"></i>
-        </div>
-
-        <!-- Progress Bar -->
-        <div class="progress-container">
-          <div class="progress-bar-fill" :style="{ width: progressPercentage + '%' }"></div>
-        </div>
-        
-        <p style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">
-          {{ statusMessage }}
-        </p>
-        <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 8px;" v-if="logText">
-          Log: {{ logText }}
-        </p>
-      </div>
-
-      <!-- Action Buttons after Completion -->
-      <div style="display: flex; flex-direction: column; gap: 14px;" v-if="signingState === 'completed'">
-        <a :href="directInstallLink" @click="triggerInstall($event)" class="btn-glass-primary">
-          <i class="fa-solid fa-download"></i> CÀI ĐẶT VSIGN PRO
-        </a>
-        
-        <!-- Fallback Warning Box -->
-        <div v-if="showFallback" style="padding: 16px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-sm); text-align: left;">
-          <p style="font-size: 0.9rem; font-weight: 700; color: var(--accent-error); margin-bottom: 6px;">
-            ⚠️ Không thấy thông báo cài đặt?
-          </p>
-          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
-            Nếu bạn đang dùng Chrome, Zalo, Facebook hoặc trình duyệt chặn popup, hãy mở liên kết tải trực tiếp dưới đây:
-          </p>
-          <a :href="downloadUrl" target="_blank" class="btn-glass-secondary" style="border-color: rgba(239, 68, 68, 0.4); color: var(--accent-error) !important; font-size: 0.85rem; padding: 10px 16px;">
-            Mở Trang Tải Trực Tiếp <i class="fa-solid fa-arrow-up-right-from-square"></i>
-          </a>
-        </div>
-
-        <button class="btn-glass-secondary" @click="currentStep = 3">
-          Bước Tiếp Theo (Tin cậy app) <i class="fa-solid fa-chevron-right"></i>
-        </button>
-      </div>
-
-      <!-- Retry Option -->
-      <button class="btn-glass-primary" v-if="signingState === 'error'" @click="resetToStep1">
-        Thử Lại <i class="fa-solid fa-arrow-rotate-right"></i>
-      </button>
-    </div>
-
-    <!-- STEP 3: TRUST THE DEVELOPER CERTIFICATE -->
-    <div class="wizard-card liquid-glass" v-if="currentStep === 3" style="max-width: 600px;">
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 8px;" class="gradient-text">Tin Cậy Nhà Phát Triển</h2>
-        <p style="font-size: 0.9rem; color: var(--text-muted);">Bạn cần cấu hình tin cậy trên iPhone để mở ứng dụng sau khi cài.</p>
-      </div>
-
-      <div style="margin: 28px 0;">
-        <div class="instruction-row">
-          <div class="step-badge">1</div>
-          <div>
-            <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 2px;">Mở Cài đặt hệ thống</div>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">Truy cập vào ứng dụng <b>Cài đặt (Settings)</b> trên màn hình chính iPhone.</p>
+        <!-- Stepper -->
+        <div class="stepper reveal" role="tablist" aria-label="Installation progress">
+          <div class="stepper-progress" :style="{ width: stepperProgress + '%' }" aria-hidden="true"></div>
+          <div class="step-tab" :class="{ active: currentStep === 1, completed: currentStep > 1 }" role="tab" :aria-selected="currentStep === 1">
+            <div class="step-ring"><span>1</span></div>
+            <span class="step-label">Nhập Cert</span>
+          </div>
+          <div class="step-tab" :class="{ active: currentStep === 2, completed: currentStep > 2 }" role="tab" :aria-selected="currentStep === 2">
+            <div class="step-ring"><span>2</span></div>
+            <span class="step-label">Ký &amp; Cài</span>
+          </div>
+          <div class="step-tab" :class="{ active: currentStep === 3 }" role="tab" :aria-selected="currentStep === 3">
+            <div class="step-ring"><span>3</span></div>
+            <span class="step-label">Tin Cậy</span>
           </div>
         </div>
 
-        <div class="instruction-row">
-          <div class="step-badge">2</div>
-          <div>
-            <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 2px;">Đi tới Quản lý thiết bị</div>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">Vào mục <b>Cài đặt chung (General)</b> &rarr; <b>Quản lý VPN & Thiết bị (VPN & Device Management)</b>.</p>
+        <!-- STEP 1 -->
+        <transition name="wizard-fade" mode="out-in">
+          <div class="wizard-card" v-if="currentStep === 1" key="step1">
+            <div class="wizard-header">
+              <div class="eyebrow" style="margin-bottom:var(--space-3);"><span class="eyebrow-dot"></span> Bước 1</div>
+              <h2 class="display-lg">Nhập Chứng Chỉ Apple</h2>
+              <p class="lead">Tải tệp ZIP chứa chứng chỉ .p12 &amp; .mobileprovision cá nhân của bạn để ký VSign.</p>
+            </div>
+
+            <div class="file-upload-zone" :class="{ 'has-file': certZip, 'dragover': isDragging }" @click="triggerFileInput" @dragover.prevent="isDragging = true" @dragleave="isDragging = false" @drop.prevent="handleDrop">
+              <div class="file-upload-icon"><i class="fa-solid" :class="certZip ? 'fa-file-circle-check' : 'fa-file-zipper'" aria-hidden="true"></i></div>
+              <span class="file-upload-title">{{ certZipText }}</span>
+              <span class="file-upload-desc">Kéo thả hoặc nhấp để chọn file .zip chứng chỉ</span>
+              <span class="file-upload-name" v-if="certZip">{{ certZip.name }}</span>
+              <input type="file" ref="certInput" style="display:none;" accept=".zip" @change="handleFileChange">
+            </div>
+
+            <div class="input-group">
+              <label class="input-label" for="certPass">Mật khẩu chứng chỉ</label>
+              <input type="text" id="certPass" class="apple-input" v-model="password" placeholder="Nhập mật khẩu (thường là 1 hoặc mật khẩu riêng)">
+            </div>
+
+            <button class="btn btn-primary-pill btn-magnetic" style="width:100%;" :disabled="!canProgressStep1" @click="nextToStep2">
+              <span>Ký Ứng Dụng</span><i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
           </div>
-        </div>
 
-        <div class="instruction-row">
-          <div class="step-badge">3</div>
-          <div>
-            <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 2px;">Nhấn Tin Cậy Nhà Phát Triển</div>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">Chọn tên chứng chỉ của bạn bên dưới mục "ỨNG DỤNG NHÀ PHÁT TRIỂN DOANH NGHIỆP" và nhấn <b>Tin cậy (Trust)</b>.</p>
+          <!-- STEP 2 -->
+          <div class="wizard-card" v-if="currentStep === 2" key="step2">
+            <div class="wizard-header">
+              <div class="eyebrow" style="margin-bottom:var(--space-3);"><span class="eyebrow-dot"></span> Bước 2</div>
+              <h2 class="display-lg">Tiến Hành Ký VSign</h2>
+              <p class="lead">Chúng tôi đang ký VSign Pro bằng chứng chỉ của bạn...</p>
+            </div>
+
+            <div class="status-icon-wrap" :class="signingState">
+              <div class="status-pulse" aria-hidden="true"></div>
+              <i class="fa-solid" :class="{ 'fa-spinner': signingState === 'processing', 'fa-circle-check': signingState === 'completed', 'fa-triangle-exclamation': signingState === 'error' }" aria-hidden="true"></i>
+            </div>
+
+            <div class="progress-track" role="progressbar" :aria-valuenow="progressPercentage" aria-valuemin="0" aria-valuemax="100" aria-label="Signing progress">
+              <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
+            </div>
+
+            <p style="font-size:15px; font-weight:600; color:var(--v-ink); margin-bottom:4px;">{{ statusMessage }}</p>
+            <p style="font-size:12px; color:var(--v-ink-tertiary); font-family:var(--font-mono);" v-if="logText">{{ logText }}</p>
+
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:var(--space-5);" v-if="signingState === 'completed'">
+              <a :href="directInstallLink" @click="triggerInstall($event)" class="btn btn-primary-pill btn-magnetic" style="width:100%;">
+                <i class="fa-solid fa-download" aria-hidden="true"></i><span>CÀI ĐẶT VSIGN PRO</span>
+              </a>
+
+              <div class="fallback-box" v-if="showFallback">
+                <div class="fallback-box-title"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Không thấy thông báo cài đặt?</div>
+                <p class="fallback-box-desc">Nếu bạn đang dùng Chrome, Zalo, Facebook hoặc trình duyệt chặn popup, hãy mở liên kết tải trực tiếp dưới đây:</p>
+                <a :href="downloadUrl" target="_blank" class="btn btn-danger-pill" style="width:100%;">
+                  <span>Mở Trang Tải Trực Tiếp</span><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                </a>
+              </div>
+
+              <button class="btn btn-secondary-pill" style="width:100%;" @click="currentStep = 3">
+                <span>Bước Tiếp Theo (Tin cậy app)</span><i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+              </button>
+            </div>
+
+            <button class="btn btn-primary-pill" style="width:100%; margin-top:var(--space-4);" v-if="signingState === 'error'" @click="resetToStep1">
+              <i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i><span>Thử Lại</span>
+            </button>
           </div>
+
+          <!-- STEP 3 -->
+          <div class="wizard-card" v-if="currentStep === 3" key="step3">
+            <div class="wizard-header">
+              <div class="eyebrow" style="margin-bottom:var(--space-3);"><span class="eyebrow-dot"></span> Bước 3</div>
+              <h2 class="display-lg">Tin Cậy Nhà Phát Triển</h2>
+              <p class="lead">Bạn cần cấu hình tin cậy trên iPhone để mở ứng dụng sau khi cài.</p>
+            </div>
+
+            <div class="trust-steps">
+              <div class="trust-step reveal reveal-delay-1">
+                <div class="trust-step-num">1</div>
+                <div class="trust-step-content">
+                  <div class="trust-step-title">Mở Cài đặt hệ thống</div>
+                  <p class="trust-step-desc">Truy cập vào ứng dụng <b>Cài đặt (Settings)</b> trên màn hình iPhone.</p>
+                </div>
+              </div>
+              <div class="trust-step reveal reveal-delay-2">
+                <div class="trust-step-num">2</div>
+                <div class="trust-step-content">
+                  <div class="trust-step-title">Đi tới Quản lý thiết bị</div>
+                  <p class="trust-step-desc">Vào mục <b>Cài đặt chung (General)</b> &rarr; <b>Quản lý VPN &amp; Thiết bị (VPN &amp; Device Management)</b>.</p>
+                </div>
+              </div>
+              <div class="trust-step reveal reveal-delay-3">
+                <div class="trust-step-num">3</div>
+                <div class="trust-step-content">
+                  <div class="trust-step-title">Nhấn Tin Cậy Nhà Phát Triển</div>
+                  <p class="trust-step-desc">Chọn tên chứng chỉ của bạn bên dưới mục "ỨNG DỤNG NHÀ PHÁT TRIỂN DOANH NGHIỆP" và nhấn <b>Tin cậy (Trust)</b>.</p>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary-pill btn-magnetic" style="width:100%;" @click="finishInstallation">
+              <span>Hoàn Tất Quy Trình</span><i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            </button>
+          </div>
+        </transition>
+      </div>
+    </section>
+  </main>
+
+  <footer class="apple-footer">
+    <div class="apple-footer-inner">
+      <div class="footer-brand">IPAVIET</div>
+      <p class="footer-desc">Hệ sinh thái dịch vụ chứng chỉ Apple, VSign và tài nguyên MMO tự động uy tín hàng đầu tại Việt Nam.</p>
+      <div class="footer-divider"></div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 IPAVIET. Sideload installer.</div>
+        <div>
+          <a href="privacy-policy.html" class="footer-link" style="margin-right:14px;">Chính sách bảo mật</a>
+          <a href="terms-of-service.html" class="footer-link">Điều khoản dịch vụ</a>
         </div>
       </div>
-
-      <button class="btn-glass-primary" @click="finishInstallation">
-        Hoàn Tất Quy Trình <i class="fa-solid fa-circle-check"></i>
-      </button>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="footer-glass">
-    <div class="footer-inner">
-      <div>
-        <div style="font-weight: 800; color: #fff; font-size: 1.1rem; margin-bottom: 4px;">IPAVIET</div>
-        <div>Hệ sinh thái dịch vụ chứng chỉ Apple, VSign và tài nguyên uy tín hàng đầu.</div>
-      </div>
-      <div style="display: flex; gap: 20px;">
-        <a href="privacy-policy.html" class="nav-link">Chính sách bảo mật</a>
-        <a href="terms-of-service.html" class="nav-link">Điều khoản dịch vụ</a>
-      </div>
-    </div>
-    <div style="text-align: center; margin-top: 30px; opacity: 0.6; font-size: 0.8rem;">
-      &copy; 2026 IPAVIET. Liquid Glass Design System.
     </div>
   </footer>
 </div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ══ LOADER ══
+  window.addEventListener("load", function() {
+    var loader = document.getElementById("pageLoader");
+    if (loader) {
+      setTimeout(function() {
+        loader.classList.add("hidden");
+        setTimeout(function() { loader.style.display = "none"; }, 800);
+      }, 600);
+    }
+  });
+
+  // ══ SCROLL PROGRESS ══
+  var scrollProgress = document.getElementById("scrollProgress");
+  window.addEventListener("scroll", function() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    scrollProgress.style.width = progress + "%";
+  }, { passive: true });
+
+  // ══ SMART NAV ══
+  var lastScroll = 0;
+  var globalNav = document.getElementById("globalNav");
+  var subNav = document.getElementById("subNav");
+  window.addEventListener("scroll", function() {
+    var currentScroll = window.scrollY || document.documentElement.scrollTop;
+    if (currentScroll > 100) subNav.classList.add("scrolled"); else subNav.classList.remove("scrolled");
+    if (currentScroll > lastScroll && currentScroll > 200) { globalNav.classList.add("nav-hidden"); subNav.classList.add("nav-hidden"); }
+    else { globalNav.classList.remove("nav-hidden"); subNav.classList.remove("nav-hidden"); }
+    lastScroll = currentScroll;
+  }, { passive: true });
+
+  // ══ CURSOR GLOW ══
+  var cursorGlow = document.getElementById("cursorGlow");
+  var mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
+  if (cursorGlow && window.matchMedia("(pointer: fine)").matches) {
+    document.addEventListener("mousemove", function(e) { mouseX = e.clientX; mouseY = e.clientY; }, { passive: true });
+    function animateGlow() { glowX += (mouseX - glowX) * 0.08; glowY += (mouseY - glowY) * 0.08; cursorGlow.style.left = glowX + "px"; cursorGlow.style.top = glowY + "px"; requestAnimationFrame(animateGlow); }
+    animateGlow();
+  }
+
+  // ══ INTERSECTION OBSERVER ══
+  var revealObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) { if (entry.isIntersecting) { entry.target.classList.add("revealed"); revealObserver.unobserve(entry.target); } });
+  }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+  document.querySelectorAll(".reveal").forEach(function(el) { revealObserver.observe(el); });
+
+  // ══ MAGNETIC BUTTONS ══
+  document.querySelectorAll(".btn-magnetic").forEach(function(btn) {
+    btn.addEventListener("mousemove", function(e) { var rect = btn.getBoundingClientRect(); var x = e.clientX - rect.left - rect.width / 2; var y = e.clientY - rect.top - rect.height / 2; btn.style.transform = "translate(" + (x * 0.25) + "px, " + (y * 0.25) + "px)"; });
+    btn.addEventListener("mouseleave", function() { btn.style.transform = ""; });
+  });
+
+  // ══ RIPPLE ══
+  document.querySelectorAll(".btn").forEach(function(btn) {
+    btn.addEventListener("click", function(e) { var ripple = document.createElement("span"); ripple.className = "ripple"; var rect = btn.getBoundingClientRect(); var size = Math.max(rect.width, rect.height); ripple.style.width = ripple.style.height = size + "px"; ripple.style.left = (e.clientX - rect.left - size / 2) + "px"; ripple.style.top = (e.clientY - rect.top - size / 2) + "px"; btn.appendChild(ripple); setTimeout(function() { ripple.remove(); }, 600); });
+  });
+})();
+</script>
 
 <script>
 new Vue({
@@ -652,72 +485,65 @@ new Vue({
     password: '',
     p12: null,
     mobileprovision: null,
-    
     ipa: null,
-    vsignIpaUrl: 'AppIPAVIET_user.ipa', // backend direct VSign IPA path
-    
-    signingState: 'processing', // processing, completed, error
+    vsignIpaUrl: 'AppIPAVIET_user.ipa',
+    signingState: 'processing',
     progressPercentage: 0,
     statusMessage: 'Đang chuẩn bị...',
     logText: '',
     jobId: '',
     directInstallLink: '',
     showFallback: false,
-    downloadUrl: ''
+    downloadUrl: '',
+    isDragging: false
   },
   computed: {
-    canProgressStep1() {
-      return this.certZip && this.password;
+    canProgressStep1() { return this.certZip && this.password; },
+    stepperProgress() {
+      if (this.currentStep === 1) return 0;
+      if (this.currentStep === 2) return 50;
+      return 100;
     }
   },
   mounted() {
     this.fetchVsignIpa();
-    // Hide loader
-    const loader = document.getElementById('pageLoader');
-    if (loader) {
-      loader.classList.add('hidden');
-      setTimeout(() => loader.style.display = 'none', 500);
-    }
+    var loader = document.getElementById('pageLoader');
+    if (loader) { loader.classList.add('hidden'); setTimeout(function() { loader.style.display = 'none'; }, 400); }
   },
   methods: {
-    triggerFileInput() {
-      this.$refs.certInput.click();
+    triggerFileInput() { this.$refs.certInput.click(); },
+    handleDrop(e) {
+      this.isDragging = false;
+      var files = e.dataTransfer.files;
+      if (files.length > 0) { this.processFile(files[0]); }
     },
-    async handleFileChange(e) {
-      const file = e.target.files[0];
+    handleFileChange(e) {
+      var file = e.target.files[0];
+      if (file) this.processFile(file);
+    },
+    async processFile(file) {
       if (file && file.name.toLowerCase().endsWith('.zip')) {
         this.certZip = file;
         this.certZipText = file.name;
         try {
-          const zip = new JSZip();
-          const content = await zip.loadAsync(file);
-          this.p12 = null; 
-          this.mobileprovision = null;
-          for (const [name, f] of Object.entries(content.files)) {
-            if (name.toLowerCase().endsWith('.p12')) {
-              this.p12 = new File([await f.async('blob')], name);
-            }
-            if (name.toLowerCase().endsWith('.mobileprovision')) {
-              this.mobileprovision = new File([await f.async('blob')], name);
-            }
+          var zip = new JSZip();
+          var content = await zip.loadAsync(file);
+          this.p12 = null; this.mobileprovision = null;
+          for (var name in content.files) {
+            if (name.toLowerCase().endsWith('.p12')) { this.p12 = new File([await content.files[name].async('blob')], name); }
+            if (name.toLowerCase().endsWith('.mobileprovision')) { this.mobileprovision = new File([await content.files[name].async('blob')], name); }
           }
         } catch (error) {
           alert('Lỗi đọc ZIP chứng chỉ! Vui lòng kiểm tra lại file.');
-          this.certZip = null;
-          this.certZipText = 'Chọn file ZIP chứa chứng chỉ';
+          this.certZip = null; this.certZipText = 'Chọn file ZIP chứa chứng chỉ';
         }
       } else {
         alert('Vui lòng chọn đúng tệp tin .zip!');
       }
     },
     async fetchVsignIpa() {
-      try {
-        const response = await fetch(this.vsignIpaUrl);
-        const blob = await response.blob();
-        this.ipa = new File([blob], 'vsign.ipa', { type: 'application/octet-stream' });
-      } catch (e) {
-        console.error('Lỗi nạp IPA VSign mặc định!', e);
-      }
+      try { var response = await fetch(this.vsignIpaUrl); var blob = await response.blob(); this.ipa = new File([blob], 'vsign.ipa', { type: 'application/octet-stream' }); }
+      catch (e) { console.error('Lỗi nạp IPA VSign mặc định!', e); }
     },
     nextToStep2() {
       if (!this.canProgressStep1) return;
@@ -732,36 +558,22 @@ new Vue({
       this.progressPercentage = 0;
       this.statusMessage = 'Đang chuẩn bị...';
       this.logText = '';
+      this.showFallback = false;
     },
     async uploadAndSign() {
-      if (!this.ipa) {
-        await this.fetchVsignIpa();
-        if (!this.ipa) {
-          this.signingState = 'error';
-          this.statusMessage = 'Lỗi nạp ứng dụng VSign IPA!';
-          return;
-        }
-      }
-      
-      const fd = new FormData();
+      if (!this.ipa) { await this.fetchVsignIpa(); if (!this.ipa) { this.signingState = 'error'; this.statusMessage = 'Lỗi nạp ứng dụng VSign IPA!'; return; } }
+      var fd = new FormData();
       fd.append('ipa', this.ipa, this.ipa.name);
       fd.append('p12', this.p12, this.p12.name);
       fd.append('mp', this.mobileprovision, this.mobileprovision.name);
       fd.append('password', this.password);
-
       try {
         this.progressPercentage = 30;
         this.statusMessage = 'Đang upload tệp lên máy chủ ký...';
-        
-        const resp = await axios.post('https://ipa.ipasign.cc/sign', fd, {
+        var resp = await axios.post('https://ipa.ipasign.cc/sign', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: e => {
-            if (e.lengthComputable) {
-              this.progressPercentage = 30 + Math.round((e.loaded / e.total) * 30);
-            }
-          }
+          onUploadProgress: function(e) { if (e.lengthComputable) { this.progressPercentage = 30 + Math.round((e.loaded / e.total) * 30); } }.bind(this)
         });
-        
         this.jobId = resp.data.task_id || resp.data;
         this.progressPercentage = 65;
         this.statusMessage = 'Upload hoàn tất. Máy chủ đang đóng gói IPA...';
@@ -772,52 +584,40 @@ new Vue({
       }
     },
     pollStatus() {
-      const timer = setInterval(async () => {
+      var self = this;
+      var timer = setInterval(async function() {
         try {
-          const res = await axios.get(`https://ipa.ipasign.cc/status/${this.jobId}`);
-          const d = res.data;
-          this.logText = d.msg || 'Đang xử lý...';
-          
+          var res = await axios.get('https://ipa.ipasign.cc/status/' + self.jobId);
+          var d = res.data;
+          self.logText = d.msg || 'Đang xử lý...';
           if (d.status === 'SUCCESS' || d.status === 'COMPLETED') {
             clearInterval(timer);
-            this.progressPercentage = 100;
-            this.signingState = 'completed';
-            this.statusMessage = 'Ký thành công! Ứng dụng đã sẵn sàng để cài đặt.';
-            
-            const downloadUrl = `https://ipa.ipasign.cc/download/${this.jobId}`;
-            this.downloadUrl = downloadUrl;
-            const originalPlistUrl = downloadUrl.replace('/download', '/plist');
-            const workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
-            this.directInstallLink = `itms-services://?action=download-manifest&url=${encodeURIComponent(workerApi + '?plist=' + originalPlistUrl)}`;
+            self.progressPercentage = 100;
+            self.signingState = 'completed';
+            self.statusMessage = 'Ký thành công! Ứng dụng đã sẵn sàng để cài đặt.';
+            var downloadUrl = 'https://ipa.ipasign.cc/download/' + self.jobId;
+            self.downloadUrl = downloadUrl;
+            var originalPlistUrl = downloadUrl.replace('/download', '/plist');
+            var workerApi = "https://ipaviet-installer.clonene121212.workers.dev/";
+            self.directInstallLink = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(workerApi + '?plist=' + originalPlistUrl);
           } else if (d.status === 'FAILURE') {
             clearInterval(timer);
-            this.signingState = 'error';
-            this.statusMessage = 'Ký thất bại: ' + (d.msg || 'Lỗi chứng chỉ!');
+            self.signingState = 'error';
+            self.statusMessage = 'Ký thất bại: ' + (d.msg || 'Lỗi chứng chỉ!');
           } else {
-            if (this.progressPercentage < 95) {
-              this.progressPercentage += 5;
-            }
+            if (self.progressPercentage < 95) self.progressPercentage += 5;
           }
-        } catch (e) {
-          // Keep polling in case of transient network error
-        }
+        } catch (e) {}
       }, 3000);
     },
     triggerInstall(e) {
       if (e) e.preventDefault();
       this.showFallback = true;
-      if (this.directInstallLink) {
-        window.location.href = this.directInstallLink;
-      }
+      if (this.directInstallLink) window.location.href = this.directInstallLink;
     },
-    finishInstallation() {
-      window.location.href = 'vsign.html';
-    }
+    finishInstallation() { window.location.href = 'vsign.html'; }
   }
 });
 </script>
-
-<!-- Dynamic Chat Widget -->
-<script src="ai-chat-widget.js?v=6" data-bottom="30px"></script>
 </body>
 </html>
