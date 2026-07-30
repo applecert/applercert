@@ -3,873 +3,1377 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>IPAVIET - Kho App & Tweak</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <title>IPAVIET OS — Kho IPA & Tweak</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../minimalist-modern.css">
-  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-  
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { 
-            serif: ['Calistoga', 'serif'], 
-            sans: ['Inter', 'sans-serif'], 
-            mono: ['"JetBrains Mono"', 'monospace'] 
-          },
-          colors: { 
-            brand: '#0052FF', 
-            brandDark: '#4D7CFF', 
-            bgLight: '#FAFAFA', 
-            bgDark: '#090E1A', 
-            cardLight: '#FFFFFF', 
-            cardDark: '#0F172A', 
-            iosGray: '#8E8E93' 
-          },
-          animation: { 'fluid-up': 'fluidUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards' },
-          keyframes: { fluidUp: { '0%': { transform: 'translateY(20px) scale(0.98)', opacity: '0' }, '100%': { transform: 'translateY(0) scale(1)', opacity: '1' } } }
-        }
-      }
-    }
-  </script>
 
   <style>
-    @import url('../fonts.css');
-    :root { font-size: 16px; }
-    
-    body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; user-select: none; overflow-x: hidden; zoom: 70%; font-family: var(--font-sans), sans-serif !important; }
-    @media (max-width: 768px) {
-      body {
-        zoom: 70% !important;
-        height: auto !important;
-        min-height: 143vh !important;
-        overflow: auto !important;
-      }
-    }
-    .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-    .glass-effect { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(35px) saturate(200%); border-color: rgba(0,0,0,0.08); }
-    .dark .glass-effect { background: rgba(28, 28, 30, 0.65); border-color: rgba(255,255,255,0.1); }
-    .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.15); }
-    .dark .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6); }
-    .floating-nav { margin: 0 auto 24px auto; border-radius: 35px; width: calc(100% - 32px); max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-    .dark .floating-nav { box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
-    
-    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; color: #8E8E93; transition: all 0.3s; background: none; border: none; cursor: pointer; text-decoration: none;}
-    .tab-btn i { width: 22px; height: 22px; transition: all 0.4s; } 
-    .tab-btn span { font-size: 0.6rem; font-weight: 700; opacity: 0.8; }
-    .tab-btn.active { color: #2563eb; }
-    .dark .tab-btn.active { color: #1d4ed8; }
-    .tab-btn.active i { transform: translateY(-4px) scale(1.15); filter: drop-shadow(0 4px 6px rgba(37,99,235,0.4)); }
-    .tab-btn.active span { opacity: 1; font-weight: 800; transform: translateY(-2px); }
-    
-    .squircle { clip-path: url(#squirclePath); }
-    .slide-page { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 100; }
-    .slide-page.open { transform: translateX(0); }
-    .screenshot-img { height: 280px; width: auto; border-radius: 18px; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); }
-    .dark .screenshot-img { border-color: rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    /* ================================================================
+       IPAVIET OS — SPATIAL COMMAND CENTER
+       Design System: Liquid Glass × Spatial Computing × Cyber Luxury
+       ================================================================ */
 
-    /* WATERMARK KÉP CHUẨN GÓC */
-    .ipaviet-watermark-sm, .ipaviet-watermark-lg { position: relative; overflow: hidden; }
-    
-    .ipaviet-watermark-sm::after {
-        content: "IPAVIET.SITE"; position: absolute; top: 6px; left: -22px; width: 80px; height: 12px;       
-        background: #ff3b30; color: #ffffff; font-size: 5.5px; font-weight: 900;
-        display: flex; align-items: center; justify-content: center;
-        transform: rotate(-45deg); z-index: 50; pointer-events: none; 
-        box-shadow: 0 1px 3px rgba(0,0,0,0.5); letter-spacing: 0.5px;
-    }
-    
-    .ipaviet-watermark-lg::after {
-        content: "IPAVIET.SITE"; position: absolute; top: 10px; left: -35px; width: 130px; height: 18px;       
-        background: #ff3b30; color: #ffffff; font-size: 8px; font-weight: 900;
-        display: flex; align-items: center; justify-content: center;
-        transform: rotate(-45deg); z-index: 50; pointer-events: none; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 0.5px;
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-display: 'Space Grotesk', sans-serif;
+      --void: #03040a;
+      --deep: #080a14;
+      --surface: #0d0f1a;
+      --elevated: #121420;
+      --glass: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.06);
+      --glass-highlight: rgba(255,255,255,0.08);
+      --accent-cyan: #00f0ff;
+      --accent-violet: #8b5cf6;
+      --accent-rose: #f43f5e;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+      --text-primary: #f0f2f8;
+      --text-secondary: rgba(240,242,248,0.55);
+      --text-tertiary: rgba(240,242,248,0.3);
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 32px;
+      --radius-xl: 48px;
+      --radius-full: 9999px;
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
+      --ease-snap: cubic-bezier(0.87, 0, 0.13, 1);
     }
 
-    /* ============================================================
-       VSIGN POPUP STYLE
-       ============================================================ */
-    .popup-overlay {
-        position: fixed; inset: 0;
-        background: rgba(0, 0, 0, 0.75);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        z-index: 99999;
-        display: flex; align-items: center; justify-content: center;
-        padding: 20px;
-        transition: opacity 0.3s ease;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      min-height: 100dvh;
+      cursor: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
-    .popup-overlay.hidden {
-        display: none !important;
-        opacity: 0;
-        pointer-events: none;
-    }
-    .popup-card {
-        background: rgba(18, 18, 20, 0.95);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
-        width: 100%; max-width: 440px;
-        overflow: hidden;
-        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 100px rgba(37, 99, 235, 0.15);
-        display: flex; flex-direction: column;
-        animation: popupScaleUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
-    }
-    @keyframes popupScaleUp {
-        from { opacity: 0; transform: scale(0.9) translateY(20px); }
-        to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .popup-header-art {
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(167, 139, 250, 0.1));
-        padding: 32px 20px;
-        display: flex; align-items: center; justify-content: center;
-        position: relative;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .glowing-logo-wrap {
-        width: 80px; height: 80px;
-        border-radius: 16px;
-        overflow: hidden;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(37, 99, 235, 0.4), 0 0 20px rgba(37, 99, 235, 0.2);
-    }
-    .glowing-logo-wrap img {
-        width: 100%; height: 100%;
-        object-fit: cover;
-    }
-    .popup-body-content {
-        padding: 24px;
-        text-align: center;
-    }
-    .popup-title {
-        font-size: 20px; font-weight: 700;
-        color: #ffffff;
-        margin-bottom: 8px;
-        letter-spacing: -0.3px;
-    }
-    .popup-subtitle {
-        font-size: 13.5px; color: #a1a1aa;
-        line-height: 1.5;
-        margin-bottom: 24px;
-    }
-    .popup-features-list {
-        display: flex; flex-direction: column; gap: 16px;
-        text-align: left;
-        margin-bottom: 28px;
-    }
-    .popup-feat-item {
-        display: flex; gap: 14px;
-        align-items: flex-start;
-    }
-    .popup-feat-icon {
-        width: 32px; height: 32px;
-        border-radius: 8px;
-        background: rgba(37, 99, 235, 0.15);
-        border: 1px solid rgba(37, 99, 235, 0.2);
-        color: #2563eb;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 14px;
-        flex-shrink: 0;
-    }
-    .popup-feat-text {
-        display: flex; flex-direction: column; gap: 2px;
-    }
-    .popup-feat-text strong {
-        font-size: 13px; font-weight: 600;
-        color: #ffffff;
-    }
-    .popup-feat-text span {
-        font-size: 11.5px; color: #71717a;
-        line-height: 1.4;
-    }
-    .popup-actions {
-        display: flex; flex-direction: column; gap: 10px;
-    }
-    .popup-btn-primary {
-        width: 100%;
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        color: #fff;
-        border: none; padding: 14px;
-        border-radius: 10px;
-        font-size: 14.5px; font-weight: 600;
-        cursor: pointer;
-        display: flex; align-items: center; justify-content: center; gap: 8px;
-        transition: all 0.2s;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-    }
-    .popup-btn-primary:active {
-        transform: scale(0.98);
-    }
-    .popup-dismiss-group {
-        display: flex;
-        gap: 8px;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 8px;
-    }
-    .popup-btn-dismiss {
-        flex: 1;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #a1a1aa;
-        padding: 8px 4px;
-        border-radius: 10px;
-        font-size: 11.5px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .popup-btn-dismiss:hover {
-        background: rgba(255, 255, 255, 0.12);
-        color: #ffffff;
-    }
-    .popup-btn-secondary {
-        flex: 1;
-        background: transparent;
-        color: #71717a;
-        border: none; padding: 8px 4px;
-        font-size: 11.5px; font-weight: 500;
-        cursor: pointer;
-        transition: color 0.2s;
-    }
-    .popup-btn-secondary:hover {
-        color: #ffffff;
-    }
+
+    /* Custom Cursor */
+    #cursor { position: fixed; width: 20px; height: 20px; border: 1.5px solid var(--accent-cyan); border-radius: 50%; pointer-events: none; z-index: 99999; transform: translate(-50%,-50%); transition: width 0.3s var(--ease-spring), height 0.3s var(--ease-spring), border-color 0.3s; mix-blend-mode: difference; }
+    #cursor.hovering { width: 48px; height: 48px; border-color: var(--accent-violet); }
+    #cursor-dot { position: fixed; width: 4px; height: 4px; background: var(--accent-cyan); border-radius: 50%; pointer-events: none; z-index: 99999; transform: translate(-50%,-50%); }
+    #cursor-trail { position: fixed; width: 200px; height: 200px; background: radial-gradient(circle, rgba(0,240,255,0.08) 0%, transparent 70%); border-radius: 50%; pointer-events: none; z-index: 99998; transform: translate(-50%,-50%); transition: opacity 0.5s; }
+
+    /* Ambient Background */
+    .ambient-layer { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+    .aurora-blob { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.4; animation: auroraFloat 20s ease-in-out infinite; }
+    .aurora-blob:nth-child(1) { width: 600px; height: 600px; background: radial-gradient(circle, rgba(139,92,246,0.4), transparent 70%); top: -10%; left: -10%; animation-delay: 0s; }
+    .aurora-blob:nth-child(2) { width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,240,255,0.25), transparent 70%); bottom: -10%; right: -5%; animation-delay: -7s; }
+    .aurora-blob:nth-child(3) { width: 400px; height: 400px; background: radial-gradient(circle, rgba(244,63,94,0.2), transparent 70%); top: 40%; left: 50%; animation-delay: -14s; }
+    @keyframes auroraFloat { 0%,100% { transform: translate(0,0) scale(1); } 25% { transform: translate(50px,-30px) scale(1.1); } 50% { transform: translate(-30px,40px) scale(0.95); } 75% { transform: translate(20px,20px) scale(1.05); } }
+    .noise-overlay { position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px; }
+
+    /* Glass System */
+    .glass { background: var(--glass); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 var(--glass-highlight); }
+    .glass-strong { background: rgba(255,255,255,0.05); backdrop-filter: blur(60px) saturate(200%); -webkit-backdrop-filter: blur(60px) saturate(200%); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 16px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1); }
+    .glass-crystal { background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%); backdrop-filter: blur(80px) saturate(220%); -webkit-backdrop-filter: blur(80px) saturate(220%); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 24px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.1); }
+
+    /* Spatial Navigation */
+    .spatial-nav { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--radius-full); transition: all 0.5s var(--ease-fluid); max-width: calc(100% - 32px); flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+    .spatial-nav::-webkit-scrollbar { display: none; }
+    .spatial-nav.scrolled { background: rgba(3,4,10,0.8); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+    .nav-logo { font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 2px; color: var(--text-primary); padding: 8px 12px; position: relative; overflow: hidden; cursor: none; flex-shrink: 0; }
+    .nav-logo::after { content: ''; position: absolute; bottom: 4px; left: 16px; right: 16px; height: 2px; background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent); opacity: 0; transition: opacity 0.3s; }
+    .nav-logo:hover::after { opacity: 1; }
+    .nav-pill { padding: 8px 14px; border-radius: var(--radius-full); font-size: 13px; white-space: nowrap; flex-shrink: 0; font-weight: 600; color: var(--text-secondary); background: transparent; border: none; cursor: none; transition: all 0.4s var(--ease-spring); position: relative; overflow: hidden; text-decoration: none; display: inline-flex; align-items: center; }
+    .nav-pill::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,240,255,0.1), rgba(139,92,246,0.1)); border-radius: inherit; opacity: 0; transition: opacity 0.3s; }
+    .nav-pill:hover { color: var(--text-primary); transform: translateY(-1px); }
+    .nav-pill:hover::before { opacity: 1; }
+    .nav-pill.active { color: var(--accent-cyan); background: rgba(0,240,255,0.08); box-shadow: 0 0 20px rgba(0,240,255,0.1); }
+    .nav-action { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); cursor: none; transition: all 0.3s var(--ease-spring); text-decoration: none; }
+    .nav-action:hover { background: rgba(0,240,255,0.1); border-color: rgba(0,240,255,0.3); color: var(--accent-cyan); transform: scale(1.1); }
+
+    /* Main Spatial Stage */
+    #spatial-stage { position: relative; z-index: 10; min-height: 100dvh; padding-top: 100px; padding-bottom: 120px; overflow: hidden; }
+
+    /* Hero: The Core */
+    .hero-core { position: relative; height: 85vh; min-height: 600px; display: flex; flex-direction: column; align-items: center; justify-content: center; perspective: 1200px; overflow: hidden; transition: opacity 0.5s var(--ease-fluid), transform 0.5s var(--ease-fluid); will-change: opacity, transform; }
+    .hero-orbital-ring { position: absolute; border: 1px solid rgba(255,255,255,0.04); border-radius: 50%; animation: orbitalSpin linear infinite; }
+    .hero-orbital-ring:nth-child(1) { width: 300px; height: 300px; animation-duration: 30s; }
+    .hero-orbital-ring:nth-child(2) { width: 450px; height: 450px; animation-duration: 45s; animation-direction: reverse; }
+    .hero-orbital-ring:nth-child(3) { width: 600px; height: 600px; animation-duration: 60s; }
+    .hero-orbital-ring:nth-child(4) { width: 750px; height: 750px; animation-duration: 80s; animation-direction: reverse; }
+    @keyframes orbitalSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .hero-orbital-dot { position: absolute; width: 6px; height: 6px; background: var(--accent-cyan); border-radius: 50%; box-shadow: 0 0 12px var(--accent-cyan); }
+    .hero-title { font-family: var(--font-display); font-size: clamp(48px, 10vw, 120px); font-weight: 700; letter-spacing: -0.04em; line-height: 1; text-align: center; position: relative; z-index: 10; }
+    .hero-title .char { display: inline-block; opacity: 0; transform: translateY(80px) rotateX(-40deg); animation: charReveal 1s var(--ease-fluid) forwards; }
+    @keyframes charReveal { to { opacity: 1; transform: translateY(0) rotateX(0); } }
+    .hero-subtitle { font-size: 15px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 24px; opacity: 0; animation: fadeUp 1s 0.8s var(--ease-fluid) forwards; }
+    .hero-stats { display: flex; gap: 48px; margin-top: 48px; opacity: 0; animation: fadeUp 1s 1s var(--ease-fluid) forwards; }
+    .hero-stat { text-align: center; }
+    .hero-stat-value { font-family: var(--font-display); font-size: 32px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+    .hero-stat-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 6px; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    .floating-entity { position: absolute; width: 64px; height: 64px; border-radius: var(--radius-md); overflow: hidden; animation: entityFloat 8s ease-in-out infinite; box-shadow: 0 8px 32px rgba(0,0,0,0.4); cursor: none; transition: transform 0.5s var(--ease-spring), box-shadow 0.5s; }
+    .floating-entity:hover { transform: scale(1.3) translateZ(50px) !important; box-shadow: 0 20px 60px rgba(0,240,255,0.2); z-index: 100; }
+    .floating-entity img { width: 100%; height: 100%; object-fit: cover; }
+    .floating-entity::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent); pointer-events: none; }
+    @keyframes entityFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 33% { transform: translateY(-20px) rotate(3deg); } 66% { transform: translateY(10px) rotate(-2deg); } }
+
+    /* Command Input */
+    .command-input-wrap { position: relative; max-width: 600px; margin: 0 auto 64px; z-index: 20; }
+    .command-input { width: 100%; height: 56px; padding: 0 24px 0 56px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); color: var(--text-primary); font-size: 15px; font-weight: 500; outline: none; transition: all 0.4s var(--ease-spring); cursor: none; }
+    .command-input::placeholder { color: var(--text-tertiary); }
+    .command-input:focus { background: rgba(255,255,255,0.06); border-color: rgba(0,240,255,0.3); box-shadow: 0 0 40px rgba(0,240,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1); }
+    .command-input-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); pointer-events: none; transition: color 0.3s; }
+    .command-input:focus + .command-input-icon, .command-input-wrap:focus-within .command-input-icon { color: var(--accent-cyan); }
+
+    /* Section Headers */
+    .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 32px; padding: 0 8px; }
+    .section-title { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; position: relative; display: inline-block; }
+    .section-title::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 40px; height: 2px; background: linear-gradient(90deg, var(--accent-cyan), transparent); }
+    .section-action { font-size: 13px; font-weight: 600; color: var(--accent-cyan); background: none; border: none; cursor: none; display: flex; align-items: center; gap: 4px; transition: all 0.3s; opacity: 0.7; text-decoration: none; }
+    .section-action:hover { opacity: 1; gap: 8px; }
+
+    /* App Entities */
+    .entity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 0 8px; }
+    .entity { position: relative; padding: 20px; border-radius: var(--radius-lg); background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.5s var(--ease-spring); cursor: none; overflow: hidden; transform-style: preserve-3d; }
+    .entity::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent); transition: left 0.6s; }
+    .entity:hover::before { left: 100%; }
+    .entity:hover { transform: translateY(-4px) scale(1.01); border-color: rgba(0,240,255,0.15); box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 60px rgba(0,240,255,0.05); }
+    .entity-glow { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0,240,255,0.08), transparent 50%); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .entity:hover .entity-glow { opacity: 1; }
+    .entity-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+    .entity-icon { width: 56px; height: 56px; border-radius: var(--radius-md); overflow: hidden; position: relative; flex-shrink: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    .entity-icon img { width: 100%; height: 100%; object-fit: cover; }
+    .entity-icon::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); pointer-events: none; }
+    .entity-meta { flex: 1; min-width: 0; }
+    .entity-name { font-size: 15px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entity-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entity-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+    .badge-vip { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); color: var(--accent-amber); border: 1px solid rgba(245,158,11,0.2); }
+    .badge-free { background: linear-gradient(135deg, rgba(0,240,255,0.1), rgba(0,240,255,0.02)); color: var(--accent-cyan); border: 1px solid rgba(0,240,255,0.15); }
+    .entity-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.04); }
+    .entity-version { font-size: 12px; font-weight: 600; color: var(--text-tertiary); font-family: var(--font-display); }
+    .entity-action { padding: 6px 16px; border-radius: var(--radius-full); font-size: 12px; font-weight: 700; border: none; cursor: none; transition: all 0.3s var(--ease-spring); position: relative; overflow: hidden; }
+    .entity-action-primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); color: var(--void); box-shadow: 0 4px 16px rgba(0,240,255,0.2); }
+    .entity-action-primary:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(0,240,255,0.3); }
+    .entity-action-vip { background: linear-gradient(135deg, var(--accent-amber), #d97706); color: var(--void); box-shadow: 0 4px 16px rgba(245,158,11,0.2); }
+
+    /* Featured Ribbon */
+    .ribbon-container { position: relative; overflow: visible; padding: 20px 0; margin-bottom: 64px; }
+    .ribbon-track { display: flex; gap: 20px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory; padding-bottom: 20px; }
+    .ribbon-track::-webkit-scrollbar { display: none; }
+    .ribbon-item { flex: 0 0 320px; height: 200px; border-radius: var(--radius-lg); position: relative; overflow: hidden; scroll-snap-align: start; cursor: none; transition: all 0.5s var(--ease-spring); transform-style: preserve-3d; }
+    .ribbon-item:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 24px 48px rgba(0,0,0,0.4); }
+    .ribbon-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: opacity 0.5s, transform 0.8s var(--ease-fluid); }
+    .ribbon-item:hover img { opacity: 0.8; transform: scale(1.1); }
+    .ribbon-item::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(3,4,10,0.95) 0%, rgba(3,4,10,0.3) 50%, transparent 100%); }
+    .ribbon-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 24px; z-index: 2; }
+    .ribbon-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .ribbon-desc { font-size: 13px; color: var(--text-secondary); }
+
+    /* App Detail: Spatial Expansion */
+    #app-detail-stage { position: fixed; inset: 0; z-index: 200; pointer-events: none; opacity: 0; visibility: hidden; perspective: 1200px; transform-style: preserve-3d; }
+    #app-detail-stage.active { pointer-events: all; opacity: 1; visibility: visible; }
+    .detail-backdrop { position: fixed; inset: 0; background: rgba(3,4,10,0.95); backdrop-filter: blur(0px) saturate(100%); -webkit-backdrop-filter: blur(0px) saturate(100%); will-change: backdrop-filter; }
+    .detail-content { position: relative; height: 100dvh; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; -webkit-overflow-scrolling: touch; }
+    .detail-content::-webkit-scrollbar { width: 4px; }
+    .detail-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .detail-hero { position: relative; min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 120px 24px 48px; overflow: hidden; }
+    .detail-hero-bg { position: absolute; inset: 0; z-index: 0; }
+    .detail-hero-bg img { width: 100%; height: 100%; object-fit: cover; filter: blur(80px) saturate(1.8); opacity: 0; transform: scale(1.5); }
+    .detail-hero-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 0%, var(--void) 100%); }
+    .detail-icon-wrap { position: relative; width: 120px; height: 120px; border-radius: var(--radius-lg); overflow: hidden; z-index: 2; box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1), 0 0 60px rgba(0,240,255,0.1); opacity: 0; transform: scale(0.6) translateY(40px) rotateX(20deg); }
+    .detail-icon-wrap.animated { animation: iconFloat 6s ease-in-out infinite; }
+    @keyframes iconFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .detail-icon-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .detail-title { font-family: var(--font-display); font-size: 36px; font-weight: 700; text-align: center; margin-top: 24px; z-index: 2; letter-spacing: -0.02em; opacity: 0; transform: translateY(30px); }
+    .detail-dev { font-size: 14px; color: var(--text-secondary); margin-top: 8px; z-index: 2; opacity: 0; transform: translateY(20px); }
+    .detail-actions { display: flex; gap: 12px; margin-top: 32px; z-index: 2; opacity: 0; transform: translateY(20px) scale(0.95); }
+    .detail-btn { padding: 12px 32px; border-radius: var(--radius-full); font-size: 14px; font-weight: 700; border: none; cursor: none; transition: all 0.4s var(--ease-spring); display: flex; align-items: center; gap: 8px; }
+    .detail-btn-primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); color: var(--void); box-shadow: 0 8px 32px rgba(0,240,255,0.25); }
+    .detail-btn-primary:hover { transform: scale(1.05); box-shadow: 0 12px 40px rgba(0,240,255,0.35); }
+    .detail-btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); }
+    .detail-btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+    .detail-body { max-width: 800px; margin: 0 auto; padding: 0 24px 120px; position: relative; z-index: 2; opacity: 0; transform: translateY(40px); }
+    .detail-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px; }
+    .detail-info-cell { text-align: center; padding: 20px; border-radius: var(--radius-md); background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); opacity: 0; transform: translateY(20px); }
+    .detail-info-value { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text-primary); }
+    .detail-info-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; }
+    .detail-section-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); opacity: 0; transform: translateY(20px); }
+    .detail-desc { font-size: 15px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 48px; opacity: 0; transform: translateY(20px); }
+    .detail-screenshots { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; margin-bottom: 48px; scrollbar-width: none; }
+    .detail-screenshots::-webkit-scrollbar { display: none; }
+    .detail-screenshots img { height: 400px; border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: transform 0.4s var(--ease-spring); flex-shrink: 0; }
+    .detail-screenshots img:hover { transform: scale(1.02) translateY(-4px); }
+    .detail-data-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.04); opacity: 0; transform: translateX(-10px); }
+    .detail-data-row:last-child { border-bottom: none; }
+    .detail-data-label { font-size: 14px; color: var(--text-secondary); }
+    .detail-data-value { font-size: 14px; font-weight: 600; color: var(--text-primary); font-family: var(--font-display); }
+    .detail-close { position: fixed; top: 24px; left: 24px; z-index: 210; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: none; transition: all 0.3s var(--ease-spring); opacity: 0; transform: scale(0.5) rotate(-90deg); }
+    .detail-close:hover { background: rgba(255,255,255,0.1); transform: scale(1.1) rotate(0deg); }
+
+    /* Purchase Panel */
+    .purchase-panel { border-radius: var(--radius-lg); padding: 24px; margin-bottom: 32px; position: relative; overflow: hidden; }
+    .purchase-panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,240,255,0.05), rgba(139,92,246,0.05)); z-index: 0; }
+    .purchase-panel > * { position: relative; z-index: 1; }
+    .purchase-panel-vip { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.02)); border: 1px solid rgba(245,158,11,0.15); }
+    .purchase-panel-locked { background: linear-gradient(135deg, rgba(244,63,94,0.08), rgba(244,63,94,0.02)); border: 1px solid rgba(244,63,94,0.1); }
+    .purchase-panel-normal { background: linear-gradient(135deg, rgba(0,240,255,0.05), rgba(139,92,246,0.05)); border: 1px solid rgba(0,240,255,0.1); }
+
+    /* Pagination */
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 48px; padding: 0 8px; }
+    .pagination-btn { min-width: 40px; height: 40px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; font-family: var(--font-display); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: var(--text-secondary); cursor: none; transition: all 0.3s var(--ease-spring); }
+    .pagination-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); transform: translateY(-2px); }
+    .pagination-btn.active { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); color: var(--void); border-color: transparent; box-shadow: 0 4px 16px rgba(0,240,255,0.2); }
+    .pagination-btn.disabled { opacity: 0.3; pointer-events: none; }
+
+    /* Filter Chips */
+    .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding: 4px 8px 20px; scrollbar-width: none; margin-bottom: 8px; }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-chip { flex-shrink: 0; padding: 8px 18px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: var(--text-secondary); cursor: none; transition: all 0.3s var(--ease-spring); display: flex; align-items: center; gap: 6px; }
+    .filter-chip:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); transform: translateY(-1px); }
+    .filter-chip.active { background: linear-gradient(135deg, rgba(0,240,255,0.15), rgba(139,92,246,0.1)); color: var(--accent-cyan); border-color: rgba(0,240,255,0.2); box-shadow: 0 0 20px rgba(0,240,255,0.08); }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 28px; border-radius: var(--radius-full); background: var(--glass-strong); color: var(--text-primary); font-size: 14px; font-weight: 600; z-index: 500; opacity: 0; transition: all 0.5s var(--ease-spring); pointer-events: none; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* Loading State */
+    .loading-stage { position: fixed; inset: 0; z-index: 1000; background: var(--void); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s var(--ease-fluid), visibility 0.8s; }
+    .loading-stage.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loading-ring { width: 80px; height: 80px; position: relative; }
+    .loading-ring::before, .loading-ring::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent; }
+    .loading-ring::before { border-top-color: var(--accent-cyan); border-right-color: var(--accent-violet); animation: spin 1.5s linear infinite; }
+    .loading-ring::after { border-bottom-color: var(--accent-rose); border-left-color: var(--accent-amber); animation: spin 2s linear infinite reverse; inset: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: 0.3em; color: var(--text-tertiary); margin-top: 24px; }
+
+    /* VSign Popup */
+    .popup-overlay { position: fixed; inset: 0; background: rgba(3,4,10,0.9); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+    .popup-overlay.active { opacity: 1; pointer-events: all; }
+    .popup-card { background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg); width: 100%; max-width: 440px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 100px rgba(0,240,255,0.05); transform: scale(0.9) translateY(20px); transition: transform 0.5s var(--ease-spring); }
+    .popup-overlay.active .popup-card { transform: scale(1) translateY(0); }
+    .popup-header { background: linear-gradient(135deg, rgba(0,240,255,0.08), rgba(139,92,246,0.05)); padding: 32px 24px; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .popup-logo { width: 80px; height: 80px; border-radius: var(--radius-md); overflow: hidden; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 8px 32px rgba(0,240,255,0.2), 0 0 20px rgba(0,240,255,0.1); }
+    .popup-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .popup-body { padding: 28px 24px; text-align: center; }
+    .popup-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .popup-subtitle { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
+    .popup-features { display: flex; flex-direction: column; gap: 14px; text-align: left; margin-bottom: 28px; }
+    .popup-feat { display: flex; gap: 12px; align-items: flex-start; }
+    .popup-feat-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.15); color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .popup-feat-text strong { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .popup-feat-text span { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+    .popup-actions { display: flex; flex-direction: column; gap: 10px; }
+    .popup-btn-primary { width: 100%; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); color: var(--void); border: none; padding: 14px; border-radius: var(--radius-md); font-size: 14.5px; font-weight: 700; cursor: none; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(0,240,255,0.2); }
+    .popup-btn-primary:hover { transform: scale(1.02); box-shadow: 0 8px 30px rgba(0,240,255,0.3); }
+    .popup-btn-group { display: flex; gap: 8px; margin-top: 8px; }
+    .popup-btn-secondary { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); padding: 10px 4px; border-radius: var(--radius-md); font-size: 12px; font-weight: 600; cursor: none; transition: all 0.2s; }
+    .popup-btn-secondary:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+    .popup-btn-ghost { flex: 1; background: transparent; color: var(--text-tertiary); border: none; padding: 10px 4px; font-size: 12px; font-weight: 500; cursor: none; transition: color 0.2s; }
+    .popup-btn-ghost:hover { color: var(--text-primary); }
+
+    /* Floating Dock */
+    .spatial-dock { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 4px; padding: 8px; background: rgba(3,4,10,0.7); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-full); box-shadow: 0 16px 48px rgba(0,0,0,0.4); transition: all 0.5s var(--ease-fluid); }
+    .dock-item { width: 48px; height: 48px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); background: transparent; border: none; cursor: none; transition: all 0.4s var(--ease-spring); position: relative; text-decoration: none; }
+    .dock-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); transform: translateY(-4px) scale(1.1); }
+    .dock-item.active { color: var(--accent-cyan); background: rgba(0,240,255,0.08); box-shadow: 0 0 20px rgba(0,240,255,0.1); }
+    .dock-item.active::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 8px var(--accent-cyan); }
+    .dock-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.06); margin: 0 4px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+    /* Responsive */
+    @media (max-width: 768px) { body { cursor: auto; } #cursor, #cursor-dot, #cursor-trail { display: none; } .hero-title { font-size: 48px; } .hero-stats { gap: 24px; } .entity-grid { grid-template-columns: 1fr; } .detail-info-grid { grid-template-columns: 1fr; } .ribbon-item { flex: 0 0 280px; height: 180px; } .spatial-nav { top: 12px; padding: 4px 6px; gap: 2px; max-width: calc(100% - 16px); } .nav-logo { font-size: 13px; padding: 6px 8px; letter-spacing: 1px; } .nav-pill { padding: 6px 10px; font-size: 11px; } .nav-action { width: 32px; height: 32px; } .spatial-dock { bottom: 12px; padding: 6px; } .dock-item { width: 44px; height: 44px; } }
+
+    /* Animations */
+    .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s var(--ease-fluid); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .stagger-1 { transition-delay: 0.1s; }
+    .stagger-2 { transition-delay: 0.2s; }
+    .stagger-3 { transition-delay: 0.3s; }
+    .stagger-4 { transition-delay: 0.4s; }
+    .magnetic { transition: transform 0.3s var(--ease-spring); }
   </style>
+<base target="_blank">
 </head>
-<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
+<body>
 
-  <svg width="0" height="0" class="absolute">
-    <defs><clipPath id="squirclePath" clipPathUnits="objectBoundingBox"><path d="M .5,0 C .1,0 0,.1 0,.5 0,.9 .1,1 .5,1 .9,1 1,.9 1,.5 1,.1 .9,0 .5,0 Z" /></clipPath></defs>
-  </svg>
+<!-- Custom Cursor -->
+<div id="cursor"></div>
+<div id="cursor-dot"></div>
+<div id="cursor-trail"></div>
 
-  <header class="glass-effect fixed top-0 w-full z-40 h-[80px] border-b flex items-center px-6 transition-all duration-300">
-    <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-between">
-      <div class="header-logo-crt shrink-0" onclick="switchTab('home');">
-        <span class="loader-letter">I</span>
-        <span class="loader-letter">P</span>
-        <span class="loader-letter">A</span>
-        <span class="loader-letter">V</span>
-        <span class="loader-letter">I</span>
-        <span class="loader-letter">E</span>
-        <span class="loader-letter">T</span>
-        <div class="crt-loader-sweep"></div>
+<!-- Ambient Background -->
+<div class="ambient-layer">
+  <div class="aurora-blob"></div>
+  <div class="aurora-blob"></div>
+  <div class="aurora-blob"></div>
+</div>
+<div class="noise-overlay"></div>
+
+<!-- Loading Stage -->
+<div class="loading-stage" id="loadingStage">
+  <div class="loading-ring"></div>
+  <div class="loading-text">IPAVIET OS</div>
+</div>
+
+<!-- Spatial Navigation -->
+<nav class="spatial-nav glass" id="spatialNav">
+  <div class="nav-logo magnetic" onclick="switchTab('home')">IPAVIET</div>
+  <div style="width:1px;height:20px;background:rgba(255,255,255,0.06);margin:0 4px;"></div>
+  <button class="nav-pill active magnetic" data-tab="home" onclick="switchTab('home')">Khám phá</button>
+  <button class="nav-pill magnetic" data-tab="ipa" onclick="switchTab('ipa')">Kho IPA</button>
+  <a href="../ipavip.html" class="nav-pill magnetic" style="text-decoration:none;">VIP</a>
+  <div style="width:1px;height:20px;background:rgba(255,255,255,0.06);margin:0 4px;"></div>
+  <button class="nav-action magnetic" onclick="toggleTheme()" title="Theme"><i data-lucide="sun-moon" style="width:16px;height:16px;"></i></button>
+  <a href="../account.html" id="headerProfileBtn" class="nav-action magnetic" title="Tài khoản"><i data-lucide="user" style="width:16px;height:16px;"></i></a>
+</nav>
+
+<!-- Main Spatial Stage -->
+<main id="spatial-stage">
+
+  <!-- HERO: The Core -->
+  <section id="heroSection" class="hero-core">
+    <div class="hero-orbital-ring"><div class="hero-orbital-dot" style="top:0;left:50%;transform:translate(-50%,-50%);"></div></div>
+    <div class="hero-orbital-ring"><div class="hero-orbital-dot" style="top:50%;right:0;transform:translate(50%,-50%);"></div></div>
+    <div class="hero-orbital-ring"><div class="hero-orbital-dot" style="bottom:0;left:50%;transform:translate(-50%,50%);"></div></div>
+    <div class="hero-orbital-ring"><div class="hero-orbital-dot" style="top:50%;left:0;transform:translate(-50%,-50%);"></div></div>
+
+    <h1 class="hero-title" id="heroTitle">IPAVIET</h1>
+    <p class="hero-subtitle">Hệ điều hành phân phối IPA</p>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value" id="statApps">0</div>
+        <div class="hero-stat-label">Ứng dụng</div>
       </div>
-      <div class="flex items-center gap-2 ml-auto shrink-0">
-        <a href="../account.html" id="headerProfileBtn" class="h-10 px-4 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-brand dark:text-white active:scale-95 transition-transform backdrop-blur-md decoration-transparent">
-          Đăng Nhập
-        </a>
-        <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center active:scale-75 transition-transform duration-300 backdrop-blur-md">
-          <i data-lucide="moon" class="w-5 h-5 dark:text-yellow-400 dark:fill-yellow-400"></i>
+      <div class="hero-stat">
+        <div class="hero-stat-value" id="statVip">0</div>
+        <div class="hero-stat-label">VIP</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value" id="statUsers">∞</div>
+        <div class="hero-stat-label">Người dùng</div>
+      </div>
+    </div>
+
+    <div id="heroEntities"></div>
+  </section>
+
+  <!-- Command Input -->
+  <div class="command-input-wrap reveal">
+    <input type="text" id="searchInput" class="command-input" placeholder="Tìm kiếm ứng dụng, tweak, game..." autocomplete="off">
+    <i data-lucide="search" class="command-input-icon" style="width:18px;height:18px;"></i>
+  </div>
+
+  <!-- Dynamic Content -->
+  <div id="dynamicContent" style="max-width:1200px;margin:0 auto;padding:0 24px;"></div>
+
+</main>
+
+<!-- App Detail Stage -->
+<div id="app-detail-stage">
+  <div class="detail-backdrop" onclick="closeAppView()"></div>
+  <button class="detail-close magnetic" onclick="closeAppView()"><i data-lucide="arrow-left" style="width:20px;height:20px;"></i></button>
+  <div class="detail-content">
+    <div class="detail-hero">
+      <div class="detail-hero-bg"><img id="detailHeroBg" src="" alt="" onerror="this.src='https://placehold.co/400x400/0d0f1a/00f0ff?text=IPAVIET'"></div>
+      <div class="detail-icon-wrap"><img id="detailIcon" src="" alt="" onerror="this.src='https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA'"></div>
+      <h1 class="detail-title" id="detailTitle">App Name</h1>
+      <p class="detail-dev" id="detailDev">Developer</p>
+      <div class="detail-actions">
+        <button class="detail-btn detail-btn-primary magnetic" id="detailInstallBtn" onclick="showDownloadAction()"><i data-lucide="download" style="width:16px;height:16px;"></i> CÀI ĐẶT</button>
+        <button class="detail-btn detail-btn-secondary magnetic" onclick="shareApp()"><i data-lucide="share-2" style="width:16px;height:16px;"></i></button>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-info-grid">
+        <div class="detail-info-cell"><div class="detail-info-value" id="detailRating">4.8</div><div class="detail-info-label">Đánh giá</div></div>
+        <div class="detail-info-cell"><div class="detail-info-value" id="detailAward">Top</div><div class="detail-info-label">Xếp hạng</div></div>
+        <div class="detail-info-cell"><div class="detail-info-value" id="detailAge">4+</div><div class="detail-info-label">Độ tuổi</div></div>
+      </div>
+
+      <div id="detailPurchasePanel"></div>
+
+      <div id="detailScreenshotsWrap">
+        <h3 class="detail-section-title">Xem trước</h3>
+        <div class="detail-screenshots" id="detailScreenshots"></div>
+      </div>
+
+      <h3 class="detail-section-title">Thông tin</h3>
+      <p class="detail-desc" id="detailDesc">Mô tả ứng dụng...</p>
+
+      <h3 class="detail-section-title">Dữ liệu tệp</h3>
+      <div style="margin-bottom:48px;">
+        <div class="detail-data-row"><span class="detail-data-label">Nhà phát triển</span><span class="detail-data-value" id="dInfoDev">IPAVIET</span></div>
+        <div class="detail-data-row"><span class="detail-data-label">Thể loại</span><span class="detail-data-value" id="dInfoCat">Tiện ích</span></div>
+        <div class="detail-data-row"><span class="detail-data-label">Phiên bản</span><span class="detail-data-value" id="dInfoVer">1.0</span></div>
+        <div class="detail-data-row"><span class="detail-data-label">Kích thước</span><span class="detail-data-value" id="dInfoSize">--</span></div>
+        <div class="detail-data-row"><span class="detail-data-label">Bundle ID</span><span class="detail-data-value" id="dInfoBundle">com.ipaviet.app</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VSign Popup -->
+<div id="vsignPopup" class="popup-overlay" onclick="if(event.target===this)closeVsignPopup()">
+  <div class="popup-card">
+    <div class="popup-header">
+      <div class="popup-logo"><img src="https://i.ibb.co/cSmzsSRv/T-n-D-n-13-Copy-Copy-Copy-Original.png" alt="VSign"></div>
+    </div>
+    <div class="popup-body">
+      <h3 class="popup-title">Ra Mắt App VSign Chính Thức!</h3>
+      <p class="popup-subtitle">Trải nghiệm cài đặt & ký app iOS trực tiếp trên thiết bị, tối ưu và mượt mà hơn trên Web.</p>
+      <div class="popup-features">
+        <div class="popup-feat">
+          <div class="popup-feat-icon"><i data-lucide="layers" style="width:16px;height:16px;"></i></div>
+          <div class="popup-feat-text"><strong>Kho 10,000+ Ứng Dụng</strong><span>Tải game/app MOD, Hack, Premium hoàn toàn miễn phí.</span></div>
+        </div>
+        <div class="popup-feat">
+          <div class="popup-feat-icon"><i data-lucide="zap" style="width:16px;height:16px;"></i></div>
+          <div class="popup-feat-text"><strong>Tự Động Cài Đặt (OTA)</strong><span>Ký xong tự động cài đặt trực tiếp cực kỳ tiện lợi, chỉ 1 click.</span></div>
+        </div>
+        <div class="popup-feat">
+          <div class="popup-feat-icon"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>
+          <div class="popup-feat-text"><strong>Tính Năng ESign Cao Cấp</strong><span>Tích hợp tất cả các tùy chọn đổi tên, chèn dylib, fix thông báo...</span></div>
+        </div>
+      </div>
+      <div class="popup-actions">
+        <button class="popup-btn-primary magnetic" onclick="downloadVsignApp()"><i data-lucide="download" style="width:16px;height:16px;"></i> Cài Đặt App VSign Ngay</button>
+        <div class="popup-btn-group">
+          <button class="popup-btn-secondary magnetic" onclick="dismissVsignPopup(5)">Tắt 5 phút</button>
+          <button class="popup-btn-secondary magnetic" onclick="dismissVsignPopup(60)">Tắt 1 giờ</button>
+          <button class="popup-btn-ghost magnetic" onclick="closeVsignPopup()">Để sau</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Floating Dock -->
+<div class="spatial-dock" id="spatialDock">
+  <button class="dock-item active magnetic" data-tab="home" onclick="switchTab('home')" title="Khám phá"><i data-lucide="orbit" style="width:20px;height:20px;"></i></button>
+  <button class="dock-item magnetic" data-tab="ipa" onclick="switchTab('ipa')" title="Kho IPA"><i data-lucide="box" style="width:20px;height:20px;"></i></button>
+  <div class="dock-divider"></div>
+  <a href="../ipavip.html" class="dock-item magnetic" title="VIP"><i data-lucide="crown" style="width:20px;height:20px;"></i></a>
+  <a href="../account.html" class="dock-item magnetic" title="Tài khoản"><i data-lucide="user-circle" style="width:20px;height:20px;"></i></a>
+  <a href="../dichvu.html" class="dock-item magnetic" title="Cửa hàng"><i data-lucide="shopping-bag" style="width:20px;height:20px;"></i></a>
+  <div class="dock-divider"></div>
+  <a href="../support.html" class="dock-item magnetic" title="Hỗ trợ"><i data-lucide="message-circle" style="width:20px;height:20px;"></i></a>
+</div>
+
+<script>
+
+/* ================================================================
+   IPAVIET OS — CORE LOGIC
+   Preserved: Firebase, Auth, API, Database, Download, VIP, Coins
+   ================================================================ */
+
+const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+  authDomain: "ipaviet-st.firebaseapp.com",
+  projectId: "ipaviet-st",
+  storageBucket: "ipaviet-st.firebasestorage.app",
+  messagingSenderId: "127619650916",
+  appId: "1:127619650916:web:fc8904c99804eeb7539671"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let currentCoins = 0;
+let isUserVip = false;
+
+window.allAppsMap = {};
+const DB = { ipa: [], vip: [] };
+const STATE = { currentTab: 'home', currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
+
+/* ─── Auth State ─── */
+auth.onAuthStateChanged(user => {
+  const headerBtn = document.getElementById('headerProfileBtn');
+  if (user) {
+    currentUser = user;
+    db.collection("users").doc(user.uid).onSnapshot(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        currentCoins = data.coins || 0;
+        if (data.vipExpire && data.vipExpire.toMillis() > Date.now()) {
+          isUserVip = true;
+          headerBtn.innerHTML = `<i data-lucide="crown" style="width:16px;height:16px;color:var(--accent-amber);"></i>`;
+          headerBtn.title = currentCoins + ' Xu · VIP';
+        } else {
+          isUserVip = false;
+          headerBtn.innerHTML = `<i data-lucide="gem" style="width:16px;height:16px;"></i>`;
+          headerBtn.title = currentCoins + ' Xu';
+        }
+        lucide.createIcons();
+      }
+    });
+  } else {
+    currentUser = null; currentCoins = 0; isUserVip = false;
+    headerBtn.innerHTML = `<i data-lucide="user" style="width:16px;height:16px;"></i>`;
+    headerBtn.title = 'Đăng nhập';
+  }
+});
+
+function getUniqueApps(apps) {
+  const map = new Map();
+  apps.forEach(app => {
+    const key = String(app.name || app.title || app.filename || Math.random()).toLowerCase().trim();
+    if (!map.has(key)) map.set(key, app);
+  });
+  return Array.from(map.values());
+}
+
+function sortItemsByDate(items) {
+  return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0));
+}
+
+/* ─── Load Data ─── */
+async function loadData() {
+  try {
+    const [vipRes, ipaRes] = await Promise.allSettled([
+      fetch(`vip.json?t=${Date.now()}`).then(r => r.text()),
+      fetch(`${GOOGLE_API_URL}?action=get_ipa_data&t=${Date.now()}`).then(r => r.json())
+    ]);
+
+    if (vipRes.status === 'fulfilled') {
+      try {
+        const vipData = JSON.parse(vipRes.value);
+        if (Array.isArray(vipData)) {
+          DB.vip = vipData.map(item => {
+            item._id = 'vip_' + Math.random().toString(36).substr(2, 9);
+            item._type = 'VIP';
+            window.allAppsMap[item._id] = item;
+            return item;
+          });
+        }
+      } catch(e) { console.log("Lỗi parse vip.json"); }
+    }
+
+    if (ipaRes.status === 'fulfilled' && ipaRes.value && Array.isArray(ipaRes.value.apps)) {
+      const mapped = ipaRes.value.apps.map(app => {
+        let newItem = {
+          name: app.name,
+          title: app.name,
+          icon: app.iconURL || 'https://placehold.co/100',
+          iconUrl: app.iconURL,
+          desc: app.localizedDescription || app.subtitle || 'Bản IPA Thường',
+          description: app.localizedDescription || app.subtitle,
+          fullDesc: app.localizedDescription,
+          screenshots: app.screenshotURLs || app.screenshotUrls || app.screenshots || [],
+          fileLink: app.downloadURL,
+          downloadUrl: app.downloadURL,
+          link: app.downloadURL,
+          version: app.version,
+          developer: 'IPAVIET',
+          date: app.versionDate || new Date().toISOString(),
+          lastSync: app.versionDate,
+          source: 'IPAVIET',
+          category: app.category || 'Tiện ích',
+          _type: 'IPA',
+          _id: 'app_' + Math.random().toString(36).substr(2, 9)
+        };
+        window.allAppsMap[newItem._id] = newItem;
+        return newItem;
+      }).filter(app => app.fileLink);
+      DB.ipa = sortItemsByDate(getUniqueApps(mapped));
+    }
+  } catch(e) { console.error("Lỗi tổng", e); }
+
+  // Update stats
+  document.getElementById('statApps').textContent = DB.ipa.length.toLocaleString();
+  document.getElementById('statVip').textContent = DB.vip.length.toLocaleString();
+
+  // Inject hero floating entities
+  injectHeroEntities();
+
+  switchTab(STATE.currentTab);
+
+  // Init scroll reveal và hide loading
+  initScrollReveal();
+  setTimeout(() => {
+    document.getElementById('loadingStage').classList.add('hidden');
+  }, 800);
+}
+
+function injectHeroEntities() {
+  const container = document.getElementById('heroEntities');
+  const apps = DB.ipa.slice(0, 8);
+  const positions = [
+    { top: '15%', left: '10%', delay: '0s', size: 56 },
+    { top: '20%', right: '12%', delay: '1s', size: 48 },
+    { top: '60%', left: '8%', delay: '2s', size: 44 },
+    { top: '65%', right: '10%', delay: '0.5s', size: 52 },
+    { top: '40%', left: '5%', delay: '1.5s', size: 40 },
+    { top: '35%', right: '6%', delay: '2.5s', size: 46 },
+    { top: '75%', left: '20%', delay: '3s', size: 42 },
+    { top: '10%', left: '40%', delay: '1.2s', size: 50 },
+  ];
+
+  apps.forEach((app, i) => {
+    if (!positions[i]) return;
+    const pos = positions[i];
+    const el = document.createElement('div');
+    el.className = 'floating-entity';
+    el.style.cssText = `top:${pos.top};${pos.left ? 'left:'+pos.left : ''};${pos.right ? 'right:'+pos.right : ''};width:${pos.size}px;height:${pos.size}px;animation-delay:${pos.delay};`;
+    el.innerHTML = `<img src="${app.icon || app.iconUrl || 'https://placehold.co/100'}" onerror="this.src='https://placehold.co/100'" alt="">`;
+    el.onclick = () => openAppView(app._id);
+    container.appendChild(el);
+  });
+}
+
+/* ─── Tab Switching ─── */
+function switchTab(tabId) {
+  STATE.currentTab = tabId;
+  STATE.currentPage = 1;
+  STATE.currentFilter = 'all';
+
+  // Update nav + dock
+  document.querySelectorAll('.nav-pill').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+  document.querySelectorAll('.dock-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+
+  // Hero show/hide with proper transition
+  const hero = document.getElementById('heroSection');
+  if (tabId === 'home') {
+    hero.style.display = 'flex';
+    // Force reflow để transition bắt đúng
+    void hero.offsetHeight;
+    requestAnimationFrame(() => {
+      hero.style.opacity = '1';
+      hero.style.transform = 'translateY(0)';
+    });
+  } else {
+    hero.style.opacity = '0';
+    hero.style.transform = 'translateY(-40px)';
+    hero.addEventListener('transitionend', function handler(e) {
+      if (e.propertyName === 'opacity' && STATE.currentTab !== 'home') {
+        hero.style.display = 'none';
+        hero.removeEventListener('transitionend', handler);
+      }
+    });
+  }
+
+  renderContent();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function setFilter(filter) {
+  STATE.currentFilter = filter;
+  STATE.currentPage = 1;
+  renderContent();
+}
+
+/* ─── Render Content ─── */
+function renderContent() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const container = document.getElementById('dynamicContent');
+  let html = '';
+  const tab = STATE.currentTab;
+
+  if (tab === 'home') {
+    let uniqueApps = DB.ipa;
+    if (query) {
+      uniqueApps = uniqueApps.filter(i => (i.name || i.title || "").toLowerCase().includes(query));
+      html = `<div class="section-header reveal"><h2 class="section-title">Kết quả</h2><span style="color:var(--text-tertiary);font-size:13px;">${uniqueApps.length} ứng dụng</span></div><div class="entity-grid">${uniqueApps.length ? uniqueApps.map((i, idx) => createEntity(i, idx)).join('') : emptyState()}</div>`;
+    } else {
+      let featured = DB.vip.slice(0, 5);
+      if (featured.length === 0) featured = uniqueApps.slice(0, 5);
+      const recent = uniqueApps.slice(0, 15);
+
+      html = `
+        ${featured.length ? `
+        <div class="reveal">
+          <div class="section-header"><h2 class="section-title">Nổi Bật</h2><a href="../ipavip.html" class="section-action">VIP <i data-lucide="arrow-right" style="width:14px;height:14px;"></i></a></div>
+          <div class="ribbon-container">
+            <div class="ribbon-track">
+              ${featured.map((i, idx) => createRibbonItem(i, idx)).join('')}
+            </div>
+          </div>
+        </div>` : ''}
+
+        <div class="reveal stagger-1">
+          <div class="section-header"><h2 class="section-title">Mới Cập Nhật</h2><button class="section-action" onclick="switchTab('ipa')">Xem tất cả <i data-lucide="arrow-right" style="width:14px;height:14px;"></i></button></div>
+          <div class="entity-grid">${recent.map((i, idx) => createEntity(i, idx)).join('')}</div>
+        </div>
+      `;
+    }
+  } else {
+    let items = DB.ipa;
+    if (query) items = items.filter(i => (i.name || i.title || i.filename || '').toLowerCase().includes(query));
+
+    if (STATE.currentFilter !== 'all') {
+      items = items.filter(i => {
+        const nameDescCat = String(i.name + " " + (i.desc || "") + " " + (i.category || "")).toLowerCase();
+        if (STATE.currentFilter === 'game') return ['game','trò chơi','hack','mod','rpg','moba','fps','action','simulator','bắn súng'].some(kw => nameDescCat.includes(kw));
+        if (STATE.currentFilter === 'social') return ['social','mạng xã hội','facebook','tiktok','insta','zalo','messenger','youtube','chat','nhắn tin'].some(kw => nameDescCat.includes(kw));
+        if (STATE.currentFilter === 'media') return ['media','giải trí','phim','nhạc','music','video','netflix','spotify','mp3','player','stream'].some(kw => nameDescCat.includes(kw));
+        if (STATE.currentFilter === 'edit') return ['edit','chỉnh sửa','ảnh','video','photo','camera','capcut','picsart','lightroom','photoshop','maker'].some(kw => nameDescCat.includes(kw));
+        if (STATE.currentFilter === 'utility') return ['utility','tiện ích','công cụ','tool','jailbreak','quản lý','adblock','trollstore','file','manager','cleaner','vpn'].some(kw => nameDescCat.includes(kw));
+        return true;
+      });
+    }
+
+    const filtersDef = [
+      { id: 'all', name: 'Tất cả', icon: 'layers' },
+      { id: 'game', name: 'Trò chơi', icon: 'gamepad-2' },
+      { id: 'social', name: 'Social', icon: 'message-circle' },
+      { id: 'media', name: 'Giải trí', icon: 'play-square' },
+      { id: 'edit', name: 'Chỉnh sửa', icon: 'wand-2' },
+      { id: 'utility', name: 'Tiện ích', icon: 'wrench' }
+    ];
+
+    let filterButtons = filtersDef.map(f => {
+      const isActive = STATE.currentFilter === f.id;
+      return `<button onclick="setFilter('${f.id}')" class="filter-chip ${isActive ? 'active' : ''} magnetic"><i data-lucide="${f.icon}" style="width:14px;height:14px;"></i>${f.name}</button>`;
+    }).join('');
+
+    const totalPages = Math.ceil(items.length / STATE.itemsPerPage);
+    const start = (STATE.currentPage - 1) * STATE.itemsPerPage;
+    const pagedItems = items.slice(start, start + STATE.itemsPerPage);
+    const featured = items.slice(0, 5);
+
+    html = `
+      <div class="reveal"><h1 style="font-family:var(--font-display);font-size:clamp(32px,5vw,48px);font-weight:700;letter-spacing:-0.02em;margin-bottom:32px;">Kho IPA</h1></div>
+
+      ${!query && STATE.currentFilter === 'all' && featured.length ? `
+      <div class="reveal stagger-1">
+        <div class="ribbon-container">
+          <div class="ribbon-track">${featured.map((i, idx) => createRibbonItem(i, idx)).join('')}</div>
+        </div>
+      </div>` : ''}
+
+      <div class="reveal stagger-2">
+        <div class="filter-bar">${filterButtons}</div>
+        <div class="entity-grid">${pagedItems.length ? pagedItems.map((i, idx) => createEntity(i, idx)).join('') : emptyState()}</div>
+        ${items.length > STATE.itemsPerPage ? createPagination(totalPages) : ''}
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+  lucide.createIcons();
+  initMagnetic();
+  initEntityGlow();
+  refreshScrollReveal();
+}
+
+/* ─── Component Builders ─── */
+function createRibbonItem(i, index) {
+  let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
+  let safeName = i.name || i.title || 'Ứng dụng';
+  let safeDesc = i.desc || 'Nhấn để xem chi tiết';
+  const isVip = i._type === 'VIP';
+
+  return `
+    <div onclick="${isVip ? "location.href='../ipavip.html'" : `openAppView('${i._id}')`}" class="ribbon-item" style="animation-delay:${index*50}ms">
+      <img src="${safeIcon}" onerror="this.src='https://placehold.co/100'" alt="">
+      <div class="ribbon-content">
+        ${isVip ? `<span class="entity-badge badge-vip" style="margin-bottom:8px;display:inline-flex;"><i data-lucide="crown" style="width:10px;height:10px;"></i> VIP</span>` : ''}
+        <div class="ribbon-title">${safeName}</div>
+        <div class="ribbon-desc">${safeDesc}</div>
+      </div>
+    </div>
+  `;
+}
+
+function createEntity(i, index) {
+  let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
+  let safeName = i.name || i.title || 'Ứng dụng';
+  let safeDesc = i.desc || i.description || 'Nhấn để xem chi tiết';
+  let safeVer = i.version || '1.0';
+  const isVip = i._type === 'VIP';
+
+  return `
+    <div onclick="openAppView('${i._id}')" class="entity reveal" style="transition-delay:${Math.min(index * 50, 400)}ms">
+      <div class="entity-glow"></div>
+      <div class="entity-header">
+        <div class="entity-icon">
+          <img src="${safeIcon}" onerror="this.src='https://placehold.co/100'" alt="">
+        </div>
+        <div class="entity-meta">
+          <div class="entity-name">${safeName}</div>
+          <div class="entity-desc">${safeDesc}</div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        ${isVip ? `<span class="entity-badge badge-vip"><i data-lucide="crown" style="width:10px;height:10px;"></i> VIP Độc Quyền</span>` : `<span class="entity-badge badge-free"><i data-lucide="sparkles" style="width:10px;height:10px;"></i> Miễn phí</span>`}
+      </div>
+      <div class="entity-footer">
+        <span class="entity-version">v${safeVer}</span>
+        <button class="entity-action ${isVip ? 'entity-action-vip' : 'entity-action-primary'} magnetic" onclick="event.stopPropagation();openAppView('${i._id}')">
+          ${isVip ? '<i data-lucide="crown" style="width:12px;height:12px;"></i> VIP' : '<i data-lucide="download" style="width:12px;height:12px;"></i> CÀI'}
         </button>
       </div>
     </div>
-  </header>
+  `;
+}
 
-  <main id="mainContainer" class="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-hide pt-[95px] pb-[130px] relative scroll-smooth">
-    <div class="max-w-6xl mx-auto px-5 md:px-6">
-       <div class="relative group w-full mb-6">
-          <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"></i>
-          <input type="text" id="searchInput" placeholder="Tìm ứng dụng IPA, Tweak..." class="w-full h-12 pl-12 pr-4 bg-gray-200/50 dark:bg-white/10 text-[15px] font-semibold rounded-2xl outline-none focus:ring-2 focus:ring-brand/50 transition-all placeholder-gray-500 text-gray-900 dark:text-gray-100 backdrop-blur-md spatial-shadow">
-       </div>
-       <div id="dynamicContent" class="min-h-[500px]">
-          <div class="py-24 flex items-center justify-center">
-             <div class="loader-wrapper">
-               <span class="loader-letter">I</span>
-               <span class="loader-letter">P</span>
-               <span class="loader-letter">A</span>
-               <span class="loader-letter">V</span>
-               <span class="loader-letter">I</span>
-               <span class="loader-letter">E</span>
-               <span class="loader-letter">T</span>
-               <div class="crt-loader-sweep"></div>
-             </div>
-          </div>
-       </div>
-    </div>
-  </main>
+function createPagination(total) {
+  if (total <= 1) return '';
+  let btns = '';
+  let start = Math.max(1, STATE.currentPage - 2);
+  let end = Math.min(total, start + 4);
+  btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="pagination-btn ${STATE.currentPage === 1 ? 'disabled' : ''} magnetic"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i></button>`;
+  for (let p = start; p <= end; p++) {
+    btns += `<button onclick="changePage(${p})" class="pagination-btn ${p === STATE.currentPage ? 'active' : ''} magnetic">${p}</button>`;
+  }
+  btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="pagination-btn ${STATE.currentPage === total ? 'disabled' : ''} magnetic"><i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>`;
+  return `<div class="pagination">${btns}</div>`;
+}
 
-  <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-6">
-    <nav class="glass-effect floating-nav h-[74px] flex justify-evenly items-center pointer-events-auto px-2">
-      <button onclick="switchTab('home')" class="tab-btn active" data-tab="home"><i data-lucide="sparkles"></i><span>Home</span></button>
-      <a href="../ipavip.html" class="tab-btn"><i data-lucide="crown"></i><span>App VIP</span></a>
-      <button onclick="switchTab('ipa')" class="tab-btn" data-tab="ipa"><i data-lucide="smartphone"></i><span>Kho IPA</span></button>
-      <a href="../account.html" class="tab-btn"><i data-lucide="user-circle"></i><span>Tài khoản</span></a>
-      <a href="../dichvu.html" class="tab-btn"><i data-lucide="shopping-bag"></i><span>Cửa hàng</span></a>
-    </nav>
-  </div>
+function emptyState() {
+  if (DB.ipa.length === 0 && DB.vip.length === 0) {
+    return `<div style="grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--text-tertiary);"><div style="width:40px;height:40px;border:2px solid var(--accent-cyan);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;"></div><p style="font-size:15px;font-weight:500;">Đang tải dữ liệu...</p></div>`;
+  }
+  return `<div style="grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--text-tertiary);"><i data-lucide="orbit" style="width:48px;height:48px;margin-bottom:16px;opacity:0.3;"></i><p style="font-size:15px;font-weight:500;">Không tìm thấy ứng dụng</p></div>`;
+}
 
-  <!-- Floating AI Chat Bubble -->
-  <a href="../support.html" class="fixed bottom-28 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-[#0052FF] to-[#4D7CFF] flex items-center justify-center text-white shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 pointer-events-auto border border-white/20">
-    <div class="absolute inset-0 rounded-full bg-[#0052FF]/20 animate-ping pointer-events-none"></div>
-    <svg class="w-6 h-6 fill-none stroke-current" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <rect x="3" y="11" width="18" height="10" rx="2" />
-      <circle cx="12" cy="5" r="2" />
-      <path d="M12 7v4M8 15h.01M16 15h.01M12 19h2" />
-    </svg>
-  </a>
+function changePage(p) {
+  STATE.currentPage = p;
+  renderContent();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-  <div id="appStoreView" class="fixed inset-0 bg-bgLight dark:bg-bgDark slide-page flex flex-col overflow-hidden">
-     <div class="flex-1 overflow-y-auto scrollbar-hide relative pb-20">
-        <div class="sticky top-0 z-20 w-full flex items-center justify-between px-4 py-4 backdrop-blur-md bg-white/70 dark:bg-black/70 border-b border-black/5 dark:border-white/5 transition-colors">
-           <button onclick="closeAppView()" class="flex items-center gap-1 text-brand font-semibold active:opacity-60 transition">
-              <i data-lucide="chevron-left" class="w-6 h-6"></i> <span class="text-[17px]">Trở lại</span>
-           </button>
-        </div>
-        <div class="absolute top-0 left-0 w-full h-[400px] overflow-hidden -z-10 opacity-30 dark:opacity-40 pointer-events-none">
-           <img id="vAppBg" class="w-full h-full object-cover blur-3xl scale-150">
-           <div class="absolute inset-0 bg-gradient-to-b from-transparent via-bgLight/80 to-bgLight dark:via-black/80 dark:to-black"></div>
-        </div>
-        
-        <div class="px-5 pt-6 pb-6 flex gap-5 relative z-10">
-           <div id="vAppIconWrapper" class="w-[110px] h-[110px] relative overflow-hidden squircle shadow-2xl bg-white dark:bg-gray-800 ring-1 ring-black/5 dark:ring-white/10 ipaviet-watermark-lg shrink-0">
-             <img id="vAppIcon" class="w-full h-full object-cover">
-           </div>
-           <div class="flex-1 pt-1 flex flex-col">
-              <h1 id="vAppTitle" class="text-[24px] font-black leading-tight text-gray-900 dark:text-white line-clamp-2">Tên Ứng Dụng</h1>
-              <p id="vAppDev" class="text-[15px] text-gray-500 dark:text-gray-400 font-medium mt-1">IPAVIET Studio</p>
-              <div class="mt-auto pt-4 flex gap-2" id="vInstallBtnWrap">
-                 <button onclick="showDownloadAction()" class="bg-brand text-white py-1.5 px-6 rounded-full font-bold text-[15px] active:scale-95 transition tracking-wide shadow-lg shadow-brand/30">CÀI ĐẶT</button>
-                 <button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-brand"><i data-lucide="share" class="w-4 h-4"></i></button>
-              </div>
-           </div>
-        </div>
-        
-        <div class="flex items-center justify-between px-8 py-4 border-y border-black/5 dark:border-white/10 mx-5 mt-2 mb-6">
-           <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">ĐÁNH GIÁ</p><p class="text-[22px] font-bold text-gray-800 dark:text-gray-200">4.8</p><div class="flex gap-0.5 text-gray-300 dark:text-gray-400 mt-1"><i data-lucide="star" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i><i data-lucide="star" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i><i data-lucide="star" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i><i data-lucide="star" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i><i data-lucide="star-half" class="w-3 h-3 fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200"></i></div></div><div class="w-px h-10 bg-black/5 dark:bg-white/10"></div>
-           <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">AWARDS</p><i data-lucide="award" class="w-5 h-5 text-gray-500 dark:text-gray-300 mt-1"></i><p class="text-[12px] font-bold text-gray-500 dark:text-gray-400 mt-1" id="vAwardText">Khuyên Dùng</p></div><div class="w-px h-10 bg-black/5 dark:bg-white/10"></div>
-           <div class="flex flex-col items-center"><p class="text-[11px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-1">AGES</p><p class="text-[22px] font-bold text-gray-800 dark:text-gray-200">4+</p><p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Years Old</p></div>
-        </div>
+document.getElementById('searchInput').addEventListener('input', () => {
+  STATE.currentPage = 1;
+  renderContent();
+});
 
-        <div id="vVipArea" class="hidden px-5 mb-8 animate-fluid-up"></div>
+/* ─── App Detail View ─── */
+function openAppView(appId) {
+  const i = window.allAppsMap[appId];
+  if (!i) return;
+  STATE.currentItem = i;
 
-        <div id="vScreenshotsArea" class="mb-8 hidden">
-            <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-4 px-5">Xem trước</h2>
-            <div class="flex gap-4 overflow-x-auto scrollbar-hide snap-x-mandatory px-5 pb-4" id="vScreenshotsList"></div>
-        </div>
+  let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA';
+  const heroBg = document.getElementById('detailHeroBg');
+  const iconImg = document.getElementById('detailIcon');
+  const iconWrap = iconImg.parentElement;
+  const title = document.getElementById('detailTitle');
+  const dev = document.getElementById('detailDev');
+  const actions = document.querySelector('.detail-actions');
+  const body = document.querySelector('.detail-body');
+  const closeBtn = document.querySelector('.detail-close');
 
-        <div class="px-5 mb-8 mt-6">
-           <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-2">Thông tin ứng dụng</h2>
-           <p class="text-[15px] text-gray-600 dark:text-gray-300 mb-1">Phiên bản <span id="vAppVersion" class="font-semibold text-gray-900 dark:text-white">1.0</span> • <span id="vAppDate" class="text-[14px]">Hôm nay</span></p>
-           <p id="vAppDesc" class="text-[14px] text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line mt-2"></p>
-        </div>
+  // Reset animation states
+  heroBg.style.opacity = '0';
+  heroBg.style.transform = 'scale(1.5)';
+  iconWrap.classList.remove('animated');
+  iconWrap.style.opacity = '0';
+  iconWrap.style.transform = 'scale(0.6) translateY(40px) rotateX(20deg)';
+  title.style.opacity = '0';
+  title.style.transform = 'translateY(30px)';
+  dev.style.opacity = '0';
+  dev.style.transform = 'translateY(20px)';
+  actions.style.opacity = '0';
+  actions.style.transform = 'translateY(20px) scale(0.95)';
+  body.style.opacity = '0';
+  body.style.transform = 'translateY(40px)';
+  closeBtn.style.opacity = '0';
+  closeBtn.style.transform = 'scale(0.5) rotate(-90deg)';
 
-        <div class="px-5 mb-10">
-           <h2 class="text-[20px] font-bold text-gray-900 dark:text-white mb-4">Dữ liệu tệp</h2>
-           <div class="flex flex-col">
-               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Nhà phát triển</span><span id="vInfoDev" class="text-gray-900 dark:text-white text-[15px] text-right font-medium">IPAVIET</span></div>
-               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Thể loại</span><span id="vInfoCat" class="text-gray-900 dark:text-white text-[15px] text-right font-medium capitalize">Tiện ích</span></div>
-               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Kích thước</span><span id="vInfoSize" class="text-gray-900 dark:text-white text-[15px] text-right font-medium">184.9 MB</span></div>
-               <div class="flex justify-between py-3 border-b border-black/5 dark:border-white/5"><span class="text-gray-500 dark:text-gray-400 text-[15px]">Bundle ID</span><span id="vInfoBundle" class="text-gray-900 dark:text-white text-[15px] text-right font-medium">com.ipaviet.app</span></div>
-           </div>
-        </div>
-     </div>
-  </div>
+  // Set text content
+  title.innerText = i.name || i.title || 'Unknown App';
+  dev.innerText = i.developer || i.source || 'IPAVIET Studio';
+  document.getElementById('detailDesc').innerText = i.fullDesc || i.description || i.desc || "Ứng dụng tuyệt vờii được cung cấp bởi hệ thống IPAVIET.";
+  document.getElementById('dInfoDev').innerText = i.developer || i.source || 'IPAVIET Studio';
+  document.getElementById('dInfoCat').innerText = i.category || 'Tiện ích';
+  document.getElementById('dInfoVer').innerText = i.version || '1.0.0';
+  document.getElementById('dInfoSize').innerText = i.size || (Math.random() * 200 + 50).toFixed(1) + ' MB';
+  document.getElementById('dInfoBundle').innerText = i.bundleId || 'com.ipaviet.' + (i.name || "app").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  document.getElementById('detailAward').innerText = i._type === 'VIP' ? 'Siêu Phẩm' : 'Khuyên Dùng';
 
-  <!-- ========== VSIGN OFFICIAL APP POPUP ========== -->
-  <div id="vsignPopup" class="popup-overlay hidden" onclick="if(event.target === this) closeVsignPopup()">
-      <div class="popup-card">
-          <div class="popup-header-art">
-              <div class="glowing-logo-wrap">
-                  <img src="https://i.ibb.co/cSmzsSRv/T-n-D-n-13-Copy-Copy-Copy-Original.png" alt="VSign Logo">
-              </div>
-          </div>
-          <div class="popup-body-content">
-              <h3 class="popup-title">Ra Mắt App VSign Chính Thức!</h3>
-              <p class="popup-subtitle">Trải nghiệm cài đặt & ký app iOS trực tiếp trên thiết bị, tối ưu và mượt mà hơn trên Web.</p>
-              <div class="popup-features-list">
-                  <div class="popup-feat-item">
-                      <div class="popup-feat-icon"><i data-lucide="layers"></i></div>
-                      <div class="popup-feat-text">
-                          <strong>Kho 10,000+ Ứng Dụng</strong>
-                          <span>Tải game/app MOD, Hack, Premium hoàn toàn miễn phí.</span>
-                      </div>
-                  </div>
-                  <div class="popup-feat-item">
-                      <div class="popup-feat-icon"><i data-lucide="zap"></i></div>
-                      <div class="popup-feat-text">
-                          <strong>Tự Động Cài Đặt (OTA)</strong>
-                          <span>Ký xong tự động cài đặt trực tiếp cực kỳ tiện lợi, chỉ 1 click.</span>
-                      </div>
-                  </div>
-                  <div class="popup-feat-item">
-                      <div class="popup-feat-icon"><i data-lucide="sparkles"></i></div>
-                      <div class="popup-feat-text">
-                          <strong>Tính Năng ESign Cao Cấp</strong>
-                          <span>Tích hợp tất cả các tùy chọn đổi tên, chèn dylib, fix thông báo... xịn hơn nhiều.</span>
-                      </div>
-                  </div>
-              </div>
-              <div class="popup-actions">
-                  <button class="popup-btn-primary" onclick="downloadVsignApp()">
-                      <i data-lucide="download"></i> Cài Đặt App VSign Ngay
-                  </button>
-                  <div class="popup-dismiss-group">
-                      <button class="popup-btn-dismiss" onclick="dismissVsignPopup(5)">Tắt 5 phút</button>
-                      <button class="popup-btn-dismiss" onclick="dismissVsignPopup(60)">Tắt 1 giờ</button>
-                      <button class="popup-btn-secondary" onclick="closeVsignPopup()">Để sau</button>
-                  </div>
-              </div>
-          </div>
-      </div>
-  </div>
+  // Screenshots
+  const ssWrap = document.getElementById('detailScreenshotsWrap');
+  const ssList = document.getElementById('detailScreenshots');
+  ssList.innerHTML = '';
+  ssWrap.style.opacity = '0';
+  ssWrap.style.transform = 'translateY(20px)';
 
-  <script>
-    const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
-      authDomain: "ipaviet-st.firebaseapp.com",
-      projectId: "ipaviet-st",
-      storageBucket: "ipaviet-st.firebasestorage.app",
-      messagingSenderId: "127619650916",
-      appId: "1:127619650916:web:fc8904c99804eeb7539671"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    let currentUser = null; let currentCoins = 0; let isUserVip = false; 
-
-    auth.onAuthStateChanged(user => {
-        const headerBtn = document.getElementById('headerProfileBtn');
-        if (user) {
-            currentUser = user;
-            db.collection("users").doc(user.uid).onSnapshot(doc => {
-                if (doc.exists) {
-                    const data = doc.data(); currentCoins = data.coins || 0;
-                    if(data.vipExpire && data.vipExpire.toMillis() > Date.now()) {
-                        isUserVip = true;
-                        headerBtn.innerHTML = `<i data-lucide="crown" class="w-4 h-4 mr-1 text-yellow-500"></i> ${currentCoins} Xu`;
-                        headerBtn.className = "h-10 px-4 rounded-full bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/30 flex items-center justify-center font-bold text-xs text-yellow-600 dark:text-yellow-400 active:scale-95 transition-transform decoration-transparent";
-                    } else {
-                        isUserVip = false;
-                        headerBtn.innerHTML = `<i data-lucide="gem" class="w-4 h-4 mr-1"></i> ${currentCoins} Xu`;
-                        headerBtn.className = "h-10 px-4 rounded-full bg-blue-50 dark:bg-brand/20 border border-blue-200 dark:border-brand/30 flex items-center justify-center font-bold text-xs text-brand dark:text-blue-400 active:scale-95 transition-transform decoration-transparent";
-                    }
-                    lucide.createIcons();
-                }
-            });
-        } else {
-            currentUser = null; currentCoins = 0; isUserVip = false;
-            headerBtn.innerHTML = "Đăng Nhập";
-            headerBtn.className = "h-10 px-4 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center font-bold text-xs text-brand dark:text-white active:scale-95 transition-transform backdrop-blur-md decoration-transparent";
-        }
+  const renderSS = (urls) => {
+    urls.forEach(url => {
+      const img = document.createElement('img');
+      img.src = url;
+      img.onerror = () => img.remove();
+      ssList.appendChild(img);
     });
+    ssWrap.style.display = urls.length ? 'block' : 'none';
+  };
 
-    window.allAppsMap = {}; 
-    const DB = { ipa: [], vip: [] }; 
-    const STATE = { currentTab: 'home', currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
-
-    function getUniqueApps(apps) { 
-        const map = new Map(); 
-        apps.forEach(app => { const key = String(app.name || app.title || app.filename || Math.random()).toLowerCase().trim(); if (!map.has(key)) map.set(key, app); }); 
-        return Array.from(map.values()); 
-    }
-    
-    function sortItemsByDate(items) { return items.sort((a, b) => new Date(b.lastSync || b.date || 0) - new Date(a.lastSync || a.date || 0)); }
-
-    // ======================================================================
-    // 🚀 TẢI DATA AN TOÀN VỚI BACKEND PROXY (SỬA LỖI PHÂN BIỆT JSON KEY)
-    // ======================================================================
-    async function loadData() {
-        try {
-            const [vipRes, ipaRes] = await Promise.allSettled([
-                fetch(`vip.json?t=${Date.now()}`).then(r => r.text()),
-                fetch(`${GOOGLE_API_URL}?action=get_ipa_data&t=${Date.now()}`).then(r => r.json())
-            ]);
-
-            // Data VIP
-            if (vipRes.status === 'fulfilled') {
-                try {
-                    const vipData = JSON.parse(vipRes.value);
-                    if(Array.isArray(vipData)){
-                        DB.vip = vipData.map(item => { item._id = 'vip_' + Math.random().toString(36).substr(2, 9); item._type = 'VIP'; window.allAppsMap[item._id] = item; return item; });
-                    }
-                } catch(e) { console.log("Lỗi parse vip.json"); }
-            }
-
-            // Data IPA từ Proxy
-            if (ipaRes.status === 'fulfilled' && ipaRes.value && Array.isArray(ipaRes.value.apps)) {
-                const mapped = ipaRes.value.apps.map(app => {
-                    let newItem = {
-                        name: app.name, title: app.name, icon: app.iconURL || 'https://placehold.co/100', iconUrl: app.iconURL,
-                        desc: app.localizedDescription || app.subtitle || 'Bản IPA Thường', description: app.localizedDescription || app.subtitle,
-                        fullDesc: app.localizedDescription, 
-                        
-                        // 👉 FIX LỖI: BẮT ĐỦ 3 LOẠI KEY MÀ APPTESTERS HAY DÙNG CHO ẢNH
-                        screenshots: app.screenshotURLs || app.screenshotUrls || app.screenshots || [],
-
-                        fileLink: app.downloadURL, downloadUrl: app.downloadURL, link: app.downloadURL, version: app.version,
-                        developer: 'IPAVIET', date: app.versionDate || new Date().toISOString(),
-                        lastSync: app.versionDate, source: 'IPAVIET', category: app.category || 'Tiện ích', 
-                        _type: 'IPA', _id: 'app_' + Math.random().toString(36).substr(2, 9)
-                    };
-                    window.allAppsMap[newItem._id] = newItem; return newItem;
-                }).filter(app => app.fileLink);
-                DB.ipa = sortItemsByDate(getUniqueApps(mapped));
-            }
-        } catch(e) { console.error("Lỗi tổng", e); }
-
-        switchTab(STATE.currentTab);
-    }
-
-    function switchTab(tabId) {
-        STATE.currentTab = tabId; STATE.currentPage = 1; STATE.currentFilter = 'all';
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
-        renderContent(); document.getElementById('mainContainer').scrollTop = 0;
-    }
-
-    function setFilter(filter) { STATE.currentFilter = filter; STATE.currentPage = 1; renderContent(); }
-
-    function renderContent() {
-        const query = document.getElementById('searchInput').value.trim().toLowerCase(); 
-        const container = document.getElementById('dynamicContent'); 
-        let html = ''; const tab = STATE.currentTab;
-
-        if (tab === 'home') {
-            let uniqueApps = DB.ipa;
-            if(query) {
-                uniqueApps = uniqueApps.filter(i => (i.name || i.title || "").toLowerCase().includes(query));
-                html = `<h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight mb-4 animate-fluid-up">Kết quả tìm kiếm</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fluid-up delay-50">${uniqueApps.length ? uniqueApps.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}</div>`;
-            } else {
-                let featured = DB.vip.slice(0, 5); 
-                if(featured.length === 0) featured = uniqueApps.slice(0, 5); 
-                const recent = uniqueApps.slice(0, 15);
-                
-                html = `
-                    <div class="mb-6 animate-fluid-up"><p class="text-[11px] font-bold text-iosGray uppercase tracking-widest mb-1">${new Date().toLocaleDateString('vi-VN', {weekday:'long', day:'numeric', month:'long'})}</p><div class="flex justify-between items-end"><h1 class="text-[34px] font-black tracking-tight text-gray-900 dark:text-white">Khám phá</h1></div></div>
-                    
-                    ${featured.length ? `
-                    <div class="mb-8 animate-fluid-up delay-50">
-                        <div class="flex justify-between items-end mb-4 px-1">
-                            <h3 class="text-[20px] font-bold text-gray-900 dark:text-white tracking-tight">App Nổi Bật</h3>
-                            <a href="ipavip.html" class="text-brand text-sm font-bold active:opacity-70">Vào kho VIP <i data-lucide="chevron-right" class="w-4 h-4 inline-block"></i></a>
-                        </div>
-                        <div class="flex gap-5 overflow-x-auto snap-x-mandatory scrollbar-hide pb-6 -mx-5 px-5 md:mx-0 md:px-0">
-                            ${featured.map((i, idx) => createBigHero(i, idx)).join('')}
-                        </div>
-                    </div>` : ''}
-
-                    <div class="mt-4 animate-fluid-up delay-200"><div class="flex justify-between items-end mb-5 border-b border-black/5 dark:border-white/10 pb-3 px-1"><h3 class="text-[22px] font-bold text-gray-900 dark:text-white tracking-tight">Mới cập nhật (Kho IPA)</h3><span class="text-brand text-sm font-bold active:opacity-70 cursor-pointer" onclick="switchTab('ipa')">Xem tất cả</span></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${recent.map((i, idx) => createGridItem(i, idx)).join('')}</div></div>
-                `;
-            }
-        } 
-        else {
-            let items = DB.ipa;
-            if(query) items = items.filter(i => (i.name || i.title || i.filename || '').toLowerCase().includes(query));
-            
-            if (STATE.currentFilter !== 'all') { 
-                items = items.filter(i => { 
-                    const nameDescCat = String(i.name + " " + (i.desc||"") + " " + (i.category||"")).toLowerCase(); 
-                    if(STATE.currentFilter === 'game') return ['game', 'trò chơi', 'hack', 'mod', 'rpg', 'moba', 'fps', 'action', 'simulator', 'bắn súng'].some(kw => nameDescCat.includes(kw));
-                    if(STATE.currentFilter === 'social') return ['social', 'mạng xã hội', 'facebook', 'tiktok', 'insta', 'zalo', 'messenger', 'youtube', 'chat', 'nhắn tin'].some(kw => nameDescCat.includes(kw));
-                    if(STATE.currentFilter === 'media') return ['media', 'giải trí', 'phim', 'nhạc', 'music', 'video', 'netflix', 'spotify', 'mp3', 'player', 'stream'].some(kw => nameDescCat.includes(kw));
-                    if(STATE.currentFilter === 'edit') return ['edit', 'chỉnh sửa', 'ảnh', 'video', 'photo', 'camera', 'capcut', 'picsart', 'lightroom', 'photoshop', 'maker'].some(kw => nameDescCat.includes(kw));
-                    if(STATE.currentFilter === 'utility') return ['utility', 'tiện ích', 'công cụ', 'tool', 'jailbreak', 'quản lý', 'adblock', 'trollstore', 'file', 'manager', 'cleaner', 'vpn'].some(kw => nameDescCat.includes(kw));
-                    return true; 
-                }); 
-            }
-
-            const filtersDef = [
-                { id: 'all', name: 'Tất cả', icon: 'layers' }, { id: 'game', name: 'Trò chơi', icon: 'gamepad-2' },
-                { id: 'social', name: 'Social', icon: 'message-circle' }, { id: 'media', name: 'Giải trí', icon: 'play-square' },
-                { id: 'edit', name: 'Chỉnh sửa', icon: 'wand-2' }, { id: 'utility', name: 'Tiện ích', icon: 'wrench' }
-            ];
-
-            let filterButtons = filtersDef.map(f => {
-                const isActive = STATE.currentFilter === f.id;
-                const baseStyle = "shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold rounded-full transition-all duration-300 active:scale-95";
-                const activeStyle = isActive ? "bg-gray-900 text-white dark:bg-white dark:text-black shadow-lg shadow-black/20 dark:shadow-white/20" : "bg-white dark:bg-cardDark text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5";
-                const iconStyle = isActive ? "text-white dark:text-black" : "text-gray-400";
-                return `<button onclick="setFilter('${f.id}')" class="${baseStyle} ${activeStyle}"><i data-lucide="${f.icon}" class="w-4 h-4 ${iconStyle}"></i>${f.name}</button>`;
-            }).join('');
-
-            const totalPages = Math.ceil(items.length / STATE.itemsPerPage); const start = (STATE.currentPage - 1) * STATE.itemsPerPage; const pagedItems = items.slice(start, start + STATE.itemsPerPage);
-            const featured = items.slice(0, 5);
-
-            html = `
-                <h1 class="text-[34px] font-black tracking-tight mb-8 text-gray-900 dark:text-white capitalize animate-fluid-up">Kho IPA Thường</h1>
-                
-                ${!query && STATE.currentFilter === 'all' && featured.length ? `<div class="mb-10 animate-fluid-up delay-50"><div class="flex gap-5 overflow-x-auto snap-x-mandatory scrollbar-hide pb-6 -mx-5 px-5 md:mx-0 md:px-0">${featured.map((i, idx) => createSubPageHero(i, idx)).join('')}</div></div>` : ''}
-
-                <div class="flex flex-col mb-4 animate-fluid-up delay-100">
-                    <div class="flex items-center gap-4 justify-between w-full border-b border-black/5 dark:border-white/10 pb-3 mb-3">
-                        <h3 class="text-[22px] font-bold tracking-tight">Tất cả File</h3>
-                    </div>
-                    <div class="flex overflow-x-auto scrollbar-hide gap-2.5 w-full pb-4 pt-1 -mx-5 px-5 md:mx-0 md:px-0">${filterButtons}</div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-4 animate-fluid-up delay-150">${pagedItems.length ? pagedItems.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}</div>
-                ${items.length > STATE.itemsPerPage ? createPagination(totalPages) : ''}
-            `;
+  if (Array.isArray(i.screenshots) && i.screenshots.length > 0) {
+    renderSS(i.screenshots);
+  } else {
+    ssWrap.style.display = 'none';
+    let searchTerm = (i.name || "").replace(/hack|mod|crack|premium|pro|\+|vip|cheat/gi, '').trim();
+    if (searchTerm) {
+      fetchAppleScreenshots(searchTerm).then(urls => {
+        if (urls && urls.length > 0) {
+          i.screenshots = urls.slice(0, 5);
+          renderSS(i.screenshots);
+          gsap.to(ssWrap, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
+          gsap.to('.detail-section-title', { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' });
         }
-        container.innerHTML = html; lucide.createIcons();
+      });
     }
+  }
 
-    function createBigHero(i, index) { 
-        let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
-        let safeName = i.name || i.title || 'Ứng dụng';
-        let safeDesc = i.desc || 'Nhấn để xem chi tiết';
-        
-        if (i._type === 'VIP') {
-            return `
-            <a href="ipavip.html" class="snap-center shrink-0 w-[85%] md:w-[28rem] h-[220px] md:h-[260px] relative rounded-[32px] overflow-hidden spatial-shadow group cursor-pointer bg-black block decoration-transparent">
-                <img src="${safeIcon}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out opacity-50" onerror="this.src='https://placehold.co/100'">
-                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-                <div class="absolute bottom-0 left-0 w-full p-6 flex flex-col items-start gap-3">
-                    <span class="text-black text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-yellow-400 to-yellow-500 backdrop-blur-md px-3 py-1 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.5)]">VIP ĐỘC QUYỀN</span>
-                    <div class="flex flex-col w-full">
-                        <h2 class="text-[26px] font-black text-white leading-tight truncate drop-shadow-md">${safeName}</h2>
-                        <p class="text-gray-300 text-[14px] line-clamp-2 mt-1 font-medium">${safeDesc}</p>
-                    </div>
-                </div>
-            </a>`; 
-        }
-        return `
-        <div onclick="openAppView('${i._id}')" class="snap-center shrink-0 w-[85%] md:w-[28rem] h-[220px] md:h-[260px] relative rounded-[32px] overflow-hidden spatial-shadow group cursor-pointer bg-black">
-            <img src="${safeIcon}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out opacity-50" onerror="this.src='https://placehold.co/100'">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-            <div class="absolute bottom-0 left-0 w-full p-6 flex flex-col items-start gap-3">
-                <span class="text-white/70 text-[10px] font-black uppercase tracking-widest bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">IPAVIET • APP</span>
-                <div class="flex flex-col w-full">
-                    <h2 class="text-[26px] font-black text-white leading-tight truncate drop-shadow-md">${safeName}</h2>
-                    <p class="text-gray-300 text-[14px] line-clamp-2 mt-1 font-medium">${safeDesc}</p>
-                </div>
-            </div>
-        </div>`; 
+  // Reset info cells
+  document.querySelectorAll('.detail-info-cell').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+  });
+  document.querySelectorAll('.detail-data-row').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-10px)';
+  });
+  document.querySelectorAll('.detail-section-title').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+  });
+
+  // Purchase panel reset
+  document.getElementById('detailPurchasePanel').innerHTML = '';
+
+  // Show stage immediately
+  const stage = document.getElementById('app-detail-stage');
+  stage.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  lucide.createIcons();
+
+  // Preload images then animate
+  const preload = (src) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(src);
+    img.onerror = () => resolve('https://placehold.co/400x400/0d0f1a/00f0ff?text=IPAVIET');
+    img.src = src;
+  });
+
+  Promise.all([preload(safeIcon)]).then(([loadedIcon]) => {
+    heroBg.src = loadedIcon;
+    iconImg.src = loadedIcon;
+
+    // ═══ GSAP ANIMATION SEQUENCE ═══
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    // 1. Backdrop blur morph
+    tl.fromTo('.detail-backdrop',
+      { backdropFilter: 'blur(0px) saturate(100%)', WebkitBackdropFilter: 'blur(0px) saturate(100%)' },
+      { backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', duration: 0.8 },
+      0
+    );
+
+    // 2. Background image scale + fade
+    tl.to(heroBg, { opacity: 0.35, scale: 1.2, duration: 1.2, ease: 'power2.out' }, 0);
+
+    // 3. Close button spin in
+    tl.to(closeBtn, { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: 'back.out(1.7)' }, 0.2);
+
+    // 4. Icon fly in with 3D depth
+    tl.to(iconWrap, {
+      opacity: 1, scale: 1, y: 0, rotateX: 0,
+      duration: 0.7, ease: 'back.out(1.4)',
+      onComplete: () => iconWrap.classList.add('animated')
+    }, 0.15);
+
+    // 5. Title slide up
+    tl.to(title, { opacity: 1, y: 0, duration: 0.6 }, 0.35);
+
+    // 6. Developer fade
+    tl.to(dev, { opacity: 1, y: 0, duration: 0.5 }, 0.45);
+
+    // 7. Actions pop
+    tl.to(actions, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'back.out(1.2)' }, 0.5);
+
+    // 8. Info grid stagger
+    tl.to('.detail-info-cell', {
+      opacity: 1, y: 0, duration: 0.5,
+      stagger: 0.08, ease: 'power2.out'
+    }, 0.55);
+
+    // 9. Body content slide up
+    tl.to(body, { opacity: 1, y: 0, duration: 0.6 }, 0.6);
+
+    // 10. Section titles
+    tl.to('.detail-section-title', {
+      opacity: 1, y: 0, duration: 0.5,
+      stagger: 0.1, ease: 'power2.out'
+    }, 0.7);
+
+    // 11. Description
+    tl.to('#detailDesc', { opacity: 1, y: 0, duration: 0.5 }, 0.75);
+
+    // 12. Screenshots
+    tl.to(ssWrap, { opacity: 1, y: 0, duration: 0.6 }, 0.8);
+
+    // 13. Data rows stagger from left
+    tl.to('.detail-data-row', {
+      opacity: 1, x: 0, duration: 0.4,
+      stagger: 0.06, ease: 'power2.out'
+    }, 0.85);
+  });
+}
+
+async function fetchAppleScreenshots(term) {
+  try {
+    let resVN = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=software&limit=1&country=vn`);
+    let dataVN = await resVN.json();
+    if (dataVN.results && dataVN.results.length > 0 && dataVN.results[0].screenshotUrls) {
+      return dataVN.results[0].screenshotUrls;
     }
-
-    function createSubPageHero(i, index) { 
-        let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
-        let safeName = i.name || i.title || 'Ứng dụng';
-        return `
-        <div onclick="openAppView('${i._id}')" class="animate-fluid-up snap-center shrink-0 w-[20rem] h-[12rem] relative rounded-[28px] overflow-hidden spatial-shadow group cursor-pointer bg-black" style="animation-delay: ${index*50}ms">
-            <img src="${safeIcon}" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-40 transition-all duration-700 ease-out" onerror="this.src='https://placehold.co/100'">
-            <div class="absolute inset-0 p-6 flex flex-col justify-end">
-                <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 relative overflow-hidden squircle shadow-md bg-white ipaviet-watermark-sm shrink-0 border border-white/10">
-                        <img src="${safeIcon}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100'">
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-bold text-white text-xl truncate drop-shadow-md">${safeName}</h4>
-                        <p class="text-[12px] text-white/70 font-semibold mt-0.5">${i.source || 'IPAVIET'}</p>
-                    </div>
-                </div>
-            </div>
-        </div>`; 
+    let resUS = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=software&limit=1&country=us`);
+    let dataUS = await resUS.json();
+    if (dataUS.results && dataUS.results.length > 0 && dataUS.results[0].screenshotUrls) {
+      return dataUS.results[0].screenshotUrls;
     }
-    
-    function createGridItem(i, index) { 
-        let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
-        let safeName = i.name || i.title || 'Ứng dụng';
-        let safeDesc = i.desc || i.description || 'Nhấn để xem chi tiết';
-        
-        return `
-        <div onclick="openAppView('${i._id}')" class="animate-fluid-up flex items-center gap-4 py-3 border-b border-black/5 dark:border-white/10 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 px-2 rounded-2xl transition-colors cursor-pointer group" style="animation-delay: ${index*30}ms">
-            <div class="w-[60px] h-[60px] relative overflow-hidden squircle shrink-0 shadow-sm bg-gray-100 dark:bg-gray-800 object-cover group-hover:scale-95 transition-transform duration-300 ipaviet-watermark-sm border border-black/5 dark:border-white/5">
-                <img src="${safeIcon}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100'"/>
-            </div>
-            <div class="flex-1 min-w-0 pt-1">
-                <h4 class="font-bold text-gray-900 dark:text-white truncate text-[16px] leading-tight">${safeName}</h4>
-                <p class="text-[13px] text-iosGray line-clamp-1 font-medium mt-0.5">${safeDesc}</p>
-            </div>
-            <button class="shrink-0 bg-brand text-white font-bold text-[13px] px-5 py-1.5 rounded-full active:scale-90 transition-transform shadow-lg shadow-brand/20">NHẬN</button>
-        </div>`; 
+    return null;
+  } catch (e) { return null; }
+}
+
+function closeAppView() {
+  const stage = document.getElementById('app-detail-stage');
+  const iconWrap = document.getElementById('detailIcon').parentElement;
+
+  // Kill any running timeline
+  gsap.killTweensOf('.detail-backdrop');
+  gsap.killTweensOf('#detailHeroBg');
+  gsap.killTweensOf('.detail-close');
+  gsap.killTweensOf(iconWrap);
+  gsap.killTweensOf('#detailTitle');
+  gsap.killTweensOf('#detailDev');
+  gsap.killTweensOf('.detail-actions');
+  gsap.killTweensOf('.detail-body');
+  gsap.killTweensOf('.detail-info-cell');
+  gsap.killTweensOf('.detail-section-title');
+  gsap.killTweensOf('#detailDesc');
+  gsap.killTweensOf('#detailScreenshotsWrap');
+  gsap.killTweensOf('.detail-data-row');
+
+  // Reverse animation out
+  const tl = gsap.timeline({
+    defaults: { ease: 'power2.in' },
+    onComplete: () => {
+      stage.classList.remove('active');
+      iconWrap.classList.remove('animated');
+      document.body.style.overflow = '';
     }
-    
-    function createPagination(total) { if (total <= 1) return ''; let btns = ''; let start = Math.max(1, STATE.currentPage - 2); let end = Math.min(total, start + 4); btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===1 ? 'text-gray-300 pointer-events-none' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>`; for(let p = start; p <= end; p++) { const activeClass = p === STATE.currentPage ? 'bg-brand text-white shadow-md' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'; btns += `<button onclick="changePage(${p})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${activeClass}">${p}</button>`; } btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all ${STATE.currentPage===total ? 'text-gray-300 pointer-events-none' : 'bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-200'}"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>`; return `<div class="flex justify-center items-center gap-2 mt-10 w-full">${btns}</div>`; }
-    function emptyState() { return `<div class="col-span-full py-20 text-center text-iosGray flex flex-col items-center"><i data-lucide="layout-grid" class="w-12 h-12 mb-3 opacity-30"></i><p class="text-[15px] font-medium">Không tìm thấy ứng dụng</p></div>`; }
-    function changePage(p) { STATE.currentPage = p; renderContent(); document.getElementById('mainContainer').scrollTo({ top: 0, behavior: 'smooth' }); }
-    
-    document.getElementById('searchInput').addEventListener('input', () => { STATE.currentPage = 1; renderContent(); });
+  });
 
-    // ======================================================================
-    // 🚀 LOGIC TỰ ĐỘNG TÌM KIẾM ẢNH MÔ TẢ TỪ APPLE STORE (NẾU KHÔNG CÓ SẴN)
-    // ======================================================================
-    function openAppView(appId) {
-       const i = window.allAppsMap[appId]; if(!i) return; STATE.currentItem = i;
-       
-       let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
-       document.getElementById('vAppBg').src = safeIcon; 
-       document.getElementById('vAppIcon').src = safeIcon; 
-       
-       const iconWrapper = document.getElementById('vAppIconWrapper');
-       iconWrapper.className = "w-[110px] h-[110px] relative overflow-hidden squircle shadow-2xl bg-white dark:bg-gray-800 ring-1 ring-black/5 dark:ring-white/10 ipaviet-watermark-lg shrink-0";
+  tl.to('.detail-body', { opacity: 0, y: 30, duration: 0.3 }, 0);
+  tl.to('.detail-data-row', { opacity: 0, x: -10, duration: 0.2, stagger: 0.03 }, 0);
+  tl.to('#detailScreenshotsWrap', { opacity: 0, y: 20, duration: 0.3 }, 0.05);
+  tl.to('.detail-section-title', { opacity: 0, y: 15, duration: 0.25, stagger: 0.05 }, 0.05);
+  tl.to('#detailDesc', { opacity: 0, y: 15, duration: 0.25 }, 0.1);
+  tl.to('.detail-info-cell', { opacity: 0, y: 15, duration: 0.25, stagger: 0.04 }, 0.1);
+  tl.to('.detail-actions', { opacity: 0, scale: 0.9, y: 10, duration: 0.3 }, 0.15);
+  tl.to('#detailDev', { opacity: 0, y: 10, duration: 0.25 }, 0.2);
+  tl.to('#detailTitle', { opacity: 0, y: 20, duration: 0.3 }, 0.2);
+  tl.to(iconWrap, { opacity: 0, scale: 0.7, y: 30, rotateX: 15, duration: 0.35 }, 0.25);
+  tl.to('#detailHeroBg', { opacity: 0, scale: 1.4, duration: 0.4 }, 0.2);
+  tl.to('.detail-close', { opacity: 0, scale: 0.5, rotation: -90, duration: 0.3 }, 0.25);
+  tl.to('.detail-backdrop', {
+    backdropFilter: 'blur(0px) saturate(100%)',
+    WebkitBackdropFilter: 'blur(0px) saturate(100%)',
+    duration: 0.4
+  }, 0.2);
+}
 
-       document.getElementById('vAppTitle').innerText = i.name || i.title || 'Unknown App'; 
-       document.getElementById('vAppDev').innerText = i.developer || i.source || 'IPAVIET Studio'; 
-       document.getElementById('vAppDesc').innerText = i.fullDesc || i.description || i.desc || "Ứng dụng tuyệt vời được cung cấp bởi hệ thống IPAVIET.";
-       document.getElementById('vAppVersion').innerText = i.version || '1.0.0'; 
-       document.getElementById('vAppDate').innerText = i.date ? new Date(i.date).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN'); 
-       
-       document.getElementById('vInfoDev').innerText = i.developer || i.source || 'IPAVIET Studio'; 
-       document.getElementById('vInfoCat').innerText = i.category || 'Tiện ích'; 
-       document.getElementById('vInfoSize').innerText = i.size || (Math.random() * 200 + 50).toFixed(1) + ' MB'; 
-       document.getElementById('vInfoBundle').innerText = i.bundleId || 'com.ipaviet.' + (i.name||"app").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-       
-       document.getElementById('vAwardText').innerText = i._type === 'VIP' ? 'Siêu Phẩm' : 'Khuyên Dùng';
-       document.getElementById('vVipArea').classList.add('hidden');
-
-       const btnWrap = document.getElementById('vInstallBtnWrap');
-       if(i._type === 'VIP') {
-           btnWrap.innerHTML = `<button onclick="showDownloadAction()" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black py-1.5 px-6 rounded-full font-black text-[15px] active:scale-95 transition tracking-wide shadow-[0_4px_15px_rgba(234,179,8,0.4)] flex items-center"><i data-lucide="crown" class="w-4 h-4 mr-1.5"></i>TẢI VIP</button><button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-yellow-500"><i data-lucide="share" class="w-4 h-4"></i></button>`;
-       } else {
-           btnWrap.innerHTML = `<button onclick="showDownloadAction()" class="bg-brand text-white py-1.5 px-6 rounded-full font-bold text-[15px] active:scale-95 transition tracking-wide shadow-lg shadow-brand/30">CÀI ĐẶT</button><button class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-brand"><i data-lucide="share" class="w-4 h-4"></i></button>`;
-       }
-
-       // XỬ LÝ ẢNH SCREENSHOTS THÔNG MINH
-       const ssArea = document.getElementById('vScreenshotsArea');
-       const ssList = document.getElementById('vScreenshotsList');
-       
-       const renderSS = (urls) => {
-           let ssHtml = '';
-           urls.forEach(url => { ssHtml += `<img src="${url}" class="screenshot-img snap-center shrink-0">`; });
-           ssList.innerHTML = ssHtml; 
-           ssArea.classList.remove('hidden');
-       };
-
-       if (Array.isArray(i.screenshots) && i.screenshots.length > 0) {
-           renderSS(i.screenshots); // Có sẵn thì render luôn
-       } else {
-           // Không có thì hiển thị Loading và tìm kiếm tự động
-           ssArea.classList.remove('hidden');
-           ssList.innerHTML = `<div class="w-full flex flex-col items-center justify-center py-10 opacity-50"><div class="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mb-2"></div><span class="text-[12px] font-bold text-gray-500">Đang tìm ảnh gốc từ Apple Store...</span></div>`;
-           
-           // Thuật toán bóc tách tên: Loại bỏ các từ khóa Mod/Hack để tìm bản gốc trên Store
-           let searchTerm = (i.name || "").replace(/hack|mod|crack|premium|pro|\+|vip|cheat/gi, '').trim();
-
-           // Tìm kiếm Đa quốc gia (Thử VN trước, nếu trượt qua Mỹ tìm)
-           async function fetchAppleScreenshots() {
-               try {
-                   // 1. Thử kho Việt Nam
-                   let resVN = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=software&limit=1&country=vn`);
-                   let dataVN = await resVN.json();
-                   if (dataVN.results && dataVN.results.length > 0 && dataVN.results[0].screenshotUrls) {
-                       return dataVN.results[0].screenshotUrls;
-                   }
-                   // 2. Thử kho Mỹ
-                   let resUS = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=software&limit=1&country=us`);
-                   let dataUS = await resUS.json();
-                   if (dataUS.results && dataUS.results.length > 0 && dataUS.results[0].screenshotUrls) {
-                       return dataUS.results[0].screenshotUrls;
-                   }
-                   return null;
-               } catch (e) { return null; }
-           }
-
-           fetchAppleScreenshots().then(urls => {
-               if (urls && urls.length > 0) {
-                   i.screenshots = urls.slice(0, 5); // Lưu lại vào cache để lần sau không tìm lại nữa
-                   renderSS(i.screenshots);
-               } else {
-                   ssArea.classList.add('hidden');
-                   ssList.innerHTML = '';
-               }
-           });
-       }
-
-       const view = document.getElementById('appStoreView'); 
-       view.classList.remove('hidden'); requestAnimationFrame(() => view.classList.add('open'));
-       lucide.createIcons();
-    }
-
-    function closeAppView() { const view = document.getElementById('appStoreView'); view.classList.remove('open'); setTimeout(() => view.classList.add('hidden'), 400); }
-
-    function showDownloadAction() {
-        if (!currentUser) { window.location.href = '../account.html'; return; }
-        const vipArea = document.getElementById('vVipArea'); vipArea.classList.remove('hidden');
-        const isAppVIP = STATE.currentItem._type === 'VIP';
-
-        if (isUserVip) {
-            vipArea.innerHTML = `<div class="bg-gradient-to-br from-yellow-500/20 to-yellow-300/10 border border-yellow-500/30 p-6 rounded-[28px] backdrop-blur-md relative spatial-shadow"><div class="flex justify-between items-center border-b border-yellow-500/20 pb-4 mb-4"><div><p class="text-[12px] font-bold text-yellow-600 dark:text-yellow-500 tracking-widest uppercase">Đặc quyền VIP</p><p class="text-[22px] font-black text-gray-900 dark:text-white">Miễn phí tải</p></div><div class="text-right flex items-center gap-2"><i data-lucide="crown" class="w-8 h-8 text-yellow-500"></i></div></div><button onclick="downloadVipApp(this)" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-400 text-black font-black py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-[0_10px_20px_-10px_rgba(234,179,8,0.5)]"><i data-lucide="zap" class="w-5 h-5"></i> TẢI XUỐNG NGAY</button></div>`;
-        } else {
-            if (isAppVIP) {
-                vipArea.innerHTML = `<div class="bg-gradient-to-br from-[#2a0808] to-black border border-red-500/30 p-6 rounded-[28px] backdrop-blur-md relative spatial-shadow"><div class="flex items-center gap-3 border-b border-white/10 pb-4 mb-4"><div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center"><i data-lucide="shield-alert" class="w-5 h-5 text-red-500"></i></div><div><p class="text-[12px] font-bold text-red-400 tracking-widest uppercase">Truy cập bị từ chối</p><p class="text-[18px] font-black text-white">Chỉ dành cho VIP</p></div></div><p class="text-sm text-gray-300 mb-5 leading-relaxed">Siêu phẩm này nằm trong bộ sưu tập độc quyền. Bạn cần nâng cấp lên Hội Viên VIP để bẻ khóa giới hạn tải xuống.</p><a href="../dichvu.html" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white font-black py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2 shadow-[0_10px_20px_-10px_rgba(239,68,68,0.4)] decoration-transparent"><i data-lucide="zap" class="w-5 h-5"></i> NÂNG CẤP VIP NGAY</a></div>`;
-            } else {
-                vipArea.innerHTML = `<div class="bg-blue-50 dark:bg-brand/10 border border-blue-200 dark:border-brand/20 p-6 rounded-[28px] backdrop-blur-md transition-colors relative spatial-shadow"><div class="flex justify-between items-center border-b border-brand/10 pb-4 mb-4"><div><p class="text-[12px] font-bold text-gray-500 tracking-widest uppercase">Phí tải App</p><p class="text-[22px] font-black text-brand">1.000đ</p></div><div class="text-right"><p class="text-[12px] font-bold text-gray-500 tracking-widest uppercase">Số dư của bạn</p><p class="text-[18px] font-bold text-gray-900 dark:text-white">${currentCoins.toLocaleString()}đ</p></div></div><button onclick="buyAppWithCoins(this)" class="w-full bg-brand text-white font-bold py-3.5 rounded-xl text-[15px] active:scale-95 transition-transform flex items-center justify-center gap-2"><i data-lucide="zap" class="w-5 h-5"></i> THANH TOÁN & TẢI XUỐNG</button><div class="mt-4 pt-4 border-t border-blue-200/50 dark:border-white/5 relative z-10 flex gap-2"><button onclick="downloadFreeStore(this)" class="flex-1 py-3 rounded-xl bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-300 font-bold text-[13px] hover:bg-black/10 dark:hover:bg-white/10 transition flex items-center justify-center gap-2"><i data-lucide="cloud-lightning" class="w-4 h-4"></i> Tải Free (Ads)</button><a href="../dichvu.html" class="flex-1 py-3 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400 font-bold text-[13px] hover:bg-green-500/20 transition flex items-center justify-center gap-2 text-center decoration-transparent"><i data-lucide="wallet" class="w-4 h-4"></i> Nạp Tiền</a></div></div>`;
-            }
-        }
-        lucide.createIcons(); vipArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    async function downloadVipApp(btnEl) {
-        const originalText = btnEl.innerHTML; btnEl.innerHTML = `<div class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>`; btnEl.disabled = true;
-        try { const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link; if(rawLink) { window.location.href = rawLink; } else { alert("Không tìm thấy link tải gốc."); } } catch (error) { alert("Lỗi kết nối."); }
-        setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
-    }
-
-    async function buyAppWithCoins(btnEl) {
-        const APP_PRICE = 1000; 
-        if (currentCoins < APP_PRICE) { alert("Bạn không đủ số dư để tải.\nVui lòng Nạp thêm tiền hoặc nâng cấp Gói VIP để tải không giới hạn nhé!"); window.location.href = '../dichvu.html'; return; }
-        const originalText = btnEl.innerHTML; btnEl.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`; btnEl.disabled = true;
-        
-        try {
-            const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-            const appName = STATE.currentItem.name || STATE.currentItem.title || STATE.currentItem.filename || "Ứng dụng";
-            
-            if(rawLink) {
-                await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-APP_PRICE) }, { merge: true });
-                await db.collection("users").doc(currentUser.uid).collection("transactions").add({ amount: -APP_PRICE, desc: `Tải lẻ: ${appName}`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                
-                alert(`✅ Đã thanh toán ${APP_PRICE.toLocaleString()}đ.\nHệ thống đang bắt đầu tải xuống...`);
-                window.location.href = rawLink; 
-            } else { alert("Không tìm thấy link tải gốc."); }
-        } catch (error) { alert("Lỗi kết nối mạng."); }
-        setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
-    }
-
-    async function downloadFreeStore(btnEl) {
-       const originalText = btnEl.innerHTML; btnEl.innerHTML = `<div class="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>`; btnEl.disabled = true;
-       const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-       try { const res = await fetch(GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(btoa(rawLink))); const data = await res.json(); if(data.success && data.link) { window.location.href = data.link; } else { alert("Hệ thống rút gọn link đang quá tải. Hãy thử lại sau!"); } } catch (error) { alert("Lỗi kết nối máy chủ. Hãy thử lại!"); }
-       btnEl.innerHTML = originalText; btnEl.disabled = false; 
-    }
-
-    function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
-    if(localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
-
-    /* ============================================================
-       VSIGN POPUP LOGIC
-       ============================================================ */
-    function closeVsignPopup() {
-        const popup = document.getElementById('vsignPopup');
-        if (popup) popup.classList.add('hidden');
-    }
-    function dismissVsignPopup(minutes) {
-        closeVsignPopup();
-        const untilTime = Date.now() + minutes * 60 * 1000;
-        localStorage.setItem('vsign_popup_until', untilTime.toString());
-    }
-    function downloadVsignApp() {
-        closeVsignPopup();
-        window.location.href = '../sign-app/index.html?app=vsign';
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-        const popupUntil = localStorage.getItem('vsign_popup_until');
-        if (!popupUntil || Date.now() > parseInt(popupUntil)) {
-            setTimeout(() => {
-                const popup = document.getElementById('vsignPopup');
-                if (popup) {
-                    popup.classList.remove('hidden');
-                    lucide.createIcons();
-                }
-            }, 1500);
-        }
+function shareApp() {
+  if (navigator.share && STATE.currentItem) {
+    navigator.share({
+      title: STATE.currentItem.name || 'IPAVIET App',
+      text: STATE.currentItem.desc || 'Tải app từ IPAVIET',
+      url: window.location.href
     });
+  } else {
+    showToast('Đã sao chép liên kết');
+  }
+}
 
-    loadData();
-  </script>
-<!-- Floating AI Chat & Utility Widget -->
-<script src="../ai-chat-widget.js?v=6" data-bottom="120px" data-path-prefix="../"></script>
+/* ─── Download / Purchase Logic ─── */
+function showDownloadAction() {
+  if (!currentUser) { window.location.href = '../account.html'; return; }
+  const panel = document.getElementById('detailPurchasePanel');
+  const isAppVIP = STATE.currentItem._type === 'VIP';
+
+  if (isUserVip) {
+    panel.innerHTML = `
+      <div class="purchase-panel purchase-panel-vip">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div>
+            <p style="font-size:11px;font-weight:700;color:var(--accent-amber);letter-spacing:0.1em;text-transform:uppercase;">Đặc quyền VIP</p>
+            <p style="font-size:22px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">Miễn phí tải</p>
+          </div>
+          <i data-lucide="crown" style="width:32px;height:32px;color:var(--accent-amber);"></i>
+        </div>
+        <button onclick="downloadVipApp(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;"><i data-lucide="zap" style="width:16px;height:16px;"></i> TẢI XUỐNG NGAY</button>
+      </div>`;
+  } else {
+    if (isAppVIP) {
+      panel.innerHTML = `
+        <div class="purchase-panel purchase-panel-locked">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div style="width:40px;height:40px;border-radius:50%;background:rgba(244,63,94,0.15);display:flex;align-items:center;justify-content:center;"><i data-lucide="shield-alert" style="width:20px;height:20px;color:var(--accent-rose);"></i></div>
+            <div>
+              <p style="font-size:11px;font-weight:700;color:var(--accent-rose);letter-spacing:0.1em;text-transform:uppercase;">Truy cập bị từ chối</p>
+              <p style="font-size:18px;font-weight:700;color:var(--text-primary);">Chỉ dành cho VIP</p>
+            </div>
+          </div>
+          <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6;">Siêu phẩm này nằm trong bộ sưu tập độc quyền. Bạn cần nâng cấp lên Hội Viên VIP.</p>
+          <a href="../dichvu.html" style="text-decoration:none;"><button class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;background:linear-gradient(135deg,var(--accent-rose),#be123c);"><i data-lucide="zap" style="width:16px;height:16px;"></i> NÂNG CẤP VIP NGAY</button></a>
+        </div>`;
+    } else {
+      panel.innerHTML = `
+        <div class="purchase-panel purchase-panel-normal">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div><p style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.1em;text-transform:uppercase;">Phí tải App</p><p style="font-size:22px;font-weight:700;color:var(--accent-cyan);font-family:var(--font-display);">1.000đ</p></div>
+            <div style="text-align:right;"><p style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.1em;text-transform:uppercase;">Số dư</p><p style="font-size:18px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">${currentCoins.toLocaleString()}đ</p></div>
+          </div>
+          <button onclick="buyAppWithCoins(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;margin-bottom:12px;"><i data-lucide="zap" style="width:16px;height:16px;"></i> THANH TOÁN & TẢI</button>
+          <div style="display:flex;gap:8px;">
+            <button onclick="downloadFreeStore(this)" class="detail-btn detail-btn-secondary magnetic" style="flex:1;justify-content:center;font-size:13px;"><i data-lucide="cloud-lightning" style="width:14px;height:14px;"></i> Tải Free (Ads)</button>
+            <a href="../dichvu.html" style="flex:1;text-decoration:none;"><button class="detail-btn detail-btn-secondary magnetic" style="width:100%;justify-content:center;font-size:13px;color:var(--accent-emerald);border-color:rgba(16,185,129,0.2);"><i data-lucide="wallet" style="width:14px;height:14px;"></i> Nạp Tiền</button></a>
+          </div>
+        </div>`;
+    }
+  }
+  lucide.createIcons();
+  panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function downloadVipApp(btnEl) {
+  const originalText = btnEl.innerHTML;
+  btnEl.innerHTML = `<div style="width:20px;height:20px;border:2px solid var(--void);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>`;
+  btnEl.disabled = true;
+  try {
+    const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
+    if (rawLink) { window.location.href = rawLink; }
+    else { showToast("Không tìm thấy link tải"); }
+  } catch (error) { showToast("Lỗi kết nối"); }
+  setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
+}
+
+async function buyAppWithCoins(btnEl) {
+  const APP_PRICE = 1000;
+  if (currentCoins < APP_PRICE) {
+    showToast("Không đủ số dư. Vui lòng nạp thêm!");
+    setTimeout(() => window.location.href = '../dichvu.html', 1000);
+    return;
+  }
+  const originalText = btnEl.innerHTML;
+  btnEl.innerHTML = `<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>`;
+  btnEl.disabled = true;
+  try {
+    const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
+    const appName = STATE.currentItem.name || STATE.currentItem.title || "Ứng dụng";
+    if (rawLink) {
+      await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-APP_PRICE) }, { merge: true });
+      await db.collection("users").doc(currentUser.uid).collection("transactions").add({ amount: -APP_PRICE, desc: `Tải lẻ: ${appName}`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+      showToast(`Đã thanh toán ${APP_PRICE.toLocaleString()}đ`);
+      window.location.href = rawLink;
+    } else { showToast("Không tìm thấy link tải"); }
+  } catch (error) { showToast("Lỗi kết nối mạng"); }
+  setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
+}
+
+async function downloadFreeStore(btnEl) {
+  const originalText = btnEl.innerHTML;
+  btnEl.innerHTML = `<div style="width:16px;height:16px;border:2px solid var(--text-tertiary);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>`;
+  btnEl.disabled = true;
+  const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
+  try {
+    const res = await fetch(GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(btoa(rawLink)));
+    const data = await res.json();
+    if (data.success && data.link) { window.location.href = data.link; }
+    else { showToast("Hệ thống rút gọn link đang quá tải"); }
+  } catch (error) { showToast("Lỗi kết nối máy chủ"); }
+  btnEl.innerHTML = originalText;
+  btnEl.disabled = false;
+}
+
+/* ─── VSign Popup ─── */
+function closeVsignPopup() {
+  document.getElementById('vsignPopup').classList.remove('active');
+}
+function dismissVsignPopup(minutes) {
+  closeVsignPopup();
+  const untilTime = Date.now() + minutes * 60 * 1000;
+  localStorage.setItem('vsign_popup_until', untilTime.toString());
+}
+function downloadVsignApp() {
+  closeVsignPopup();
+  window.location.href = '../sign-app/index.html?app=vsign';
+}
+
+/* ─── Theme ─── */
+function toggleTheme() {
+  // IPAVIET OS is always dark — this is a spatial dark mode OS
+  showToast('IPAVIET OS — Dark Mode Only');
+}
+
+/* ─── Toast ─── */
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+/* ─── Cursor & Magnetic Effects ─── */
+function initCursor() {
+  if (window.matchMedia('(pointer: coarse)').matches) return;
+  const cursor = document.getElementById('cursor');
+  const dot = document.getElementById('cursor-dot');
+  const trail = document.getElementById('cursor-trail');
+  let mouseX = 0, mouseY = 0;
+  let cursorX = 0, cursorY = 0;
+  let dotX = 0, dotY = 0;
+
+  document.addEventListener('mousemove', e => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+
+  function animate() {
+    cursorX += (mouseX - cursorX) * 0.15;
+    cursorY += (mouseY - cursorY) * 0.15;
+    dotX += (mouseX - dotX) * 0.35;
+    dotY += (mouseY - dotY) * 0.35;
+
+    cursor.style.left = cursorX + 'px';
+    cursor.style.top = cursorY + 'px';
+    dot.style.left = dotX + 'px';
+    dot.style.top = dotY + 'px';
+    trail.style.left = mouseX + 'px';
+    trail.style.top = mouseY + 'px';
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // Hover detection
+  document.addEventListener('mouseover', e => {
+    const target = e.target.closest('button, a, .entity, .ribbon-item, .floating-entity, .nav-logo, .dock-item, .filter-chip, .pagination-btn');
+    if (target) cursor.classList.add('hovering');
+    else cursor.classList.remove('hovering');
+  });
+}
+
+function initMagnetic() {
+  if (window.matchMedia('(pointer: coarse)').matches) return;
+  document.querySelectorAll('.magnetic:not([data-magnetic])').forEach(el => {
+    el.setAttribute('data-magnetic', '1');
+    el.addEventListener('mousemove', e => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      el.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.transform = '';
+    });
+  });
+}
+
+function initEntityGlow() {
+  document.querySelectorAll('.entity:not([data-glow])').forEach(el => {
+    el.setAttribute('data-glow', '1');
+    el.addEventListener('mousemove', e => {
+      const rect = el.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      el.style.setProperty('--mouse-x', x + '%');
+      el.style.setProperty('--mouse-y', y + '%');
+    });
+  });
+}
+
+let scrollRevealObserver = null;
+
+function initScrollReveal() {
+  if (scrollRevealObserver) return; // chỉ tạo 1 lần
+  scrollRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        scrollRevealObserver.unobserve(entry.target); // unobserve sau khi reveal
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '0px 0px -30px 0px' });
+  refreshScrollReveal();
+}
+
+function refreshScrollReveal() {
+  if (!scrollRevealObserver) return;
+  document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
+    scrollRevealObserver.observe(el);
+  });
+}
+
+/* ─── Hero Character Animation ─── */
+function initHeroText() {
+  const title = document.getElementById('heroTitle');
+  const text = title.textContent;
+  title.innerHTML = '';
+  text.split('').forEach((char, i) => {
+    const span = document.createElement('span');
+    span.className = 'char';
+    span.textContent = char;
+    span.style.animationDelay = (i * 0.08) + 's';
+    title.appendChild(span);
+  });
+}
+
+/* ─── Nav Scroll Effect ─── */
+function initNavScroll() {
+  const nav = document.getElementById('spatialNav');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 50) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  });
+}
+
+/* ─── Initialization ─── */
+window.addEventListener('DOMContentLoaded', () => {
+  initHeroText();
+  initCursor();
+  initNavScroll();
+  initMagnetic();
+
+  // VSign popup
+  const popupUntil = localStorage.getItem('vsign_popup_until');
+  if (!popupUntil || Date.now() > parseInt(popupUntil)) {
+    setTimeout(() => {
+      document.getElementById('vsignPopup').classList.add('active');
+      lucide.createIcons();
+    }, 2000);
+  }
+
+  loadData();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAppView();
+  if (e.key === '/' && document.activeElement !== document.getElementById('searchInput')) {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+  }
+});
+</script>
 </body>
 </html>
