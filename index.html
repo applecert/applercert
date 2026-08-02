@@ -1,993 +1,859 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>IPAVIET — Hệ Sinh Thái Số</title>
-<meta name="description" content="Nền tảng hệ sinh thái số toàn diện: Ứng dụng IPA, MMO, Phím tắt iOS và hơn thế nữa.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>IPAVIET OS — Kho VIP Độc Quyền</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
-<style>
-/* ═══════════════════════════════════════════════════════════════
-   IPAVIET — Design System
-   ═══════════════════════════════════════════════════════════════ */
-:root {
-  --bg: #fafafa;
-  --bg-elevated: #ffffff;
-  --bg-inverse: #0a0a0a;
-  --text: #1d1d1f;
-  --text-secondary: #86868b;
-  --text-inverse: #f5f5f7;
-  --accent: #2563eb;
-  --border: rgba(0,0,0,0.06);
-  --border-inverse: rgba(255,255,255,0.08);
-  --ease: cubic-bezier(0.16,1,0.3,1);
-  --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
-  --font: 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-}
-* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-html { scroll-behavior:smooth; }
-body {
-  font-family:var(--font); background:var(--bg); color:var(--text);
-  overflow-x:hidden; font-size:15px; line-height:1.6;
-  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-}
-::selection { background:var(--accent); color:#fff; }
-.container { max-width:1200px; margin:0 auto; padding:0 24px; }
-@media(min-width:768px){ .container{ padding:0 40px; } }
+  <style>
+    /* ================================================================
+       IPAVIET OS — VIP SPATIAL COMMAND CENTER
+       ================================================================ */
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-display: 'Space Grotesk', sans-serif;
+      --void: #03040a;
+      --deep: #080a14;
+      --surface: #0d0f1a;
+      --elevated: #121420;
+      --glass: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.06);
+      --glass-highlight: rgba(255,255,255,0.08);
+      --accent-cyan: #00f0ff;
+      --accent-violet: #8b5cf6;
+      --accent-rose: #f43f5e;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+      --text-primary: #f0f2f8;
+      --text-secondary: rgba(240,242,248,0.55);
+      --text-tertiary: rgba(240,242,248,0.3);
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 32px;
+      --radius-xl: 48px;
+      --radius-full: 9999px;
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      min-height: 100dvh;
+      cursor: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
 
-.reveal {
-  opacity:0; transform:translateY(40px);
-  transition:opacity .9s var(--ease), transform .9s var(--ease);
-}
-.reveal.in-view { opacity:1; transform:translateY(0); }
-.reveal-delay-1{ transition-delay:.1s; }
-.reveal-delay-2{ transition-delay:.2s; }
-.reveal-delay-3{ transition-delay:.3s; }
-.reveal-delay-4{ transition-delay:.4s; }
+    /* Cursor */
+    #cursor { position: fixed; width: 20px; height: 20px; border: 1.5px solid var(--accent-amber); border-radius: 50%; pointer-events: none; z-index: 99999; transform: translate(-50%,-50%); transition: width 0.3s var(--ease-spring), height 0.3s var(--ease-spring), border-color 0.3s; mix-blend-mode: difference; }
+    #cursor.hovering { width: 48px; height: 48px; border-color: var(--accent-cyan); }
+    #cursor-dot { position: fixed; width: 4px; height: 4px; background: var(--accent-amber); border-radius: 50%; pointer-events: none; z-index: 99999; transform: translate(-50%,-50%); }
+    #cursor-trail { position: fixed; width: 200px; height: 200px; background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%); border-radius: 50%; pointer-events: none; z-index: 99998; transform: translate(-50%,-50%); transition: opacity 0.5s; }
 
-/* ═══════════════════════════════════════════════════════════════
-   PRELOADER
-   ═══════════════════════════════════════════════════════════════ */
-.page-loader {
-  position:fixed; inset:0; background:#0a0a0a; z-index:9999;
-  display:flex; align-items:center; justify-content:center; flex-direction:column; gap:24px;
-  transition:opacity .8s var(--ease), visibility .8s;
-}
-.page-loader.out { opacity:0; visibility:hidden; pointer-events:none; }
-.loader { display:flex; gap:.3em; }
-.loader svg { width:48px; height:48px; }
-@media(max-width:640px){ .loader{gap:.2em;} .loader svg{width:32px;height:32px;} }
-.dash {
-  animation:dashArray 2s ease-in-out infinite, dashOffset 2s linear infinite;
-}
-@keyframes dashArray {
-  0%{stroke-dasharray:0 1 359 0;} 50%{stroke-dasharray:0 359 1 0;} 100%{stroke-dasharray:359 1 0 0;}
-}
-@keyframes dashOffset {
-  0%{stroke-dashoffset:365;} 100%{stroke-dashoffset:5;}
-}
+    /* Ambient */
+    .ambient-layer { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+    .aurora-blob { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.4; animation: auroraFloat 20s ease-in-out infinite; }
+    .aurora-blob:nth-child(1) { width: 600px; height: 600px; background: radial-gradient(circle, rgba(245,158,11,0.35), transparent 70%); top: -10%; left: -10%; animation-delay: 0s; }
+    .aurora-blob:nth-child(2) { width: 500px; height: 500px; background: radial-gradient(circle, rgba(139,92,246,0.25), transparent 70%); bottom: -10%; right: -5%; animation-delay: -7s; }
+    .aurora-blob:nth-child(3) { width: 400px; height: 400px; background: radial-gradient(circle, rgba(244,63,94,0.2), transparent 70%); top: 40%; left: 50%; animation-delay: -14s; }
+    @keyframes auroraFloat { 0%,100% { transform: translate(0,0) scale(1); } 25% { transform: translate(50px,-30px) scale(1.1); } 50% { transform: translate(-30px,40px) scale(0.95); } 75% { transform: translate(20px,20px) scale(1.05); } }
+    .noise-overlay { position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px; }
 
-/* ═══════════════════════════════════════════════════════════════
-   HEADER
-   ═══════════════════════════════════════════════════════════════ */
-.header-bar {
-  position:fixed; top:0; left:0; right:0; z-index:700;
-  background:rgba(250,250,250,.75);
-  backdrop-filter:blur(20px) saturate(1.8);
-  -webkit-backdrop-filter:blur(20px) saturate(1.8);
-  border-bottom:1px solid var(--border);
-  transition:transform .4s var(--ease), background .4s ease;
-}
-.header-bar.scrolled { background:rgba(250,250,250,.92); }
-.header-bar.hidden { transform:translateY(-100%); }
-.header-inner {
-  max-width:1200px; margin:0 auto; padding:0 24px;
-  display:flex; align-items:center; justify-content:space-between; height:64px;
-}
-@media(min-width:768px){ .header-inner{ padding:0 40px; height:72px; } }
-.logo-link { display:inline-flex; align-items:center; gap:2px; text-decoration:none!important; }
-.logo-letter { height:22px; width:22px; display:inline-block; }
-@media(max-width:640px){ .logo-letter{height:18px;width:18px;} }
+    /* Glass */
+    .glass { background: var(--glass); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 var(--glass-highlight); }
+    .glass-strong { background: rgba(255,255,255,0.05); backdrop-filter: blur(60px) saturate(200%); -webkit-backdrop-filter: blur(60px) saturate(200%); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 16px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1); }
 
-.desktop-nav { display:none; align-items:center; gap:32px; }
-@media(min-width:900px){ .desktop-nav{ display:flex; } }
-.desktop-nav a {
-  font-size:13px; font-weight:600; color:var(--text-secondary);
-  text-decoration:none!important; letter-spacing:-.01em;
-  transition:color .3s ease; position:relative;
-}
-.desktop-nav a::after {
-  content:''; position:absolute; bottom:-4px; left:0; width:0; height:1.5px;
-  background:var(--accent); transition:width .3s var(--ease);
-}
-.desktop-nav a:hover { color:var(--text); }
-.desktop-nav a:hover::after { width:100%; }
+    /* Nav */
+    .spatial-nav { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--radius-full); transition: all 0.5s var(--ease-fluid); max-width: calc(100% - 32px); flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+    .spatial-nav::-webkit-scrollbar { display: none; }
+    .spatial-nav.scrolled { background: rgba(3,4,10,0.8); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+    .nav-logo { font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 2px; color: var(--text-primary); padding: 8px 12px; position: relative; overflow: hidden; cursor: none; flex-shrink: 0; }
+    .nav-logo::after { content: ''; position: absolute; bottom: 4px; left: 12px; right: 12px; height: 2px; background: linear-gradient(90deg, transparent, var(--accent-amber), transparent); opacity: 0; transition: opacity 0.3s; }
+    .nav-logo:hover::after { opacity: 1; }
+    .nav-pill { padding: 8px 14px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600; color: var(--text-secondary); background: transparent; border: none; cursor: none; transition: all 0.4s var(--ease-spring); position: relative; overflow: hidden; text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; }
+    .nav-pill::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(139,92,246,0.1)); border-radius: inherit; opacity: 0; transition: opacity 0.3s; }
+    .nav-pill:hover { color: var(--text-primary); transform: translateY(-1px); }
+    .nav-pill:hover::before { opacity: 1; }
+    .nav-pill.active { color: var(--accent-amber); background: rgba(245,158,11,0.08); box-shadow: 0 0 20px rgba(245,158,11,0.1); }
+    .nav-action { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); cursor: none; transition: all 0.3s var(--ease-spring); text-decoration: none; font-size: 11px; font-weight: 700; padding: 0 12px; width: auto; }
+    .nav-action:hover { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--accent-amber); transform: scale(1.1); }
 
-.header-cta {
-  display:none; align-items:center; gap:8px;
-  padding:10px 20px; border-radius:100px;
-  background:var(--text); color:#fff!important;
-  font-size:13px; font-weight:700; text-decoration:none!important;
-  transition:all .3s var(--ease); border:1px solid var(--text);
-}
-.header-cta:hover { background:transparent; color:var(--text)!important; transform:translateY(-1px); }
-@media(min-width:900px){ .header-cta{ display:inline-flex; } }
+    /* Main */
+    #spatial-stage { position: relative; z-index: 10; min-height: 100dvh; padding-top: 100px; padding-bottom: 120px; overflow: hidden; }
 
-.menu-toggle {
-  display:flex; flex-direction:column; gap:5px;
-  background:none; border:none; cursor:pointer; padding:8px; z-index:701;
-}
-@media(min-width:900px){ .menu-toggle{ display:none; } }
-.menu-toggle span { display:block; width:22px; height:2px; background:var(--text); border-radius:2px; transition:all .3s var(--ease); }
-.menu-toggle.active span:nth-child(1){ transform:rotate(45deg) translate(5px,5px); }
-.menu-toggle.active span:nth-child(2){ opacity:0; }
-.menu-toggle.active span:nth-child(3){ transform:rotate(-45deg) translate(5px,-5px); }
+    /* VIP Hero */
+    .vip-hero { position: relative; padding: 40px 24px 48px; text-align: center; overflow: hidden; }
+    .vip-hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 20px; border-radius: var(--radius-full); background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.2); color: var(--accent-amber); font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 20px; }
+    .vip-hero-title { font-family: var(--font-display); font-size: clamp(32px, 6vw, 64px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+    .vip-hero-title .gold { background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .vip-hero-desc { font-size: 15px; color: var(--text-secondary); max-width: 500px; margin: 16px auto 0; line-height: 1.6; }
 
-.mobile-menu {
-  position:fixed; inset:0; background:var(--bg); z-index:699;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:32px;
-  opacity:0; pointer-events:none; transition:opacity .5s var(--ease);
-}
-.mobile-menu.open { opacity:1; pointer-events:all; }
-.mobile-menu a {
-  font-size:28px; font-weight:700; color:var(--text); text-decoration:none!important;
-  letter-spacing:-.02em; opacity:0; transform:translateY(20px);
-  transition:opacity .4s var(--ease), transform .4s var(--ease), color .3s;
-}
-.mobile-menu.open a { opacity:1; transform:translateY(0); }
-.mobile-menu.open a:nth-child(1){transition-delay:.1s;}
-.mobile-menu.open a:nth-child(2){transition-delay:.15s;}
-.mobile-menu.open a:nth-child(3){transition-delay:.2s;}
-.mobile-menu.open a:nth-child(4){transition-delay:.25s;}
-.mobile-menu.open a:nth-child(5){transition-delay:.3s;}
-.mobile-menu.open a:nth-child(6){transition-delay:.35s;}
-.mobile-menu.open a:nth-child(7){transition-delay:.4s;}
-.mobile-menu a:hover { color:var(--accent); }
+    /* Search */
+    .command-input-wrap { position: relative; max-width: 600px; margin: 0 auto 48px; z-index: 20; }
+    .command-input { width: 100%; height: 56px; padding: 0 24px 0 56px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); color: var(--text-primary); font-size: 15px; font-weight: 500; outline: none; transition: all 0.4s var(--ease-spring); cursor: none; }
+    .command-input::placeholder { color: var(--text-tertiary); }
+    .command-input:focus { background: rgba(255,255,255,0.06); border-color: rgba(245,158,11,0.3); box-shadow: 0 0 40px rgba(245,158,11,0.08), inset 0 1px 0 rgba(255,255,255,0.1); }
+    .command-input-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); pointer-events: none; transition: color 0.3s; }
+    .command-input:focus + .command-input-icon, .command-input-wrap:focus-within .command-input-icon { color: var(--accent-amber); }
 
-/* ═══════════════════════════════════════════════════════════════
-   HERO
-   ═══════════════════════════════════════════════════════════════ */
-.hero {
-  position:relative; min-height:100vh;
-  display:flex; align-items:center; justify-content:center;
-  overflow:hidden; padding:120px 24px 80px;
-}
-@media(min-width:768px){ .hero{ padding:140px 40px 100px; } }
-.hero-layer { position:absolute; inset:0; pointer-events:none; }
-.hero-bg-gradient {
-  background:
-    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(37,99,235,.06) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 60%, rgba(124,58,237,.04) 0%, transparent 50%),
-    linear-gradient(180deg, #fafafa 0%, #f5f5f7 100%);
-}
-.hero-grid {
-  background-image:
-    linear-gradient(rgba(0,0,0,.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,.03) 1px, transparent 1px);
-  background-size:60px 60px;
-  mask-image:radial-gradient(ellipse 70% 60% at center, black 0%, transparent 70%);
-  -webkit-mask-image:radial-gradient(ellipse 70% 60% at center, black 0%, transparent 70%);
-}
-.orb { position:absolute; border-radius:50%; filter:blur(80px); pointer-events:none; will-change:transform; }
-.orb-1 { width:500px; height:400px; background:radial-gradient(circle, rgba(37,99,235,.12), transparent 70%); top:-10%; left:-5%; animation:orbFloat 10s ease-in-out infinite; }
-.orb-2 { width:400px; height:350px; background:radial-gradient(circle, rgba(124,58,237,.1), transparent 70%); bottom:-5%; right:-5%; animation:orbFloat 12s ease-in-out infinite reverse; }
-.orb-3 { width:300px; height:300px; background:radial-gradient(circle, rgba(16,185,129,.08), transparent 70%); top:50%; left:60%; animation:orbFloat 8s ease-in-out infinite 2s; }
-@keyframes orbFloat {
-  0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(30px,-40px) scale(1.05);} 66%{transform:translate(-20px,20px) scale(.98);}
-}
-.shape-ring { position:absolute; border-radius:50%; border:1px solid rgba(0,0,0,.06); pointer-events:none; }
-.shape-ring-1 { width:500px; height:500px; top:10%; right:-10%; }
-.shape-ring-2 { width:300px; height:300px; bottom:15%; left:-5%; border-style:dashed; }
-.shape-box { position:absolute; border-radius:24px; background:linear-gradient(135deg, rgba(37,99,235,.04), rgba(124,58,237,.04)); border:1px solid rgba(0,0,0,.04); backdrop-filter:blur(8px); pointer-events:none; }
-.shape-box-1 { width:120px; height:120px; top:20%; right:15%; transform:rotate(15deg); }
-.shape-box-2 { width:80px; height:80px; bottom:25%; left:10%; transform:rotate(-10deg); }
+    /* Section */
+    .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 32px; padding: 0 8px; }
+    .section-title { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; position: relative; display: inline-block; }
+    .section-title::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 40px; height: 2px; background: linear-gradient(90deg, var(--accent-amber), transparent); }
 
-.hero-content { position:relative; z-index:2; max-width:900px; width:100%; text-align:center; }
-.hero-eyebrow {
-  display:inline-flex; align-items:center; gap:10px; margin-bottom:32px;
-  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.2em; color:var(--accent);
-  opacity:0; transform:translateY(20px); animation:fadeUp .8s var(--ease) .8s forwards;
-}
-.eyebrow-line { width:24px; height:1px; background:var(--accent); }
-.hero-title { font-size:clamp(48px,12vw,140px); font-weight:900; line-height:.95; letter-spacing:-.04em; color:var(--text); margin-bottom:8px; }
-.hero-title .line { display:block; overflow:hidden; }
-.hero-title .line span { display:block; transform:translateY(105%); animation:slideUp 1s var(--ease) forwards; }
-.hero-title .line:nth-child(1) span{ animation-delay:.9s; }
-.hero-title .line:nth-child(2) span{ animation-delay:1.0s; }
-.hero-title .accent { background:linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-.hero-sub { font-size:clamp(15px,2vw,18px); font-weight:500; color:var(--text-secondary); line-height:1.7; max-width:520px; margin:32px auto 0; opacity:0; transform:translateY(20px); animation:fadeUp .8s var(--ease) 1.3s forwards; }
-.hero-meta { display:flex; align-items:center; justify-content:center; gap:32px; margin-top:48px; opacity:0; transform:translateY(20px); animation:fadeUp .8s var(--ease) 1.5s forwards; }
-@media(max-width:640px){ .hero-meta{flex-direction:column;gap:16px;} }
-.hero-meta-item { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; color:var(--text-secondary); }
-.hero-meta-item b { font-size:20px; font-weight:800; color:var(--text); letter-spacing:-.02em; }
-.meta-dot { width:4px; height:4px; border-radius:50%; background:var(--border); }
-@media(max-width:640px){ .meta-dot{display:none;} }
-.hero-cta-row { margin-top:40px; opacity:0; transform:translateY(20px); animation:fadeUp .8s var(--ease) 1.7s forwards; }
-.hero-cta { display:inline-flex; align-items:center; gap:12px; padding:16px 36px; border-radius:100px; background:var(--text); color:#fff!important; font-size:14px; font-weight:700; text-decoration:none!important; border:1.5px solid var(--text); transition:all .4s var(--ease); letter-spacing:-.01em; }
-.hero-cta:hover { background:transparent; color:var(--text)!important; transform:translateY(-2px); }
-.hero-cta .arrow-icon { width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; transition:transform .3s var(--ease-spring); }
-.hero-cta:hover .arrow-icon { transform:translateX(4px); }
+    /* Ribbon */
+    .ribbon-container { position: relative; overflow: visible; padding: 20px 0; margin-bottom: 48px; }
+    .ribbon-track { display: flex; gap: 20px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory; padding-bottom: 20px; }
+    .ribbon-track::-webkit-scrollbar { display: none; }
+    .ribbon-item { flex: 0 0 320px; height: 200px; border-radius: var(--radius-lg); position: relative; overflow: hidden; scroll-snap-align: start; cursor: none; transition: all 0.5s var(--ease-spring); }
+    .ribbon-item:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 24px 48px rgba(0,0,0,0.4); }
+    .ribbon-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: opacity 0.5s, transform 0.8s var(--ease-fluid); }
+    .ribbon-item:hover img { opacity: 0.8; transform: scale(1.1); }
+    .ribbon-item::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(3,4,10,0.95) 0%, rgba(3,4,10,0.3) 50%, transparent 100%); }
+    .ribbon-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 24px; z-index: 2; }
+    .ribbon-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .ribbon-desc { font-size: 13px; color: var(--text-secondary); }
 
-.scroll-cue { position:absolute; bottom:32px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:8px; opacity:0; animation:fadeIn 1s ease 2.2s forwards; z-index:2; cursor:pointer; }
-.scroll-cue-text { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.15em; color:var(--text-secondary); }
-.scroll-cue-line { width:1px; height:40px; background:linear-gradient(to bottom, var(--text-secondary), transparent); animation:scrollPulse 2s ease-in-out infinite; }
-@keyframes scrollPulse { 0%,100%{transform:scaleY(1);opacity:.5;} 50%{transform:scaleY(.6);opacity:1;} }
+    /* Entity Grid */
+    .entity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 0 8px; }
+    .entity { position: relative; padding: 20px; border-radius: var(--radius-lg); background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.5s var(--ease-spring); cursor: none; overflow: hidden; }
+    .entity::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent); transition: left 0.6s; }
+    .entity:hover::before { left: 100%; }
+    .entity:hover { transform: translateY(-4px) scale(1.01); border-color: rgba(245,158,11,0.15); box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 60px rgba(245,158,11,0.05); }
+    .entity-header { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+    .entity-icon { width: 56px; height: 56px; border-radius: var(--radius-md); overflow: hidden; position: relative; flex-shrink: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    .entity-icon img { width: 100%; height: 100%; object-fit: cover; }
+    .entity-icon::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); pointer-events: none; }
+    .entity-meta { flex: 1; min-width: 0; }
+    .entity-name { font-size: 15px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entity-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entity-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); color: var(--accent-amber); border: 1px solid rgba(245,158,11,0.2); }
+    .entity-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.04); }
+    .entity-version { font-size: 12px; font-weight: 600; color: var(--text-tertiary); font-family: var(--font-display); }
+    .entity-action { padding: 6px 16px; border-radius: var(--radius-full); font-size: 12px; font-weight: 700; border: none; cursor: none; transition: all 0.3s var(--ease-spring); background: linear-gradient(135deg, var(--accent-amber), #d97706); color: var(--void); box-shadow: 0 4px 16px rgba(245,158,11,0.2); }
+    .entity-action:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(245,158,11,0.3); }
 
-@keyframes fadeUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
-@keyframes slideUp { from{transform:translateY(105%);} to{transform:translateY(0);} }
-@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+    /* Watermark (preserved) */
+    .ipaviet-watermark-sm, .ipaviet-watermark-lg { position: relative; overflow: hidden; }
+    .ipaviet-watermark-sm::after {
+      content: "IPAVIET.SITE"; position: absolute; top: 6px; left: -22px; width: 80px; height: 12px;
+      background: #ff3b30; color: #ffffff; font-size: 5.5px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      transform: rotate(-45deg); z-index: 50; pointer-events: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.5); letter-spacing: 0.5px;
+    }
+    .ipaviet-watermark-lg::after {
+      content: "IPAVIET.SITE"; position: absolute; top: 10px; left: -35px; width: 130px; height: 18px;
+      background: #ff3b30; color: #ffffff; font-size: 8px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      transform: rotate(-45deg); z-index: 50; pointer-events: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 0.5px;
+    }
 
+    /* Filter */
+    .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding: 4px 8px 20px; scrollbar-width: none; margin-bottom: 8px; }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-chip { flex-shrink: 0; padding: 8px 18px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: var(--text-secondary); cursor: none; transition: all 0.3s var(--ease-spring); display: flex; align-items: center; gap: 6px; }
+    .filter-chip:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); transform: translateY(-1px); }
+    .filter-chip.active { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(139,92,246,0.1)); color: var(--accent-amber); border-color: rgba(245,158,11,0.2); box-shadow: 0 0 20px rgba(245,158,11,0.08); }
 
-/* ═══════════════════════════════════════════════════════════════
-   PHILOSOPHY
-   ═══════════════════════════════════════════════════════════════ */
-.philosophy {
-  position:relative; padding:160px 24px;
-  background:var(--bg-inverse); color:var(--text-inverse); overflow:hidden;
-}
-@media(min-width:768px){ .philosophy{ padding:200px 40px; } }
-.philosophy-orb { position:absolute; border-radius:50%; filter:blur(120px); pointer-events:none; }
-.philosophy-orb-1 { width:600px; height:500px; background:radial-gradient(circle, rgba(37,99,235,.15), transparent 70%); top:-20%; right:-10%; }
-.philosophy-orb-2 { width:400px; height:400px; background:radial-gradient(circle, rgba(124,58,237,.1), transparent 70%); bottom:-10%; left:-5%; }
-.philosophy-inner { position:relative; z-index:2; max-width:1000px; margin:0 auto; }
-.philosophy-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.2em; color:var(--accent); margin-bottom:40px; display:inline-block; }
-.philosophy-quote { font-size:clamp(28px,5vw,56px); font-weight:800; line-height:1.15; letter-spacing:-.03em; }
-.philosophy-quote .highlight { color:transparent; -webkit-text-stroke:1.5px rgba(255,255,255,.4); transition:all .6s var(--ease); }
-.philosophy-quote .highlight.active { color:#fff; -webkit-text-stroke:0px transparent; }
+    /* Pagination */
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 48px; padding: 0 8px; }
+    .pagination-btn { min-width: 40px; height: 40px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; font-family: var(--font-display); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: var(--text-secondary); cursor: none; transition: all 0.3s var(--ease-spring); }
+    .pagination-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); transform: translateY(-2px); }
+    .pagination-btn.active { background: linear-gradient(135deg, var(--accent-amber), #d97706); color: var(--void); border-color: transparent; box-shadow: 0 4px 16px rgba(245,158,11,0.2); }
+    .pagination-btn.disabled { opacity: 0.3; pointer-events: none; }
 
-/* ═══════════════════════════════════════════════════════════════
-   ECOSYSTEM — ENHANCED (The Star of the Show)
-   ═══════════════════════════════════════════════════════════════ */
-.ecosystem {
-  position:relative; padding:120px 0; background:var(--bg); overflow:hidden;
-}
-@media(min-width:768px){ .ecosystem{ padding:160px 0; } }
+    /* Detail Stage */
+    #app-detail-stage { position: fixed; inset: 0; z-index: 200; pointer-events: none; opacity: 0; visibility: hidden; perspective: 1200px; transform-style: preserve-3d; }
+    #app-detail-stage.active { pointer-events: all; opacity: 1; visibility: visible; }
+    .detail-backdrop { position: fixed; inset: 0; background: rgba(3,4,10,0.95); backdrop-filter: blur(0px) saturate(100%); -webkit-backdrop-filter: blur(0px) saturate(100%); will-change: backdrop-filter; }
+    .detail-content { position: relative; height: 100dvh; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; -webkit-overflow-scrolling: touch; }
+    .detail-content::-webkit-scrollbar { width: 4px; }
+    .detail-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .detail-hero { position: relative; min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 120px 24px 48px; overflow: hidden; }
+    .detail-hero-bg { position: absolute; inset: 0; z-index: 0; }
+    .detail-hero-bg img { width: 100%; height: 100%; object-fit: cover; filter: blur(80px) saturate(1.8); opacity: 0; transform: scale(1.5); }
+    .detail-hero-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 0%, var(--void) 100%); }
+    .detail-icon-wrap { position: relative; width: 120px; height: 120px; border-radius: var(--radius-lg); overflow: hidden; z-index: 2; box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1), 0 0 60px rgba(245,158,11,0.1); opacity: 0; transform: scale(0.6) translateY(40px) rotateX(20deg); }
+    .detail-icon-wrap.animated { animation: iconFloat 6s ease-in-out infinite; }
+    @keyframes iconFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .detail-icon-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .detail-title { font-family: var(--font-display); font-size: 36px; font-weight: 700; text-align: center; margin-top: 24px; z-index: 2; letter-spacing: -0.02em; opacity: 0; transform: translateY(30px); }
+    .detail-dev { font-size: 14px; color: var(--text-secondary); margin-top: 8px; z-index: 2; opacity: 0; transform: translateY(20px); }
+    .detail-actions { display: flex; gap: 12px; margin-top: 32px; z-index: 2; opacity: 0; transform: translateY(20px) scale(0.95); }
+    .detail-btn { padding: 12px 32px; border-radius: var(--radius-full); font-size: 14px; font-weight: 700; border: none; cursor: none; transition: all 0.4s var(--ease-spring); display: flex; align-items: center; gap: 8px; }
+    .detail-btn-primary { background: linear-gradient(135deg, var(--accent-amber), #d97706); color: var(--void); box-shadow: 0 8px 32px rgba(245,158,11,0.25); }
+    .detail-btn-primary:hover { transform: scale(1.05); box-shadow: 0 12px 40px rgba(245,158,11,0.35); }
+    .detail-btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); }
+    .detail-btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+    .detail-body { max-width: 800px; margin: 0 auto; padding: 0 24px 120px; position: relative; z-index: 2; opacity: 0; transform: translateY(40px); }
+    .detail-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px; }
+    .detail-info-cell { text-align: center; padding: 20px; border-radius: var(--radius-md); background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); opacity: 0; transform: translateY(20px); }
+    .detail-info-value { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text-primary); }
+    .detail-info-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; }
+    .detail-section-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); opacity: 0; transform: translateY(20px); }
+    .detail-desc { font-size: 15px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 48px; opacity: 0; transform: translateY(20px); white-space: pre-line; }
+    .detail-screenshots { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; margin-bottom: 48px; scrollbar-width: none; }
+    .detail-screenshots::-webkit-scrollbar { display: none; }
+    .detail-screenshots img { height: 400px; border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: transform 0.4s var(--ease-spring); flex-shrink: 0; }
+    .detail-screenshots img:hover { transform: scale(1.02) translateY(-4px); }
+    .detail-data-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.04); opacity: 0; transform: translateX(-10px); }
+    .detail-data-row:last-child { border-bottom: none; }
+    .detail-data-label { font-size: 14px; color: var(--text-secondary); }
+    .detail-data-value { font-size: 14px; font-weight: 600; color: var(--text-primary); font-family: var(--font-display); }
+    .detail-close { position: fixed; top: 24px; left: 24px; z-index: 210; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: none; transition: all 0.3s var(--ease-spring); opacity: 0; transform: scale(0.5) rotate(-90deg); }
+    .detail-close:hover { background: rgba(255,255,255,0.1); transform: scale(1.1) rotate(0deg); }
 
-.eco-header { margin-bottom:80px; }
-.eco-label {
-  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.2em; color:var(--accent);
-  margin-bottom:16px; display:inline-flex; align-items:center; gap:10px;
-}
-.eco-label::before { content:''; width:24px; height:1px; background:var(--accent); }
-.eco-title { font-size:clamp(32px,5vw,56px); font-weight:900; line-height:1.1; letter-spacing:-.03em; max-width:600px; }
+    /* Purchase panels */
+    .purchase-panel { border-radius: var(--radius-lg); padding: 24px; margin-bottom: 32px; position: relative; overflow: hidden; }
+    .purchase-panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(245,158,11,0.05), rgba(139,92,246,0.05)); z-index: 0; }
+    .purchase-panel > * { position: relative; z-index: 1; }
+    .purchase-panel-vip { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.02)); border: 1px solid rgba(245,158,11,0.15); }
+    .purchase-panel-locked { background: linear-gradient(135deg, rgba(244,63,94,0.08), rgba(244,63,94,0.02)); border: 1px solid rgba(244,63,94,0.1); }
 
-/* Each service is a dramatic panel */
-.eco-list { display:flex; flex-direction:column; gap:0; border-top:1px solid var(--border); }
+    /* Toast */
+    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 28px; border-radius: var(--radius-full); background: var(--glass-strong); color: var(--text-primary); font-size: 14px; font-weight: 600; z-index: 500; opacity: 0; transition: all 0.5s var(--ease-spring); pointer-events: none; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-.eco-panel {
-  position:relative; overflow:hidden;
-  border-bottom:1px solid var(--border);
-  text-decoration:none!important; color:inherit;
-  display:block;
-  transition:background .6s var(--ease);
-}
-.eco-panel::before {
-  content:''; position:absolute; left:0; top:0; bottom:0; width:0;
-  transition:width .5s var(--ease);
-}
-.eco-panel:hover::before { width:4px; }
+    /* Loading */
+    .loading-stage { position: fixed; inset: 0; z-index: 1000; background: var(--void); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s var(--ease-fluid), visibility 0.8s; }
+    .loading-stage.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loading-ring { width: 80px; height: 80px; position: relative; }
+    .loading-ring::before, .loading-ring::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent; }
+    .loading-ring::before { border-top-color: var(--accent-amber); border-right-color: var(--accent-violet); animation: spin 1.5s linear infinite; }
+    .loading-ring::after { border-bottom-color: var(--accent-rose); border-left-color: var(--accent-cyan); animation: spin 2s linear infinite reverse; inset: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: 0.3em; color: var(--text-tertiary); margin-top: 24px; }
 
-/* Accent colors per panel */
-.eco-panel[data-accent="blue"]::before { background:linear-gradient(180deg, #2563eb, #3b82f6); }
-.eco-panel[data-accent="blue"]:hover { background:linear-gradient(90deg, rgba(37,99,235,.03), transparent 40%); }
-.eco-panel[data-accent="green"]::before { background:linear-gradient(180deg, #059669, #10b981); }
-.eco-panel[data-accent="green"]:hover { background:linear-gradient(90deg, rgba(16,185,129,.03), transparent 40%); }
-.eco-panel[data-accent="purple"]::before { background:linear-gradient(180deg, #7c3aed, #a78bfa); }
-.eco-panel[data-accent="purple"]:hover { background:linear-gradient(90deg, rgba(124,58,237,.03), transparent 40%); }
-.eco-panel[data-accent="amber"]::before { background:linear-gradient(180deg, #d97706, #f59e0b); }
-.eco-panel[data-accent="amber"]:hover { background:linear-gradient(90deg, rgba(245,158,11,.03), transparent 40%); }
-.eco-panel[data-accent="rose"]::before { background:linear-gradient(180deg, #e11d48, #f43f5e); }
-.eco-panel[data-accent="rose"]:hover { background:linear-gradient(90deg, rgba(244,63,94,.03), transparent 40%); }
+    /* Dock */
+    .spatial-dock { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 4px; padding: 8px; background: rgba(3,4,10,0.7); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-full); box-shadow: 0 16px 48px rgba(0,0,0,0.4); transition: all 0.5s var(--ease-fluid); }
+    .dock-item { width: 48px; height: 48px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); background: transparent; border: none; cursor: none; transition: all 0.4s var(--ease-spring); position: relative; text-decoration: none; }
+    .dock-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); transform: translateY(-4px) scale(1.1); }
+    .dock-item.active { color: var(--accent-amber); background: rgba(245,158,11,0.08); box-shadow: 0 0 20px rgba(245,158,11,0.1); }
+    .dock-item.active::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--accent-amber); box-shadow: 0 0 8px var(--accent-amber); }
+    .dock-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.06); margin: 0 4px; }
 
-.eco-panel-inner {
-  display:grid;
-  grid-template-columns:1fr;
-  gap:0;
-  padding:40px 24px;
-  position:relative;
-  transition:padding .5s var(--ease);
-}
-@media(min-width:768px){
-  .eco-panel-inner {
-    grid-template-columns:100px 1fr 200px;
-    gap:40px; padding:48px 40px; align-items:center;
-  }
-}
-@media(min-width:900px){
-  .eco-panel-inner { grid-template-columns:120px 1fr 240px; gap:60px; padding:56px 48px; }
-}
+    /* Reveal */
+    .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s var(--ease-fluid); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
 
-/* Big decorative number */
-.eco-num-wrap { position:relative; }
-.eco-num {
-  font-size:clamp(64px,10vw,140px);
-  font-weight:900; line-height:1;
-  letter-spacing:-.05em;
-  color:var(--text);
-  opacity:.04;
-  position:absolute; top:50%; left:0;
-  transform:translateY(-50%);
-  font-variant-numeric:tabular-nums;
-  transition:opacity .5s var(--ease), transform .5s var(--ease);
-  user-select:none; pointer-events:none;
-}
-.eco-panel:hover .eco-num {
-  opacity:.08;
-  transform:translateY(-50%) scale(1.05);
-}
-@media(max-width:767px){
-  .eco-num { position:relative; top:auto; transform:none; font-size:80px; opacity:.06; margin-bottom:-20px; }
-  .eco-panel:hover .eco-num { transform:scale(1.05); }
-}
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
 
-/* Main content */
-.eco-main { position:relative; z-index:2; }
-.eco-main h3 {
-  font-size:clamp(24px,3.5vw,40px);
-  font-weight:800; letter-spacing:-.03em;
-  line-height:1.15; margin-bottom:12px;
-  transition:transform .4s var(--ease), color .3s;
-}
-.eco-panel:hover .eco-main h3 { transform:translateX(8px); }
-.eco-panel[data-accent="blue"]:hover .eco-main h3 { color:#2563eb; }
-.eco-panel[data-accent="green"]:hover .eco-main h3 { color:#059669; }
-.eco-panel[data-accent="purple"]:hover .eco-main h3 { color:#7c3aed; }
-.eco-panel[data-accent="amber"]:hover .eco-main h3 { color:#d97706; }
-.eco-panel[data-accent="rose"]:hover .eco-main h3 { color:#e11d48; }
-
-.eco-desc {
-  font-size:15px; color:var(--text-secondary); line-height:1.7;
-  max-width:480px; margin-bottom:20px;
-  opacity:.8; transition:opacity .4s, transform .4s var(--ease);
-}
-.eco-panel:hover .eco-desc { opacity:1; transform:translateX(4px); }
-
-.eco-tags { display:flex; flex-wrap:wrap; gap:8px; }
-.eco-tag {
-  display:inline-flex; align-items:center; gap:6px;
-  padding:6px 14px; border-radius:100px;
-  font-size:11px; font-weight:700; letter-spacing:.02em;
-  background:var(--bg-elevated); border:1px solid var(--border);
-  transition:all .3s var(--ease);
-}
-.eco-panel:hover .eco-tag {
-  border-color:rgba(0,0,0,.1); background:#fff;
-  transform:translateY(-1px);
-}
-
-/* Visual / Icon area */
-.eco-visual {
-  display:flex; align-items:center; justify-content:flex-end;
-  position:relative;
-}
-@media(max-width:767px){ .eco-visual{ display:none; } }
-
-.eco-icon-wrap {
-  width:120px; height:120px; border-radius:28px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:40px; color:#fff;
-  position:relative; overflow:hidden;
-  transition:all .5s var(--ease-spring);
-  box-shadow:0 8px 32px rgba(0,0,0,.08);
-}
-.eco-panel:hover .eco-icon-wrap {
-  transform:scale(1.08) rotate(-3deg);
-  box-shadow:0 16px 48px rgba(0,0,0,.12);
-}
-
-/* Icon backgrounds per accent */
-.eco-panel[data-accent="blue"] .eco-icon-wrap { background:linear-gradient(135deg, #1e3a8a, #3b82f6); }
-.eco-panel[data-accent="green"] .eco-icon-wrap { background:linear-gradient(135deg, #064e3b, #10b981); }
-.eco-panel[data-accent="purple"] .eco-icon-wrap { background:linear-gradient(135deg, #2e1065, #7c3aed); }
-.eco-panel[data-accent="amber"] .eco-icon-wrap { background:linear-gradient(135deg, #78350f, #f59e0b); }
-.eco-panel[data-accent="rose"] .eco-icon-wrap { background:linear-gradient(135deg, #881337, #f43f5e); }
-
-/* Decorative ring behind icon */
-.eco-icon-ring {
-  position:absolute; width:160px; height:160px; border-radius:50%;
-  border:1px dashed rgba(0,0,0,.08);
-  transition:all .6s var(--ease);
-  animation:ringSpin 20s linear infinite;
-}
-.eco-panel:hover .eco-icon-ring {
-  transform:scale(1.2); opacity:.6;
-}
-@keyframes ringSpin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
-
-/* Arrow */
-.eco-arrow {
-  position:absolute; right:24px; top:50%; transform:translateY(-50%);
-  width:48px; height:48px; border-radius:50%;
-  border:1px solid var(--border); background:var(--bg-elevated);
-  display:inline-flex; align-items:center; justify-content:center;
-  font-size:14px; color:var(--text-secondary);
-  transition:all .4s var(--ease-spring);
-  flex-shrink:0;
-}
-@media(min-width:768px){ .eco-arrow{ position:static; transform:none; } }
-.eco-panel:hover .eco-arrow {
-  background:var(--text); color:#fff; border-color:var(--text);
-  transform:translateY(-50%) translateX(4px);
-}
-@media(min-width:768px){ .eco-panel:hover .eco-arrow{ transform:translateX(4px); } }
-
-/* Mobile: show arrow inline */
-@media(max-width:767px){
-  .eco-panel-inner { position:relative; padding-right:80px; }
-  .eco-arrow { right:24px; }
-}
-
-/* Staggered reveal from left */
-.eco-panel.reveal { opacity:0; transform:translateX(-60px); }
-.eco-panel.reveal.in-view { opacity:1; transform:translateX(0); }
-.eco-panel.reveal-delay-1 { transition-delay:.1s; }
-.eco-panel.reveal-delay-2 { transition-delay:.2s; }
-.eco-panel.reveal-delay-3 { transition-delay:.3s; }
-.eco-panel.reveal-delay-4 { transition-delay:.4s; }
-
-/* ═══════════════════════════════════════════════════════════════
-   SHOWCASE
-   ═══════════════════════════════════════════════════════════════ */
-.showcase {
-  position:relative; min-height:80vh; display:flex; align-items:center; justify-content:center;
-  background:var(--bg-inverse); color:var(--text-inverse); overflow:hidden; padding:120px 24px;
-}
-.showcase-grid {
-  position:absolute; inset:0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-  background-size:80px 80px;
-  mask-image:radial-gradient(ellipse 70% 60% at center, black 0%, transparent 70%);
-}
-.showcase-content { position:relative; z-index:2; text-align:center; max-width:700px; }
-.showcase-num {
-  font-size:clamp(80px,15vw,200px); font-weight:900; line-height:1; letter-spacing:-.05em;
-  background:linear-gradient(180deg, rgba(255,255,255,.1) 0%, transparent 100%);
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
-  margin-bottom:24px;
-}
-.showcase-text { font-size:clamp(20px,3vw,32px); font-weight:700; line-height:1.4; letter-spacing:-.02em; }
-
-/* ═══════════════════════════════════════════════════════════════
-   NUMBERS
-   ═══════════════════════════════════════════════════════════════ */
-.numbers { padding:120px 0; background:var(--bg); }
-@media(min-width:768px){ .numbers{ padding:160px 0; } }
-.num-grid { display:grid; grid-template-columns:1fr; gap:48px; }
-@media(min-width:768px){ .num-grid{ grid-template-columns:repeat(3,1fr); gap:24px; } }
-.num-item {
-  padding:40px 24px; border:1px solid var(--border); border-radius:24px;
-  background:var(--bg-elevated); transition:all .5s var(--ease);
-}
-@media(min-width:768px){ .num-item{ padding:48px; } }
-.num-item:hover { transform:translateY(-4px); box-shadow:0 24px 48px -12px rgba(0,0,0,.06); border-color:rgba(37,99,235,.15); }
-.num-value { font-size:clamp(40px,6vw,72px); font-weight:900; line-height:1; letter-spacing:-.04em; color:var(--text); margin-bottom:12px; font-variant-numeric:tabular-nums; }
-.num-label { font-size:14px; font-weight:600; color:var(--text-secondary); }
-.num-desc { font-size:13px; color:var(--text-secondary); margin-top:8px; line-height:1.5; }
-
-/* ═══════════════════════════════════════════════════════════════
-   TRUST MARQUEE
-   ═══════════════════════════════════════════════════════════════ */
-.trust-strip { padding:60px 0; background:var(--bg-elevated); border-top:1px solid var(--border); border-bottom:1px solid var(--border); overflow:hidden; }
-.marquee { display:flex; gap:80px; animation:marqueeScroll 20s linear infinite; width:max-content; }
-.marquee-item { display:flex; align-items:center; gap:16px; font-size:14px; font-weight:700; color:var(--text-secondary); white-space:nowrap; }
-.marquee-item i { width:36px; height:36px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; }
-.marquee-item:nth-child(1) i { background:#dbeafe; color:#2563eb; }
-.marquee-item:nth-child(2) i { background:#dcfce7; color:#16a34a; }
-.marquee-item:nth-child(3) i { background:#fef3c7; color:#d97706; }
-.marquee-item:nth-child(4) i { background:#ede9fe; color:#7c3aed; }
-@keyframes marqueeScroll { 0%{transform:translateX(0);} 100%{transform:translateX(-50%);} }
-
-/* ═══════════════════════════════════════════════════════════════
-   CTA
-   ═══════════════════════════════════════════════════════════════ */
-.cta-section { padding:160px 24px; text-align:center; background:var(--bg); position:relative; overflow:hidden; }
-@media(min-width:768px){ .cta-section{ padding:200px 40px; } }
-.cta-orb { position:absolute; border-radius:50%; filter:blur(100px); pointer-events:none; width:500px; height:400px; background:radial-gradient(circle, rgba(37,99,235,.08), transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); }
-.cta-title { font-size:clamp(32px,6vw,72px); font-weight:900; line-height:1.05; letter-spacing:-.04em; margin-bottom:24px; position:relative; z-index:2; }
-.cta-sub { font-size:16px; color:var(--text-secondary); max-width:480px; margin:0 auto 40px; position:relative; z-index:2; }
-.cta-btn { display:inline-flex; align-items:center; gap:12px; padding:18px 40px; border-radius:100px; background:var(--accent); color:#fff!important; font-size:15px; font-weight:700; text-decoration:none!important; transition:all .4s var(--ease); position:relative; z-index:2; box-shadow:0 8px 32px rgba(37,99,235,.25); }
-.cta-btn:hover { transform:translateY(-3px) scale(1.02); box-shadow:0 16px 48px rgba(37,99,235,.35); }
-
-/* ═══════════════════════════════════════════════════════════════
-   FOOTER
-   ═══════════════════════════════════════════════════════════════ */
-.footer { background:var(--bg-inverse); color:var(--text-inverse); padding:80px 0 40px; border-top:1px solid var(--border-inverse); }
-.footer-grid { display:grid; grid-template-columns:1fr; gap:48px; margin-bottom:64px; }
-@media(min-width:768px){ .footer-grid{ grid-template-columns:2fr 1fr 1fr 1fr; gap:40px; } }
-.footer-brand p { font-size:13px; color:var(--text-secondary); line-height:1.7; margin-top:16px; max-width:280px; }
-.footer-social { display:flex; gap:10px; margin-top:20px; }
-.footer-social a { width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,.05); color:var(--text-secondary)!important; display:inline-flex; align-items:center; justify-content:center; font-size:14px; text-decoration:none!important; transition:all .3s var(--ease); border:1px solid rgba(255,255,255,.06); }
-.footer-social a:hover { background:var(--accent); color:#fff!important; border-color:var(--accent); transform:translateY(-2px); }
-.footer-col h4 { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.15em; color:var(--text-inverse); margin-bottom:20px; }
-.footer-col ul { list-style:none; display:flex; flex-direction:column; gap:10px; }
-.footer-col a { font-size:13px; color:var(--text-secondary)!important; text-decoration:none!important; font-weight:500; transition:color .3s; display:inline-flex; align-items:center; gap:6px; }
-.footer-col a:hover { color:#fff!important; }
-.footer-col a i { font-size:9px; opacity:.4; }
-.footer-bottom { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; padding-top:32px; border-top:1px solid var(--border-inverse); }
-.footer-bottom p, .footer-bottom a { font-size:12px; color:var(--text-secondary)!important; text-decoration:none!important; }
-.footer-bottom a:hover { color:#fff!important; }
-
-/* ═══════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════════════ */
-@media(max-width:640px){
-  .eco-panel-inner { grid-template-columns:1fr; padding:32px 24px; padding-right:80px; }
-  .eco-num { font-size:72px; margin-bottom:-16px; }
-}
-
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
-  .marquee{ animation:none; }
-  .eco-icon-ring{ animation:none; }
-}
-</style>
+    /* Responsive */
+    @media (max-width: 768px) { body { cursor: auto; } #cursor, #cursor-dot, #cursor-trail { display: none; } .vip-hero-title { font-size: 36px; } .entity-grid { grid-template-columns: 1fr; } .detail-info-grid { grid-template-columns: 1fr; } .ribbon-item { flex: 0 0 280px; height: 180px; } .spatial-nav { top: 12px; padding: 4px 6px; gap: 2px; max-width: calc(100% - 16px); } .nav-logo { font-size: 13px; padding: 6px 8px; } .nav-pill { padding: 6px 10px; font-size: 11px; } .nav-action { padding: 0 8px; font-size: 10px; height: 32px; } .spatial-dock { bottom: 12px; padding: 6px; } .dock-item { width: 44px; height: 44px; } }
+  </style>
 <base target="_blank">
 </head>
-
 <body>
 
-<!-- ══ SVG DEFS ══ -->
-<svg height="0" width="0" viewBox="0 0 64 64" style="position:absolute;pointer-events:none;">
-  <defs xmlns="http://www.w3.org/2000/svg">
-    <linearGradient gradientUnits="userSpaceOnUse" y2="2" x2="0" y1="62" x1="0" id="b">
-      <stop stop-color="#973BED"></stop><stop stop-color="#007CFF" offset="1"></stop>
-    </linearGradient>
-    <linearGradient gradientUnits="userSpaceOnUse" y2="0" x2="0" y1="64" x1="0" id="c">
-      <stop stop-color="#FFC800"></stop><stop stop-color="#F0F" offset="1"></stop>
-      <animateTransform repeatCount="indefinite" keySplines=".42,0,.58,1;.42,0,.58,1;.42,0,.58,1;.42,0,.58,1;.42,0,.58,1;.42,0,.58,1;.42,0,.58,1;.42,0,.58,1" keyTimes="0; 0.125; 0.25; 0.375; 0.5; 0.625; 0.75; 0.875; 1" dur="8s" values="0 32 32;-270 32 32;-270 32 32;-540 32 32;-540 32 32;-810 32 32;-810 32 32;-1080 32 32;-1080 32 32" type="rotate" attributeName="gradientTransform"></animateTransform>
-    </linearGradient>
-    <linearGradient gradientUnits="userSpaceOnUse" y2="2" x2="0" y1="62" x1="0" id="d">
-      <stop stop-color="#00E0ED"></stop><stop stop-color="#00DA72" offset="1"></stop>
-    </linearGradient>
-  </defs>
-</svg>
+<!-- Custom Cursor -->
+<div id="cursor"></div>
+<div id="cursor-dot"></div>
+<div id="cursor-trail"></div>
 
-<!-- ══ PRELOADER ══ -->
-<div class="page-loader" id="pageLoader">
-  <div class="loader">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="64" width="64"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#b)" d="M 32,4 V 60" class="dash" pathLength="360"></path></svg>
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="64" width="64"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#c)" d="M 20,60 V 4 H 40 A 14,14 0 0 1 40,32 H 20" class="dash" pathLength="360"></path></svg>
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="64" width="64"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#d)" d="M 12,60 L 32,6 L 52,60 M 20,42 H 44" class="dash" pathLength="360"></path></svg>
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="64" width="64"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#b)" d="M 8,4 L 32,56 L 56,4" class="dash" pathLength="360"></path></svg>
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="64" width="64"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#c)" d="M 32,4 V 60" class="dash" pathLength="360"></path></svg>
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="64" width="64"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#d)" d="M 52,4 H 18 V 60 H 52 M 18,32 H 44" class="dash" pathLength="360"></path></svg>
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height="64" width="64"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#b)" d="M 10,4 H 54 M 32,4 V 60" class="dash" pathLength="360"></path></svg>
+<!-- Ambient Background -->
+<div class="ambient-layer">
+  <div class="aurora-blob"></div>
+  <div class="aurora-blob"></div>
+  <div class="aurora-blob"></div>
+</div>
+<div class="noise-overlay"></div>
+
+<!-- Loading Stage -->
+<div class="loading-stage" id="loadingStage">
+  <div class="loading-ring"></div>
+  <div class="loading-text">IPAVIET VIP</div>
+</div>
+
+<!-- Spatial Navigation -->
+<nav class="spatial-nav glass" id="spatialNav">
+  <div class="nav-logo magnetic" onclick="location.href='index.html'">IPAVIET</div>
+  <div style="width:1px;height:20px;background:rgba(255,255,255,0.06);margin:0 4px;"></div>
+  <a href="index.html" class="nav-pill magnetic" style="text-decoration:none;">Khám phá</a>
+  <a href="app-library/index.html" class="nav-pill magnetic" style="text-decoration:none;">Kho IPA</a>
+  <button class="nav-pill active magnetic">VIP</button>
+  <div style="width:1px;height:20px;background:rgba(255,255,255,0.06);margin:0 4px;"></div>
+  <a href="vsign.html" class="nav-action magnetic" style="text-decoration:none;">VSign</a>
+  <a href="account.html" id="headerProfileBtn" class="nav-action magnetic" style="text-decoration:none;">Đăng nhập</a>
+</nav>
+
+<!-- Main Spatial Stage -->
+<main id="spatial-stage">
+
+  <!-- VIP Hero -->
+  <section class="vip-hero reveal">
+    <div class="vip-hero-badge"><i data-lucide="crown" style="width:14px;height:14px;"></i> Đặc Quyền Hội Viên</div>
+    <h1 class="vip-hero-title">Kho <span class="gold">VIP</span><br>Độc Quyền</h1>
+    <p class="vip-hero-desc">Ứng dụng đã được Hack, Mod, Crack sẵn bản quyền. Vô hạn tiền, mở khóa Premium. Cài đặt trực tiếp 1 click.</p>
+  </section>
+
+  <!-- Search -->
+  <div class="command-input-wrap reveal">
+    <input type="text" id="searchInput" class="command-input" placeholder="Tìm tên App Hack/Mod..." autocomplete="off">
+    <i data-lucide="search" class="command-input-icon" style="width:18px;height:18px;"></i>
+  </div>
+
+  <!-- Dynamic Content -->
+  <div id="dynamicContent" style="max-width:1200px;margin:0 auto;padding:0 24px;"></div>
+
+</main>
+
+<!-- App Detail Stage -->
+<div id="app-detail-stage">
+  <div class="detail-backdrop" onclick="closeAppView()"></div>
+  <button class="detail-close magnetic" onclick="closeAppView()"><i data-lucide="arrow-left" style="width:20px;height:20px;"></i></button>
+  <div class="detail-content">
+    <div class="detail-hero">
+      <div class="detail-hero-bg"><img id="detailHeroBg" src="" alt="" onerror="this.src='https://placehold.co/400x400/0d0f1a/f59e0b?text=VIP'"></div>
+      <div class="detail-icon-wrap ipaviet-watermark-lg"><img id="detailIcon" src="" alt="" onerror="this.src='https://placehold.co/120x120/0d0f1a/f59e0b?text=VIP'"></div>
+      <h1 class="detail-title" id="detailTitle">App Name</h1>
+      <p class="detail-dev" id="detailDev">IPAVIET Studio</p>
+      <div class="detail-actions">
+        <button class="detail-btn detail-btn-primary magnetic" onclick="showDownloadAction()"><i data-lucide="crown" style="width:16px;height:16px;"></i> TẢI VIP</button>
+        <button class="detail-btn detail-btn-secondary magnetic" onclick="shareApp()"><i data-lucide="share-2" style="width:16px;height:16px;"></i></button>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-info-grid">
+        <div class="detail-info-cell"><div class="detail-info-value">5.0</div><div class="detail-info-label">Đánh giá</div></div>
+        <div class="detail-info-cell"><div class="detail-info-value">VIP</div><div class="detail-info-label">Chứng nhận</div></div>
+        <div class="detail-info-cell"><div class="detail-info-value">MOD</div><div class="detail-info-label">Tính năng</div></div>
+      </div>
+
+      <div id="detailPurchasePanel"></div>
+
+      <div id="detailScreenshotsWrap">
+        <h3 class="detail-section-title">Xem trước</h3>
+        <div class="detail-screenshots" id="detailScreenshots"></div>
+      </div>
+
+      <h3 class="detail-section-title">Thông tin & Tính năng Mod</h3>
+      <p class="detail-desc" id="detailDesc">Mô tả...</p>
+
+      <h3 class="detail-section-title">Dữ liệu tệp</h3>
+      <div style="margin-bottom:48px;">
+        <div class="detail-data-row"><span class="detail-data-label">Nhà phát triển</span><span class="detail-data-value" id="dInfoDev">IPAVIET Studio</span></div>
+        <div class="detail-data-row"><span class="detail-data-label">Thể loại</span><span class="detail-data-value" id="dInfoCat">App VIP</span></div>
+        <div class="detail-data-row"><span class="detail-data-label">Phiên bản</span><span class="detail-data-value" id="dInfoVer">Mới nhất</span></div>
+        <div class="detail-data-row"><span class="detail-data-label">Kích thước</span><span class="detail-data-value" id="dInfoSize">--</span></div>
+        <div class="detail-data-row"><span class="detail-data-label">Bundle ID</span><span class="detail-data-value" id="dInfoBundle">com.ipaviet.app</span></div>
+      </div>
+    </div>
   </div>
 </div>
 
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
-<!-- ══ HEADER ══ -->
-<header class="header-bar" id="header">
-  <div class="header-inner">
-    <a href="index.html" class="logo-link" aria-label="IPAVIET Home">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#b)" d="M 32,4 V 60" class="dash" pathLength="360"></path></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#c)" d="M 20,60 V 4 H 40 A 14,14 0 0 1 40,32 H 20" class="dash" pathLength="360"></path></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#d)" d="M 12,60 L 32,6 L 52,60 M 20,42 H 44" class="dash" pathLength="360"></path></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#b)" d="M 8,4 L 32,56 L 56,4" class="dash" pathLength="360"></path></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#c)" d="M 32,4 V 60" class="dash" pathLength="360"></path></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#d)" d="M 52,4 H 18 V 60 H 52 M 18,32 H 44" class="dash" pathLength="360"></path></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#b)" d="M 10,4 H 54 M 32,4 V 60" class="dash" pathLength="360"></path></svg>
-    </a>
-
-    <nav class="desktop-nav">
-      <a href="app-library/index.html">Thư viện IPA</a>
-      <a href="tap-hoa-mmo.html">Kho MMO</a>
-      <a href="phim-tat.html">Phím tắt</a>
-      <a href="dichvu.html">Dịch vụ</a>
-      <a href="support.html">Hỗ trợ</a>
-    </nav>
-
-    <a href="tap-hoa-mmo.html" class="header-cta">Cửa hàng <i class="fa-solid fa-arrow-right" style="font-size:11px"></i></a>
-
-    <button class="menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
-  </div>
-</header>
-
-<!-- Mobile Menu -->
-<div class="mobile-menu" id="mobileMenu">
-  <a href="index.html">Trang chủ</a>
-  <a href="vsign.html">Cài đặt VSign</a>
-  <a href="ipavip.html">Kho App VIP & IPA</a>
-  <a href="tap-hoa-mmo.html">Cửa hàng MMO</a>
-  <a href="phim-tat.html">Phím tắt iOS</a>
-  <a href="dichvu.html">Dịch vụ Premium</a>
-  <a href="support.html">Hỗ trợ AI</a>
+<!-- Floating Dock -->
+<div class="spatial-dock" id="spatialDock">
+  <a href="index.html" class="dock-item magnetic" title="Khám phá"><i data-lucide="orbit" style="width:20px;height:20px;"></i></a>
+  <a href="app-library/index.html" class="dock-item magnetic" title="Kho IPA"><i data-lucide="box" style="width:20px;height:20px;"></i></a>
+  <button class="dock-item active magnetic" title="VIP"><i data-lucide="crown" style="width:20px;height:20px;"></i></button>
+  <div class="dock-divider"></div>
+  <a href="account.html" class="dock-item magnetic" title="Tài khoản"><i data-lucide="user-circle" style="width:20px;height:20px;"></i></a>
+  <a href="dichvu.html" class="dock-item magnetic" title="Cửa hàng"><i data-lucide="shopping-bag" style="width:20px;height:20px;"></i></a>
+  <a href="vsign.html" class="dock-item magnetic" title="VSign"><i data-lucide="smartphone" style="width:20px;height:20px;"></i></a>
 </div>
 
-<!-- ══ HERO ══ -->
-<section class="hero" id="hero">
-  <div class="hero-layer hero-bg-gradient"></div>
-  <div class="hero-layer hero-grid"></div>
-  <div class="hero-layer orb orb-1"></div>
-  <div class="hero-layer orb orb-2"></div>
-  <div class="hero-layer orb orb-3"></div>
-  <div class="hero-layer shape-ring shape-ring-1"></div>
-  <div class="hero-layer shape-ring shape-ring-2"></div>
-  <div class="hero-layer shape-box shape-box-1"></div>
-  <div class="hero-layer shape-box shape-box-2"></div>
-
-  <div class="hero-content">
-    <div class="hero-eyebrow">
-      <span class="eyebrow-line"></span>Hệ Sinh Thái Số 2.0<span class="eyebrow-line"></span>
-    </div>
-    <h1 class="hero-title">
-      <span class="line"><span>Hệ Sinh Thái</span></span>
-      <span class="line"><span class="accent">IPAVIET</span></span>
-    </h1>
-    <p class="hero-sub">Nền tảng toàn diện nơi công nghệ gặp gỡ sự tinh gọn. Mọi công cụ, tài nguyên và dịch vụ bạn cần — trong một hệ sinh thái duy nhất.</p>
-    <div class="hero-meta">
-      <div class="hero-meta-item"><b>12.000+</b> người dùng</div>
-      <span class="meta-dot"></span>
-      <div class="hero-meta-item"><b>500+</b> sản phẩm</div>
-      <span class="meta-dot"></span>
-      <div class="hero-meta-item"><b>4.9/5</b> đánh giá</div>
-    </div>
-    <div class="hero-cta-row">
-      <a href="#ecosystem" class="hero-cta" onclick="document.getElementById('ecosystem').scrollIntoView({behavior:'smooth'}); return false;">
-        Khám phá hệ sinh thái<span class="arrow-icon"><i class="fa-solid fa-arrow-down" style="font-size:12px"></i></span>
-      </a>
-    </div>
-  </div>
-
-  <div class="scroll-cue" onclick="document.getElementById('philosophy').scrollIntoView({behavior:'smooth'})">
-    <span class="scroll-cue-text">Cuộn xuống</span>
-    <div class="scroll-cue-line"></div>
-  </div>
-</section>
-
-<!-- ══ PHILOSOPHY ══ -->
-<section class="philosophy" id="philosophy">
-  <div class="philosophy-orb philosophy-orb-1"></div>
-  <div class="philosophy-orb philosophy-orb-2"></div>
-  <div class="philosophy-inner container">
-    <span class="philosophy-label reveal">Triết lý</span>
-    <p class="philosophy-quote reveal reveal-delay-2">
-      Chúng tôi không chỉ xây dựng công cụ.<br>
-      Chúng tôi kiến tạo <span class="highlight" id="philHighlight">hệ sinh thái</span>.
-    </p>
-  </div>
-</section>
-
-<!-- ══ ECOSYSTEM — ENHANCED ══ -->
-<section class="ecosystem" id="ecosystem">
-  <div class="container">
-    <div class="eco-header">
-      <span class="eco-label reveal">Hệ Sinh Thái</span>
-      <h2 class="eco-title reveal reveal-delay-1">Tất cả trong một.<br>Không giới hạn.</h2>
-    </div>
-
-    <div class="eco-list">
-
-      <!-- 01: IPA Library -->
-      <a href="app-library/index.html" class="eco-panel reveal" data-accent="blue">
-        <div class="eco-panel-inner">
-          <div class="eco-num-wrap">
-            <span class="eco-num">01</span>
-          </div>
-          <div class="eco-main">
-            <h3>Thư Viện Ứng Dụng IPA</h3>
-            <p class="eco-desc">Kho ứng dụng và file IPA chất lượng cao, cập nhật liên tục. Cài đặt dễ dàng, không cần jailbreak.</p>
-            <div class="eco-tags">
-              <span class="eco-tag"><i class="fa-brands fa-apple" style="font-size:10px"></i> iOS / iPadOS</span>
-              <span class="eco-tag"><i class="fa-solid fa-bolt" style="font-size:10px"></i> Cập nhật liên tục</span>
-            </div>
-          </div>
-          <div class="eco-visual">
-            <div class="eco-icon-ring"></div>
-            <div class="eco-icon-wrap"><i class="fa-brands fa-app-store-ios"></i></div>
-          </div>
-          <span class="eco-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-        </div>
-      </a>
-
-      <!-- 02: MMO Store -->
-      <a href="tap-hoa-mmo.html" class="eco-panel reveal reveal-delay-1" data-accent="green">
-        <div class="eco-panel-inner">
-          <div class="eco-num-wrap">
-            <span class="eco-num">02</span>
-          </div>
-          <div class="eco-main">
-            <h3>Kho Tài Nguyên MMO</h3>
-            <p class="eco-desc">Mua bán tool, tài khoản và tài nguyên MMO chuyên nghiệp. Giao hàng tự động, bảo hành rõ ràng.</p>
-            <div class="eco-tags">
-              <span class="eco-tag"><i class="fa-solid fa-check-circle" style="font-size:10px"></i> Tự động giao</span>
-              <span class="eco-tag"><i class="fa-solid fa-shield-halved" style="font-size:10px"></i> Bảo hành 3 ngày</span>
-            </div>
-          </div>
-          <div class="eco-visual">
-            <div class="eco-icon-ring"></div>
-            <div class="eco-icon-wrap"><i class="fa-solid fa-store"></i></div>
-          </div>
-          <span class="eco-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-        </div>
-      </a>
-
-      <!-- 03: iOS Shortcuts -->
-      <a href="phim-tat.html" class="eco-panel reveal reveal-delay-2" data-accent="purple">
-        <div class="eco-panel-inner">
-          <div class="eco-num-wrap">
-            <span class="eco-num">03</span>
-          </div>
-          <div class="eco-main">
-            <h3>Phím Tắt iOS</h3>
-            <p class="eco-desc">Tiện ích và phím tắt tự động hóa cho iPhone. Tối ưu workflow, tiết kiệm hàng giờ mỗi ngày.</p>
-            <div class="eco-tags">
-              <span class="eco-tag"><i class="fa-solid fa-wand-magic-sparkles" style="font-size:10px"></i> Shortcuts</span>
-              <span class="eco-tag"><i class="fa-solid fa-bolt" style="font-size:10px"></i> Tự động hóa</span>
-            </div>
-          </div>
-          <div class="eco-visual">
-            <div class="eco-icon-ring"></div>
-            <div class="eco-icon-wrap"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-          </div>
-          <span class="eco-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-        </div>
-      </a>
-
-      <!-- 04: System Services -->
-      <a href="dichvu.html" class="eco-panel reveal reveal-delay-3" data-accent="amber">
-        <div class="eco-panel-inner">
-          <div class="eco-num-wrap">
-            <span class="eco-num">04</span>
-          </div>
-          <div class="eco-main">
-            <h3>Dịch Vụ Hệ Thống</h3>
-            <p class="eco-desc">Các dịch vụ hỗ trợ hệ sinh thái: VPS, Proxy, SMS, Email và nhiều hơn nữa.</p>
-            <div class="eco-tags">
-              <span class="eco-tag"><i class="fa-solid fa-server" style="font-size:10px"></i> Hạ tầng</span>
-              <span class="eco-tag"><i class="fa-solid fa-globe" style="font-size:10px"></i> Proxy / VPS</span>
-            </div>
-          </div>
-          <div class="eco-visual">
-            <div class="eco-icon-ring"></div>
-            <div class="eco-icon-wrap"><i class="fa-solid fa-gear"></i></div>
-          </div>
-          <span class="eco-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-        </div>
-      </a>
-
-      <!-- 05: Auto Top-up -->
-      <a href="naptien.html" class="eco-panel reveal reveal-delay-4" data-accent="rose">
-        <div class="eco-panel-inner">
-          <div class="eco-num-wrap">
-            <span class="eco-num">05</span>
-          </div>
-          <div class="eco-main">
-            <h3>Nạp Tiền Tự Động</h3>
-            <p class="eco-desc">Cổng nạp số dư tài khoản nhanh chóng qua chuyển khoản, VNPAY và nhiều phương thức khác.</p>
-            <div class="eco-tags">
-              <span class="eco-tag"><i class="fa-solid fa-clock" style="font-size:10px"></i> Tức thì</span>
-              <span class="eco-tag"><i class="fa-solid fa-building-columns" style="font-size:10px"></i> Đa kênh</span>
-            </div>
-          </div>
-          <div class="eco-visual">
-            <div class="eco-icon-ring"></div>
-            <div class="eco-icon-wrap"><i class="fa-solid fa-building-columns"></i></div>
-          </div>
-          <span class="eco-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-        </div>
-      </a>
-
-    </div>
-  </div>
-</section>
-
-
-<!-- ══ SHOWCASE ══ -->
-<section class="showcase" id="showcase">
-  <div class="showcase-grid"></div>
-  <div class="showcase-content">
-    <div class="showcase-num reveal">5</div>
-    <p class="showcase-text reveal reveal-delay-2">
-      Dịch vụ. Một hệ sinh thái.<br>
-      <span style="color:var(--text-secondary)">Không giới hạn khả năng.</span>
-    </p>
-  </div>
-</section>
-
-<!-- ══ NUMBERS ══ -->
-<section class="numbers" id="numbers">
-  <div class="container">
-    <div class="num-grid">
-      <div class="num-item reveal">
-        <div class="num-value" data-target="12000" data-suffix="+">0</div>
-        <div class="num-label">Người dùng tin tưởng</div>
-        <div class="num-desc">Cộng đồng đang phát triển mỗi ngày</div>
-      </div>
-      <div class="num-item reveal reveal-delay-1">
-        <div class="num-value" data-target="500" data-suffix="+">0</div>
-        <div class="num-label">Sản phẩm & dịch vụ</div>
-        <div class="num-desc">Được tuyển chọn và kiểm định chất lượng</div>
-      </div>
-      <div class="num-item reveal reveal-delay-2">
-        <div class="num-value" data-target="4.9" data-suffix="/5" data-decimal="1">0</div>
-        <div class="num-label">Đánh giá trung bình</div>
-        <div class="num-desc">Từ hàng nghìn phản hồi thực tế</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ TRUST MARQUEE ══ -->
-<div class="trust-strip">
-  <div class="marquee">
-    <div class="marquee-item"><i class="fa-solid fa-shield-halved"></i> Bảo vệ người dùng toàn diện</div>
-    <div class="marquee-item"><i class="fa-solid fa-bolt"></i> Tự động hóa 24/7</div>
-    <div class="marquee-item"><i class="fa-solid fa-headset"></i> Hỗ trợ Admin trực tiếp</div>
-    <div class="marquee-item"><i class="fa-solid fa-layer-group"></i> Hệ sinh thái 5 dịch vụ</div>
-    <div class="marquee-item"><i class="fa-solid fa-shield-halved"></i> Bảo vệ người dùng toàn diện</div>
-    <div class="marquee-item"><i class="fa-solid fa-bolt"></i> Tự động hóa 24/7</div>
-    <div class="marquee-item"><i class="fa-solid fa-headset"></i> Hỗ trợ Admin trực tiếp</div>
-    <div class="marquee-item"><i class="fa-solid fa-layer-group"></i> Hệ sinh thái 5 dịch vụ</div>
-  </div>
-</div>
-
-<!-- ══ CTA ══ -->
-<section class="cta-section" id="cta">
-  <div class="cta-orb"></div>
-  <h2 class="cta-title reveal">Sẵn sàng bắt đầu?</h2>
-  <p class="cta-sub reveal reveal-delay-1">Trải nghiệm hệ sinh thái số toàn diện dành cho người dùng iOS và MMO.</p>
-  <div class="reveal reveal-delay-2">
-    <a href="tap-hoa-mmo.html" class="cta-btn">Vào cửa hàng <i class="fa-solid fa-arrow-right" style="font-size:12px"></i></a>
-  </div>
-</section>
-
-<!-- ══ FOOTER ══ -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <a href="index.html" class="logo-link" aria-label="IPAVIET Home" style="filter:brightness(0) invert(1);">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#b)" d="M 32,4 V 60" class="dash" pathLength="360"></path></svg>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#c)" d="M 20,60 V 4 H 40 A 14,14 0 0 1 40,32 H 20" class="dash" pathLength="360"></path></svg>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#d)" d="M 12,60 L 32,6 L 52,60 M 20,42 H 44" class="dash" pathLength="360"></path></svg>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#b)" d="M 8,4 L 32,56 L 56,4" class="dash" pathLength="360"></path></svg>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#c)" d="M 32,4 V 60" class="dash" pathLength="360"></path></svg>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#d)" d="M 52,4 H 18 V 60 H 52 M 18,32 H 44" class="dash" pathLength="360"></path></svg>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" class="logo-letter"><path stroke-linejoin="round" stroke-linecap="round" stroke-width="8" stroke="url(#b)" d="M 10,4 H 54 M 32,4 V 60" class="dash" pathLength="360"></path></svg>
-        </a>
-        <p>Nền tảng hệ sinh thái số toàn diện. Kết nối — Tự động hóa — Phát triển.</p>
-        <div class="footer-social">
-          <a href="https://t.me/ipaviet" target="_blank" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
-          <a href="#" title="Zalo"><i class="fa-solid fa-comment"></i></a>
-          <a href="mailto:support@ipaviet.com" title="Email"><i class="fa-solid fa-envelope"></i></a>
-        </div>
-      </div>
-      <div class="footer-col">
-        <h4>Dịch Vụ</h4>
-        <ul>
-          <li><a href="app-library/index.html"><i class="fa-solid fa-chevron-right"></i> Thư viện IPA</a></li>
-          <li><a href="tap-hoa-mmo.html"><i class="fa-solid fa-chevron-right"></i> Kho MMO</a></li>
-          <li><a href="phim-tat.html"><i class="fa-solid fa-chevron-right"></i> Phím tắt iOS</a></li>
-          <li><a href="dichvu.html"><i class="fa-solid fa-chevron-right"></i> Dịch vụ hệ thống</a></li>
-          <li><a href="naptien.html"><i class="fa-solid fa-chevron-right"></i> Nạp tiền</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Hỗ Trợ</h4>
-        <ul>
-          <li><a href="support.html"><i class="fa-solid fa-chevron-right"></i> Trung tâm hỗ trợ</a></li>
-          <li><a href="terms-of-service.html"><i class="fa-solid fa-chevron-right"></i> Điều khoản dịch vụ</a></li>
-          <li><a href="privacy-policy.html"><i class="fa-solid fa-chevron-right"></i> Chính sách bảo mật</a></li>
-        </ul>
-      </div>
-      <div class="footer-col">
-        <h4>Liên Hệ</h4>
-        <ul>
-          <li><a href="https://t.me/ipaviet" target="_blank"><i class="fa-solid fa-chevron-right"></i> Telegram</a></li>
-          <li><a href="mailto:support@ipaviet.com"><i class="fa-solid fa-chevron-right"></i> Email hỗ trợ</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2026 <strong>IPAVIET</strong>. All rights reserved.</p>
-      <div style="display:flex;gap:16px">
-        <a href="privacy-policy.html">Bảo mật</a>
-        <a href="terms-of-service.html">Điều khoản</a>
-      </div>
-    </div>
-  </div>
-</footer>
+<!-- AI Chat Widget -->
+<script src="ai-chat-widget.js?v=6" data-bottom="120px"></script>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   IPAVIET — Core Experience
-   ═══════════════════════════════════════════════════════════════ */
 
-// Preloader
-window.addEventListener('load',()=>{
-  setTimeout(()=>{
-    const loader=document.getElementById('pageLoader');
-    if(loader){ loader.classList.add('out'); setTimeout(()=>loader.remove(),800); }
-  },900);
+/* ================================================================
+   IPAVIET OS VIP — CORE LOGIC (Preserved from original)
+   ================================================================ */
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+  authDomain: "ipaviet-st.firebaseapp.com",
+  projectId: "ipaviet-st",
+  storageBucket: "ipaviet-st.firebasestorage.app",
+  messagingSenderId: "127619650916",
+  appId: "1:127619650916:web:fc8904c99804eeb7539671"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
+let isUserVip = false;
+
+window.vipApps = [];
+const STATE = { currentTab: 'vip', currentPage: 1, itemsPerPage: 24, currentItem: null, currentFilter: 'all' };
+
+/* ─── Auth State ─── */
+auth.onAuthStateChanged(user => {
+  const headerBtn = document.getElementById('headerProfileBtn');
+  if (user) {
+    currentUser = user;
+    db.collection("users").doc(user.uid).onSnapshot(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        if (data.vipExpire && data.vipExpire.toMillis() > Date.now()) {
+          isUserVip = true;
+          headerBtn.innerHTML = `<i data-lucide="crown" style="width:14px;height:14px;color:var(--accent-amber);margin-right:4px;"></i>VIP`;
+          headerBtn.style.color = 'var(--accent-amber)';
+        } else {
+          isUserVip = false;
+          headerBtn.innerHTML = `Tài Khoản`;
+          headerBtn.style.color = '';
+        }
+        lucide.createIcons();
+      }
+    });
+  } else {
+    currentUser = null; isUserVip = false;
+    headerBtn.innerHTML = `Đăng nhập`;
+    headerBtn.style.color = '';
+  }
 });
 
-// Intersection Observer for reveals
-const revealObserver=new IntersectionObserver((entries)=>{
-  entries.forEach(entry=>{
-    if(entry.isIntersecting){ entry.target.classList.add('in-view'); revealObserver.unobserve(entry.target); }
-  });
-},{threshold:0.12,rootMargin:'0px 0px -40px 0px'});
-document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
-
-// Philosophy highlight
-const philHighlight=document.getElementById('philHighlight');
-if(philHighlight){
-  const philObs=new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{ if(entry.isIntersecting){ philHighlight.classList.add('active'); philObs.unobserve(entry.target); } });
-  },{threshold:0.5});
-  philObs.observe(philHighlight);
-}
-
-// Number counter
-const countObserver=new IntersectionObserver((entries)=>{
-  entries.forEach(entry=>{
-    if(entry.isIntersecting){
-      const el=entry.target, target=parseFloat(el.dataset.target), suffix=el.dataset.suffix||'', decimal=parseInt(el.dataset.decimal)||0, duration=2000, startTime=performance.now();
-      function update(currentTime){
-        const elapsed=currentTime-startTime, progress=Math.min(elapsed/duration,1);
-        const eased=1-Math.pow(1-progress,3);
-        const current=target*eased;
-        el.textContent=(decimal>0?current.toFixed(decimal):Math.floor(current).toLocaleString('vi-VN'))+suffix;
-        if(progress<1) requestAnimationFrame(update);
+/* ─── Load Data ─── */
+async function loadData() {
+  try {
+    const res = await fetch(`vip.json?t=${Date.now()}`);
+    const text = await res.text();
+    try {
+      const data = JSON.parse(text);
+      if (Array.isArray(data)) {
+        window.vipApps = data.map(item => {
+          item._id = 'vip_' + Math.random().toString(36).substr(2, 9);
+          return item;
+        });
       }
-      requestAnimationFrame(update); countObserver.unobserve(el);
+    } catch (e) {
+      document.getElementById('dynamicContent').innerHTML = `
+        <div style="text-align:center;padding:80px 20px;color:var(--text-secondary);">
+          <div style="width:64px;height:64px;border-radius:50%;background:rgba(244,63,94,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <i data-lucide="triangle-alert" style="width:32px;height:32px;color:var(--accent-rose);"></i>
+          </div>
+          <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">LỖI DỮ LIỆU JSON</h3>
+          <p style="font-size:14px;line-height:1.6;">File <b>vip.json</b> đang bị sai cấu trúc.<br>Vui lòng kiểm tra lại file data.</p>
+        </div>`;
+      lucide.createIcons();
+      return;
     }
-  });
-},{threshold:0.5});
-document.querySelectorAll('.num-value').forEach(el=>countObserver.observe(el));
+  } catch (err) {}
+  switchTab(STATE.currentTab);
+  initScrollReveal();
+  setTimeout(() => document.getElementById('loadingStage').classList.add('hidden'), 800);
+}
 
-// Header scroll
-let lastScroll=0;
-const header=document.getElementById('header');
-window.addEventListener('scroll',()=>{
-  const currentScroll=window.scrollY;
-  header.classList.toggle('scrolled', currentScroll>80);
-  if(currentScroll>lastScroll&&currentScroll>200){ header.classList.add('hidden'); }
-  else{ header.classList.remove('hidden'); }
-  lastScroll=currentScroll;
-},{passive:true});
+function switchTab(tabId) {
+  STATE.currentPage = 1; STATE.currentFilter = 'all';
+  renderContent();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-// Mobile menu
-const menuToggle=document.getElementById('menuToggle');
-const mobileMenu=document.getElementById('mobileMenu');
-if(menuToggle&&mobileMenu){
-  menuToggle.addEventListener('click',()=>{
-    menuToggle.classList.toggle('active');
-    mobileMenu.classList.toggle('open');
-    document.body.style.overflow=mobileMenu.classList.contains('open')?'hidden':'';
+function setFilter(filter) {
+  STATE.currentFilter = filter; STATE.currentPage = 1;
+  renderContent();
+}
+
+/* ─── Render Content ─── */
+function renderContent() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const container = document.getElementById('dynamicContent');
+
+  let items = window.vipApps;
+  if (query) items = items.filter(i => (i.name || i.title || "").toLowerCase().includes(query));
+
+  if (STATE.currentFilter !== 'all') {
+    items = items.filter(i => {
+      const cat = String(i.category || "").toLowerCase();
+      if (STATE.currentFilter === 'game') return cat.includes('game');
+      if (STATE.currentFilter === 'social') return cat.includes('social');
+      if (STATE.currentFilter === 'media') return cat.includes('media');
+      if (STATE.currentFilter === 'edit') return cat.includes('edit');
+      if (STATE.currentFilter === 'utility') return cat.includes('utility');
+      return true;
+    });
+  }
+
+  const filtersDef = [
+    { id: 'all', name: 'Tất cả VIP', icon: 'layers' },
+    { id: 'game', name: 'Game Hack', icon: 'gamepad-2' },
+    { id: 'social', name: 'Social Mod', icon: 'message-circle' },
+    { id: 'media', name: 'Media Pro', icon: 'play-square' },
+    { id: 'edit', name: 'Edit Mở Khóa', icon: 'wand-2' },
+    { id: 'utility', name: 'Tiện ích', icon: 'wrench' }
+  ];
+
+  let filterButtons = filtersDef.map(f => {
+    const isActive = STATE.currentFilter === f.id;
+    return `<button onclick="setFilter('${f.id}')" class="filter-chip ${isActive ? 'active' : ''} magnetic"><i data-lucide="${f.icon}" style="width:14px;height:14px;"></i>${f.name}</button>`;
+  }).join('');
+
+  const totalPages = Math.ceil(items.length / STATE.itemsPerPage);
+  const start = (STATE.currentPage - 1) * STATE.itemsPerPage;
+  const pagedItems = items.slice(start, start + STATE.itemsPerPage);
+  const featured = items.slice(0, 5);
+
+  let html = '';
+
+  if (!query && STATE.currentFilter === 'all' && featured.length) {
+    html += `
+      <div class="reveal">
+        <div class="section-header"><h2 class="section-title">Siêu Phẩm Nổi Bật</h2></div>
+        <div class="ribbon-container">
+          <div class="ribbon-track">
+            ${featured.map((i, idx) => createSubPageHero(i, idx)).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  html += `
+    <div class="reveal stagger-1">
+      <div class="section-header"><h2 class="section-title">Danh sách Ứng dụng</h2><span style="color:var(--text-tertiary);font-size:13px;">${items.length} app</span></div>
+      <div class="filter-bar">${filterButtons}</div>
+      <div class="entity-grid">${pagedItems.length ? pagedItems.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}</div>
+      ${items.length > STATE.itemsPerPage ? createPagination(totalPages) : ''}
+    </div>
+  `;
+
+  container.innerHTML = html;
+  lucide.createIcons();
+  initMagnetic();
+  refreshScrollReveal();
+}
+
+function createSubPageHero(i, index) {
+  let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
+  let safeName = i.name || i.title || 'Ứng dụng VIP';
+  return `
+    <div onclick="openAppView('${i._id}')" class="ribbon-item" style="animation-delay:${index*50}ms">
+      <img src="${safeIcon}" onerror="this.src='https://placehold.co/100'" alt="">
+      <div class="ribbon-content">
+        <span class="entity-badge" style="margin-bottom:8px;display:inline-flex;"><i data-lucide="crown" style="width:10px;height:10px;"></i> VIP ĐỘC QUYỀN</span>
+        <div class="ribbon-title">${safeName}</div>
+        <div class="ribbon-desc">Đã Hack/Mod bản quyền</div>
+      </div>
+    </div>
+  `;
+}
+
+function createGridItem(i, index) {
+  let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
+  let safeName = i.name || i.title || 'Ứng dụng VIP';
+  return `
+    <div onclick="openAppView('${i._id}')" class="entity reveal" style="transition-delay:${Math.min(index*50,400)}ms">
+      <div class="entity-header">
+        <div class="entity-icon ipaviet-watermark-sm">
+          <img src="${safeIcon}" onerror="this.src='https://placehold.co/100'" alt="">
+        </div>
+        <div class="entity-meta">
+          <div class="entity-name">${safeName}</div>
+          <div class="entity-desc">Đã Hack/Mod bản quyền</div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <span class="entity-badge"><i data-lucide="crown" style="width:10px;height:10px;"></i> VIP Độc Quyền</span>
+      </div>
+      <div class="entity-footer">
+        <span class="entity-version">${i.version || 'Mới nhất'}</span>
+        <button class="entity-action magnetic" onclick="event.stopPropagation();openAppView('${i._id}')"><i data-lucide="download" style="width:12px;height:12px;"></i> TẢI</button>
+      </div>
+    </div>
+  `;
+}
+
+function createPagination(total) {
+  if (total <= 1) return '';
+  let btns = '';
+  let start = Math.max(1, STATE.currentPage - 2);
+  let end = Math.min(total, start + 4);
+  btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="pagination-btn ${STATE.currentPage === 1 ? 'disabled' : ''} magnetic"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i></button>`;
+  for (let p = start; p <= end; p++) {
+    btns += `<button onclick="changePage(${p})" class="pagination-btn ${p === STATE.currentPage ? 'active' : ''} magnetic">${p}</button>`;
+  }
+  btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="pagination-btn ${STATE.currentPage === total ? 'disabled' : ''} magnetic"><i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>`;
+  return `<div class="pagination">${btns}</div>`;
+}
+
+function emptyState() {
+  return `<div style="grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--text-tertiary);"><i data-lucide="layout-grid" style="width:48px;height:48px;margin-bottom:16px;opacity:0.3;"></i><p style="font-size:15px;font-weight:500;">Không tìm thấy ứng dụng VIP này</p></div>`;
+}
+
+function changePage(p) {
+  STATE.currentPage = p;
+  renderContent();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.getElementById('searchInput').addEventListener('input', () => {
+  STATE.currentPage = 1;
+  renderContent();
+});
+
+/* ─── App Detail View ─── */
+function openAppView(appId) {
+  const i = window.vipApps.find(a => a._id === appId);
+  if (!i) return;
+  STATE.currentItem = i;
+
+  let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/120x120/0d0f1a/f59e0b?text=VIP';
+  const heroBg = document.getElementById('detailHeroBg');
+  const iconImg = document.getElementById('detailIcon');
+  const iconWrap = iconImg.parentElement;
+  const title = document.getElementById('detailTitle');
+  const dev = document.getElementById('detailDev');
+  const actions = document.querySelector('.detail-actions');
+  const body = document.querySelector('.detail-body');
+  const closeBtn = document.querySelector('.detail-close');
+
+  // Reset
+  heroBg.style.opacity = '0'; heroBg.style.transform = 'scale(1.5)';
+  iconWrap.classList.remove('animated');
+  iconWrap.style.opacity = '0'; iconWrap.style.transform = 'scale(0.6) translateY(40px) rotateX(20deg)';
+  title.style.opacity = '0'; title.style.transform = 'translateY(30px)';
+  dev.style.opacity = '0'; dev.style.transform = 'translateY(20px)';
+  actions.style.opacity = '0'; actions.style.transform = 'translateY(20px) scale(0.95)';
+  body.style.opacity = '0'; body.style.transform = 'translateY(40px)';
+  closeBtn.style.opacity = '0'; closeBtn.style.transform = 'scale(0.5) rotate(-90deg)';
+
+  // Content
+  title.innerText = i.name || i.title || 'Unknown App';
+  dev.innerText = i.developer || i.source || 'IPAVIET Studio';
+  document.getElementById('detailDesc').innerText = "🔥 Ứng dụng này đã được can thiệp bẻ khóa (Hack/Mod/Crack) để mở khóa toàn bộ tính năng Premium. Bạn có thể sử dụng hoàn toàn miễn phí các tính năng trả phí.\n\n" + (i.fullDesc || i.desc || "");
+  document.getElementById('dInfoDev').innerText = i.developer || i.source || 'IPAVIET Studio';
+  document.getElementById('dInfoCat').innerText = i.category || 'App VIP';
+  document.getElementById('dInfoVer').innerText = i.version || 'Mới nhất';
+  document.getElementById('dInfoSize').innerText = i.size || (Math.random() * 200 + 50).toFixed(1) + ' MB';
+  document.getElementById('dInfoBundle').innerText = i.bundleId || 'com.ipaviet.' + (i.name || "app").replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+  // Screenshots
+  const ssWrap = document.getElementById('detailScreenshotsWrap');
+  const ssList = document.getElementById('detailScreenshots');
+  ssList.innerHTML = '';
+  ssWrap.style.opacity = '0'; ssWrap.style.transform = 'translateY(20px)';
+
+  if (i.screenshots && Array.isArray(i.screenshots) && i.screenshots.length > 0) {
+    i.screenshots.forEach(url => {
+      const img = document.createElement('img');
+      img.src = url; img.onerror = () => img.remove();
+      ssList.appendChild(img);
+    });
+    ssWrap.style.display = 'block';
+  } else {
+    ssWrap.style.display = 'none';
+  }
+
+  // Reset cells
+  document.querySelectorAll('.detail-info-cell').forEach(el => { el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; });
+  document.querySelectorAll('.detail-data-row').forEach(el => { el.style.opacity = '0'; el.style.transform = 'translateX(-10px)'; });
+  document.querySelectorAll('.detail-section-title').forEach(el => { el.style.opacity = '0'; el.style.transform = 'translateY(20px)'; });
+
+  // Purchase panel reset
+  document.getElementById('detailPurchasePanel').innerHTML = '';
+
+  // Show stage
+  const stage = document.getElementById('app-detail-stage');
+  stage.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  lucide.createIcons();
+
+  // Preload + Animate
+  const preload = (src) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(src);
+    img.onerror = () => resolve('https://placehold.co/400x400/0d0f1a/f59e0b?text=VIP');
+    img.src = src;
   });
-  mobileMenu.querySelectorAll('a').forEach(link=>{
-    link.addEventListener('click',()=>{ menuToggle.classList.remove('active'); mobileMenu.classList.remove('open'); document.body.style.overflow=''; });
+
+  Promise.all([preload(safeIcon)]).then(([loadedIcon]) => {
+    heroBg.src = loadedIcon; iconImg.src = loadedIcon;
+
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    tl.fromTo('.detail-backdrop',
+      { backdropFilter: 'blur(0px) saturate(100%)', WebkitBackdropFilter: 'blur(0px) saturate(100%)' },
+      { backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', duration: 0.8 }, 0);
+    tl.to(heroBg, { opacity: 0.35, scale: 1.2, duration: 1.2, ease: 'power2.out' }, 0);
+    tl.to(closeBtn, { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: 'back.out(1.7)' }, 0.2);
+    tl.to(iconWrap, { opacity: 1, scale: 1, y: 0, rotateX: 0, duration: 0.7, ease: 'back.out(1.4)', onComplete: () => iconWrap.classList.add('animated') }, 0.15);
+    tl.to(title, { opacity: 1, y: 0, duration: 0.6 }, 0.35);
+    tl.to(dev, { opacity: 1, y: 0, duration: 0.5 }, 0.45);
+    tl.to(actions, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'back.out(1.2)' }, 0.5);
+    tl.to('.detail-info-cell', { opacity: 1, y: 0, duration: 0.5, stagger: 0.08, ease: 'power2.out' }, 0.55);
+    tl.to(body, { opacity: 1, y: 0, duration: 0.6 }, 0.6);
+    tl.to('.detail-section-title', { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }, 0.7);
+    tl.to('#detailDesc', { opacity: 1, y: 0, duration: 0.5 }, 0.75);
+    tl.to(ssWrap, { opacity: 1, y: 0, duration: 0.6 }, 0.8);
+    tl.to('.detail-data-row', { opacity: 1, x: 0, duration: 0.4, stagger: 0.06, ease: 'power2.out' }, 0.85);
   });
 }
 
-// Mouse parallax for hero
-const hero=document.getElementById('hero');
-if(hero&&!window.matchMedia('(pointer: coarse)').matches){
-  const parallaxEls=hero.querySelectorAll('.orb, .shape-ring, .shape-box');
-  document.addEventListener('mousemove',(e)=>{
-    const cx=(e.clientX/window.innerWidth-.5), cy=(e.clientY/window.innerHeight-.5);
-    parallaxEls.forEach((el,i)=>{ const strength=(i+1)*12; el.style.transform=`translate(${cx*strength}px,${cy*strength*.6}px)`; });
-  },{passive:true});
+function closeAppView() {
+  const stage = document.getElementById('app-detail-stage');
+  const iconWrap = document.getElementById('detailIcon').parentElement;
+
+  gsap.killTweensOf('.detail-backdrop'); gsap.killTweensOf('#detailHeroBg'); gsap.killTweensOf('.detail-close');
+  gsap.killTweensOf(iconWrap); gsap.killTweensOf('#detailTitle'); gsap.killTweensOf('#detailDev');
+  gsap.killTweensOf('.detail-actions'); gsap.killTweensOf('.detail-body'); gsap.killTweensOf('.detail-info-cell');
+  gsap.killTweensOf('.detail-section-title'); gsap.killTweensOf('#detailDesc'); gsap.killTweensOf('#detailScreenshotsWrap');
+  gsap.killTweensOf('.detail-data-row');
+
+  const tl = gsap.timeline({
+    defaults: { ease: 'power2.in' },
+    onComplete: () => { stage.classList.remove('active'); iconWrap.classList.remove('animated'); document.body.style.overflow = ''; }
+  });
+  tl.to('.detail-body', { opacity: 0, y: 30, duration: 0.3 }, 0);
+  tl.to('.detail-data-row', { opacity: 0, x: -10, duration: 0.2, stagger: 0.03 }, 0);
+  tl.to('#detailScreenshotsWrap', { opacity: 0, y: 20, duration: 0.3 }, 0.05);
+  tl.to('.detail-section-title', { opacity: 0, y: 15, duration: 0.25, stagger: 0.05 }, 0.05);
+  tl.to('#detailDesc', { opacity: 0, y: 15, duration: 0.25 }, 0.1);
+  tl.to('.detail-info-cell', { opacity: 0, y: 15, duration: 0.25, stagger: 0.04 }, 0.1);
+  tl.to('.detail-actions', { opacity: 0, scale: 0.9, y: 10, duration: 0.3 }, 0.15);
+  tl.to('#detailDev', { opacity: 0, y: 10, duration: 0.25 }, 0.2);
+  tl.to('#detailTitle', { opacity: 0, y: 20, duration: 0.3 }, 0.2);
+  tl.to(iconWrap, { opacity: 0, scale: 0.7, y: 30, rotateX: 15, duration: 0.35 }, 0.25);
+  tl.to('#detailHeroBg', { opacity: 0, scale: 1.4, duration: 0.4 }, 0.2);
+  tl.to('.detail-close', { opacity: 0, scale: 0.5, rotation: -90, duration: 0.3 }, 0.25);
+  tl.to('.detail-backdrop', { backdropFilter: 'blur(0px) saturate(100%)', WebkitBackdropFilter: 'blur(0px) saturate(100%)', duration: 0.4 }, 0.2);
 }
 
-// Scroll parallax for hero content
-const heroContent=document.querySelector('.hero-content');
-if(heroContent){
-  window.addEventListener('scroll',()=>{
-    const scrolled=window.scrollY;
-    if(scrolled<window.innerHeight){ heroContent.style.transform=`translateY(${scrolled*.3}px)`; heroContent.style.opacity=1-(scrolled/(window.innerHeight*.8)); }
-  },{passive:true});
+function shareApp() {
+  if (navigator.share && STATE.currentItem) {
+    navigator.share({ title: STATE.currentItem.name || 'IPAVIET VIP', text: 'Tải app VIP từ IPAVIET', url: window.location.href });
+  } else {
+    showToast('Đã sao chép liên kết');
+  }
 }
+
+/* ─── Download / VIP Logic ─── */
+function showDownloadAction() {
+  if (!currentUser) { window.location.href = 'account.html'; return; }
+  const panel = document.getElementById('detailPurchasePanel');
+
+  if (isUserVip) {
+    panel.innerHTML = `
+      <div class="purchase-panel purchase-panel-vip">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div><p style="font-size:11px;font-weight:700;color:var(--accent-amber);letter-spacing:0.1em;text-transform:uppercase;">Xác thực thành công</p><p style="font-size:22px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">Hội Viên VIP</p></div>
+          <div style="width:40px;height:40px;border-radius:50%;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;"><i data-lucide="check-circle" style="width:20px;height:20px;color:var(--accent-amber);"></i></div>
+        </div>
+        <button onclick="downloadVipApp(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;"><i data-lucide="download-cloud" style="width:16px;height:16px;"></i> CÀI ĐẶT ỨNG DỤNG</button>
+      </div>`;
+  } else {
+    panel.innerHTML = `
+      <div class="purchase-panel purchase-panel-locked">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:rgba(244,63,94,0.15);display:flex;align-items:center;justify-content:center;"><i data-lucide="shield-alert" style="width:20px;height:20px;color:var(--accent-rose);"></i></div>
+          <div><p style="font-size:11px;font-weight:700;color:var(--accent-rose);letter-spacing:0.1em;text-transform:uppercase;">Truy cập bị từ chối</p><p style="font-size:18px;font-weight:700;color:var(--text-primary);">Chưa có Thẻ VIP</p></div>
+        </div>
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6;">Ứng dụng Hack/Mod này là tài sản đặc quyền. Bạn cần nâng cấp lên Hội Viên VIP.</p>
+        <a href="dichvu.html" style="text-decoration:none;"><button class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;background:linear-gradient(135deg,var(--accent-rose),#be123c);"><i data-lucide="zap" style="width:16px;height:16px;"></i> NÂNG CẤP VIP NGAY</button></a>
+      </div>`;
+  }
+  lucide.createIcons();
+  panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function downloadVipApp(btnEl) {
+  const originalText = btnEl.innerHTML;
+  btnEl.innerHTML = `<div style="width:20px;height:20px;border:2px solid var(--void);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>`;
+  btnEl.disabled = true;
+  try {
+    window.location.href = STATE.currentItem.url || STATE.currentItem.fileLink || STATE.currentItem.downloadUrl;
+  } catch (error) { showToast("Lỗi kết nối"); }
+  setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
+}
+
+/* ─── Utilities ─── */
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+/* ─── Cursor & Effects ─── */
+function initCursor() {
+  if (window.matchMedia('(pointer: coarse)').matches) return;
+  const cursor = document.getElementById('cursor');
+  const dot = document.getElementById('cursor-dot');
+  const trail = document.getElementById('cursor-trail');
+  let mouseX = 0, mouseY = 0, cursorX = 0, cursorY = 0, dotX = 0, dotY = 0;
+  document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+  function animate() {
+    cursorX += (mouseX - cursorX) * 0.15; cursorY += (mouseY - cursorY) * 0.15;
+    dotX += (mouseX - dotX) * 0.35; dotY += (mouseY - dotY) * 0.35;
+    cursor.style.left = cursorX + 'px'; cursor.style.top = cursorY + 'px';
+    dot.style.left = dotX + 'px'; dot.style.top = dotY + 'px';
+    trail.style.left = mouseX + 'px'; trail.style.top = mouseY + 'px';
+    requestAnimationFrame(animate);
+  }
+  animate();
+  document.addEventListener('mouseover', e => {
+    const target = e.target.closest('button, a, .entity, .ribbon-item, .nav-logo, .dock-item, .filter-chip, .pagination-btn');
+    if (target) cursor.classList.add('hovering'); else cursor.classList.remove('hovering');
+  });
+}
+
+function initMagnetic() {
+  if (window.matchMedia('(pointer: coarse)').matches) return;
+  document.querySelectorAll('.magnetic:not([data-magnetic])').forEach(el => {
+    el.setAttribute('data-magnetic', '1');
+    el.addEventListener('mousemove', e => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      el.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+    });
+    el.addEventListener('mouseleave', () => { el.style.transform = ''; });
+  });
+}
+
+let scrollRevealObserver = null;
+function initScrollReveal() {
+  if (scrollRevealObserver) return;
+  scrollRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) { entry.target.classList.add('visible'); scrollRevealObserver.unobserve(entry.target); }
+    });
+  }, { threshold: 0.05, rootMargin: '0px 0px -30px 0px' });
+  refreshScrollReveal();
+}
+function refreshScrollReveal() {
+  if (!scrollRevealObserver) return;
+  document.querySelectorAll('.reveal:not(.visible)').forEach(el => scrollRevealObserver.observe(el));
+}
+
+function initNavScroll() {
+  const nav = document.getElementById('spatialNav');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 50) nav.classList.add('scrolled'); else nav.classList.remove('scrolled');
+  });
+}
+
+/* ─── Init ─── */
+window.addEventListener('DOMContentLoaded', () => {
+  initCursor();
+  initNavScroll();
+  initMagnetic();
+  loadData();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeAppView();
+});
 </script>
-
-<script src="ai-chat-widget.js?v=6" data-bottom="30px"></script>
 </body>
 </html>
