@@ -15,6 +15,16 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   
   <script>
+
+    function toggleMobileMenu() {
+      const toggle = document.getElementById('menuToggle');
+      const menu = document.getElementById('mobileMenu');
+      if (toggle && menu) {
+        toggle.classList.toggle('active');
+        menu.classList.toggle('open');
+      }
+    }
+
     tailwind.config = { 
       darkMode: 'class', 
       theme: { 
@@ -592,49 +602,122 @@
     .is-embedded #authGate {
       padding-top: 20px !important;
     }
-  </style>
+  
+/* ═══════════════════════════════════════════════════════════════
+   HEADER BAR & MOBILE MENU SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+.header-bar {
+  position:fixed; top:0; left:0; right:0; z-index:700;
+  background:rgba(250,250,250,.80);
+  backdrop-filter:blur(20px) saturate(1.8);
+  -webkit-backdrop-filter:blur(20px) saturate(1.8);
+  border-bottom:1px solid rgba(0,0,0,0.06);
+  transition:transform .4s cubic-bezier(0.16,1,0.3,1), background .4s ease;
+}
+.dark .header-bar { background:rgba(9,14,26,.85); border-color:rgba(255,255,255,0.08); }
+
+.header-inner {
+  max-width:1200px; margin:0 auto; padding:0 20px;
+  display:flex; align-items:center; justify-content:space-between; height:64px;
+}
+@media(min-width:768px){ .header-inner{ padding:0 40px; height:72px; } }
+
+.logo-link { display:inline-flex; align-items:center; gap:6px; text-decoration:none!important; font-weight:900; font-size:18px; color:var(--text, #1d1d1f); }
+.dark .logo-link { color:#f5f5f7; }
+.logo-letter { color:#2563eb; }
+
+.desktop-nav { display:none; align-items:center; gap:24px; }
+@media(min-width:900px){ .desktop-nav{ display:flex; } }
+.desktop-nav a {
+  font-size:13px; font-weight:600; color:#86868b;
+  text-decoration:none!important; letter-spacing:-.01em;
+  transition:color .3s ease;
+}
+.dark .desktop-nav a { color:#94a3b8; }
+.desktop-nav a:hover, .desktop-nav a.active { color:#2563eb; }
+
+.menu-toggle {
+  display:flex; flex-direction:column; gap:5px;
+  background:none; border:none; cursor:pointer; padding:8px; z-index:701;
+}
+@media(min-width:900px){ .menu-toggle{ display:none; } }
+.menu-toggle span { display:block; width:22px; height:2px; background:currentColor; border-radius:2px; transition:all .3s ease; }
+.menu-toggle.active span:nth-child(1){ transform:rotate(45deg) translate(5px,5px); }
+.menu-toggle.active span:nth-child(2){ opacity:0; }
+.menu-toggle.active span:nth-child(3){ transform:rotate(-45deg) translate(5px,-5px); }
+
+.mobile-menu {
+  position:fixed; inset:0; background:var(--bg, #fafafa); z-index:699;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:20px;
+  padding-top:88px; padding-bottom:36px; box-sizing:border-box; overflow-y:auto;
+  opacity:0; pointer-events:none; transition:opacity .4s ease;
+}
+.dark .mobile-menu { background:#090e1a; }
+.mobile-menu.open { opacity:1; pointer-events:all; }
+.mobile-menu a {
+  font-size:22px; font-weight:700; color:var(--text, #1d1d1f); text-decoration:none!important;
+  letter-spacing:-.02em; opacity:0; transform:translateY(20px);
+  transition:opacity .4s ease, transform .4s ease, color .3s;
+}
+.dark .mobile-menu a { color:#f5f5f7; }
+.mobile-menu.open a { opacity:1; transform:translateY(0); }
+.mobile-menu a:hover { color:#2563eb; }
+
+</style>
 </head>
 <body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
 
   <!-- ==========================================
        HEADER BAR
        ========================================== -->
-  <header class="glass-effect-header fixed top-0 w-full z-40 h-[calc(80px+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] flex items-center px-6 transition-all duration-300">
-    <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-between">
-      <div class="header-logo-crt shrink-0" onclick="safeRedirect('index.html')" style="cursor:pointer">
-        <span class="loader-letter">I</span>
-        <span class="loader-letter">P</span>
-        <span class="loader-letter">A</span>
-        <span class="loader-letter">V</span>
-        <span class="loader-letter">I</span>
-        <span class="loader-letter">E</span>
-        <span class="loader-letter">T</span>
-        <span class="loader-letter">&nbsp;</span>
-        <span class="loader-letter" style="color: #eab308;">A</span>
-        <span class="loader-letter" style="color: #eab308;">I</span>
-        <div class="crt-loader-sweep"></div>
-      </div>
-      
-      <div class="flex items-center gap-2 ml-auto shrink-0">
-        <!-- Profile Widget inside Header -->
-        <div id="headerProfile" class="hidden md:flex items-center gap-3 bg-gray-200/50 dark:bg-white/10 px-4 py-1.5 rounded-2xl backdrop-blur-md">
-          <div class="flex flex-col text-right">
-            <span id="profileEmail" class="text-xs font-bold text-gray-800 dark:text-gray-200 truncate max-w-[150px]">...</span>
-            <span id="profileCoins" class="text-[10px] font-black text-brand dark:text-brandDark">Ví: 0đ</span>
-          </div>
-        </div>
-        
-        <!-- New Chat Button -->
-        <button onclick="resetConversation()" class="h-10 px-3.5 rounded-2xl bg-gray-200/50 dark:bg-white/10 text-gray-700 dark:text-gray-200 font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all duration-300 backdrop-blur-md">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Chat mới</span>
-        </button>
+  
+  <!-- Header Bar -->
+  <header class="header-bar">
+    <div class="header-inner">
+      <a href="index.html" target="_self" class="logo-link">
+        IPAVIET <span class="logo-letter">AI</span>
+      </a>
 
-        <button onclick="toggleTheme()" class="w-10 h-10 rounded-2xl bg-gray-200/50 dark:bg-white/10 flex items-center justify-center active:scale-75 transition-transform duration-300 backdrop-blur-md">
-          <i id="themeIcon" data-lucide="moon" class="w-5 h-5 dark:text-yellow-400 dark:fill-yellow-400"></i>
+      <nav class="desktop-nav">
+        <a href="index.html" target="_self">Trang chủ</a>
+        <a href="app-library/index.html" target="_self">Kho IPA Tweak</a>
+        <a href="ipavip.html" target="_self">Kho App VIP</a>
+        <a href="vsign.html" target="_self">VSign</a>
+        <a href="tap-hoa-mmo.html" target="_self">Tạp Hóa MMO</a>
+        <a href="phim-tat.html" target="_self">Phím Tắt</a>
+        <a href="dichvu.html" target="_self">Dịch Vụ</a>
+        <a href="support.html" target="_self" class="active">Hỗ Trợ AI</a>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <button onclick="resetConversation()" title="Chat mới" class="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-xs font-bold transition">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+        <button onclick="toggleTheme()" title="Đổi giao diện" class="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center transition">
+          <i id="themeIcon" data-lucide="moon" class="w-4 h-4"></i>
+        </button>
+        <a href="account.html" target="_self" class="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center text-xs font-bold transition" title="Tài khoản">
+          <i data-lucide="user" class="w-4 h-4"></i>
+        </a>
+        <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
+          <span></span><span></span><span></span>
         </button>
       </div>
     </div>
   </header>
+
+  <!-- Mobile Navigation Overlay -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="index.html" target="_self" onclick="toggleMobileMenu()">Trang chủ</a>
+    <a href="app-library/index.html" target="_self" onclick="toggleMobileMenu()">Kho IPA Tweak</a>
+    <a href="ipavip.html" target="_self" onclick="toggleMobileMenu()">Kho App VIP</a>
+    <a href="vsign.html" target="_self" onclick="toggleMobileMenu()">VSign Pro</a>
+    <a href="tap-hoa-mmo.html" target="_self" onclick="toggleMobileMenu()">Tạp Hóa MMO</a>
+    <a href="phim-tat.html" target="_self" onclick="toggleMobileMenu()">Phím Tắt iOS</a>
+    <a href="dichvu.html" target="_self" onclick="toggleMobileMenu()">Dịch Vụ Cert</a>
+    <a href="support.html" target="_self" onclick="toggleMobileMenu()">Hỗ Trợ AI 24/7</a>
+  </div>
+
 
   <!-- ==========================================
        AUTH REQUIRED BARRIER
@@ -653,7 +736,7 @@
   <!-- ==========================================
        MAIN CHAT INTERFACE
        ========================================== -->
-  <main id="chatMain" class="fixed inset-0 max-w-4xl mx-auto w-full flex flex-col hidden pt-[calc(80px+env(safe-area-inset-top,0px))] pb-[env(safe-area-inset-bottom,0px)]">
+  <main id="chatMain" class="fixed inset-0 max-w-4xl mx-auto w-full flex flex-col pt-[calc(80px+env(safe-area-inset-top,0px))] pb-[env(safe-area-inset-bottom,0px)]">
     <!-- User Quick Summary Card -->
     <div class="px-4 py-3 bg-gray-100 dark:bg-white/5 border-b border-black/5 dark:border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">
       <div class="flex items-center gap-2">
@@ -820,6 +903,21 @@
     };
 
     let aiKnowledgeBase = [];
+
+    let supportBrain = null;
+    async function loadBrainData() {
+      try {
+        const response = await fetch('support-brain.json');
+        if (response.ok) {
+          supportBrain = await response.json();
+          if (supportBrain.knowledge_base && Array.isArray(supportBrain.knowledge_base)) {
+            aiKnowledgeBase = [...supportBrain.knowledge_base, ...aiKnowledgeBase];
+          }
+        }
+      } catch (e) { console.warn("Lỗi nạp support-brain.json:", e); }
+    }
+    loadBrainData();
+
     let isAdminAuthenticated = sessionStorage.getItem('isAdminAuthenticated') === 'true';
     let adminModeEnabled = sessionStorage.getItem('adminModeEnabled') !== 'false';
     let allUsersData = [];
