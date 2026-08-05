@@ -49,6 +49,7 @@
     const auth = firebase.auth();
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUri = urlParams.get('redirect_uri');
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     let isRedirecting = false;
 
     auth.getRedirectResult().then((res) => {
@@ -56,22 +57,24 @@
         isRedirecting = true;
         document.getElementById('statusText').innerText = "Xác thực thành công! Đang về ứng dụng...";
         window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
-      } else {
-        document.getElementById('statusText').innerText = "Bấm nút bên dưới để đăng nhập Google";
+      } else if (!isRedirecting) {
+        document.getElementById('statusText').innerText = "Nhấn nút bên dưới để bắt đầu";
       }
     }).catch(err => {
-      document.getElementById('statusText').innerText = "Bấm nút bên dưới để đăng nhập Google";
+      document.getElementById('statusText').innerText = "Nhấn nút bên dưới để bắt đầu";
     });
 
     async function startGoogleAuth() {
       if (isRedirecting) return;
-      document.getElementById('statusText').innerText = "Đang kết nối cổng Google Auth...";
-      try {
-        await auth.signOut();
-      } catch (e) {}
-
+      document.getElementById('statusText').innerText = "Đang kết nối Google Auth...";
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
+
+      if (isMobile) {
+        auth.signInWithRedirect(provider);
+        return;
+      }
+
       try {
         const res = await auth.signInWithPopup(provider);
         if (res && res.credential && res.credential.idToken && redirectUri) {
@@ -80,13 +83,15 @@
           window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
         }
       } catch (err) {
-        if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-          auth.signInWithRedirect(provider);
-        } else {
-          document.getElementById('statusText').innerText = "Lỗi: " + err.message;
-        }
+        auth.signInWithRedirect(provider);
       }
     }
+
+    setTimeout(() => {
+      if (!window.location.href.includes('state=') && !isRedirecting) {
+        startGoogleAuth();
+      }
+    }, 400);
   </script>
 </body>
 </html>
