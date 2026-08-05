@@ -51,11 +51,31 @@
     const redirectUri = urlParams.get('redirect_uri');
     let isProcessing = false;
 
+    function handleSuccess(res) {
+      if (!res || isProcessing) return;
+      isProcessing = true;
+      document.getElementById('statusText').innerText = "Xác thực thành công! Đang chuyển hướng...";
+      
+      const cred = res.credential || {};
+      const idToken = cred.idToken || '';
+      const accessToken = cred.accessToken || '';
+      const email = (res.user && res.user.email) || '';
+      const name = (res.user && res.user.displayName) || '';
+
+      if (redirectUri) {
+        const target = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 
+          'idToken=' + encodeURIComponent(idToken) + 
+          '&accessToken=' + encodeURIComponent(accessToken) +
+          '&email=' + encodeURIComponent(email) +
+          '&name=' + encodeURIComponent(name);
+        
+        window.location.href = target;
+      }
+    }
+
     auth.getRedirectResult().then((res) => {
-      if (res && res.credential && res.credential.idToken && redirectUri && !isProcessing) {
-        isProcessing = true;
-        document.getElementById('statusText').innerText = "Xác thực thành công! Đang chuyển hướng...";
-        window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
+      if (res && res.credential) {
+        handleSuccess(res);
       }
     }).catch(err => {
       console.log("Redirect check:", err);
@@ -69,11 +89,7 @@
       provider.setCustomParameters({ prompt: 'select_account' });
 
       auth.signInWithPopup(provider).then((res) => {
-        if (res && res.credential && res.credential.idToken && redirectUri) {
-          isProcessing = true;
-          document.getElementById('statusText').innerText = "Xác thực thành công! Đang về ứng dụng...";
-          window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
-        }
+        handleSuccess(res);
       }).catch((err) => {
         console.error("Popup Error:", err);
         if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
