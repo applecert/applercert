@@ -56,12 +56,20 @@
         isRedirecting = true;
         document.getElementById('statusText').innerText = "Xác thực thành công! Đang về ứng dụng...";
         window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
+      } else {
+        document.getElementById('statusText').innerText = "Bấm nút bên dưới để đăng nhập Google";
       }
+    }).catch(err => {
+      document.getElementById('statusText').innerText = "Bấm nút bên dưới để đăng nhập Google";
     });
 
     async function startGoogleAuth() {
       if (isRedirecting) return;
       document.getElementById('statusText').innerText = "Đang kết nối cổng Google Auth...";
+      try {
+        await auth.signOut();
+      } catch (e) {}
+
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       try {
@@ -79,11 +87,6 @@
         }
       }
     }
-
-    // Reset web session so fresh Google OAuth idToken is generated
-    auth.signOut().then(() => {
-      document.getElementById('statusText').innerText = "Bấm nút bên dưới để đăng nhập Google";
-    });
   </script>
 </body>
 </html>
