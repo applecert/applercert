@@ -46,18 +46,15 @@
       appId: "1:127619650916:web:fc8904c99804eeb7539671"
     };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUri = urlParams.get('redirect_uri');
+    let isRedirecting = false;
 
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
+    auth.getRedirectResult().then(res => {
+      if (res && res.credential && res.credential.idToken && redirectUri) {
+        isRedirecting = true;
         document.getElementById('statusText').innerText = "Đang chuyển hướng về ứng dụng IPAVIET...";
-        const idToken = await user.getIdToken();
-        if (redirectUri) {
-          window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(idToken);
-        }
+        window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
       }
     });
 
@@ -65,7 +62,12 @@
       document.getElementById('statusText').innerText = "Đang kết nối cổng Google Auth...";
       const provider = new firebase.auth.GoogleAuthProvider();
       try {
-        await auth.signInWithPopup(provider);
+        const res = await auth.signInWithPopup(provider);
+        if (res && res.credential && res.credential.idToken && redirectUri) {
+          isRedirecting = true;
+          document.getElementById('statusText').innerText = "Xác thực thành công! Đang về ứng dụng...";
+          window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
+        }
       } catch (err) {
         if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
           auth.signInWithRedirect(provider);
@@ -75,7 +77,7 @@
       }
     }
 
-    setTimeout(startGoogleAuth, 500);
+    setTimeout(startGoogleAuth, 400);
   </script>
 </body>
 </html>
