@@ -24,9 +24,9 @@
   </div>
 
   <h1 class="text-2xl font-black mb-2">Xác Thực Ứng Dụng IPAVIET</h1>
-  <p class="text-gray-400 text-sm mb-8" id="statusText">Vui lòng chờ trong giây lát...</p>
+  <p class="text-gray-400 text-sm mb-8" id="statusText">Nhấn nút bên dưới để bắt đầu đăng nhập</p>
 
-  <button type="button" onclick="startGoogleAuth()" id="googleBtn" class="w-full max-w-xs h-14 bg-white text-gray-900 font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all">
+  <button type="button" id="googleBtn" class="w-full max-w-xs h-14 bg-white text-gray-900 font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all">
     <svg class="w-5 h-5" viewBox="0 0 24 24">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -49,49 +49,41 @@
     const auth = firebase.auth();
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUri = urlParams.get('redirect_uri');
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    let isRedirecting = false;
+    let isProcessing = false;
 
     auth.getRedirectResult().then((res) => {
-      if (res && res.credential && res.credential.idToken && redirectUri && !isRedirecting) {
-        isRedirecting = true;
-        document.getElementById('statusText').innerText = "Xác thực thành công! Đang về ứng dụng...";
+      if (res && res.credential && res.credential.idToken && redirectUri && !isProcessing) {
+        isProcessing = true;
+        document.getElementById('statusText').innerText = "Xác thực thành công! Đang chuyển hướng...";
         window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
-      } else if (!isRedirecting) {
-        document.getElementById('statusText').innerText = "Nhấn nút bên dưới để bắt đầu";
       }
     }).catch(err => {
-      document.getElementById('statusText').innerText = "Nhấn nút bên dưới để bắt đầu";
+      console.log("Redirect check:", err);
     });
 
-    async function startGoogleAuth() {
-      if (isRedirecting) return;
-      document.getElementById('statusText').innerText = "Đang kết nối Google Auth...";
+    document.getElementById('googleBtn').addEventListener('click', function() {
+      if (isProcessing) return;
+      document.getElementById('statusText').innerText = "Đang mở cổng Google Auth...";
+      
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
-      if (isMobile) {
-        auth.signInWithRedirect(provider);
-        return;
-      }
-
-      try {
-        const res = await auth.signInWithPopup(provider);
+      auth.signInWithPopup(provider).then((res) => {
         if (res && res.credential && res.credential.idToken && redirectUri) {
-          isRedirecting = true;
+          isProcessing = true;
           document.getElementById('statusText').innerText = "Xác thực thành công! Đang về ứng dụng...";
           window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
         }
-      } catch (err) {
-        auth.signInWithRedirect(provider);
-      }
-    }
-
-    setTimeout(() => {
-      if (!window.location.href.includes('state=') && !isRedirecting) {
-        startGoogleAuth();
-      }
-    }, 400);
+      }).catch((err) => {
+        console.error("Popup Error:", err);
+        if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+          document.getElementById('statusText').innerText = "Đang chuyển hướng Google...";
+          auth.signInWithRedirect(provider);
+        } else {
+          document.getElementById('statusText').innerText = "Lỗi: " + (err.message || "Không thể kết nối Google");
+        }
+      });
+    });
   </script>
 </body>
 </html>
