@@ -50,16 +50,27 @@
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUri = urlParams.get('redirect_uri');
     let isRedirecting = false;
-
-    auth.getRedirectResult().then(res => {
-      if (res && res.credential && res.credential.idToken && redirectUri) {
+    auth.getRedirectResult().then(async (res) => {
+      if (res && res.credential && res.credential.idToken && redirectUri && !isRedirecting) {
         isRedirecting = true;
-        document.getElementById('statusText').innerText = "Đang chuyển hướng về ứng dụng IPAVIET...";
+        document.getElementById('statusText').innerText = "Xác thực thành công! Đang về ứng dụng...";
         window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(res.credential.idToken);
       }
     });
 
+    auth.onAuthStateChanged(async (user) => {
+      if (user && redirectUri && !isRedirecting) {
+        isRedirecting = true;
+        document.getElementById('statusText').innerText = "Đã xác thực! Đang chuyển hướng về ứng dụng...";
+        const idToken = await user.getIdToken();
+        window.location.href = redirectUri + (redirectUri.includes('?') ? '&' : '?') + 'idToken=' + encodeURIComponent(idToken);
+      } else if (!user) {
+        document.getElementById('statusText').innerText = "Nhấn nút bên dưới để bắt đầu đăng nhập";
+      }
+    });
+
     async function startGoogleAuth() {
+      if (isRedirecting) return;
       document.getElementById('statusText').innerText = "Đang kết nối cổng Google Auth...";
       const provider = new firebase.auth.GoogleAuthProvider();
       try {
@@ -77,8 +88,6 @@
         }
       }
     }
-
-    setTimeout(startGoogleAuth, 400);
   </script>
 </body>
 </html>
