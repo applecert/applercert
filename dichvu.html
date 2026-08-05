@@ -3,16 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Premium Store - IPAVIET</title>
+  <title>Premium Store | IPAVIET</title>
   
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Fonts: Inter & Saira for Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Saira+Stencil+One&display=swap" rel="stylesheet">
+  
+  <!-- Icons & Styles -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   
+  <!-- Configuration -->
   <script>
     tailwind.config = { 
       darkMode: 'class', 
@@ -20,626 +27,674 @@
         extend: { 
           fontFamily: { 
             sans: ['Inter', 'sans-serif'], 
+            display: ['Saira Stencil One', 'cursive'],
+            mono: ['"JetBrains Mono"', 'monospace'] 
           }, 
           colors: { 
-            brand: '#0071E3', /* Apple Blue */
-            brandDark: '#0A84FF',
-            bgLight: '#F5F5F7', /* Apple Light Gray */
-            bgDark: '#000000', /* Apple Black */
+            brand: { 
+              DEFAULT: '#0066FF', // Apple/Tesla Blue
+              dark: '#0044CC',
+              glow: 'rgba(0, 102, 255, 0.5)'
+            }, 
+            accent: '#5E5CE6', // iOS Indigo
+            bgLight: '#F5F5F7', // Apple Light Gray
+            bgDark: '#000000', // True Black
             cardLight: '#FFFFFF', 
-            cardDark: '#1C1C1E', 
-          } 
+            cardDark: '#1C1C1E', // iOS Dark Card
+            borderLight: 'rgba(0,0,0,0.08)',
+            borderDark: 'rgba(255,255,255,0.12)',
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+            'fade-in': 'fadeIn 0.4s ease-out',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(100%)' },
+              '100%': { transform: 'translateY(0)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            }
+          }
         } 
       } 
     }
-    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); }
+
+    // Theme Initializer
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { 
+      document.documentElement.classList.add('dark'); 
+    } else { 
+      document.documentElement.classList.remove('dark'); 
+    }
   </script>
 
   <style>
-    /* ==========================================
-       PREMIUM DESIGN SYSTEM (APPLE / STRIPE STYLE)
-       ========================================== */
+    /* --- GLOBAL RESET & UTILITIES --- */
     body { 
       -webkit-tap-highlight-color: transparent; 
       overscroll-behavior-y: none; 
-      font-family: 'Inter', sans-serif !important; 
+      font-family: 'Inter', sans-serif;
+      background-color: #F5F5F7;
+      color: #1D1D1F;
+    }
+    .dark body {
+      background-color: #000000;
+      color: #F5F5F7;
+    }
+
+    /* --- GLASSMORPHISM & SURFACE --- */
+    .glass {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .dark .glass {
+      background: rgba(28, 28, 30, 0.7);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .dark .glass-panel {
+      background: rgba(28, 28, 30, 0.85);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* --- TYPOGRAPHY --- */
+    .text-display {
+      font-family: 'Saira Stencil One', cursive;
       letter-spacing: -0.02em;
     }
 
-    /* Glassmorphism & Elevation */
-    .glass-header { 
-      background: rgba(245, 245, 247, 0.72); 
-      backdrop-filter: blur(20px) saturate(180%); 
-      border-bottom: 1px solid rgba(0,0,0,0.06); 
+    /* --- SCROLLBAR HIDE --- */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* --- ANIMATION UTILS --- */
+    .spring-transition {
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    .dark .glass-header { 
-      background: rgba(0, 0, 0, 0.72); 
-      border-bottom: 1px solid rgba(255,255,255,0.08); 
+    .ease-apple {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .premium-shadow { 
-      box-shadow: 0 20px 40px -20px rgba(0,0,0,0.08), 0 4px 12px -4px rgba(0,0,0,0.04); 
-    }
-    .dark .premium-shadow { 
-      box-shadow: 0 20px 40px -20px rgba(0,0,0,0.8), 0 4px 12px -4px rgba(0,0,0,0.5); 
-    }
-
-    /* Interactive Cards (Lift & Spotlight) */
-    .interactive-card { 
-      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s ease; 
-      cursor: pointer; 
+    /* --- SEGMENT CONTROL (iOS 26 Style) --- */
+    .segment-track {
+      background: rgba(0,0,0,0.06);
+      border-radius: 14px;
       position: relative;
-      overflow: hidden;
+      padding: 4px;
     }
-    .interactive-card:hover { 
-      transform: translateY(-4px); 
-      box-shadow: 0 30px 60px -20px rgba(0,0,0,0.12), 0 8px 16px -4px rgba(0,0,0,0.06);
+    .dark .segment-track {
+      background: rgba(255,255,255,0.1);
     }
-    .dark .interactive-card:hover { 
-      box-shadow: 0 30px 60px -20px rgba(0,0,0,0.9), 0 8px 16px -4px rgba(0,0,0,0.6);
+    .segment-slider {
+      position: absolute;
+      height: calc(100% - 8px);
+      top: 4px;
+      left: 4px;
+      background: #FFFFFF;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      z-index: 0;
+      width: calc(25% - 8px);
     }
-    .interactive-card:active { 
-      transform: scale(0.98); 
-      transition-duration: 0.1s; 
+    .dark .segment-slider {
+      background: #636366;
     }
-
-    /* Floating Nav (iOS Dock Style) */
-    .floating-nav { 
-      margin: 0 auto; 
-      border-radius: 32px; 
-      width: calc(100% - 32px); 
-      max-width: 420px; 
-      box-shadow: 0 10px 40px rgba(0,0,0,0.12); 
-      background: rgba(255,255,255,0.8); 
-      backdrop-filter: blur(25px) saturate(180%); 
-      border: 1px solid rgba(0,0,0,0.05);
-    }
-    .dark .floating-nav { 
-      box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
-      background: rgba(28,28,30,0.8); 
-      border: 1px solid rgba(255,255,255,0.1); 
-    }
-    .tab-btn { 
-      flex: 1; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      gap: 0.15rem; 
-      color: #8E8E93; 
-      transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1); 
-      background: none; 
-      border: none; 
-      cursor: pointer; 
-      text-decoration: none;
-    }
-    .tab-btn.active { color: #0071E3; }
-    .dark .tab-btn.active { color: #0A84FF; }
-    .tab-btn.active i { transform: translateY(-2px) scale(1.1); }
-    .tab-btn.active span { opacity: 1; font-weight: 600; }
-    .tab-btn span { font-size: 0.6rem; font-weight: 500; opacity: 0.8; }
-
-    /* iOS Segment Control */
-    .segment-container { 
-      position: relative; 
-      display: flex; 
-      background: rgba(118, 118, 118, 0.12); 
-      padding: 3px; 
-      border-radius: 12px; 
-    }
-    .dark .segment-container { background: rgba(118, 118, 118, 0.24); }
-    .segment-tab { 
-      flex: 1; 
-      text-align: center; 
-      padding: 8px 0; 
-      font-size: 13px; 
-      font-weight: 600; 
-      color: #8E8E93; 
-      cursor: pointer; 
-      position: relative; 
-      z-index: 10; 
-      transition: color 0.3s; 
-    }
-    .dark .segment-tab { color: #98989F; }
-    .segment-tab.active { color: #000; transition: color 0.3s ease 0.1s; }
-    .dark .segment-tab.active { color: #fff; }
-    .segment-slider { 
-      position: absolute; 
-      top: 3px; 
-      bottom: 3px; 
-      left: 3px; 
-      width: calc(25% - 4.5px); 
-      background: #fff; 
-      border-radius: 9px; 
-      box-shadow: 0 3px 8px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.04); 
-      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); 
-      z-index: 1; 
-    }
-    .dark .segment-slider { background: #1C1C1E; box-shadow: 0 3px 8px rgba(0,0,0,0.5); }
-
-    /* Bottom Sheet Animation */
-    .sheet-overlay {
-      transition: opacity 0.3s ease;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .sheet-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .sheet-panel {
-      transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
-      transform: translateY(100%);
-    }
-    .sheet-panel.active {
-      transform: translateY(0);
+    .segment-item {
+      position: relative;
+      z-index: 1;
+      transition: color 0.3s;
     }
 
-    /* Hide Scrollbar */
-    .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-    /* Shimmer Loading */
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
+    /* --- PREMIUM CARD --- */
+    .premium-card {
+      transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
     }
-    .shimmer {
-      background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%);
+    .premium-card:active {
+      transform: scale(0.98);
+    }
+    .premium-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
+    }
+    .dark .premium-card:hover {
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+    }
+    
+    /* Glow Effect */
+    .glow-hover:hover {
+      box-shadow: 0 0 0 2px var(--brand-color), 0 0 20px var(--brand-glow);
+    }
+
+    /* --- CHECKOUT TIMELINE --- */
+    .timeline-line {
+      position: absolute;
+      left: 11px;
+      top: 24px;
+      bottom: 0;
+      width: 2px;
+      background: rgba(0,0,0,0.1);
+    }
+    .dark .timeline-line { background: rgba(255,255,255,0.1); }
+    
+    /* --- CUSTOM LOADING SHIMMER --- */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
     }
-
-    /* Success Checkmark Animation */
-    @keyframes scaleIn {
-      0% { transform: scale(0); opacity: 0; }
-      60% { transform: scale(1.1); opacity: 1; }
-      100% { transform: scale(1); }
+    .dark .skeleton {
+      background: linear-gradient(90deg, #2c2c2e 25%, #3a3a3c 50%, #2c2c2e 75%);
     }
-    .checkmark-anim {
-      animation: scaleIn 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
-
-    /* Wallet Card Gradient */
-    .wallet-gradient {
-      background: linear-gradient(135deg, #1C1C1E 0%, #2C2C2E 100%);
-    }
-    .dark .wallet-gradient {
-      background: linear-gradient(135deg, #1C1C1E 0%, #000000 100%);
-    }
-
-    /* Typography Helper */
-    .text-display { font-size: 2.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; }
   </style>
 </head>
-<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
+<body class="h-screen w-screen overflow-hidden selection:bg-brand selection:text-white">
 
-  <!-- Premium Header -->
-  <header class="glass-header fixed top-0 w-full z-40 h-[64px] flex items-center px-6 transition-all duration-300">
-    <div class="flex items-center gap-4 w-full max-w-5xl mx-auto relative justify-between">
-      <div class="font-bold text-[17px] tracking-tight flex items-center gap-2 cursor-pointer shrink-0" onclick="window.location.href='index.html'">
-        <div class="w-8 h-8 rounded-lg bg-gray-900 dark:bg-white flex items-center justify-center text-white dark:text-black">
-          <i data-lucide="apple" class="w-4 h-4 fill-current"></i>
+  <!-- =========================
+       MAIN APP CONTAINER
+       ========================= -->
+  <div class="h-full flex flex-col relative max-w-[1280px] mx-auto bg-transparent sm:border-x sm:border-borderLight dark:sm:border-borderDark overflow-hidden">
+    
+    <!-- 1. GLASS HEADER -->
+    <header class="glass fixed top-0 w-full z-50 h-16 flex items-center justify-between px-6 sm:px-8 transition-all duration-300">
+      <div class="flex items-center gap-3 cursor-pointer group" onclick="window.location.href='index.html'">
+        <div class="w-8 h-8 rounded-lg bg-black dark:bg-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
+          <i data-lucide="shopping-bag" class="w-4 h-4 text-white dark:text-black fill-current"></i>
         </div>
-        <span>IPAVIET Store</span>
+        <span class="text-display text-xl tracking-wide text-black dark:text-white group-hover:opacity-80 transition-opacity">STORE</span>
       </div>
-      <div class="flex items-center gap-2 ml-auto shrink-0">
-        <a href="account.html" class="h-9 px-3.5 rounded-full bg-white dark:bg-cardDark border border-gray-200 dark:border-white/10 flex items-center justify-center font-semibold text-[13px] text-gray-900 dark:text-white premium-shadow interactive-card">
-          <i data-lucide="wallet" class="w-4 h-4 mr-1.5 text-brand"></i> <span id="headerCoins">0đ</span>
+      
+      <div class="flex items-center gap-3">
+        <button onclick="toggleTheme()" class="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/20 transition-colors active:scale-95">
+          <i id="themeIcon" data-lucide="moon" class="w-4 h-4 text-gray-600 dark:text-yellow-400"></i>
+        </button>
+        <a href="account.html" class="hidden sm:flex h-9 px-4 items-center gap-2 rounded-full bg-black dark:bg-white text-white dark:text-black text-xs font-bold hover:opacity-90 transition-opacity">
+          <i data-lucide="wallet" class="w-3 h-3"></i>
+          <span id="headerCoins">0</span>
         </a>
-        <button onclick="toggleTheme()" class="w-9 h-9 rounded-full bg-white dark:bg-cardDark border border-gray-200 dark:border-white/10 flex items-center justify-center interactive-card premium-shadow">
-          <i id="themeIcon" data-lucide="moon" class="w-4 h-4 text-gray-900 dark:text-yellow-400 dark:fill-yellow-400"></i>
+      </div>
+    </header>
+
+    <!-- 2. SCROLLABLE CONTENT -->
+    <main class="flex-1 h-full overflow-y-auto no-scrollbar pt-20 pb-24 px-4 sm:px-6 scroll-smooth" id="mainScroll">
+      
+      <!-- HERO SECTION -->
+      <section class="mt-4 mb-8 animate-fade-in">
+        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-black dark:text-white mb-1">
+          Premium Store.
+        </h1>
+        <p class="text-xl sm:text-2xl text-gray-500 dark:text-gray-400 font-medium mb-8">
+          Everything you need. <span class="text-brand dark:text-blue-400">One place.</span>
+        </p>
+        
+        <!-- Wallet Hero Card -->
+        <div class="w-full bg-gradient-to-br from-gray-900 to-black text-white rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-64 h-64 bg-brand opacity-20 blur-[80px] rounded-full pointer-events-none"></div>
+          
+          <div class="relative z-10 flex justify-between items-start">
+            <div>
+              <p class="text-xs font-bold tracking-widest text-gray-400 uppercase mb-1">Available Balance</p>
+              <h2 class="text-4xl font-mono font-bold tracking-tight flex items-center gap-1">
+                <span class="text-brand text-2xl">đ</span>
+                <span id="heroBalance">0</span>
+              </h2>
+            </div>
+            <div class="px-3 py-1 rounded-full border border-white/20 bg-white/5 backdrop-blur-md">
+              <span class="text-xs font-bold flex items-center gap-1">
+                <i data-lucide="crown" class="w-3 h-3 text-yellow-400"></i> MEMBER
+              </span>
+            </div>
+          </div>
+          
+          <div class="relative z-10 mt-8 flex gap-4">
+            <div class="flex-1">
+              <div class="flex justify-between text-xs mb-1 text-gray-400">
+                <span>VIP Progress</span>
+                <span>65%</span>
+              </div>
+              <div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full bg-brand w-[65%] rounded-full shadow-[0_0_10px_rgba(0,102,255,0.8)]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. SEGMENT CONTROL -->
+      <div class="sticky top-4 z-30 mb-8 animate-slide-up" style="animation-delay: 100ms;">
+        <div class="segment-track flex w-full max-w-md mx-auto">
+          <div class="segment-slider" id="segmentSlider"></div>
+          <button class="segment-item flex-1 py-2.5 text-xs font-bold text-gray-900 dark:text-white text-center rounded-xl" onclick="switchStoreTab('napxu', 0)">Nạp Tiền</button>
+          <button class="segment-item flex-1 py-2.5 text-xs font-bold text-gray-500 dark:text-gray-400 text-center rounded-xl" onclick="switchStoreTab('vip', 1)">Gói VIP</button>
+          <button class="segment-item flex-1 py-2.5 text-xs font-bold text-gray-500 dark:text-gray-400 text-center rounded-xl" onclick="switchStoreTab('premium', 2)">Tài Khoản</button>
+          <button class="segment-item flex-1 py-2.5 text-xs font-bold text-gray-500 dark:text-gray-400 text-center rounded-xl" onclick="switchStoreTab('giftcode', 3)">Giftcode</button>
+        </div>
+      </div>
+
+      <!-- CONTENT SECTIONS -->
+      
+      <!-- SECTION: NAP XU -->
+      <div id="section-napxu" class="space-y-4 animate-fade-in" style="animation-delay: 150ms;">
+        <!-- Grid Layout Apple Style -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          
+          <!-- Card 1 -->
+          <div class="premium-card bg-white dark:bg-cardDark p-6 rounded-[28px] border border-gray-100 dark:border-white/5 relative group cursor-pointer" onclick="startOrder(10000, 'Gói Nạp Khởi Động', 10000)">
+            <div class="absolute top-6 right-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+              <i data-lucide="coins" class="w-16 h-16"></i>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-4">
+              <i data-lucide="plus" class="w-6 h-6 text-gray-600 dark:text-gray-300"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">10.000đ</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Khởi động</p>
+            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-white/5 flex justify-between items-center">
+              <span class="text-sm font-mono font-bold text-gray-900 dark:text-white">Giá: 10.000đ</span>
+              <div class="w-8 h-8 rounded-full bg-black dark:bg-white flex items-center justify-center group-hover:bg-brand dark:group-hover:bg-brand transition-colors">
+                <i data-lucide="arrow-right" class="w-4 h-4 text-white dark:text-black group-hover:text-white"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="premium-card bg-white dark:bg-cardDark p-6 rounded-[28px] border border-gray-100 dark:border-white/5 relative group cursor-pointer" onclick="startOrder(20000, 'Gói Nạp Tiêu Chuẩn', 22000)">
+            <div class="absolute top-0 right-0 bg-brand text-white text-[10px] font-black px-3 py-1 rounded-bl-xl rounded-tr-[28px] shadow-md z-10">TẶNG +10%</div>
+            <div class="absolute top-6 right-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+              <i data-lucide="gem" class="w-16 h-16"></i>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-brand/10 flex items-center justify-center mb-4 border border-brand/20">
+              <i data-lucide="gem" class="w-6 h-6 text-brand"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-brand mb-1">22.000đ</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Tiêu chuẩn</p>
+            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-white/5 flex justify-between items-center">
+              <span class="text-sm font-mono font-bold text-gray-900 dark:text-white">Giá: 20.000đ</span>
+              <div class="w-8 h-8 rounded-full bg-black dark:bg-white flex items-center justify-center group-hover:bg-brand dark:group-hover:bg-brand transition-colors">
+                <i data-lucide="arrow-right" class="w-4 h-4 text-white dark:text-black group-hover:text-white"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3 (Featured) -->
+          <div class="premium-card bg-white dark:bg-cardDark p-6 rounded-[28px] border border-brand/30 relative group cursor-pointer overflow-hidden" onclick="startOrder(50000, 'Gói Nạp Phổ Biến', 60000)">
+            <div class="absolute inset-0 bg-gradient-to-br from-brand/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div class="absolute top-0 right-0 bg-brand text-white text-[10px] font-black px-3 py-1 rounded-bl-xl rounded-tr-[28px] shadow-md z-10">PHỔ BIẾN</div>
+            <div class="absolute top-6 right-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+              <i data-lucide="sparkles" class="w-16 h-16"></i>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-brand flex items-center justify-center mb-4 shadow-lg shadow-brand/30">
+              <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-brand to-blue-400 mb-1">60.000đ</h3>
+            <p class="text-sm text-brand font-medium">Phổ biến</p>
+            <div class="mt-4 pt-4 border-t border-brand/20 flex justify-between items-center">
+              <span class="text-sm font-mono font-bold text-gray-900 dark:text-white">Giá: 50.000đ</span>
+              <div class="w-8 h-8 rounded-full bg-brand flex items-center justify-center">
+                <i data-lucide="arrow-right" class="w-4 h-4 text-white"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4 (Premium) -->
+          <div class="premium-card bg-gradient-to-br from-[#111] to-[#000] p-6 rounded-[28px] border border-yellow-500/20 relative group cursor-pointer overflow-hidden text-white" onclick="startOrder(100000, 'Gói Nạp Siêu Hời', 150000)">
+            <div class="absolute top-0 right-0 bg-gradient-to-r from-yellow-500 to-yellow-300 text-black text-[10px] font-black px-3 py-1 rounded-bl-xl rounded-tr-[28px] shadow-md z-20">SIÊU HỜI</div>
+            <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+            <div class="w-12 h-12 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center mb-4 backdrop-blur-sm">
+              <i data-lucide="crown" class="w-6 h-6 text-yellow-400"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-500 mb-1">150.000đ</h3>
+            <p class="text-sm text-yellow-500/80 font-medium">Siêu hời</p>
+            <div class="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
+              <span class="text-sm font-mono font-bold text-white/60">Giá: 100.000đ</span>
+              <div class="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center">
+                <i data-lucide="arrow-right" class="w-4 h-4 text-black"></i>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECTION: VIP -->
+      <div id="section-vip" class="hidden space-y-4 animate-fade-in">
+        <div class="bg-white dark:bg-cardDark rounded-[32px] p-1 border border-gray-100 dark:border-white/5 flex flex-col sm:flex-row gap-1 overflow-hidden">
+          
+          <!-- VIP Basic -->
+          <div class="flex-1 bg-gray-50/50 dark:bg-white/5 p-6 rounded-[28px] sm:rounded-2xl flex flex-col justify-between transition-all duration-300 hover:bg-white dark:hover:bg-white/5 hover:scale-[1.02] cursor-pointer" onclick="requestPurchase('VIP 7 Ngày', 19000, 'vip', 7)">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Tuần Trải Nghiệm</h3>
+              <div class="my-4"><span class="text-3xl font-bold text-gray-900 dark:text-white">19k</span><span class="text-gray-400">/7 ngày</span></div>
+              <ul class="space-y-2 mb-4">
+                <li class="text-xs text-gray-500 flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Truy cập cơ bản</li>
+                <li class="text-xs text-gray-500 flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Hỗ trợ tiêu chuẩn</li>
+              </ul>
+            </div>
+            <button class="w-full py-3 rounded-xl bg-gray-200 dark:bg-white/10 font-bold text-sm text-gray-900 dark:text-white">Mở khóa</button>
+          </div>
+
+          <!-- VIP Pro (Featured) -->
+          <div class="flex-[1.5] bg-white dark:bg-[#1c1c1e] p-6 rounded-[28px] sm:rounded-2xl flex flex-col justify-between relative overflow-hidden border border-brand/30 shadow-xl sm:shadow-none transform sm:scale-105 z-10">
+            <div class="absolute inset-0 bg-gradient-to-br from-brand/5 to-transparent"></div>
+            <div class="relative z-10">
+              <div class="flex justify-between items-start">
+                <h3 class="text-lg font-bold text-brand">Tháng Vàng VIP</h3>
+                <span class="bg-brand/10 text-brand text-[10px] font-bold px-2 py-1 rounded-lg">KHUYÊN DÙNG</span>
+              </div>
+              <div class="my-4"><span class="text-3xl font-bold text-gray-900 dark:text-white">39k</span><span class="text-gray-400">/30 ngày</span></div>
+              <ul class="space-y-2 mb-4">
+                <li class="text-xs text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-brand"></i> Mọi tính năng Basic</li>
+                <li class="text-xs text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-brand"></i> Ưu tiên hỗ trợ</li>
+                <li class="text-xs text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-brand"></i> Tải xuống không giới hạn</li>
+              </ul>
+            </div>
+            <button class="relative z-10 w-full py-3 rounded-xl bg-brand text-white font-bold text-sm shadow-lg shadow-brand/30 hover:bg-brand-dark transition-colors" onclick="requestPurchase('VIP 30 Ngày', 39000, 'vip', 30)">Mở khóa ngay</button>
+          </div>
+
+          <!-- VIP Elite -->
+          <div class="flex-1 bg-gradient-to-br from-gray-900 to-black p-6 rounded-[28px] sm:rounded-2xl flex flex-col justify-between text-white relative overflow-hidden group" onclick="requestPurchase('VIP 365 Ngày', 199000, 'vip', 365)">
+            <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30"></div>
+            <div class="relative z-10">
+              <div class="flex justify-between items-start">
+                <h3 class="text-lg font-bold text-yellow-400">Năm Đẳng Cấp</h3>
+                <i data-lucide="crown" class="w-4 h-4 text-yellow-400"></i>
+              </div>
+              <div class="my-4"><span class="text-3xl font-bold text-white">199k</span><span class="text-gray-500">/năm</span></div>
+              <ul class="space-y-2 mb-4">
+                <li class="text-xs text-gray-300 flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-yellow-400"></i> Tất cả VIP</li>
+                <li class="text-xs text-gray-300 flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-yellow-400"></i> Hỗ trợ 24/7</li>
+              </ul>
+            </div>
+            <button class="relative z-10 w-full py-3 rounded-xl bg-yellow-500 text-black font-bold text-sm hover:bg-yellow-400 transition-colors">Mở khóa ngay</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECTION: PREMIUM ACCOUNTS -->
+      <div id="section-premium" class="hidden space-y-4 animate-fade-in">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Spotify -->
+          <div class="premium-card bg-white dark:bg-cardDark p-5 rounded-3xl border border-gray-100 dark:border-white/5 flex items-center justify-between group cursor-pointer" onclick="requestPurchase('Spotify (1 Tháng)', 30000, 'account', 'Spotify')">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-[#1DB954] flex items-center justify-center shadow-lg shadow-[#1DB954]/20 group-hover:scale-110 transition-transform">
+                <i data-lucide="music" class="w-7 h-7 text-black fill-black"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-gray-900 dark:text-white text-lg">Spotify Premium</h4>
+                <p class="text-xs text-gray-500 font-medium">Chính chủ • 1 Tháng</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-lg text-gray-900 dark:text-white">30.000đ</div>
+              <button class="text-[10px] bg-black dark:bg-white text-white dark:text-black px-3 py-1.5 rounded-full font-bold">Mua</button>
+            </div>
+          </div>
+
+          <!-- Netflix -->
+          <div class="premium-card bg-white dark:bg-cardDark p-5 rounded-3xl border border-gray-100 dark:border-white/5 flex items-center justify-between group cursor-pointer" onclick="requestPurchase('Netflix (1 Tháng)', 65000, 'account', 'Netflix')">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-black border border-gray-800 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <i data-lucide="tv" class="w-7 h-7 text-[#E50914] fill-[#E50914]"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-gray-900 dark:text-white text-lg">Netflix Premium</h4>
+                <p class="text-xs text-gray-500 font-medium">4K 1 Màn • 1 Tháng</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-lg text-gray-900 dark:text-white">65.000đ</div>
+              <button class="text-[10px] bg-black dark:bg-white text-white dark:text-black px-3 py-1.5 rounded-full font-bold">Mua</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: GIFTCODE -->
+      <div id="section-giftcode" class="hidden animate-fade-in">
+        <div class="max-w-sm mx-auto bg-white dark:bg-cardDark p-8 rounded-[32px] border border-gray-100 dark:border-white/5 shadow-xl text-center relative overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand to-transparent"></div>
+          <div class="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <i data-lucide="gift" class="w-8 h-8 text-brand"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Redeem Center</h3>
+          <p class="text-sm text-gray-500 mb-6">Nhập mã Giftcode để nhận quà.</p>
+          <input type="text" id="mainGiftcodeInput" placeholder="NHẬP MÃ..." class="w-full bg-gray-50 dark:bg-black/50 border-2 border-gray-100 dark:border-white/10 rounded-2xl px-4 py-4 mb-3 text-center font-mono font-bold tracking-widest focus:border-brand focus:ring-0 outline-none transition-all">
+          <button onclick="applyMainGiftcode()" id="btnMainApplyGiftcode" class="w-full bg-black dark:bg-white text-white dark:text-black font-bold py-4 rounded-2xl hover:opacity-90 transition-opacity">KÍCH HOẠT</button>
+          <p id="mainGiftcodeMsg" class="mt-4 text-xs font-bold hidden"></p>
+        </div>
+      </div>
+      
+      <!-- Spacer for bottom nav -->
+      <div class="h-12"></div>
+    </main>
+
+    <!-- FLOATING NAV (Glassmorphism) -->
+    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40 w-[calc(100%-32px)] max-w-[400px]">
+      <div class="glass-panel rounded-full shadow-2xl shadow-black/5 p-1.5 flex justify-between items-center">
+        <a href="index.html" class="flex-1 flex flex-col items-center justify-center py-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+          <i data-lucide="home" class="w-5 h-5 mb-0.5"></i>
+        </a>
+        <a href="ipavip.html" class="flex-1 flex flex-col items-center justify-center py-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+          <i data-lucide="crown" class="w-5 h-5 mb-0.5"></i>
+        </a>
+        <a href="app-library/index.html" class="flex-1 flex flex-col items-center justify-center py-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+          <i data-lucide="smartphone" class="w-5 h-5 mb-0.5"></i>
+        </a>
+        <a href="account.html" class="flex-1 flex flex-col items-center justify-center py-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+          <i data-lucide="user" class="w-5 h-5 mb-0.5"></i>
+        </a>
+        <button class="flex-1 flex flex-col items-center justify-center py-2 text-brand dark:text-blue-400">
+          <i data-lucide="shopping-bag" class="w-5 h-5 mb-0.5"></i>
         </button>
       </div>
     </div>
-  </header>
 
-  <!-- Main Content -->
-  <main class="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-hide pt-[80px] pb-[120px] relative scroll-smooth max-w-6xl mx-auto w-full px-6">
-       
-    <!-- Hero Section & Wallet -->
-    <section class="mt-8 mb-12 flex flex-col md:flex-row gap-8 items-start">
-      <div class="flex-1">
-        <h1 class="text-display text-gray-900 dark:text-white">
-          Premium Store.<br>
-          <span class="text-gray-400 dark:text-gray-500">Everything you need.</span>
-        </h1>
-        <p class="mt-4 text-gray-500 dark:text-gray-400 text-lg max-w-md">Một nơi để nâng cấp trải nghiệm số của bạn. Trực quan. Nhanh chóng. Bảo mật.</p>
+  </div>
+
+  <!-- =========================
+       PREMIUM CHECKOUT SHEET (Full Screen)
+       ========================= -->
+  <div id="checkoutPage" class="fixed inset-0 bg-white dark:bg-[#000000] z-[100] hidden flex-col h-[100dvh] animate-slide-up">
+      
+      <!-- Checkout Header -->
+      <div class="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-gray-100 dark:border-white/10 glass sticky top-0 z-20">
+        <button onclick="closeCheckout()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-white/20 transition-colors">
+          <i data-lucide="x" class="w-5 h-5 text-gray-900 dark:text-white"></i>
+        </button>
+        <span class="font-bold text-sm tracking-widest uppercase text-gray-900 dark:text-white">Thanh Toán An Toàn</span>
+        <div class="w-10"></div> <!-- Spacer -->
       </div>
-      <!-- Wallet Card -->
-      <div class="w-full md:w-[320px] wallet-gradient rounded-[24px] p-6 premium-shadow text-white relative overflow-hidden">
-        <div class="absolute -top-10 -right-10 w-40 h-40 bg-brand/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="flex justify-between items-start mb-6">
-          <span class="text-[13px] font-medium text-gray-400 uppercase tracking-wider">Số dư ví</span>
-          <i data-lucide="shield-check" class="w-5 h-5 text-brand"></i>
-        </div>
-        <h2 class="text-4xl font-bold tracking-tight" id="walletBalance">0đ</h2>
-        <div class="mt-6 pt-4 border-t border-white/10 flex justify-between items-center">
-          <span class="text-sm text-gray-400">Thành viên</span>
-          <span class="text-sm font-semibold text-yellow-400 flex items-center gap-1">
-            <i data-lucide="crown" class="w-3.5 h-3.5 fill-yellow-400 text-yellow-400"></i> Standard
-          </span>
-        </div>
-      </div>
-    </section>
 
-    <!-- Segment Control (iOS Style) -->
-    <div class="segment-container w-full max-w-md mx-auto mb-10">
-      <div class="segment-slider" id="segment-slider"></div>
-      <div class="segment-tab active" onclick="switchStoreTab('napxu', 0)" id="tab-napxu">Nạp Tiền</div>
-      <div class="segment-tab" onclick="switchStoreTab('vip', 1)" id="tab-vip">VIP</div>
-      <div class="segment-tab" onclick="switchStoreTab('premium', 2)" id="tab-premium">Tài Khoản</div>
-      <div class="segment-tab" onclick="switchStoreTab('giftcode', 3)" id="tab-giftcode">Giftcode</div>
-    </div>
-
-    <!-- NẠP TIỀN (Apple Store Grid Style) -->
-    <div id="section-napxu" class="block">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        
-        <!-- Basic -->
-        <div class="bg-cardLight dark:bg-cardDark rounded-[24px] p-6 premium-shadow border border-gray-100 dark:border-white/5 interactive-card flex flex-col justify-between min-h-[220px]" onclick="startOrder(10000, 'Gói Nạp Khởi Động', 10000)">
-          <div class="flex justify-between items-start">
-            <div class="text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Basic</div>
-            <i data-lucide="arrow-up-right" class="w-5 h-5 text-gray-400"></i>
+      <div class="flex-1 overflow-y-auto no-scrollbar p-6 sm:p-8 pb-24">
+        <div class="max-w-md mx-auto space-y-8">
+          
+          <!-- Order Summary Card -->
+          <div class="bg-gray-50 dark:bg-white/5 p-6 rounded-3xl border border-gray-100 dark:border-white/5">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center">
+                <i data-lucide="shopping-bag" class="w-4 h-4 text-brand"></i>
+              </div>
+              <span class="font-bold text-sm text-gray-900 dark:text-white">Đơn hàng</span>
+            </div>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-500">Gói dịch vụ</span>
+                <span class="font-bold text-sm text-gray-900 dark:text-white" id="chkPackageName">...</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-500">Tạm tính</span>
+                <span class="font-mono font-bold text-gray-900 dark:text-white" id="chkOriginalPrice">...</span>
+              </div>
+            </div>
           </div>
+
+          <!-- QR Payment Section -->
+          <div class="flex flex-col items-center">
+            <div class="w-full relative">
+              <div id="qrLoading" class="absolute inset-0 z-10 bg-white dark:bg-black flex flex-col items-center justify-center rounded-3xl">
+                <div class="w-10 h-10 border-2 border-brand border-t-transparent rounded-full animate-spin mb-3"></div>
+                <span class="text-xs font-bold text-gray-400 animate-pulse">Đang tạo mã bảo mật...</span>
+              </div>
+              
+              <div class="bg-white dark:bg-white rounded-[32px] p-4 sm:p-6 shadow-2xl relative overflow-hidden group border border-gray-100 dark:border-white/10">
+                 <img id="qrImage" class="w-full aspect-square object-contain opacity-0 transition-opacity duration-500 mix-blend-multiply dark:mix-blend-normal" alt="QR Code">
+                 <div class="absolute inset-0 bg-gradient-to-tr from-brand/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+              </div>
+            </div>
+            <p class="mt-4 text-xs text-center text-gray-400">Quét mã bằng App Ngân hàng</p>
+          </div>
+
+          <!-- Payment Status Timeline -->
+          <div class="relative pl-2">
+            <div class="timeline-line"></div>
+            <div class="space-y-6">
+              <div class="relative flex items-center gap-4">
+                <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shrink-0 z-10 shadow-lg shadow-green-500/30">
+                  <i data-lucide="check" class="w-3 h-3 text-white"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-900 dark:text-white">Đơn hàng tạo</p>
+                  <p class="text-[10px] text-gray-500" id="orderTime">Vừa xong</p>
+                </div>
+              </div>
+              <div class="relative flex items-center gap-4">
+                <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shrink-0 z-10 shadow-lg shadow-green-500/30">
+                  <i data-lucide="check" class="w-3 h-3 text-white"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-900 dark:text-white">Mã QR đã tạo</p>
+                  <p class="text-[10px] text-gray-500">Chờ quét</p>
+                </div>
+              </div>
+              <div class="relative flex items-center gap-4">
+                <div class="w-6 h-6 rounded-full bg-brand border-4 border-white dark:border-black flex items-center justify-center shrink-0 z-10 animate-pulse">
+                  <div class="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-brand">Đang chờ thanh toán</p>
+                  <p class="text-[10px] text-gray-500">Vui lòng chuyển khoản</p>
+                </div>
+              </div>
+              <div class="relative flex items-center gap-4 opacity-40">
+                <div class="w-6 h-6 rounded-full bg-gray-200 dark:bg-white/10 flex items-center justify-center shrink-0 z-10">
+                  <i data-lucide="shield" class="w-3 h-3 text-gray-500"></i>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-900 dark:text-white">Xác minh hệ thống</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bank Info -->
+          <div class="bg-gray-50 dark:bg-white/5 p-6 rounded-3xl border border-gray-100 dark:border-white/5">
+            <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Thông tin chuyển khoản</h4>
+            <div class="space-y-4 text-sm">
+              <div class="flex justify-between items-center border-b border-gray-200 dark:border-white/5 pb-3">
+                <span class="text-gray-500">Ngân hàng</span>
+                <span class="font-bold text-gray-900 dark:text-white">ACB</span>
+              </div>
+              <div class="flex justify-between items-center border-b border-gray-200 dark:border-white/5 pb-3">
+                <span class="text-gray-500">Số tài khoản</span>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-gray-900 dark:text-white tracking-wider">22703611</span>
+                  <button onclick="copyCheckoutText('22703611', this)" class="p-1.5 bg-white dark:bg-white/10 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20"><i data-lucide="copy" class="w-3 h-3"></i></button>
+                </div>
+              </div>
+              <div class="flex justify-between items-center border-b border-gray-200 dark:border-white/5 pb-3">
+                <span class="text-gray-500">Chủ tài khoản</span>
+                <span class="font-bold text-gray-900 dark:text-white">TRAN NGUYEN MINH QUI</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-500">Nội dung</span>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-brand bg-brand/5 px-2 py-1 rounded" id="chkContent">...</span>
+                  <button onclick="copyCheckoutText(document.getElementById('chkContent').innerText, this)" class="p-1.5 bg-white dark:bg-white/10 rounded-lg hover:bg-gray-200 dark:hover:bg-white/20"><i data-lucide="copy" class="w-3 h-3"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discount -->
+          <div class="flex gap-2">
+            <input type="text" id="discountInput" placeholder="Mã giảm giá (nếu có)" class="flex-1 h-12 px-4 rounded-2xl bg-gray-50 dark:bg-white/5 border border-transparent focus:border-brand focus:bg-white dark:focus:bg-black/50 outline-none text-sm font-bold transition-colors">
+            <button onclick="applyDiscountCode()" id="btnApplyDiscount" class="h-12 px-6 rounded-2xl bg-gray-900 dark:bg-white text-white dark:text-black font-bold text-sm hover:opacity-90 transition-opacity">Áp dụng</button>
+          </div>
+          <p id="discountMsg" class="text-xs font-bold hidden text-center"></p>
+
+        </div>
+      </div>
+
+      <!-- Sticky Checkout Footer -->
+      <div class="fixed bottom-0 left-0 right-0 p-6 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-gray-100 dark:border-white/10 z-30">
+        <div class="max-w-md mx-auto flex items-center justify-between">
           <div>
-            <div class="flex items-baseline gap-1">
-              <h3 class="text-3xl font-bold tracking-tight">10.000</h3>
-              <span class="text-sm font-semibold text-gray-500">đ</span>
-            </div>
-            <p class="text-sm text-gray-500 mt-1">Nhận 10.000đ vào ví</p>
+            <p class="text-[10px] font-bold text-gray-500 uppercase">Tổng thanh toán</p>
+            <p class="text-2xl font-mono font-bold text-gray-900 dark:text-white" id="chkFinalPrice">...</p>
           </div>
-        </div>
-
-        <!-- Standard -->
-        <div class="bg-cardLight dark:bg-cardDark rounded-[24px] p-6 premium-shadow border border-gray-100 dark:border-white/5 interactive-card flex flex-col justify-between min-h-[220px]" onclick="startOrder(20000, 'Gói Nạp Tiêu Chuẩn', 22000)">
-          <div class="flex justify-between items-start">
-            <div class="text-[13px] font-semibold text-brand uppercase tracking-wider">+10% Bonus</div>
-            <i data-lucide="arrow-up-right" class="w-5 h-5 text-gray-400"></i>
-          </div>
-          <div>
-            <div class="flex items-baseline gap-1">
-              <h3 class="text-3xl font-bold tracking-tight">22.000</h3>
-              <span class="text-sm font-semibold text-gray-500">đ</span>
-            </div>
-            <p class="text-sm text-gray-500 mt-1">Chỉ với 20.000đ</p>
-          </div>
-        </div>
-
-        <!-- Popular (Featured) -->
-        <div class="md:col-span-2 bg-gradient-to-br from-brand to-blue-600 rounded-[24px] p-6 premium-shadow interactive-card flex flex-col justify-between min-h-[220px] text-white relative overflow-hidden" onclick="startOrder(50000, 'Gói Nạp Phổ Biến', 60000)">
-          <div class="absolute top-0 right-0 bg-white/20 text-white text-[11px] font-bold px-3 py-1 rounded-bl-xl backdrop-blur-md z-20">PHỔ BIẾN</div>
-          <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-          <div class="flex justify-between items-start relative z-10">
-            <div class="text-[13px] font-semibold text-white/80 uppercase tracking-wider">Best Value</div>
-            <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
-          </div>
-          <div class="relative z-10">
-            <div class="flex items-baseline gap-1">
-              <h3 class="text-4xl font-bold tracking-tight">60.000</h3>
-              <span class="text-base font-semibold text-white/80">đ</span>
-            </div>
-            <p class="text-sm text-white/80 mt-1">Trả 50.000đ - Tiết kiệm 20%</p>
-          </div>
-        </div>
-
-        <!-- Super Saver -->
-        <div class="md:col-span-2 bg-cardLight dark:bg-cardDark rounded-[24px] p-6 premium-shadow border border-gray-100 dark:border-white/5 interactive-card flex flex-col justify-between min-h-[220px] relative overflow-hidden" onclick="startOrder(100000, 'Gói Nạp Siêu Hời', 150000)">
-          <div class="absolute top-0 right-0 bg-gray-900 dark:bg-yellow-400 text-white dark:text-black text-[11px] font-bold px-3 py-1 rounded-bl-xl z-20">SIÊU HỜI</div>
-          <div class="flex justify-between items-start">
-            <div class="text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Tiết kiệm 33%</div>
-            <i data-lucide="crown" class="w-5 h-5 text-yellow-500"></i>
-          </div>
-          <div>
-            <div class="flex items-baseline gap-1">
-              <h3 class="text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 dark:from-yellow-200 dark:to-yellow-500">150.000</h3>
-              <span class="text-base font-semibold text-gray-500 dark:text-yellow-500/70">đ</span>
-            </div>
-            <p class="text-sm text-gray-500 mt-1">Trả 100.000đ - Tối ưu chi phí</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- VIP MEMBERSHIP (Clean & Bold) -->
-    <div id="section-vip" class="hidden">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-        
-        <!-- 7 Days -->
-        <div class="bg-cardLight dark:bg-cardDark rounded-[24px] p-6 premium-shadow border border-gray-100 dark:border-white/5 interactive-card flex flex-col">
-          <h3 class="text-xl font-bold mb-2">Tuần Trải Nghiệm</h3>
-          <p class="text-sm text-gray-500 mb-6">Dành cho người mới làm quen.</p>
-          <div class="flex items-baseline gap-1 mb-2">
-            <span class="text-4xl font-bold tracking-tight">19.000</span>
-            <span class="text-sm font-semibold text-gray-500">đ</span>
-          </div>
-          <p class="text-xs text-gray-400 uppercase tracking-wider mb-6">Hạn dùng 7 ngày</p>
-          <button onclick="requestPurchase('VIP 7 Ngày', 19000, 'vip', 7)" class="w-full mt-auto bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-900 dark:text-white font-semibold py-3 rounded-xl transition-all interactive-card">Mở Khóa</button>
-        </div>
-
-        <!-- 30 Days (Recommended) -->
-        <div class="bg-cardLight dark:bg-cardDark rounded-[24px] p-6 premium-shadow border-2 border-brand flex flex-col relative md:scale-105 z-10">
-          <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-md">KHUYÊN DÙNG</div>
-          <h3 class="text-xl font-bold mb-2">Tháng Vàng VIP</h3>
-          <p class="text-sm text-gray-500 mb-6">Trải nghiệm không giới hạn.</p>
-          <div class="flex items-baseline gap-1 mb-2">
-            <span class="text-4xl font-bold tracking-tight text-brand">39.000</span>
-            <span class="text-sm font-semibold text-brand/60">đ</span>
-          </div>
-          <p class="text-xs text-brand uppercase tracking-wider mb-6">Hạn dùng 30 ngày</p>
-          <button onclick="requestPurchase('VIP 30 Ngày', 39000, 'vip', 30)" class="w-full mt-auto bg-brand text-white font-semibold py-3 rounded-xl interactive-card hover:bg-blue-700 transition-colors">Mở Khóa Ngay</button>
-        </div>
-
-        <!-- 365 Days -->
-        <div class="bg-gradient-to-br from-gray-900 to-black rounded-[24px] p-6 premium-shadow border border-yellow-500/20 flex flex-col text-white relative overflow-hidden">
-          <div class="absolute -top-10 -right-10 w-40 h-40 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none"></div>
-          <h3 class="text-xl font-bold mb-2">Năm Đẳng Cấp</h3>
-          <p class="text-sm text-gray-400 mb-6">Cam kết dài hạn, tối ưu giá.</p>
-          <div class="flex items-baseline gap-1 mb-2">
-            <span class="text-4xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-500">199.000</span>
-            <span class="text-sm font-semibold text-yellow-500/70">đ</span>
-          </div>
-          <p class="text-xs text-yellow-500 uppercase tracking-wider mb-6">Hạn dùng 365 ngày</p>
-          <button onclick="requestPurchase('VIP 365 Ngày', 199000, 'vip', 365)" class="w-full mt-auto bg-white text-black font-semibold py-3 rounded-xl interactive-card hover:bg-gray-200 transition-colors">Mở Khóa Ngay</button>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- PREMIUM ACCOUNTS (Apple Services List) -->
-    <div id="section-premium" class="hidden">
-      <div class="bg-cardLight dark:bg-cardDark rounded-[24px] premium-shadow border border-gray-100 dark:border-white/5 overflow-hidden divide-y divide-gray-100 dark:divide-white/5">
-        
-        <div class="p-5 flex items-center gap-5 interactive-card" onclick="requestPurchase('Spotify (1 Tháng)', 30000, 'account', 'Spotify')">
-          <div class="w-12 h-12 rounded-xl bg-[#1DB954] flex items-center justify-center shrink-0">
-            <i data-lucide="music" class="w-6 h-6 text-black fill-black"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-bold text-[16px]">Spotify Premium</h4>
-            <p class="text-[13px] text-gray-500">Chính chủ • 1 Tháng</p>
-          </div>
-          <div class="flex flex-col items-end">
-            <span class="text-[15px] font-bold text-brand">30.000đ</span>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400 mt-1"></i>
-          </div>
-        </div>
-
-        <div class="p-5 flex items-center gap-5 interactive-card" onclick="requestPurchase('Netflix (1 Tháng)', 65000, 'account', 'Netflix')">
-          <div class="w-12 h-12 rounded-xl bg-black flex items-center justify-center shrink-0 border border-gray-800">
-            <i data-lucide="tv" class="w-6 h-6 text-[#E50914] fill-[#E50914]"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-bold text-[16px]">Netflix Premium</h4>
-            <p class="text-[13px] text-gray-500">4K 1 Màn • 1 Tháng</p>
-          </div>
-          <div class="flex flex-col items-end">
-            <span class="text-[15px] font-bold text-brand">65.000đ</span>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400 mt-1"></i>
-          </div>
-        </div>
-
-        <div class="p-5 flex items-center gap-5 interactive-card" onclick="requestPurchase('CapCut Pro (1 Tháng)', 40000, 'account', 'CapCut')">
-          <div class="w-12 h-12 rounded-xl bg-white border border-gray-200 dark:border-none flex items-center justify-center shrink-0">
-            <i data-lucide="scissors" class="w-6 h-6 text-black fill-black"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-bold text-[16px]">CapCut Pro</h4>
-            <p class="text-[13px] text-gray-500">Mở khóa • 1 Tháng</p>
-          </div>
-          <div class="flex flex-col items-end">
-            <span class="text-[15px] font-bold text-brand">40.000đ</span>
-            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400 mt-1"></i>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- GIFTCODE (Redeem Center) -->
-    <div id="section-giftcode" class="hidden">
-      <div class="max-w-xl mx-auto text-center py-10">
-        <div class="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-gray-200 dark:border-white/10">
-          <i data-lucide="gift" class="w-8 h-8 text-brand"></i>
-        </div>
-        <h3 class="text-2xl font-bold mb-2 tracking-tight">Redeem Center</h3>
-        <p class="text-gray-500 mb-8 max-w-sm mx-auto">Nhập mã quà tặng để nhận số dư ví hoặc gia hạn VIP.</p>
-        
-        <div class="flex flex-col gap-3">
-          <input type="text" id="mainGiftcodeInput" placeholder="NHẬP MÃ TẠI ĐÂY" class="w-full h-14 px-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all text-base font-semibold tracking-widest uppercase placeholder:normal-case placeholder:font-normal placeholder:tracking-normal placeholder:text-gray-400 text-center">
-          <button onclick="applyMainGiftcode()" id="btnMainApplyGiftcode" class="w-full h-14 bg-brand text-white font-semibold rounded-2xl active:scale-[0.98] transition-transform shadow-lg shadow-brand/30 text-base flex items-center justify-center gap-2 hover:bg-blue-700">
-              <i data-lucide="zap" class="w-5 h-5"></i> Kích Hoạt Mã
+          <button id="btnConfirmPay" onclick="triggerManualCheck()" class="h-14 px-8 bg-brand text-white rounded-2xl font-bold text-base shadow-xl shadow-brand/30 hover:shadow-brand/40 transition-all active:scale-95 flex items-center gap-2">
+            <span>Tôi đã thanh toán</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </button>
         </div>
-        <p id="mainGiftcodeMsg" class="text-sm font-medium mt-4 hidden"></p>
       </div>
-    </div>
 
-  </main>
-
-  <!-- Floating Nav -->
-  <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-4">
-    <nav class="floating-nav h-[64px] flex justify-evenly items-center pointer-events-auto px-2">
-      <a href="index.html" class="tab-btn"><i data-lucide="home" class="w-5 h-5"></i><span>Trang chủ</span></a>
-      <a href="ipavip.html" class="tab-btn"><i data-lucide="crown" class="w-5 h-5"></i><span>App VIP</span></a>
-      <a href="app-library/index.html" class="tab-btn"><i data-lucide="app-window" class="w-5 h-5"></i><span>Kho IPA</span></a>
-      <a href="account.html" class="tab-btn"><i data-lucide="user" class="w-5 h-5"></i><span>Tài khoản</span></a>
-      <button class="tab-btn active"><i data-lucide="shopping-bag" class="w-5 h-5 fill-current"></i><span>Cửa hàng</span></button>
-    </nav>
   </div>
 
-  <!-- CHECKOUT BOTTOM SHEET (Stripe / Apple Pay Style) -->
-  <div id="checkoutPage" class="fixed inset-0 z-[100] hidden flex-col h-[100dvh]">
-      <!-- Overlay -->
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm sheet-overlay" id="checkoutOverlay" onclick="closeCheckout()"></div>
-      
-      <!-- Sheet Panel -->
-      <div class="relative mt-auto h-[92%] bg-bgLight dark:bg-bgDark rounded-t-[32px] sheet-panel flex flex-col overflow-hidden border-t border-gray-200 dark:border-white/10">
-          
-          <!-- Grabber & Header -->
-          <div class="shrink-0 pt-3 z-20 relative">
-            <div class="w-10 h-1.5 bg-gray-300 dark:bg-white/20 rounded-full mx-auto mb-3"></div>
-            <div class="flex items-center justify-center px-6 pb-4 border-b border-gray-200 dark:border-white/10 relative">
-              <h2 class="text-[17px] font-bold tracking-tight">Thanh Toán</h2>
-              <button onclick="closeCheckout()" class="absolute right-6 top-0 w-8 h-8 flex items-center justify-center text-gray-500 bg-gray-100 dark:bg-white/10 rounded-full active:scale-90 transition">
-                <i data-lucide="x" class="w-5 h-5"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Content -->
-          <div class="flex-1 overflow-y-auto scrollbar-hide px-6 py-6">
-              <div class="max-w-md mx-auto space-y-4">
-                  
-                  <!-- Order Summary -->
-                  <div class="bg-cardLight dark:bg-cardDark rounded-[20px] p-5 border border-gray-100 dark:border-white/5">
-                      <div class="flex items-center gap-2 mb-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          <i data-lucide="package" class="w-4 h-4"></i> Đơn hàng
-                      </div>
-                      <div class="flex justify-between items-center mb-3">
-                          <span class="text-sm text-gray-500" id="chkPackageName">Gói Nạp...</span>
-                      </div>
-                      <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-white/5">
-                          <span class="text-sm font-semibold">Tổng cộng</span>
-                          <span class="text-2xl font-bold tracking-tight" id="chkOriginalPrice">...đ</span>
-                      </div>
-                  </div>
-
-                  <!-- QR Code Section -->
-                  <div class="bg-cardLight dark:bg-cardDark rounded-[20px] p-5 border border-gray-100 dark:border-white/5 flex flex-col items-center">
-                      <div class="flex items-center w-full gap-2 mb-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          <i data-lucide="scan-line" class="w-4 h-4"></i> Quét mã VietQR
-                      </div>
-                      <div class="w-full max-w-[220px] aspect-square rounded-2xl bg-white border border-gray-200 p-3 relative flex items-center justify-center overflow-hidden mb-2">
-                          <!-- Shimmer Skeleton -->
-                          <div id="qrLoading" class="absolute inset-0 m-3 rounded-xl shimmer"></div>
-                          <img id="qrImage" class="w-full h-full object-contain relative z-0 hidden transition-opacity duration-300 rounded-xl">
-                          <div id="qrOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 hidden flex-col items-center justify-center">
-                              <i data-lucide="loader" class="w-8 h-8 text-brand animate-spin mb-2"></i>
-                              <p class="text-xs font-semibold text-gray-600">Đang cập nhật mã...</p>
-                          </div>
-                      </div>
-                      <p class="text-xs text-gray-400 text-center mt-2">Mở app ngân hàng để quét</p>
-                  </div>
-
-                  <!-- Bank Info (Clean List) -->
-                  <div class="bg-cardLight dark:bg-cardDark rounded-[20px] p-5 border border-gray-100 dark:border-white/5 space-y-3">
-                      <div class="flex items-center gap-2 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          <i data-lucide="building-2" class="w-4 h-4"></i> Chuyển khoản thủ công
-                      </div>
-                      <div class="flex justify-between items-center text-sm">
-                          <span class="text-gray-500">Ngân hàng</span>
-                          <span class="font-semibold" id="chkBankName">ACB Bank</span>
-                      </div>
-                      <div class="flex justify-between items-center text-sm">
-                          <span class="text-gray-500">Chủ TK</span>
-                          <span class="font-semibold" id="chkAccName">TRAN NGUYEN MINH QUI</span>
-                      </div>
-                      <div class="flex justify-between items-center text-sm">
-                          <span class="text-gray-500">STK</span>
-                          <div class="flex items-center gap-2">
-                              <span class="font-semibold tracking-wide" id="chkAccNo">22703611</span>
-                              <button onclick="copyCheckoutText('chkAccNo', this)" class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-white/10 flex items-center justify-center text-brand active:scale-90 transition">
-                                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                              </button>
-                          </div>
-                      </div>
-                      <div class="flex justify-between items-center text-sm">
-                          <span class="text-gray-500">Nội dung</span>
-                          <div class="flex items-center gap-2">
-                              <span class="font-bold text-brand bg-brand/10 px-2 py-0.5 rounded" id="chkContent">...</span>
-                              <button onclick="copyCheckoutText('chkContent', this)" class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-white/10 flex items-center justify-center text-brand active:scale-90 transition">
-                                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                              </button>
-                          </div>
-                      </div>
-                      <div class="h-px w-full bg-gray-100 dark:bg-white/5 my-2"></div>
-                      <div class="flex justify-between items-center">
-                          <span class="text-sm font-semibold">Cần thanh toán</span>
-                          <div class="flex items-center gap-2">
-                              <span class="font-bold text-red-500 text-xl" id="chkFinalPrice">...đ</span>
-                              <button onclick="copyCheckoutText('chkFinalPriceRaw', this)" class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-500/10 flex items-center justify-center text-red-500 active:scale-90 transition">
-                                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                              </button>
-                              <span id="chkFinalPriceRaw" class="hidden">0</span>
-                          </div>
-                      </div>
-                  </div>
-
-                  <!-- Promo Code -->
-                  <div class="bg-cardLight dark:bg-cardDark rounded-[20px] p-5 border border-gray-100 dark:border-white/5">
-                      <div class="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          <i data-lucide="ticket" class="w-4 h-4"></i> Mã giảm giá
-                      </div>
-                      <div class="flex gap-2">
-                          <input type="text" id="discountInput" placeholder="Nhập mã..." class="flex-1 h-11 px-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 outline-none focus:border-brand transition-colors text-sm font-semibold uppercase placeholder:normal-case placeholder:font-normal">
-                          <button onclick="applyDiscountCode()" id="btnApplyDiscount" class="h-11 px-5 bg-gray-900 dark:bg-white text-white dark:text-black font-semibold rounded-xl active:scale-95 transition text-sm flex items-center gap-2 shrink-0">Áp dụng</button>
-                      </div>
-                      <p id="discountMsg" class="text-xs font-medium mt-2 hidden"></p>
-                  </div>
-
-              </div>
-          </div>
-
-          <!-- Timeline & Action Button -->
-          <div class="shrink-0 bg-white dark:bg-cardDark border-t border-gray-200 dark:border-white/10 p-6 pb-8 z-30">
-              <!-- Payment Timeline -->
-              <div class="flex items-center justify-between mb-5 max-w-md mx-auto">
-                  <div class="flex flex-col items-center gap-1">
-                      <div class="w-3 h-3 rounded-full bg-green-500 flex items-center justify-center"><i data-lucide="check" class="w-2 h-2 text-white stroke-[3]"></i></div>
-                      <span class="text-[10px] text-gray-500 font-medium">Tạo đơn</span>
-                  </div>
-                  <div class="flex-1 h-0.5 bg-green-500 mx-1"></div>
-                  <div class="flex flex-col items-center gap-1">
-                      <div class="w-3 h-3 rounded-full bg-green-500 flex items-center justify-center"><i data-lucide="check" class="w-2 h-2 text-white stroke-[3]"></i></div>
-                      <span class="text-[10px] text-gray-500 font-medium">QR Tạo</span>
-                  </div>
-                  <div class="flex-1 h-0.5 bg-gray-200 dark:bg-white/10 mx-1"></div>
-                  <div class="flex flex-col items-center gap-1">
-                      <div class="w-3 h-3 rounded-full bg-brand animate-ping"></div>
-                      <div class="w-3 h-3 rounded-full bg-brand absolute mt-0"></div>
-                      <span class="text-[10px] text-brand font-semibold absolute mt-6">Chờ thanh toán</span>
-                  </div>
-                  <div class="flex-1 h-0.5 bg-gray-200 dark:bg-white/10 mx-1"></div>
-                  <div class="flex flex-col items-center gap-1">
-                      <div class="w-3 h-3 rounded-full border-2 border-gray-300 dark:border-white/20"></div>
-                      <span class="text-[10px] text-gray-400 font-medium">Hoàn tất</span>
-                  </div>
-              </div>
-
-              <button id="btnConfirmPay" onclick="triggerManualCheck()" class="w-full max-w-md mx-auto py-4 rounded-2xl font-semibold text-white bg-brand active:scale-[0.98] transition shadow-lg shadow-brand/30 flex items-center justify-center gap-2">
-                  <i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Đang xác minh...
-              </button>
-          </div>
+  <!-- ACTION MODAL (Bottom Sheet Style) -->
+  <div id="actionModal" class="fixed inset-0 z-[120] hidden items-end justify-center sm:items-center p-0 sm:p-4">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300" id="actionOverlay" onclick="closeActionModal()"></div>
+      <div id="actionPanel" class="bg-white dark:bg-cardDark w-full sm:max-w-[400px] sm:rounded-[32px] rounded-t-[32px] shadow-2xl relative flex flex-col p-8 pt-6 transform translate-y-full transition-transform duration-300 z-10 max-h-[90vh] overflow-y-auto">
+          <div class="w-12 h-1.5 bg-gray-200 dark:bg-white/20 rounded-full mx-auto mb-6"></div>
+          <div id="actionModalContent" class="flex flex-col items-center text-center"></div>
       </div>
   </div>
 
-  <!-- ACTION MODAL (iOS Bottom Sheet Style) -->
-  <div id="actionModal" class="fixed inset-0 z-[120] hidden flex items-end justify-center p-0 md:items-center md:p-4">
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm sheet-overlay" id="actionOverlay" onclick="closeActionModal()"></div>
-      <div id="actionPanel" class="bg-bgLight dark:bg-cardDark w-full md:max-w-[380px] rounded-t-[32px] md:rounded-[32px] shadow-2xl relative flex flex-col p-6 pb-8 sheet-panel border border-gray-200 dark:border-white/10">
-          <div class="w-10 h-1.5 bg-gray-300 dark:bg-white/20 rounded-full mx-auto mb-6 md:hidden"></div>
-          <div id="actionModalContent"></div>
-      </div>
-  </div>
+  <!-- Floating Chat Widget (Preserved) -->
+  <script src="ai-chat-widget.js?v=6" data-bottom="120px"></script>
 
+  <!-- =========================
+       LOGIC & SCRIPTS
+       ========================= -->
   <script>
+    // CONSTANTS
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
-
     const BANK_ID = "ACB"; 
     const ACC_NO = "22703611"; 
     const ACC_NAME = "TRAN NGUYEN MINH QUI"; 
 
+    // FIREBASE
     const firebaseConfig = { apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", authDomain: "ipaviet-st.firebaseapp.com", projectId: "ipaviet-st", storageBucket: "ipaviet-st.firebasestorage.app", messagingSenderId: "127619650916", appId: "1:127619650916:web:fc8904c99804eeb7539671" };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(); const db = firebase.firestore();
     db.settings({ experimentalForceLongPolling: true });
 
+    // STATE
     let currentUser = null; let currentCoins = 0; let pollingInterval = null; 
-    
     let currentOrder = { id: "", originalAmount: 0, finalAmount: 0, coins: 0, name: "", isDiscountApplied: false, isCredited: false, isChecking: false };
     let checkCount = 0; const MAX_CHECKS = 50; 
 
+    // AUTH LISTENER
     auth.onAuthStateChanged(user => {
         if (!user) { window.location.href = 'account.html'; } 
         else {
@@ -647,15 +702,15 @@
             db.collection("users").doc(user.uid).onSnapshot(doc => {
                 if (doc.exists) { 
                     currentCoins = doc.data().coins || 0; 
-                    const formattedCoins = currentCoins.toLocaleString('vi-VN') + "đ";
-                    document.getElementById('headerCoins').innerText = formattedCoins;
-                    const walletBal = document.getElementById('walletBalance');
-                    if(walletBal) walletBal.innerText = formattedCoins;
+                    const formatted = currentCoins.toLocaleString('vi-VN');
+                    document.getElementById('headerCoins').innerText = formatted + "đ";
+                    document.getElementById('heroBalance').innerText = formatted;
                 }
             });
         }
     });
 
+    // UI HELPERS
     function toggleTheme() { 
         const html = document.documentElement;
         html.classList.toggle('dark'); 
@@ -664,71 +719,123 @@
         const icon = document.getElementById('themeIcon');
         if (isDark) {
             icon.setAttribute('data-lucide', 'sun');
-            icon.className = 'w-4 h-4 text-yellow-400 fill-yellow-400';
+            icon.className = 'w-4 h-4 text-yellow-400';
         } else {
             icon.setAttribute('data-lucide', 'moon');
-            icon.className = 'w-4 h-4 text-gray-900';
+            icon.className = 'w-4 h-4 text-gray-600';
         }
         lucide.createIcons();
     }
 
     function switchStoreTab(tabId, index) {
-        document.getElementById('segment-slider').style.transform = `translateX(${index * 100}%)`;
-        ['napxu', 'vip', 'premium', 'giftcode'].forEach(id => { 
-            document.getElementById('tab-' + id).classList.remove('active'); 
-            document.getElementById('section-' + id).classList.add('hidden'); 
+        // Slider Animation
+        const slider = document.getElementById('segmentSlider');
+        slider.style.transform = `translateX(${index * 100}%)`;
+        
+        // Text Color Logic
+        const buttons = document.querySelectorAll('.segment-item');
+        buttons.forEach((btn, idx) => {
+            if(idx === index) {
+                btn.classList.add('text-gray-900', 'dark:text-white');
+                btn.classList.remove('text-gray-500', 'dark:text-gray-400');
+            } else {
+                btn.classList.remove('text-gray-900', 'dark:text-white');
+                btn.classList.add('text-gray-500', 'dark:text-gray-400');
+            }
         });
-        document.getElementById('tab-' + tabId).classList.add('active'); 
-        document.getElementById('section-' + tabId).classList.remove('hidden');
+
+        // Content Switching with simple fade
+        ['napxu', 'vip', 'premium', 'giftcode'].forEach(id => { 
+            const el = document.getElementById('section-' + id);
+            el.classList.add('hidden');
+            el.classList.remove('animate-fade-in');
+        });
+        
+        const activeEl = document.getElementById('section-' + tabId);
+        activeEl.classList.remove('hidden');
+        // Trigger reflow to restart animation
+        void activeEl.offsetWidth; 
+        activeEl.classList.add('animate-fade-in');
     }
 
     // ==========================================
-    // MODULE: THANH TOÁN (CÓ KHÓA CHỐNG DOUBLE)
+    // MODULE: THANH TOÁN (PREMIUM CHECKOUT)
     // ==========================================
+    
+    // Modified to open Premium Overlay instead of redirecting
     function startOrder(amount, packageName, coins) {
         if(!currentUser) return;
-        window.location.href = `naptien.html?amount=${amount}&coins=${coins}&name=${encodeURIComponent(packageName)}`;
+        
+        // Init Order Data
+        currentOrder = {
+            id: 'ORD' + Math.floor(Math.random() * 1000000),
+            originalAmount: amount,
+            finalAmount: amount,
+            coins: coins,
+            name: packageName,
+            isDiscountApplied: false,
+            isCredited: false,
+            isChecking: false
+        };
+
+        // Populate UI
+        document.getElementById('chkPackageName').innerText = packageName;
+        document.getElementById('chkOriginalPrice').innerText = amount.toLocaleString('vi-VN') + "đ";
+        document.getElementById('chkContent').innerText = currentOrder.id;
+        
+        // Show Overlay
+        const overlay = document.getElementById('checkoutPage');
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        
+        // Render QR & Timeline
+        document.getElementById('orderTime').innerText = new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
+        renderPricesAndQR();
     }
 
     function renderPricesAndQR() {
         document.getElementById('chkFinalPrice').innerText = currentOrder.finalAmount.toLocaleString('vi-VN') + "đ";
-        document.getElementById('chkFinalPriceRaw').innerText = currentOrder.finalAmount; 
         const img = document.getElementById('qrImage');
+        const loading = document.getElementById('qrLoading');
         
-        document.getElementById('qrOverlay').classList.remove('hidden'); 
-        document.getElementById('qrOverlay').classList.add('flex');
+        // Show Loading State
+        loading.style.display = 'flex';
+        img.style.opacity = '0';
         
-        const badSpinner = document.getElementById('qrLoading');
-        if(badSpinner) badSpinner.style.display = 'none';
-        
+        // Generate QR
         const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.png?amount=${currentOrder.finalAmount}&addInfo=${currentOrder.id}&accountName=${encodeURIComponent(ACC_NAME)}`;
-        img.onload = () => { document.getElementById('qrOverlay').classList.add('hidden'); img.classList.remove('hidden'); };
+        
+        img.onload = () => { 
+            loading.style.display = 'none';
+            img.style.opacity = '1';
+        };
         img.src = qrUrl;
-    }
-
-    function openCheckout() {
-        document.getElementById('checkoutPage').classList.remove('hidden');
-        document.getElementById('checkoutPage').classList.add('flex');
-        setTimeout(() => {
-            document.getElementById('checkoutOverlay').classList.add('active');
-            document.getElementById('checkoutPage').querySelector('.sheet-panel').classList.add('active');
-        }, 10);
     }
 
     function closeCheckout() {
         if(pollingInterval) clearInterval(pollingInterval);
-        document.getElementById('checkoutOverlay').classList.remove('active');
-        document.getElementById('checkoutPage').querySelector('.sheet-panel').classList.remove('active');
-        setTimeout(() => {
-            document.getElementById('checkoutPage').classList.add('hidden');
-            document.getElementById('checkoutPage').classList.remove('flex');
-        }, 450);
+        pollingInterval = null;
+        document.getElementById('checkoutPage').classList.add('hidden');
+        document.getElementById('checkoutPage').classList.remove('flex');
+        
+        // Reset State
+        currentOrder.isChecking = false;
+        checkCount = 0;
+        const btn = document.getElementById('btnConfirmPay');
+        btn.innerHTML = `<span>Tôi đã thanh toán</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+        btn.classList.remove('bg-green-500', 'cursor-not-allowed');
+        btn.classList.add('bg-brand', 'hover:shadow-brand/40');
+        lucide.createIcons();
     }
 
     function triggerManualCheck() {
         if(currentOrder.isCredited || currentOrder.isChecking) return; 
         checkCount = 0; 
-        if(!pollingInterval) pollingInterval = setInterval(autoCheckPayment, 4500);
+        
+        const btn = document.getElementById('btnConfirmPay');
+        btn.innerHTML = `<span>Đang kiểm tra...</span><i data-lucide="loader" class="w-4 h-4 animate-spin"></i>`;
+        
+        if(!pollingInterval) pollingInterval = setInterval(autoCheckPayment, 3500);
         autoCheckPayment(); 
     }
 
@@ -741,7 +848,7 @@
 
         if(checkCount > MAX_CHECKS) {
             clearInterval(pollingInterval); pollingInterval = null;
-            btn.innerHTML = `Chưa nhận được tiền. LH Admin!`;
+            btn.innerHTML = `<span>Chưa nhận được tiền</span>`;
             btn.classList.replace('bg-brand', 'bg-red-500');
             currentOrder.isChecking = false; 
             return;
@@ -756,16 +863,26 @@
                 currentOrder.isCredited = true; 
                 clearInterval(pollingInterval); pollingInterval = null;
 
-                btn.innerHTML = `Thanh toán thành công`; 
+                btn.innerHTML = `<span>Thành công!</span><i data-lucide="check" class="w-4 h-4"></i>`;
                 btn.classList.replace('bg-brand', 'bg-green-500');
+                btn.classList.add('cursor-not-allowed');
 
+                // Success Animation & Logic
                 setTimeout(() => { 
+                    // Update local UI immediately for feedback
+                    currentCoins += currentOrder.coins;
+                    document.getElementById('headerCoins').innerText = currentCoins.toLocaleString('vi-VN') + "đ";
+                    document.getElementById('heroBalance').innerText = currentCoins.toLocaleString('vi-VN');
+                    
                     closeCheckout(); 
                     renderStoreModal('success', 'Nạp Tiền Thành Công!', `Đã cộng +${currentOrder.coins.toLocaleString()}đ vào ví.`, closeActionModal, 'Tuyệt vời'); 
-                }, 1500);
+                }, 1000);
             }
-        } catch(e) { 
-        } finally {
+        } catch(e) { console.error(e); } 
+        finally {
+            if(checkCount <= MAX_CHECKS && !currentOrder.isCredited) {
+                 btn.innerHTML = `<span>Tôi đã thanh toán</span><i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+            }
             currentOrder.isChecking = false; 
         }
     }
@@ -783,11 +900,11 @@
 
         try {
             const doc = await db.collection('giftcodes').doc(code).get();
-            if (!doc.exists) throw new Error('Mã giảm giá không tồn tại!');
+            if (!doc.exists) throw new Error('Mã không tồn tại!');
             
             const data = doc.data();
-            if (data.type !== 'discount') throw new Error('Đây không phải mã giảm giá nạp tiền!');
-            if (data.usedBy && data.usedBy.includes(currentUser.uid)) throw new Error('Bạn đã sử dụng mã này!');
+            if (data.type !== 'discount') throw new Error('Không đúng loại mã!');
+            if (data.usedBy && data.usedBy.includes(currentUser.uid)) throw new Error('Bạn đã dùng mã này!');
             if (data.maxUses && data.usedBy && data.usedBy.length >= data.maxUses) throw new Error('Mã đã hết lượt!');
 
             currentOrder.finalAmount = Math.max(0, currentOrder.originalAmount - data.value);
@@ -796,16 +913,15 @@
             
             btn.innerHTML = `Đã dùng`;
             btn.classList.replace('bg-gray-900', 'bg-green-500');
-            btn.classList.replace('dark:bg-white', 'dark:bg-green-500');
-            btn.classList.replace('dark:text-black', 'dark:text-white');
             btn.disabled = true;
 
+            // Backend update (Note: This logic might need adjustment based on actual backend order creation flow)
             fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${currentOrder.id}&uid=${currentUser.uid}&amount=${currentOrder.finalAmount}&coins=${currentOrder.coins}`);
             await db.collection('giftcodes').doc(code).update({ usedBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
 
         } catch (error) {
             msg.textContent = error.message;
-            msg.className = "text-xs font-medium mt-2 text-red-500 block";
+            msg.className = "text-xs font-bold mt-2 text-red-500 block text-center";
             btn.innerHTML = `Áp dụng`;
         }
     }
@@ -818,7 +934,7 @@
 
         if (!code || !currentUser) return;
         
-        btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> ĐANG XỬ LÝ...`;
+        btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> ĐANG XỬ LÝ...`;
         msg.classList.add('hidden');
         lucide.createIcons();
 
@@ -826,16 +942,15 @@
             const docRef = db.collection('giftcodes').doc(code);
             const docSnap = await docRef.get();
 
-            if (!docSnap.exists) throw new Error("Mã Giftcode không hợp lệ!");
-
+            if (!docSnap.exists) throw new Error("Mã không hợp lệ!");
             const data = docSnap.data();
             
             if (data.usedBy && data.usedBy.includes(currentUser.uid)) throw new Error("Bạn đã nhập mã này rồi!");
-            if (data.maxUses && data.usedBy && data.usedBy.length >= data.maxUses) throw new Error("Mã đã hết lượt sử dụng!");
+            if (data.maxUses && data.usedBy && data.usedBy.length >= data.maxUses) throw new Error("Mã đã hết lượt!");
 
             if (data.type === 'coin') {
                 await db.collection('users').doc(currentUser.uid).update({ coins: firebase.firestore.FieldValue.increment(data.value) });
-                renderStoreModal('success', 'Nhận Quà Thành Công!', `Bạn vừa nhận được ${data.value.toLocaleString()}đ vào tài khoản.`, closeActionModal);
+                renderStoreModal('success', 'Nhận Quà Thành Công!', `Bạn vừa nhận được ${data.value.toLocaleString()}đ.`, closeActionModal);
             } else if (data.type === 'vip') {
                  let exp = new Date();
                  const userDoc = await db.collection('users').doc(currentUser.uid).get();
@@ -845,7 +960,7 @@
                  }
                  exp.setDate(exp.getDate() + data.value);
                  await db.collection('users').doc(currentUser.uid).update({ vipExpire: firebase.firestore.Timestamp.fromDate(exp) });
-                 renderStoreModal('success', 'Kích Hoạt VIP!', `Tài khoản của bạn được cộng thêm ${data.value} ngày VIP.`, closeActionModal);
+                 renderStoreModal('success', 'Kích Hoạt VIP!', `Tài khoản được cộng thêm ${data.value} ngày VIP.`, closeActionModal);
             }
 
             await docRef.update({ usedBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
@@ -853,23 +968,23 @@
 
         } catch (error) {
             msg.textContent = error.message;
-            msg.className = "text-sm font-medium mt-4 text-red-500 block";
+            msg.className = "mt-4 text-xs font-bold text-red-500 block text-center";
         } finally {
-            btn.innerHTML = `<i data-lucide="zap" class="w-5 h-5"></i> Kích Hoạt Mã`;
+            btn.innerHTML = `KÍCH HOẠT`;
             lucide.createIcons();
         }
     }
 
     function requestPurchase(itemName, priceInXu, type, extraData = null) {
         if (currentCoins < priceInXu) { 
-            renderStoreModal('error', 'Số dư không đủ', `Cần ${priceInXu.toLocaleString()}đ để mua ${itemName}.`, () => { switchStoreTab('napxu', 0); closeActionModal(); }, 'Đi Nạp Tiền'); 
+            renderStoreModal('error', 'Số dư không đủ', `Cần ${priceInXu.toLocaleString()}đ.`, () => { switchStoreTab('napxu', 0); closeActionModal(); }, 'Đi Nạp'); 
             return; 
         }
-        renderStoreModal('confirm', 'Xác nhận mua', `Bạn có chắc muốn thanh toán ${priceInXu.toLocaleString()}đ cho gói ${itemName}?`, () => { executePurchase(itemName, priceInXu, type, extraData); }, 'Đồng Ý Mua');
+        renderStoreModal('confirm', 'Xác nhận mua', `Thanh toán ${priceInXu.toLocaleString()}đ cho ${itemName}?`, () => { executePurchase(itemName, priceInXu, type, extraData); }, 'Đồng Ý');
     }
 
     async function executePurchase(itemName, priceInXu, type, extraData) {
-        renderStoreModal('loading', 'Đang xử lý', 'Vui lòng không tắt trang...');
+        renderStoreModal('loading', 'Đang xử lý', 'Vui lòng chờ...');
         try {
             if (type === 'vip') {
                 await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-priceInXu) }, { merge: true });
@@ -878,10 +993,9 @@
                 exp.setDate(exp.getDate() + extraData);
                 await db.collection("users").doc(currentUser.uid).set({ vipExpire: firebase.firestore.Timestamp.fromDate(exp) }, { merge: true });
                 
-                const msg = `👑 *CÓ KHÁCH CHỐT ĐƠN VIP!*\n👤 UID: \`${currentUser.uid}\`\n📦 Gói mua: *${itemName}*\n💎 Thanh toán: -${priceInXu.toLocaleString()}đ\n⏰ Hạn dùng: +${extraData} ngày`;
+                const msg = `👑 *CHỐT ĐƠN VIP*\n👤 \`${currentUser.uid}\`\n📦 *${itemName}*\n💰 -${priceInXu.toLocaleString()}đ`;
                 fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
-
-                renderStoreModal('success', 'Thanh Toán Thành Công!', `Đã gia hạn gói ${itemName} cho tài khoản của bạn.`, closeActionModal);
+                renderStoreModal('success', 'Thành Công!', `Đã gia hạn ${itemName}.`, closeActionModal);
             
             } else if (type === 'account') {
                 const res = await fetch(`${GOOGLE_API_URL}?action=get_account&type=${extraData}&uid=${currentUser.uid}`);
@@ -889,72 +1003,80 @@
                 if (data.success) {
                     await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-priceInXu) }, { merge: true });
                     
-                    const msg = `🛒 *CÓ KHÁCH MUA TÀI KHOẢN!*\n👤 UID: \`${currentUser.uid}\`\n📦 Loại Acc: *${itemName}*\n💎 Thanh toán: -${priceInXu.toLocaleString()}đ\n🔑 Đã xuất kho: \`${data.account}\``;
+                    const msg = `🛒 *MUA ACC*\n👤 \`${currentUser.uid}\`\n📦 *${itemName}*\n💰 -${priceInXu.toLocaleString()}đ\n🔑 \`${data.account}\``;
                     fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
 
-                    renderStoreModal('success', 'Mua Tài Khoản Thành Công!', `Thông tin đăng nhập của bạn là:\n\n${data.account}`, closeActionModal, 'Đã Sao Chép');
+                    renderStoreModal('success', 'Mua Thành Công!', `Info:\n\n${data.account}`, closeActionModal, 'Copy');
                 } else { 
-                    renderStoreModal('error', 'Hết hàng tạm thời', data.error, closeActionModal); 
+                    renderStoreModal('error', 'Hết hàng', data.error, closeActionModal); 
                 }
             }
         } catch (e) { 
-            renderStoreModal('error', 'Lỗi Giao Dịch', 'Hệ thống đang bận, vui lòng thử lại sau!', closeActionModal); 
+            renderStoreModal('error', 'Lỗi', 'Vui lòng thử lại.', closeActionModal); 
         }
     }
 
     function renderStoreModal(type, title, desc, actionFn, btnText = 'Đóng') {
         const content = document.getElementById('actionModalContent');
-        let html = `<div class="text-center">`;
-        if(type==='success') html += `<div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-500/10 flex items-center justify-center text-green-500 checkmark-anim"><i data-lucide="check-circle" class="w-10 h-10"></i></div>`;
-        if(type==='error') html += `<div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center text-red-500"><i data-lucide="x-circle" class="w-10 h-10"></i></div>`;
-        if(type==='loading') html += `<div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center text-brand"><i data-lucide="loader" class="w-10 h-10 animate-spin"></i></div>`;
-        if(type==='confirm') html += `<div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-100 dark:bg-yellow-500/10 flex items-center justify-center text-yellow-500"><i data-lucide="help-circle" class="w-10 h-10"></i></div>`;
+        let html = ``;
+        
+        if(type==='success') html += `<div class="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4"><i data-lucide="check-circle" class="w-8 h-8 text-green-500"></i></div>`;
+        if(type==='error') html += `<div class="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4"><i data-lucide="alert-circle" class="w-8 h-8 text-red-500"></i></div>`;
+        if(type==='loading') html += `<div class="w-16 h-16 rounded-full bg-brand/10 flex items-center justify-center mb-4"><i data-lucide="loader" class="w-8 h-8 text-brand animate-spin"></i></div>`;
+        if(type==='confirm') html += `<div class="w-16 h-16 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mb-4"><i data-lucide="help-circle" class="w-8 h-8 text-yellow-600"></i></div>`;
         
         const safeDesc = desc.replace(/\n/g, '<br>');
-        html += `<h3 class="font-bold text-xl mb-2 tracking-tight">${title}</h3><p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">${safeDesc}</p>`;
-        if(type !== 'loading') {
-            html += `<div class="flex flex-col gap-2">`;
-            if(type === 'confirm' || type === 'error') {
-               html += `<button id="modalActionBtn" class="w-full py-3.5 bg-brand text-white rounded-2xl font-semibold active:scale-[0.98] transition">${btnText}</button>`;
-               html += `<button onclick="closeActionModal()" class="w-full py-3.5 text-gray-500 dark:text-gray-400 font-semibold">Hủy</button>`;
-            } else {
-               html += `<button id="modalActionBtn" class="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-black rounded-2xl font-semibold active:scale-[0.98] transition">${btnText}</button>`;
-            }
-            html += `</div></div>`;
-        }
+        html += `<h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">${title}</h3><p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">${safeDesc}</p>`;
+        if(type !== 'loading') html += `<button id="modalActionBtn" class="w-full py-3.5 bg-black dark:bg-white text-white dark:text-black font-bold rounded-xl shadow-xl">${btnText}</button>`;
         
-        content.innerHTML = html; lucide.createIcons(); openActionModal();
+        content.innerHTML = html; 
+        lucide.createIcons(); 
+        openActionModal();
+        
         if(type !== 'loading') {
-            const btn = document.getElementById('modalActionBtn');
-            if(btn) btn.onclick = actionFn;
+            document.getElementById('modalActionBtn').onclick = actionFn;
         }
     }
 
     function openActionModal() { 
-        document.getElementById('actionModal').classList.remove('hidden'); 
+        const modal = document.getElementById('actionModal');
+        const overlay = document.getElementById('actionOverlay');
+        const panel = document.getElementById('actionPanel');
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
         setTimeout(() => { 
-            document.getElementById('actionOverlay').classList.add('active'); 
-            document.getElementById('actionPanel').classList.add('active'); 
+            overlay.classList.remove('opacity-0'); 
+            panel.classList.remove('translate-y-full'); 
         }, 10); 
     }
     
     function closeActionModal() { 
-        document.getElementById('actionOverlay').classList.remove('active'); 
-        document.getElementById('actionPanel').classList.remove('active'); 
-        setTimeout(() => { document.getElementById('actionModal').classList.add('hidden'); }, 450); 
-    } 
-    
-    function copyCheckoutText(id, btn) { 
-        navigator.clipboard.writeText(document.getElementById(id).innerText); 
-        btn.innerHTML = "<i data-lucide='check' class='w-3.5 h-3.5 text-green-500'></i>"; 
-        setTimeout(()=>btn.innerHTML="<i data-lucide='copy' class='w-3.5 h-3.5'></i>", 1500); 
-        lucide.createIcons(); 
+        const overlay = document.getElementById('actionOverlay');
+        const panel = document.getElementById('actionPanel');
+        
+        overlay.classList.add('opacity-0'); 
+        panel.classList.add('translate-y-full'); 
+        
+        setTimeout(() => { 
+            document.getElementById('actionModal').classList.add('hidden'); 
+            document.getElementById('actionModal').classList.remove('flex');
+        }, 300); 
+    }
+
+    function copyCheckoutText(text, btn) { 
+        navigator.clipboard.writeText(text); 
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i>`;
+        setTimeout(()=>{ btn.innerHTML = originalHtml; lucide.createIcons(); }, 1500); 
     }
     
+    // INIT
     if(document.documentElement.classList.contains('dark')) {
         const icon = document.getElementById('themeIcon');
         icon.setAttribute('data-lucide', 'sun');
-        icon.className = 'w-4 h-4 text-yellow-400 fill-yellow-400';
+        icon.className = 'w-4 h-4 text-yellow-400';
     }
     lucide.createIcons();
   </script>
