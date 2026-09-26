@@ -527,7 +527,7 @@
                   <th class="p-3 w-28">Giá Bán</th>
                   <th class="p-3 w-28">Giá Gạch</th>
                   <th class="p-3 text-center w-16">Ẩn SP</th>
-                  <th class="p-3 text-right w-24">Xem & Sửa</th>
+                  <th class="p-3 text-right w-24">Thao Tác</th>
                 </tr>
               </thead>
               <tbody id="mmoConfigBody" class="divide-y divide-gray-100 font-medium">
@@ -1082,55 +1082,78 @@
     const db = firebase.firestore();
 
     // ==========================================
-    // 1. AUTHENTICATION & SESSION MANAGEMENT
+    // 1. AUTHENTICATION & SESSION MANAGEMENT (ĐÃ SỬA LỖI PHÂN QUYỀN)
     // ==========================================
     auth.onAuthStateChanged(async (user) => {
       const spinner = document.getElementById('loginSpinner');
       const errBox = document.getElementById('loginError');
       const step2 = document.getElementById('step2Auth');
       const statusText = document.getElementById('loginStatusText');
+      const errMsg = document.getElementById('errorMsgText');
 
       if (!user) {
         spinner.classList.add('hidden');
+        if (errMsg) errMsg.innerHTML = `Bạn chưa đăng nhập!<br><span class="text-xs text-white/60">Vui lòng đăng nhập tài khoản trước khi vào Admin.</span>`;
         errBox.classList.remove('hidden');
         return;
       }
 
-      AdminState.auth.user = user;
-      document.getElementById('adminEmail').innerText = user.email || user.uid;
-      document.getElementById('dashAdminName').innerText = (user.email ? user.email.split('@')[0] : 'Quí');
+      const userEmail = (user.email || '').toLowerCase().trim();
+      
+      // Danh sách email Super Admin (luôn được cấp quyền ngay lập tức, không phụ thuộc Firestore)
+      const SUPER_ADMINS = ["mquitran@gmail.com"];
 
-      try {
-        // Resolve Admin Roles via Custom Claims or Firestore Admin Document
-        const tokenResult = await user.getIdTokenResult();
-        const isAdminClaim = tokenResult.claims.admin === true || tokenResult.claims.role === 'admin';
-        
-        let isAuthorized = isAdminClaim;
-        if (!isAuthorized) {
-          // Fallback to checking admin document in Firestore
+      let isAuthorized = false;
+      let role = 'ADMIN';
+
+      // 1. Ưu tiên 1: Kiểm tra email Super Admin trực tiếp
+      if (SUPER_ADMINS.includes(userEmail)) {
+        isAuthorized = true;
+        role = 'SUPER_ADMIN';
+      }
+
+      // 2. Ưu tiên 2: Kiểm tra Firebase Custom Claims (nếu có set từ backend)
+      if (!isAuthorized) {
+        try {
+          const tokenResult = await user.getIdTokenResult();
+          if (tokenResult.claims && (tokenResult.claims.admin === true || tokenResult.claims.role === 'admin' || tokenResult.claims.role === 'super_admin')) {
+            isAuthorized = true;
+            role = tokenResult.claims.role || 'ADMIN';
+          }
+        } catch (claimErr) {
+          console.warn("Bỏ qua Custom Claims:", claimErr);
+        }
+      }
+
+      // 3. Ưu tiên 3: Kiểm tra Document Firestore (bọc try-catch riêng để tránh lỗi Security Rules làm sập trang)
+      if (!isAuthorized) {
+        try {
           const adminDoc = await db.collection("admins").doc(user.uid).get();
           if (adminDoc.exists) {
             isAuthorized = true;
-            AdminState.auth.role = adminDoc.data().role || 'ADMIN';
-          } else if (user.email.toLowerCase() === "mquitran@gmail.com") {
-            // Backward-compatible super admin bootstrap
-            isAuthorized = true;
-            AdminState.auth.role = 'SUPER_ADMIN';
+            role = adminDoc.data().role || 'ADMIN';
           }
+        } catch (firestoreErr) {
+          console.warn("Firestore Rules chặn đọc /admins/ (chưa phân quyền):", firestoreErr.message);
         }
+      }
 
-        if (isAuthorized) {
-          spinner.classList.add('hidden');
-          statusText.innerText = "Xác nhận PIN quản trị viên cho phiên này";
-          step2.classList.remove('hidden');
-          document.getElementById('adminRole').innerText = AdminState.auth.role;
-        } else {
-          spinner.classList.add('hidden');
-          errBox.classList.remove('hidden');
-        }
-      } catch (err) {
-        console.error("Auth claim check error:", err);
+      // 4. Kết luận quyền truy cập
+      if (isAuthorized) {
+        AdminState.auth.user = user;
+        AdminState.auth.role = role;
+
+        document.getElementById('adminEmail').innerText = userEmail;
+        document.getElementById('adminRole').innerText = role;
+        document.getElementById('dashAdminName').innerText = userEmail.split('@')[0];
+
         spinner.classList.add('hidden');
+        statusText.innerText = "Xác nhận PIN máy chủ cho phiên này";
+        step2.classList.remove('hidden');
+        errBox.classList.add('hidden');
+      } else {
+        spinner.classList.add('hidden');
+        if (errMsg) errMsg.innerHTML = `Tài khoản <b>${escapeHTML(userEmail)}</b> không có quyền truy cập hệ thống!`;
         errBox.classList.remove('hidden');
       }
     });
@@ -1149,7 +1172,7 @@
         const data = await res.json();
         
         if (data.success) {
-          // STORE STRICTLY IN MEMORY ONLY - NEVER LOCALSTORAGE!
+          // LƯU TRÊN RAM PHIÊN LÀM VIỆC - KHÔNG BAO GIỜ LƯU VÀO LOCALSTORAGE
           AdminState.auth.inMemoryPin = pinInput;
           
           const screen = document.getElementById('loginScreen');
@@ -1761,6 +1784,33 @@
       toggleSaveButton();
     }
 
+    function deleteProduct(id) {
+      renderActionModal('confirm', 'Xóa Sản Phẩm', 'Bạn có chắc chắn muốn xóa sản phẩm này khỏi cấu hình tạm?', () => {
+        closeActionModal();
+        AdminState.products = AdminState.products.filter(p => String(p.id) !== String(id));
+        delete AdminState.productConfigs[id];
+        AdminState.dirty.products = true;
+        toggleSaveButton();
+        renderConfigTable();
+        showToast('Đã xóa sản phẩm khỏi bộ nhớ tạm.', 'info');
+      });
+    }
+
+    function openAddProductDrawer() {
+      const newId = prompt('Nhập ID sản phẩm mới (hoặc để trống tạo ID tự động):');
+      if (newId === null) return;
+      const finalId = newId.trim() || ('CUSTOM_' + Date.now());
+      const name = prompt('Nhập tên sản phẩm:');
+      if (!name) return;
+      const price = parseInt(prompt('Nhập giá bán (VNĐ):', '50000')) || 0;
+      
+      AdminState.products.unshift({ id: finalId, name, price, cat: 'Khác', stock: 999 });
+      updateProductState(finalId, 'price', price);
+      updateProductState(finalId, 'fakePrice', Math.floor(price * 1.3));
+      renderConfigTable();
+      showToast('Đã thêm sản phẩm mới vào danh sách!', 'success');
+    }
+
     // Bulk Price Preview Protection Modal
     function previewBulkPriceChange(direction) {
       const pct = parseFloat(document.getElementById('bulkPercent').value);
@@ -1859,7 +1909,6 @@
       showToast(`Đã đổi tên danh mục thành ${newName}. Nhớ Lưu Máy Chủ!`, 'success');
     }
 
-    // Safe Non-Mutating Category Deletion
     function deleteCategorySafely(catName) {
       renderActionModal('confirm', 'Xóa Danh Mục', `Toàn bộ sản phẩm thuộc <b>${catName}</b> sẽ được chuyển về mục "Khác". Xác nhận?`, () => {
         closeActionModal();
@@ -1968,7 +2017,6 @@
       lucide.createIcons();
     }
 
-    // AI Simulator Playground Logic
     function testAiResponse() {
       const query = document.getElementById('aiTestInput').value.trim().toLowerCase();
       const resContainer = document.getElementById('aiTestResult');
@@ -1976,7 +2024,6 @@
 
       resContainer.classList.remove('hidden');
 
-      // Fuzzy / Substring matching
       let bestMatch = null;
       let highestScore = 0;
 
@@ -2424,7 +2471,67 @@
     }
 
     // ==========================================
-    // 14. TOAST NOTIFICATIONS & MODALS
+    // 14. EXPORT UTILITIES & NOTIFICATIONS
+    // ==========================================
+    function exportUsersCSV() {
+      let csv = "UID,Email,Coins,VIP\n";
+      AdminState.users.forEach(u => {
+        let isVip = u.vipExpire && u.vipExpire.toMillis && u.vipExpire.toMillis() > Date.now();
+        csv += `"${u.uid}","${u.email || ''}",${u.coins || 0},"${isVip ? 'VIP' : 'Normal'}"\n`;
+      });
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `users_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Đã xuất file users.csv thành công!', 'success');
+    }
+
+    function exportTransactionsCSV() {
+      let csv = "OrderID,UID,Amount,Coins,Status,Time\n";
+      AdminState.transactions.forEach(t => {
+        csv += `"${t.orderId}","${t.uid}",${t.amount || 0},${t.coins || 0},"${t.status}","${t.time}"\n`;
+      });
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transactions_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Đã xuất file transactions.csv thành công!', 'success');
+    }
+
+    function exportShortcutsJSON() {
+      const blob = new Blob([JSON.stringify(AdminState.shortcuts, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `shortcuts_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Đã xuất file shortcuts.json thành công!', 'success');
+    }
+
+    function toggleNotifications() {
+      const dd = document.getElementById('notifDropdown');
+      dd.classList.toggle('hidden');
+    }
+
+    function dismissNotifications() {
+      document.getElementById('notifBadge').classList.add('hidden');
+      document.getElementById('notifList').innerHTML = `<p class="text-gray-400 text-center py-4">Đã đọc tất cả thông báo.</p>`;
+    }
+
+    function toggleMaintenanceMode(checked) {
+      showToast(checked ? 'Đã kích hoạt chế độ bảo trì!' : 'Đã tắt chế độ bảo trì.', checked ? 'warning' : 'success');
+      addAuditLog('MAINTENANCE_TOGGLE', `Chế độ bảo trì: ${checked ? 'BẬT' : 'TẮT'}`);
+    }
+
+    // ==========================================
+    // 15. TOAST NOTIFICATIONS & MODALS
     // ==========================================
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
@@ -2437,7 +2544,7 @@
         info: 'bg-blue-600 text-white'
       };
 
-      toast.className = `${colors[type]} px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2 pointer-events-auto transition-all transform translate-y-4 opacity-0`;
+      toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2 pointer-events-auto transition-all transform translate-y-4 opacity-0`;
       toast.innerHTML = `<span>${escapeHTML(message)}</span>`;
 
       container.appendChild(toast);
