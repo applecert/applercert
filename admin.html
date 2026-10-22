@@ -1269,6 +1269,15 @@
         document.getElementById('adminRole').innerText = role;
         document.getElementById('dashAdminName').innerText = userEmail.split('@')[0];
 
+        // Kiểm tra xem đã có mã PIN trong sessionStorage của phiên làm việc này chưa
+        const savedSessionPin = sessionStorage.getItem('admin_session_pin');
+        if (savedSessionPin) {
+          const pinField = document.getElementById('serverPin');
+          if (pinField) pinField.value = savedSessionPin;
+          verifyServerPin();
+          return;
+        }
+
         spinner.classList.add('hidden');
         statusText.innerText = "Xác nhận PIN máy chủ cho phiên này";
         step2.classList.remove('hidden');
@@ -1285,38 +1294,47 @@
       const btn = document.getElementById('btnVerify');
       if (!pinInput) return;
 
-      btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Đang xác thực...`;
-      lucide.createIcons();
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Đang xác thực...`;
+        lucide.createIcons();
+      }
 
       try {
         const res = await fetch(`${GOOGLE_API_URL}?action=verify_pin&pin=${pinInput}`);
         const data = await res.json();
         
         if (data.success) {
-          // LƯU TRÊN RAM PHIÊN LÀM VIỆC - KHÔNG BAO GIỜ LƯU VÀO LOCALSTORAGE
+          // Lưu vào RAM và sessionStorage của tab hiện tại để duy trì khi F5
           AdminState.auth.inMemoryPin = pinInput;
+          sessionStorage.setItem('admin_session_pin', pinInput);
           
           const screen = document.getElementById('loginScreen');
-          screen.classList.add('opacity-0', 'pointer-events-none');
-          setTimeout(() => screen.classList.add('hidden'), 500);
+          if (screen) {
+            screen.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => screen.classList.add('hidden'), 500);
+          }
 
           addAuditLog('LOGIN', 'Quản trị viên xác thực thành công vào phiên làm việc.');
           loadAllData();
           showToast('Chào mừng bạn quay trở lại Admin.OS!', 'success');
         } else {
           showToast('Mã PIN máy chủ không chính xác!', 'error');
+          sessionStorage.removeItem('admin_session_pin');
         }
       } catch (e) {
         showToast('Lỗi kết nối máy chủ xác thực.', 'error');
       } finally {
-        btn.disabled = false;
-        btn.innerText = "MỞ KHÓA BẢNG ĐIỀU KHIỂN";
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = "MỞ KHÓA BẢNG ĐIỀU KHIỂN";
+        }
       }
     }
 
     function logoutAdmin() {
       AdminState.auth.inMemoryPin = '';
+      sessionStorage.removeItem('admin_session_pin');
       auth.signOut().then(() => window.location.reload());
     }
 
@@ -1325,51 +1343,71 @@
     // ==========================================
     async function loadAllData() {
       const refreshIcon = document.getElementById('refreshIcon');
-      refreshIcon.classList.add('animate-spin');
+      if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+      // Recover PIN from sessionStorage if needed
+      if (!AdminState.auth.inMemoryPin) {
+        AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || '';
+      }
 
       // Reset Unsaved State
       AdminState.dirty = { products: false, shortcuts: false, ai: false };
       toggleSaveButton();
 
+      // 1. Fetch Users from Firestore
       try {
-        // 1. Fetch Users from Firestore
         const userSnap = await db.collection("users").get();
         AdminState.users = [];
         userSnap.forEach(doc => AdminState.users.push({ uid: doc.id, ...doc.data() }));
         renderUserTable();
+      } catch (userErr) {
+        console.warn("Firestore users query warning:", userErr);
+      }
 
-        // 2. Fetch Google Sheets Transactions & Revenue
-        const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pin=${AdminState.auth.inMemoryPin}`);
-        const data = await res.json();
-        if (data.success && data.dataThuNgan) {
-          let totalRev = 0;
-          let txs = [];
-          for (let i = 1; i < data.dataThuNgan.length; i++) {
-            let r = data.dataThuNgan[i];
-            if (r[4] === 'CLAIMED') totalRev += (parseInt(r[2]) || 0);
-            txs.push({ orderId: r[0], uid: r[1], amount: r[2], coins: r[3], status: r[4], time: r[5] });
+      // 2. Fetch Google Sheets Transactions & Revenue
+      try {
+        if (AdminState.auth.inMemoryPin) {
+          const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pin=${encodeURIComponent(AdminState.auth.inMemoryPin)}`);
+          const data = await res.json();
+          if (data.success && data.dataThuNgan) {
+            let totalRev = 0;
+            let txs = [];
+            for (let i = 1; i < data.dataThuNgan.length; i++) {
+              let r = data.dataThuNgan[i];
+              if (r[4] === 'CLAIMED') totalRev += (parseInt(r[2]) || 0);
+              txs.push({ orderId: r[0], uid: r[1], amount: r[2], coins: r[3], status: r[4], time: r[5] });
+            }
+            AdminState.totalRevenue = totalRev;
+            AdminState.transactions = txs.reverse();
+            renderTransactions();
           }
-          AdminState.totalRevenue = totalRev;
-          AdminState.transactions = txs.reverse();
-          renderTransactions();
         }
+      } catch (txErr) {
+        console.warn("Transactions fetch warning:", txErr);
+      }
 
-        // 3. Fetch MMO Orders
-        const resOrders = await fetch(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${AdminState.auth.inMemoryPin}`);
-        const dataOrders = await resOrders.json();
-        if (dataOrders.success) {
-          AdminState.orders = dataOrders.data || [];
-          renderMMOOrders();
+      // 3. Fetch MMO Orders
+      try {
+        if (AdminState.auth.inMemoryPin) {
+          const resOrders = await fetch(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${encodeURIComponent(AdminState.auth.inMemoryPin)}`);
+          const dataOrders = await resOrders.json();
+          if (dataOrders.success) {
+            AdminState.orders = dataOrders.data || [];
+            renderMMOOrders();
+          }
         }
+      } catch (orderErr) {
+        console.warn("MMO Orders fetch warning:", orderErr);
+      }
 
-        // 4. Fetch KingMMO Products & Configurations
+      // 4. Fetch KingMMO Products & Configurations
+      try {
         const resP = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
         const dataP = await resP.json();
         if (dataP.success) {
           AdminState.products = dataP.kingmmoProducts || [];
           AdminState.productConfigs = dataP.configs || {};
           
-          // Separate Categories and Deal Hot Configurations
           Object.keys(AdminState.productConfigs).forEach(k => {
             if (k.startsWith('CAT___')) {
               let cName = k.replace('CAT___', '');
@@ -1381,18 +1419,25 @@
           renderConfigTable();
           renderCategoryManager();
         }
+      } catch (prodErr) {
+        console.warn("Products fetch warning:", prodErr);
+      }
 
-        // 5. Fetch Shortcuts & AI & Support Chats
-        loadShortcutsData();
-        loadAIKnowledgeData();
-        loadAuditLogs();
-        fetchSupportChats(false);
+      // 5. Fetch Shortcuts & AI & Audit
+      try { await loadShortcutsData(); } catch(e) {}
+      try { await loadAIKnowledgeData(); } catch(e) {}
+      try { await loadAuditLogs(); } catch(e) {}
 
-        updateDashboardMetrics();
-      } catch (err) {
-        console.error("Data fetch error:", err);
-        showToast('Có lỗi khi tải dữ liệu hệ thống', 'error');
-      } finally {
+      // 6. Fetch Support Chats & Start Real-time Chat Polling
+      try {
+        await fetchSupportChats(false);
+        startAdminChatPolling();
+      } catch(chatErr) {
+        console.warn("Support chats fetch warning:", chatErr);
+      }
+
+      updateDashboardMetrics();
+      if (refreshIcon) {
         setTimeout(() => refreshIcon.classList.remove('animate-spin'), 600);
       }
     }
@@ -2663,8 +2708,41 @@
     // ==========================================
     // 14. LIVE SUPPORT CHAT MODULE
     // ==========================================
+    function parseChatMessageContent(raw) {
+      if (!raw) return { text: '', imageUrl: null };
+      if (typeof raw !== 'string') return { text: String(raw), imageUrl: null };
+      const trimmed = raw.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.type === 'image') {
+              return { text: parsed.text || '', imageUrl: parsed.url };
+            }
+            if (parsed.type === 'text') {
+              return { text: parsed.text || '', imageUrl: null };
+            }
+            if (parsed.url) {
+              return { text: parsed.text || '', imageUrl: parsed.url };
+            }
+            if (parsed.text) {
+              return { text: parsed.text, imageUrl: null };
+            }
+          }
+        } catch(e) {}
+      }
+      return { text: raw, imageUrl: null };
+    }
+
     async function fetchSupportChats(manual = false) {
-      if (!AdminState.auth.inMemoryPin) return;
+      if (!AdminState.auth.inMemoryPin) {
+        AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || '';
+      }
+      if (!AdminState.auth.inMemoryPin) {
+        renderChatPinPrompt();
+        return;
+      }
+
       try {
         const res = await fetch(`${GOOGLE_API_URL}?action=get_chat_messages&pin=${encodeURIComponent(AdminState.auth.inMemoryPin)}`);
         const result = await res.json();
@@ -2672,15 +2750,61 @@
           AdminState.supportChats = result.data;
           renderChatUserList();
           updateChatBadges();
-          if (AdminState.selectedChatUid) {
-            renderActiveConversation();
+
+          // Tự động mở cuộc hội thoại đầu tiên nếu chưa chọn ai
+          const groups = groupChatMessagesByUser();
+          if (groups.length > 0) {
+            if (!AdminState.selectedChatUid) {
+              selectChatUser(groups[0].uid);
+            } else {
+              renderActiveConversation();
+            }
+          } else {
+            const emptyState = document.getElementById('chatEmptyState');
+            const activeView = document.getElementById('chatActiveView');
+            if (emptyState) emptyState.classList.remove('hidden');
+            if (activeView) activeView.classList.add('hidden');
           }
+
           if (manual) showToast('Đã làm mới tin nhắn hỗ trợ!', 'success');
         }
       } catch (e) {
         console.error("Lỗi tải tin nhắn hỗ trợ:", e);
         if (manual) showToast('Lỗi khi tải tin nhắn từ Google Sheets', 'error');
       }
+    }
+
+    function renderChatPinPrompt() {
+      const listEl = document.getElementById('chatUsersList');
+      if (!listEl) return;
+      listEl.innerHTML = `
+        <div class="p-6 text-center space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+            <i data-lucide="lock" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-gray-900">Mở Khóa Tin Nhắn Hỗ Trợ</h4>
+            <p class="text-[11px] text-gray-500 mt-1">Cần nhập mã PIN máy chủ để giải mã các cuộc hội thoại:</p>
+          </div>
+          <div class="flex items-center gap-2 max-w-xs mx-auto">
+            <input type="password" id="inlineChatPinInput" placeholder="Nhập PIN máy chủ..." class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs outline-none focus:border-emerald-500 font-mono text-center">
+            <button onclick="unlockChatInline()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm active:scale-95">Mở</button>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    async function unlockChatInline() {
+      const pin = (document.getElementById('inlineChatPinInput')?.value || '').trim();
+      if (!pin) {
+        showToast('Vui lòng nhập mã PIN!', 'warning');
+        return;
+      }
+      AdminState.auth.inMemoryPin = pin;
+      sessionStorage.setItem('admin_session_pin', pin);
+      showToast('Đang tải tin nhắn...', 'info');
+      await fetchSupportChats(true);
     }
 
     function updateChatBadges() {
@@ -2748,7 +2872,15 @@
         const isSelected = AdminState.selectedChatUid === g.uid;
         const initial = (g.email || 'U').charAt(0).toUpperCase();
         const timeStr = g.lastTimestamp ? formatChatTime(g.lastTimestamp) : '';
-        const preview = g.lastMessage ? escapeHTML(g.lastMessage.message).replace(/\n/g, ' ') : 'Chưa có tin nhắn';
+        const parsedPreview = parseChatMessageContent(g.lastMessage?.message);
+        let preview = 'Chưa có tin nhắn';
+        if (g.lastMessage) {
+          if (parsedPreview.imageUrl) {
+            preview = '[Hình ảnh] ' + escapeHTML(parsedPreview.text);
+          } else {
+            preview = escapeHTML(parsedPreview.text).replace(/\n/g, ' ');
+          }
+        }
         const isLastFromAdmin = g.lastMessage && g.lastMessage.sender === 'admin';
 
         return `
@@ -2799,6 +2931,9 @@
 
       // Mark messages as read for this user on Google Apps Script
       if (currentGroup && currentGroup.unreadCount > 0) {
+        if (!AdminState.auth.inMemoryPin) {
+          AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || '';
+        }
         const fd = new FormData();
         fd.append('action', 'mark_chat_read');
         fd.append('uid', uid);
@@ -2832,9 +2967,18 @@
         const isAdmin = m.sender === 'admin';
         const isRetracted = m.message === '[RETRACTED]';
         const timeStr = m.timestamp ? formatChatTime(m.timestamp, true) : '';
-        const msgText = isRetracted 
-          ? '<span class="italic text-gray-400">Tin nhắn đã được thu hồi</span>' 
-          : escapeHTML(m.message).replace(/\n/g, '<br>');
+        const parsed = parseChatMessageContent(m.message);
+
+        let msgText = '';
+        if (isRetracted) {
+          msgText = '<span class="italic text-gray-400">Tin nhắn đã được thu hồi</span>';
+        } else {
+          msgText = escapeHTML(parsed.text).replace(/\n/g, '<br>');
+        }
+
+        const imgHtml = parsed.imageUrl 
+          ? `<div class="mt-2"><a href="${escapeHTML(parsed.imageUrl)}" target="_blank" rel="noopener"><img src="${escapeHTML(parsed.imageUrl)}" alt="Hình ảnh đính kèm" class="max-w-xs max-h-48 rounded-xl object-cover border border-black/10 hover:opacity-90 transition"></a></div>` 
+          : '';
 
         if (isAdmin) {
           return `
@@ -2845,6 +2989,7 @@
               </div>
               <div class="max-w-[75%] px-4 py-2.5 rounded-2xl rounded-tr-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs shadow-sm leading-relaxed break-words">
                 ${msgText}
+                ${imgHtml}
               </div>
             </div>
           `;
@@ -2857,6 +3002,7 @@
               </div>
               <div class="max-w-[75%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-white border border-black/[0.08] text-gray-900 text-xs shadow-2xs leading-relaxed break-words">
                 ${msgText}
+                ${imgHtml}
               </div>
             </div>
           `;
@@ -2891,6 +3037,10 @@
       AdminState.supportChats.push(newMsg);
       renderActiveConversation();
       input.value = '';
+
+      if (!AdminState.auth.inMemoryPin) {
+        AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || '';
+      }
 
       const fd = new FormData();
       fd.append('action', 'send_chat_message');
