@@ -1208,6 +1208,8 @@ function appendMessage(sender, content, isHtml = false, options = [], shouldSave
 
   if (sender === 'user') {
     msgRow.innerHTML = `<div class="msg-bubble user">${bubbleContent}</div><div class="msg-time" style="text-align:right;margin-right:4px">${timeStr}</div>`;
+  } else if (sender === 'admin') {
+    msgRow.innerHTML = `<div style="display:flex;align-items:flex-start;gap:12px;max-width:85%"><div class="msg-avatar" style="background:linear-gradient(135deg, #10b981, #059669);color:white;box-shadow:0 2px 8px rgba(16,185,129,0.35)"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><div style="flex:1;min-width:0"><div class="msg-meta"><span class="msg-label" style="color:#10b981;font-weight:800;letter-spacing:0.04em">👑 QUẢN TRỊ VIÊN (ADMIN)</span></div><div class="msg-bubble bot" style="border:1.5px solid rgba(16,185,129,0.35);background:rgba(16,185,129,0.06);color:var(--text-primary);">${bubbleContent}</div><div class="msg-time">${timeStr}</div><div class="msg-options"></div></div></div>`;
   } else {
     msgRow.innerHTML = `<div style="display:flex;align-items:flex-start;gap:12px;max-width:85%"><div class="msg-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><path d="M8 15h.01"/><path d="M16 15h.01"/><path d="M12 19h2"/></svg></div><div style="flex:1;min-width:0"><div class="msg-meta"><span class="msg-label">TRỢ LÝ IPAVIET</span></div><div class="msg-bubble bot">${bubbleContent}</div><div class="msg-time">${timeStr}</div><div class="msg-options"></div></div></div>`;
   }
@@ -1337,7 +1339,13 @@ function handleQuickAction(actionId) {
   } else if (actionId === 'contact') {
     appendMessage('user', 'Yêu cầu gặp Admin.');
     showTypingIndicator();
-    setTimeout(() => { hideTypingIndicator(); appendMessage('bot', 'Liên hệ admin qua Telegram:', false, [{ label: 'Chat Telegram Admin 💬', type: 'primary', action: () => window.open('https://t.me/ipaviet', '_blank') }]); }, 800);
+    setTimeout(() => {
+      hideTypingIndicator();
+      appendMessage('bot', 'Bạn muốn kết nối trò chuyện trực tiếp với Admin ngay trên trang web hay nhắn qua Telegram?', false, [
+        { label: 'Chat Trực Tiếp Với Admin 💬', type: 'primary', action: () => enterLiveAdminChat() },
+        { label: 'Chat Telegram ✈️', type: 'secondary', action: () => window.open('https://t.me/ipaviet', '_blank') }
+      ]);
+    }, 600);
   } else if (actionId === 'order_history') { appendMessage('user', 'Xem Lịch Sử Đơn.'); handleOrderHistory(); }
 }
 
@@ -1448,11 +1456,130 @@ async function generateDepositInvoice(amount, coinsInput = null) {
   } catch(e) { hideTypingIndicator(); appendMessage('bot', '❌ Lỗi tạo hóa đơn.'); }
 }
 
+/* ===== LIVE CHAT VỚI ADMIN QUA GOOGLE SHEETS & TELEGRAM ===== */
+let liveChatPollingInterval = null;
+const renderedLiveChatIds = new Set();
+
+function getChatUserUid() {
+  if (currentUser && currentUser.uid) return currentUser.uid;
+  let gUid = localStorage.getItem('ipaviet_chat_guest_uid');
+  if (!gUid) {
+    gUid = 'guest_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36).slice(-4);
+    localStorage.setItem('ipaviet_chat_guest_uid', gUid);
+  }
+  return gUid;
+}
+
+function getChatUserEmail() {
+  if (currentUser && currentUser.email) return currentUser.email;
+  if (userData && userData.email) return userData.email;
+  return 'Khách #' + getChatUserUid().slice(-6);
+}
+
+async function enterLiveAdminChat() {
+  chatState.currentFlow = 'live_admin_chat';
+  const subtitle = document.getElementById('botSubtitle');
+  if (subtitle) {
+    subtitle.innerHTML = `<span style="color:#10b981;font-weight:700">🟢 ĐANG CHAT TRỰC TIẾP VỚI ADMIN</span>`;
+  }
+  
+  appendMessage('bot', `🟢 **Đã kích hoạt Chế độ Chat Trực Tiếp với Admin!**\n- Mọi tin nhắn bạn gửi ở đây sẽ chuyển thẳng đến Admin và thông báo tức thì qua Telegram.\n- Admin sẽ phản hồi bạn ngay tại đây.\n\n*(Nhắn **"thoát chat"** hoặc bấm nút bên dưới nếu bạn muốn quay lại Trợ lý AI)*`, false, [
+    { label: 'Quay lại Trợ lý AI 🤖', type: 'secondary', action: () => exitLiveAdminChat() },
+    { label: 'Chat Telegram ✈️', type: 'secondary', action: () => window.open('https://t.me/ipaviet', '_blank') }
+  ]);
+
+  await syncLiveChatMessages();
+  startLiveChatPolling();
+}
+
+function exitLiveAdminChat() {
+  chatState.currentFlow = null;
+  stopLiveChatPolling();
+  const subtitle = document.getElementById('botSubtitle');
+  if (subtitle) {
+    subtitle.innerHTML = (isAdminAuthenticated && adminModeEnabled) 
+      ? '<span class="admin-badge">ADMIN MODE</span>' 
+      : 'IPAVIET Assistant';
+  }
+  appendMessage('bot', `🤖 **Đã ngắt kết nối Chat Trực Tiếp.**\nBạn đã quay lại với Trợ lý AI tự động IPAVIET. Hãy nhắn bất cứ điều gì bạn cần hỗ trợ nhé!`);
+  triggerGreeting();
+}
+
+function startLiveChatPolling() {
+  stopLiveChatPolling();
+  liveChatPollingInterval = setInterval(() => {
+    if (chatState.currentFlow === 'live_admin_chat') {
+      syncLiveChatMessages();
+    } else {
+      stopLiveChatPolling();
+    }
+  }, 4000);
+}
+
+function stopLiveChatPolling() {
+  if (liveChatPollingInterval) {
+    clearInterval(liveChatPollingInterval);
+    liveChatPollingInterval = null;
+  }
+}
+
+async function syncLiveChatMessages() {
+  const uid = getChatUserUid();
+  try {
+    const res = await fetch(`${GOOGLE_API_URL}?action=get_chat_messages&uid=${encodeURIComponent(uid)}`);
+    const result = await res.json();
+    if (result.success && Array.isArray(result.data)) {
+      result.data.forEach(msg => {
+        if (!renderedLiveChatIds.has(msg.messageId)) {
+          renderedLiveChatIds.add(msg.messageId);
+          if (msg.sender === 'admin') {
+            appendMessage('admin', msg.message, false, [], true, msg.timestamp);
+          }
+        }
+      });
+    }
+  } catch(e) {
+    console.warn("Lỗi đồng bộ tin nhắn Live Chat:", e);
+  }
+}
+
+async function sendLiveChatMessageToAdmin(text) {
+  const uid = getChatUserUid();
+  const email = getChatUserEmail();
+  const tempMsgId = "MSG" + Date.now();
+  renderedLiveChatIds.add(tempMsgId);
+  
+  const fd = new FormData();
+  fd.append('uid', uid);
+  fd.append('email', email);
+  fd.append('sender', 'user');
+  fd.append('message', text);
+
+  try {
+    const res = await postAPI('send_chat_message', fd);
+    if (res && res.messageId) {
+      renderedLiveChatIds.add(res.messageId);
+    }
+  } catch(e) {
+    console.error("Lỗi gửi tin nhắn cho Admin:", e);
+  }
+}
+
 function sendMessage() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim(); if (!text) return;
   input.value = ''; autoResize(input); toggleSendBtn(false); toggleContextToolbar(false);
   appendMessage('user', text); scrollChatToBottom();
+
+  if (chatState.currentFlow === 'live_admin_chat') {
+    if (text.toLowerCase().match(/^thoát chat|^thoat chat|^quay lại bot|^quay lai bot|^kết thúc|^ket thuc|^exit/)) {
+      exitLiveAdminChat();
+      return;
+    }
+    sendLiveChatMessageToAdmin(text);
+    return;
+  }
+
   showTypingIndicator();
   setTimeout(() => { hideTypingIndicator(); processBotResponse(text); }, 900);
 }
@@ -1484,6 +1611,11 @@ function processBotResponse(rawText) {
     const eqIndex = content.indexOf('=');
     if (eqIndex === -1) { appendMessage('bot', '❌ Dùng "=" để ngăn cách.'); return; }
     teachAIInChat(sessionStorage.getItem('adminPinInChat') || '', content.substring(0, eqIndex).trim(), content.substring(eqIndex + 1).trim()); return;
+  }
+
+  if (text.match(/gặp admin|gap admin|chat admin|nhắn admin|nhan admin|gặp người|người thật|nguoi that|live chat|liên hệ admin|lien he admin/)) {
+    handleQuickAction('contact');
+    return;
   }
 
   if (chatState.currentFlow === 'search_shortcuts') { handleSearchShortcuts(rawText); return; }
