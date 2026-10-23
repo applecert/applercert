@@ -1116,18 +1116,41 @@ function showHero(show) {
 auth.onAuthStateChanged(user => {
   const authGate = document.getElementById('authGate');
   const chatMain = document.getElementById('chatMain');
-  if (!user) { authGate.classList.remove('hidden'); chatMain.classList.add('hidden'); currentUser = null; }
-  else {
-    authGate.classList.add('hidden'); chatMain.classList.remove('hidden'); currentUser = user;
+  if (!user) {
+    // Cho phép khách vãng lai nhắn tin trực tiếp với Admin không cần đăng nhập trước
+    if (authGate) authGate.classList.add('hidden');
+    if (chatMain) chatMain.classList.remove('hidden');
+    currentUser = null;
+    loadAIKnowledgeBase();
+    updateGuestProfileWidgets();
+    startLiveChatPolling();
+    if (document.getElementById('chatMessages').children.length <= 1) loadChatHistory();
+  } else {
+    if (authGate) authGate.classList.add('hidden');
+    if (chatMain) chatMain.classList.remove('hidden');
+    currentUser = user;
     loadAIKnowledgeBase();
     if (user.email && user.email.toLowerCase() === "mquitran@gmail.com") {
       const cachedPin = localStorage.getItem('adminPin');
       if (cachedPin && !isAdminAuthenticated) verifyAdminPinInChat(cachedPin);
     }
     db.collection("users").doc(user.uid).onSnapshot(doc => { userData = doc.exists ? doc.data() : { coins: 0 }; updateProfileWidgets(); });
-    if (document.getElementById('chatMessages').children.length <= 1) loadChatHistory(); // triggerGreeting removed
+    startLiveChatPolling();
+    if (document.getElementById('chatMessages').children.length <= 1) loadChatHistory();
   }
 });
+
+function updateGuestProfileWidgets() {
+  const email = getChatUserEmail();
+  const elEmail = document.getElementById('chatUserEmail');
+  if (elEmail) elEmail.innerText = email;
+  const elCoins = document.getElementById('chatUserCoins');
+  if (elCoins) elCoins.innerText = '0đ';
+  const elVip = document.getElementById('chatUserVip');
+  if (elVip) elVip.innerHTML = '<a href="account.html" onclick="safeRedirect(\'account.html\'); return false;" style="color:var(--accent);font-weight:700;text-decoration:underline">Đăng nhập</a>';
+  const heroName = document.getElementById('heroName');
+  if (heroName) heroName.textContent = email;
+}
 
 function updateProfileWidgets() {
   if(!currentUser) return;
@@ -1510,11 +1533,7 @@ function exitLiveAdminChat() {
 function startLiveChatPolling() {
   stopLiveChatPolling();
   liveChatPollingInterval = setInterval(() => {
-    if (chatState.currentFlow === 'live_admin_chat') {
-      syncLiveChatMessages();
-    } else {
-      stopLiveChatPolling();
-    }
+    syncLiveChatMessages();
   }, 4000);
 }
 
@@ -1573,12 +1592,14 @@ function sendMessage() {
   input.value = ''; autoResize(input); toggleSendBtn(false); toggleContextToolbar(false);
   appendMessage('user', text); scrollChatToBottom();
 
+  // Luôn gửi tin nhắn của khách về Google Sheet / Admin
+  sendLiveChatMessageToAdmin(text);
+
   if (chatState.currentFlow === 'live_admin_chat') {
     if (text.toLowerCase().match(/^thoát chat|^thoat chat|^quay lại bot|^quay lai bot|^kết thúc|^ket thuc|^exit/)) {
       exitLiveAdminChat();
       return;
     }
-    sendLiveChatMessageToAdmin(text);
     return;
   }
 

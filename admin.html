@@ -1269,8 +1269,8 @@
         document.getElementById('adminRole').innerText = role;
         document.getElementById('dashAdminName').innerText = userEmail.split('@')[0];
 
-        // Kiểm tra xem đã có mã PIN trong sessionStorage của phiên làm việc này chưa
-        const savedSessionPin = sessionStorage.getItem('admin_session_pin');
+        // Kiểm tra xem đã có mã PIN trong sessionStorage hoặc localStorage chưa
+        const savedSessionPin = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin') || localStorage.getItem('admin_verified_pin');
         if (savedSessionPin) {
           const pinField = document.getElementById('serverPin');
           if (pinField) pinField.value = savedSessionPin;
@@ -1305,9 +1305,11 @@
         const data = await res.json();
         
         if (data.success) {
-          // Lưu vào RAM và sessionStorage của tab hiện tại để duy trì khi F5
+          // Lưu vào RAM, sessionStorage và localStorage để duy trì phiên làm việc
           AdminState.auth.inMemoryPin = pinInput;
           sessionStorage.setItem('admin_session_pin', pinInput);
+          localStorage.setItem('adminPin', pinInput);
+          localStorage.setItem('admin_verified_pin', pinInput);
           
           const screen = document.getElementById('loginScreen');
           if (screen) {
@@ -1321,6 +1323,8 @@
         } else {
           showToast('Mã PIN máy chủ không chính xác!', 'error');
           sessionStorage.removeItem('admin_session_pin');
+          localStorage.removeItem('adminPin');
+          localStorage.removeItem('admin_verified_pin');
         }
       } catch (e) {
         showToast('Lỗi kết nối máy chủ xác thực.', 'error');
@@ -1335,6 +1339,8 @@
     function logoutAdmin() {
       AdminState.auth.inMemoryPin = '';
       sessionStorage.removeItem('admin_session_pin');
+      localStorage.removeItem('adminPin');
+      localStorage.removeItem('admin_verified_pin');
       auth.signOut().then(() => window.location.reload());
     }
 
@@ -2736,7 +2742,7 @@
 
     async function fetchSupportChats(manual = false) {
       if (!AdminState.auth.inMemoryPin) {
-        AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || '';
+        AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin') || localStorage.getItem('admin_verified_pin') || '';
       }
       if (!AdminState.auth.inMemoryPin) {
         renderChatPinPrompt();
@@ -2751,10 +2757,10 @@
           renderChatUserList();
           updateChatBadges();
 
-          // Tự động mở cuộc hội thoại đầu tiên nếu chưa chọn ai
+          // Tự động mở cuộc hội thoại đầu tiên nếu chưa chọn ai hoặc nếu hội thoại đang chọn không còn tồn tại
           const groups = groupChatMessagesByUser();
           if (groups.length > 0) {
-            if (!AdminState.selectedChatUid) {
+            if (!AdminState.selectedChatUid || !groups.some(g => String(g.uid).trim() === String(AdminState.selectedChatUid).trim())) {
               selectChatUser(groups[0].uid);
             } else {
               renderActiveConversation();
@@ -2766,7 +2772,7 @@
             if (activeView) activeView.classList.add('hidden');
           }
 
-          if (manual) showToast('Đã làm mới tin nhắn hỗ trợ!', 'success');
+          if (manual) showToast(`Đã làm mới tin nhắn hỗ trợ (${AdminState.supportChats.length} tin nhắn)!`, 'success');
         }
       } catch (e) {
         console.error("Lỗi tải tin nhắn hỗ trợ:", e);
@@ -2907,10 +2913,13 @@
           </div>
         `;
       }).join('');
-      lucide.createIcons();
+      if (window.lucide && typeof lucide.createIcons === 'function') {
+        try { lucide.createIcons(); } catch(e) {}
+      }
     }
 
     async function selectChatUser(uid) {
+      uid = String(uid || '').trim();
       AdminState.selectedChatUid = uid;
       renderChatUserList();
 
@@ -2920,7 +2929,7 @@
       if (activeView) activeView.classList.remove('hidden');
 
       const userGroups = groupChatMessagesByUser();
-      const currentGroup = userGroups.find(g => g.uid === uid);
+      const currentGroup = userGroups.find(g => String(g.uid).trim() === uid);
       if (currentGroup) {
         document.getElementById('chatActiveEmail').innerText = currentGroup.email;
         document.getElementById('chatActiveUid').innerText = currentGroup.uid;
@@ -2932,7 +2941,7 @@
       // Mark messages as read for this user on Google Apps Script
       if (currentGroup && currentGroup.unreadCount > 0) {
         if (!AdminState.auth.inMemoryPin) {
-          AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || '';
+          AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin') || localStorage.getItem('admin_verified_pin') || '';
         }
         const fd = new FormData();
         fd.append('action', 'mark_chat_read');
@@ -2941,7 +2950,7 @@
         try {
           await fetch(GOOGLE_API_URL, { method: 'POST', body: fd });
           AdminState.supportChats.forEach(m => {
-            if (m.uid === uid && m.sender === 'user') m.isRead = true;
+            if (String(m.uid).trim() === uid && m.sender === 'user') m.isRead = true;
           });
           updateChatBadges();
           renderChatUserList();
@@ -2955,7 +2964,7 @@
       const threadEl = document.getElementById('chatMessagesThread');
       if (!threadEl || !AdminState.selectedChatUid) return;
 
-      const userMessages = AdminState.supportChats.filter(m => m.uid === AdminState.selectedChatUid);
+      const userMessages = AdminState.supportChats.filter(m => String(m.uid).trim() === String(AdminState.selectedChatUid).trim());
       userMessages.sort((a, b) => (new Date(a.timestamp).getTime() || 0) - (new Date(b.timestamp).getTime() || 0));
 
       if (userMessages.length === 0) {
