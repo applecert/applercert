@@ -514,8 +514,8 @@ const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || '
 const DEFAULT_SHORTENER_CONFIG = {
   enabled: true,
   require_login: true, // Bắt buộc người dùng phải đăng nhập mới được tải ứng dụng
-  provider: 'yeumoney', // 'yeumoney' | 'link4m' | 'custom'
-  fallback_to_link4m: true, // Tự động chuyển Link4m khi YeuMoney gặp sự cố (Admin có thể tắt/bật)
+  provider: 'link4m', // Cổng chính thức ổn định, chống tự động đá về (Link4m)
+  fallback_to_link4m: true, // Tự động chuyển Link4m khi cổng khác gặp sự cố
   yeumoney_token: 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
   link4m_token: '691eb05d63b1b86d4a3bca1e',
   custom_api_template: '',
@@ -525,7 +525,10 @@ const DEFAULT_SHORTENER_CONFIG = {
 let SHORTENER_CONFIG = (function() {
   try {
     const saved = localStorage.getItem('ipaviet_shortener_config');
-    return saved ? Object.assign({}, DEFAULT_SHORTENER_CONFIG, JSON.parse(saved)) : DEFAULT_SHORTENER_CONFIG;
+    let cfg = saved ? Object.assign({}, DEFAULT_SHORTENER_CONFIG, JSON.parse(saved)) : DEFAULT_SHORTENER_CONFIG;
+    // Nếu trước đó lưu provider là yeumoney và gặp lỗi tự đá về, ưu tiên link4m làm mặc định tin cậy
+    if (!saved) cfg.provider = 'link4m';
+    return cfg;
   } catch(e) {
     return DEFAULT_SHORTENER_CONFIG;
   }
@@ -1816,6 +1819,23 @@ function openAppView(appId) {
   // Purchase panel reset
   document.getElementById('detailPurchasePanel').innerHTML = '';
 
+  // Bắt buộc đăng nhập: nếu khách chưa đăng nhập, cập nhật nút cài đặt và hiển thị panel đăng nhập ngay
+  const installBtn = document.getElementById('detailInstallBtn');
+  const appCfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+  const isLoginRequired = (appCfg && appCfg.require_login !== false);
+  if (!currentUser && isLoginRequired) {
+    if (installBtn) {
+      installBtn.innerHTML = `<i data-lucide="lock" style="width:16px;height:16px;"></i> ĐĂNG NHẬP ĐỂ TẢI`;
+      installBtn.onclick = () => { window.location.href = '../account.html'; };
+    }
+    showDownloadAction();
+  } else {
+    if (installBtn) {
+      installBtn.innerHTML = `<i data-lucide="download" style="width:16px;height:16px;"></i> CÀI ĐẶT`;
+      installBtn.onclick = () => { showDownloadAction(); };
+    }
+  }
+
   // Show stage immediately
   const stage = document.getElementById('app-detail-stage');
   stage.classList.add('active');
@@ -2132,6 +2152,7 @@ function createFreePassToken(app, rawLink) {
     bundleId: app.bundleId || '',
     name: app.name || app.title || 'App',
     rawLink: rawLink,
+    uid: (currentUser && currentUser.uid) ? currentUser.uid : '',
     t: Date.now(),
     nonce: Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
   };
@@ -2265,12 +2286,12 @@ async function checkFreePassCallback() {
   }
 
   // KIỂM TRA CHỐNG TỰ ĐỘNG CHUYỂN VỀ / CHƯA HOÀN THÀNH NHIỆM VỤ (ANTI-FAST BYPASS):
-  // Để hoàn thành vượt link (Recaptcha, tìm từ khóa Google, chờ đếm 60s), người dùng cần ít nhất 15-60 giây.
-  // Nếu quay lại trang trong dưới 15 giây (age < 15000ms), chứng tỏ bị bên thứ 3 tự chuyển về hoặc người dùng chưa làm nhiệm vụ:
+  // Để hoàn thành vượt link thực tế (Recaptcha, tìm từ khóa Google, chờ đếm 60s), người dùng cần ít nhất 40-90 giây.
+  // Nếu quay lại trang trong dưới 40 giây (age < 40000ms), chứng tỏ bị bên thứ 3 tự chuyển về hoặc người dùng chưa làm nhiệm vụ:
   const age = Date.now() - payload.t;
-  if (age < 15000) {
+  if (age < 40000) {
     console.warn("Chưa hoàn thành vượt link (thời gian quá nhanh: " + age + "ms)");
-    showToast("⚠️ Bạn chưa hoàn thành nhiệm vụ vượt link. Vui lòng thử lại!");
+    showToast("⚠️ Bạn chưa hoàn thành nhiệm vụ vượt link (quay lại quá nhanh). Vui lòng thử lại!");
 
     // Giữ người dùng ở lại modal ứng dụng và hiện thông báo yêu cầu làm nhiệm vụ thật
     setTimeout(() => {
@@ -2291,7 +2312,7 @@ async function checkFreePassCallback() {
                 <i data-lucide="alert-triangle" style="width:20px;height:20px;"></i> BẠN CHƯA VƯỢT LINK!
               </div>
               <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
-                Hệ thống phát hiện bạn vừa quay lại quá nhanh (dưới 15 giây) và chưa thực hiện xong các bước tìm mã trên trang quảng cáo. Vui lòng bấm bên dưới để vượt link nhận link tải miễn phí!
+                Hệ thống phát hiện bạn vừa quay lại quá nhanh (dưới 40 giây) và chưa thực hiện xong các bước tìm mã trên trang quảng cáo. Vui lòng bấm bên dưới để vượt link nhận link tải!
               </p>
               <button onclick="downloadFreeStore(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;background:#ef4444;color:#fff;">
                 <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i> BẤM VÀO ĐÂY ĐỂ VƯỢT LINK
