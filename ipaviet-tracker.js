@@ -1,12 +1,14 @@
 /**
  * =========================================================================
- * IPAVIET TELEMETRY & ANALYTICS TRACKER (TOÀN HỆ THỐNG / WEB TỔNG)
+ * IPAVIET TELEMETRY & ANALYTICS TRACKER (PHIÊN BẢN NÂNG CẤP THÔNG MINH)
  * =========================================================================
- * - Tự động ghi nhận lượt xem trang (Pageview), khách riêng biệt (Unique Visitors)
- * - Tự động phát hiện IP, vị trí địa lý (City, Country), nhà mạng (ISP)
- * - Phân tích chi tiết Thiết bị (iOS, Android, Mac, Windows), Model máy & Trình duyệt
- * - Đồng bộ thời gian thực đa kênh: BroadcastChannel + LocalStorage + Firestore + Google Sheet
- * - Hoàn toàn độc lập, bất đồng bộ, không bao giờ làm chậm hay nghẽn website.
+ * - Tự động phát hiện IP, vị trí địa lý (City, Country), nhà mạng (ISP).
+ * - Gộp các lượt truy cập từ CÙNG 1 ĐỊA CHỈ IP thành 1 dòng hồ sơ duy nhất.
+ * - Nhận diện tài khoản: Tự động ghi nhận Email, Tên, UID nếu khách đã đăng nhập.
+ * - Tối ưu lượt xem: Mỗi IP chỉ tính 1 khách duy nhất trong ngày, chống spam F5.
+ * - Ghi nhận Hành trình trải nghiệm (Customer Journey Flow): Lưu lịch sử các trang đã xem.
+ * - Phát hiện Robot/Crawler tự động (Googlebot, Bingbot...).
+ * - Đồng bộ đa tầng thời gian thực: BroadcastChannel + LocalStorage + Firestore + Google Sheet.
  */
 
 (function () {
@@ -50,7 +52,77 @@
     } catch (e) {}
   }
 
-  // 4. Phân tích chi tiết Thiết Bị, Hệ Điều Hành & Trình Duyệt
+  // 4. Kiểm tra xem người dùng có phải Robot / Web Crawler không
+  function isBotUser() {
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const botPatterns = ['googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandexbot', 'facebookexternalhit', 'telegrambot', 'twitterbot', 'ahrefs', 'semrush', 'lighthouse', 'headlesschrome'];
+    return botPatterns.some(bot => ua.includes(bot));
+  }
+
+  // 5. Nhận diện tài khoản đã đăng nhập (Firebase Auth & Cache)
+  function getLoggedInUserInfo() {
+    try {
+      // A. Kiểm tra trực tiếp từ instance firebase.auth() hoặc auth
+      let u = null;
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        try { u = firebase.auth().currentUser; } catch (e) {}
+      }
+      if (!u && typeof auth !== 'undefined' && auth.currentUser) {
+        u = auth.currentUser;
+      }
+      if (u && (u.email || u.uid)) {
+        return {
+          uid: u.uid || '',
+          email: u.email || '',
+          name: u.displayName || (u.email ? u.email.split('@')[0] : 'Thành viên'),
+          isMember: true
+        };
+      }
+
+      // B. Kiểm tra Firebase Auth Cache trong localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('firebase:authUser:')) {
+          try {
+            const val = JSON.parse(localStorage.getItem(key));
+            if (val && (val.email || val.uid)) {
+              return {
+                uid: val.uid || '',
+                email: val.email || '',
+                name: val.displayName || (val.email ? val.email.split('@')[0] : 'Thành viên'),
+                isMember: true
+              };
+            }
+          } catch (e) {}
+        }
+      }
+
+      // C. Kiểm tra profile cache tùy biến nếu có
+      const customCache = localStorage.getItem('ipaviet_user_profile') || localStorage.getItem('user_info');
+      if (customCache) {
+        try {
+          const parsed = JSON.parse(customCache);
+          if (parsed && (parsed.email || parsed.username)) {
+            return {
+              uid: parsed.uid || '',
+              email: parsed.email || parsed.username || '',
+              name: parsed.displayName || parsed.name || (parsed.email ? parsed.email.split('@')[0] : 'Thành viên'),
+              isMember: true
+            };
+          }
+        } catch (e) {}
+      }
+    } catch (e) {}
+
+    return {
+      uid: '',
+      email: '',
+      name: '',
+      isMember: false
+    };
+  }
+
+  // 6. Phân tích chi tiết Thiết Bị, Hệ Điều Hành & Trình Duyệt
   function getDetailedDeviceInfo() {
     const ua = navigator.userAgent || '';
     let devType = 'other';
@@ -80,7 +152,7 @@
       devModel = 'Linux';
     }
 
-    // Nhận diện Trình duyệt
+    // Nhận diện Trình duyệt & Ứng dụng nguồn
     if (/Telegram/i.test(ua)) browser = 'Telegram App';
     else if (/FBAN|FBAV/i.test(ua)) browser = 'Facebook App';
     else if (/Zalo/i.test(ua)) browser = 'Zalo App';
@@ -93,7 +165,7 @@
     return { devType, devModel, browser };
   }
 
-  // 5. Xác định tên trang thân thiện
+  // 7. Xác định tên trang thân thiện
   function getPageName() {
     const p = window.location.pathname.toLowerCase();
     if (p.includes('app-library')) return 'Kho Ứng Dụng (IPA Library)';
@@ -108,7 +180,7 @@
     return document.title ? document.title.split('—')[0].trim() : 'Trang Chủ IPAViet';
   }
 
-  // 6. Làm sạch nguồn giới thiệu (Referrer)
+  // 8. Làm sạch nguồn giới thiệu (Referrer)
   function getCleanReferrer() {
     const ref = document.referrer || '';
     if (!ref) return 'Truy cập trực tiếp';
@@ -127,9 +199,9 @@
     }
   }
 
-  // 7. Lấy địa chỉ IP & Vị Trí Địa Lý (GeoIP) của Khách
+  // 9. Lấy địa chỉ IP & Vị Trí Địa Lý (GeoIP) của Khách
   function getVisitorGeo(callback) {
-    // A. Kiểm tra cache trong Session để không gọi API quá nhiều lần trong 1 phiên
+    // Kiểm tra cache trong Session để tránh gọi API nhiều lần trong 1 phiên
     try {
       const cached = sessionStorage.getItem('ipaviet_geo');
       if (cached) {
@@ -141,7 +213,6 @@
       }
     } catch (e) {}
 
-    // B. Gọi API GeoIP có hỗ trợ CORS và tốc độ cao (ipwho.is)
     const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3200));
     const fetchGeo = fetch('https://ipwho.is/', { mode: 'cors' }).then(res => res.json());
 
@@ -163,13 +234,10 @@
           fallbackIp(callback);
         }
       })
-      .catch(() => {
-        fallbackIp(callback);
-      });
+      .catch(() => fallbackIp(callback));
   }
 
   function fallbackIp(callback) {
-    // Dự phòng qua ipify
     fetch('https://api.ipify.org?format=json')
       .then(r => r.json())
       .then(data => {
@@ -198,107 +266,169 @@
       });
   }
 
-  // 8. Ghi nhận lượt xem & Thông tin người dùng truy cập
+  // 10. Ghi nhận lượt xem & Thông tin người dùng (Gộp theo IP & User Identity)
   function trackPageViewAndVisitor() {
     try {
+      // Bỏ qua nếu là robot tìm kiếm (không làm sai lệch dữ liệu)
+      const isBot = isBotUser();
       const today = getTodayDateStr();
       const devInfo = getDetailedDeviceInfo();
       const devType = devInfo.devType;
-      const uvKey = `ipaviet_uv_${today}`;
-      const isNewToday = !localStorage.getItem(uvKey);
-      if (isNewToday) {
-        try { localStorage.setItem(uvKey, '1'); } catch (e) {}
-      }
 
-      // A. Cập nhật Thống Kê Tổng Daily Summary (LocalStorage)
-      const dailyMap = getLocalStats('ipaviet_analytics_daily', {});
-      if (!dailyMap[today]) {
-        dailyMap[today] = {
-          date: today,
-          pageviews: 0,
-          uniqueVisitors: 0,
-          downloads: 0,
-          devices: { ios: 0, android: 0, mac: 0, windows: 0, other: 0 }
-        };
-      }
-      dailyMap[today].pageviews = (dailyMap[today].pageviews || 0) + 1;
-      if (isNewToday) {
-        dailyMap[today].uniqueVisitors = (dailyMap[today].uniqueVisitors || 0) + 1;
-      }
-      if (!dailyMap[today].devices) {
-        dailyMap[today].devices = { ios: 0, android: 0, mac: 0, windows: 0, other: 0 };
-      }
-      dailyMap[today].devices[devType] = (dailyMap[today].devices[devType] || 0) + 1;
-      setLocalStats('ipaviet_analytics_daily', dailyMap);
-
-      // B. Báo tin realtime tổng hợp cho Admin Dashboard
-      if (trackerBC) {
-        try {
-          trackerBC.postMessage({ type: 'pageview', date: today, device: devType });
-        } catch (e) {}
-      }
-
-      // C. Lấy IP và ghi nhận chi tiết Người Xem (Visitor Log)
       getVisitorGeo(function (geo) {
+        const ip = geo.ip;
+        const userInfo = getLoggedInUserInfo();
         const now = new Date();
-        const visitorRecord = {
-          id: 'vis_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-          ip: geo.ip,
-          city: geo.city,
-          region: geo.region,
-          country: geo.country,
-          countryCode: geo.countryCode,
-          flag: geo.flag,
-          isp: geo.isp,
-          deviceType: devInfo.devType,
-          deviceModel: devInfo.devModel,
-          browser: devInfo.browser,
-          screen: `${window.innerWidth}x${window.innerHeight}`,
-          page: getPageName(),
-          path: window.location.pathname,
-          referrer: getCleanReferrer(),
-          timestamp: Date.now(),
-          timeStr: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          dateStr: today,
-          lastActive: Date.now(),
-          online: true
+        const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const currentPageName = getPageName();
+        const currentPath = window.location.pathname;
+
+        // Chống đếm trùng lượt xem khi F5 liên tục trong vòng 10 giây
+        const pageDebounceKey = `ipaviet_debounce_${currentPath}`;
+        const lastPageTime = Number(sessionStorage.getItem(pageDebounceKey)) || 0;
+        const isRapidReload = (Date.now() - lastPageTime) < 10000;
+        sessionStorage.setItem(pageDebounceKey, String(Date.now()));
+
+        // Kiểm tra xem IP này đã từng vào hôm nay chưa (Chỉ tính 1 lượt xem / truy cập cho mỗi IP trong ngày)
+        const ipTodayKey = `ipaviet_ip_seen_${today}_${ip}`;
+        const isFirstVisitToday = !localStorage.getItem(ipTodayKey);
+        if (isFirstVisitToday) {
+          try { localStorage.setItem(ipTodayKey, '1'); } catch (e) {}
+        }
+
+        // A. Cập nhật Thống Kê Tổng Daily Summary (LocalStorage)
+        // Tối ưu thông minh: Cùng 1 IP chỉ tính 1 lượt xem / truy cập duy nhất trong ngày
+        if (!isRapidReload && !isBot && isFirstVisitToday) {
+          const dailyMap = getLocalStats('ipaviet_analytics_daily', {});
+          if (!dailyMap[today]) {
+            dailyMap[today] = {
+              date: today,
+              pageviews: 0,
+              uniqueVisitors: 0,
+              downloads: 0,
+              devices: { ios: 0, android: 0, mac: 0, windows: 0, other: 0 }
+            };
+          }
+          dailyMap[today].pageviews = (dailyMap[today].pageviews || 0) + 1;
+          dailyMap[today].uniqueVisitors = (dailyMap[today].uniqueVisitors || 0) + 1;
+          if (!dailyMap[today].devices) {
+            dailyMap[today].devices = { ios: 0, android: 0, mac: 0, windows: 0, other: 0 };
+          }
+          dailyMap[today].devices[devType] = (dailyMap[today].devices[devType] || 0) + 1;
+          setLocalStats('ipaviet_analytics_daily', dailyMap);
+
+          if (trackerBC) {
+            try {
+              trackerBC.postMessage({ type: 'pageview', date: today, device: devType });
+            } catch (e) {}
+          }
+        }
+
+        // B. GỘP THEO IP: TÌM HỒ SƠ CỦA IP NÀY ĐỂ CẬP NHẬT HOẶC TẠO MỚI
+        let visitors = getLocalStats('ipaviet_analytics_visitors', []);
+        const existingIdx = visitors.findIndex(v => v.ip === ip);
+
+        let visitorRecord;
+        const newHistoryStep = {
+          page: currentPageName,
+          path: currentPath,
+          time: timeStr,
+          timestamp: Date.now()
         };
 
-        // Lưu vào LocalStorage (Tối đa 100 khách gần nhất)
-        let visitors = getLocalStats('ipaviet_analytics_visitors', []);
-        // Nếu cùng 1 IP truy cập trong vòng 5 phút, cập nhật trang xem & thời gian
-        const existingIdx = visitors.findIndex(v => v.ip === visitorRecord.ip && (Date.now() - (v.timestamp || 0) < 300000));
         if (existingIdx >= 0) {
-          visitors[existingIdx].page = visitorRecord.page;
-          visitors[existingIdx].path = visitorRecord.path;
-          visitors[existingIdx].lastActive = Date.now();
-          visitors[existingIdx].timeStr = visitorRecord.timeStr;
-          visitors[existingIdx].visits = (visitors[existingIdx].visits || 1) + 1;
+          // IP ĐÃ TỒN TẠI: Cập nhật in-place, không tạo thêm dòng mới
+          visitorRecord = visitors[existingIdx];
+          visitorRecord.lastActive = Date.now();
+          visitorRecord.timeStr = timeStr;
+          visitorRecord.page = currentPageName;
+          visitorRecord.path = currentPath;
+          visitorRecord.online = true;
+
+          // Cập nhật thông tin đăng nhập nếu người dùng vừa đăng nhập
+          if (userInfo.isMember) {
+            visitorRecord.userEmail = userInfo.email;
+            visitorRecord.userName = userInfo.name;
+            visitorRecord.userUid = userInfo.uid;
+            visitorRecord.isMember = true;
+          }
+
+          // Tăng số lần xem của IP này (chống spam F5)
+          if (!isRapidReload) {
+            visitorRecord.visits = (visitorRecord.visits || 1) + 1;
+          }
+
+          // Cập nhật Hành Trình Duyệt Web (Customer Journey Flow)
+          let hist = Array.isArray(visitorRecord.history) ? visitorRecord.history : [];
+          // Tránh duplicate bước liên tiếp giống nhau
+          if (hist.length === 0 || hist[hist.length - 1].path !== currentPath) {
+            hist.push(newHistoryStep);
+            if (hist.length > 20) hist = hist.slice(-20);
+            visitorRecord.history = hist;
+          }
+
+          // Đưa IP hoạt động gần nhất lên đầu mảng
+          visitors.splice(existingIdx, 1);
+          visitors.unshift(visitorRecord);
         } else {
+          // IP MỚI TINH: Tạo hồ sơ khách hàng mới
+          visitorRecord = {
+            id: 'vis_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            ip: ip,
+            city: geo.city,
+            region: geo.region,
+            country: geo.country,
+            countryCode: geo.countryCode,
+            flag: geo.flag,
+            isp: geo.isp,
+            deviceType: devInfo.devType,
+            deviceModel: devInfo.devModel,
+            browser: devInfo.browser,
+            screen: `${window.innerWidth}x${window.innerHeight}`,
+            page: currentPageName,
+            path: currentPath,
+            referrer: getCleanReferrer(),
+            timestamp: Date.now(),
+            firstSeen: Date.now(),
+            timeStr: timeStr,
+            firstSeenStr: timeStr,
+            dateStr: today,
+            lastActive: Date.now(),
+            online: true,
+            visits: 1,
+            userEmail: userInfo.email || '',
+            userName: userInfo.name || '',
+            userUid: userInfo.uid || '',
+            isMember: userInfo.isMember,
+            isBot: isBot,
+            history: [newHistoryStep]
+          };
           visitors.unshift(visitorRecord);
         }
+
         visitors = visitors.slice(0, 100);
         setLocalStats('ipaviet_analytics_visitors', visitors);
 
-        // Phát tín hiệu Real-time cho bảng Admin Dashboard
+        // C. Phát tín hiệu Real-time cho Admin Dashboard
         if (trackerBC) {
           try {
             trackerBC.postMessage({ type: 'visitor_active', visitor: visitorRecord });
           } catch (e) {}
         }
 
-        // Lưu vào Firestore nếu có
+        // D. Lưu vào Firestore (Sử dụng doc ID theo IP để tự động gộp 1 document duy nhất!)
         try {
           if (typeof db !== 'undefined' && db.collection) {
-            db.collection('analytics_visitors').add({
+            const docId = 'ip_' + String(ip).replace(/[^a-zA-Z0-9_]/g, '_');
+            db.collection('analytics_visitors').doc(docId).set({
               ...visitorRecord,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).catch(function () {});
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).catch(function () {});
           }
         } catch (e) {}
 
-        // Gửi ngầm tới Google Sheet Thống Kê Riêng Biệt (GAS)
-        if (ANALYTICS_API_URL) {
+        // E. Gửi ngầm tới Google Sheet Thống Kê (GAS)
+        if (ANALYTICS_API_URL && !isBot) {
           const params = new URLSearchParams({
             action: 'record_analytics',
             type: 'visitor',
@@ -312,21 +442,26 @@
             page: visitorRecord.page,
             referrer: visitorRecord.referrer,
             date: today,
-            isUnique: isNewToday
+            isUnique: isFirstVisitToday ? 'true' : 'false',
+            userEmail: visitorRecord.userEmail || '',
+            userName: visitorRecord.userName || '',
+            userUid: visitorRecord.userUid || '',
+            isMember: visitorRecord.isMember ? 'true' : 'false',
+            visits: String(visitorRecord.visits || 1)
           });
           fetch(`${ANALYTICS_API_URL}?${params.toString()}`, { mode: 'no-cors', keepalive: true }).catch(function () {});
+
+          // Tối ưu thông minh: Chỉ gửi pageview đếm lượt xem khi là IP truy cập mới trong ngày (1 IP = 1 lượt xem chuẩn)
+          if (isFirstVisitToday && !isRapidReload) {
+            const gasUrl = `${ANALYTICS_API_URL}?action=record_analytics&type=pageview&date=${today}&device=${devType}&isUnique=true`;
+            fetch(gasUrl, { mode: 'no-cors', keepalive: true }).catch(function () {});
+          }
         }
       });
-
-      // D. Gửi record_analytics pageview tiêu chuẩn lên GAS
-      if (ANALYTICS_API_URL) {
-        const gasUrl = `${ANALYTICS_API_URL}?action=record_analytics&type=pageview&date=${today}&device=${devType}&isUnique=${isNewToday}`;
-        fetch(gasUrl, { mode: 'no-cors', keepalive: true }).catch(function () {});
-      }
     } catch (err) {}
   }
 
-  // 9. Ghi nhận hành vi click quan tâm chuyên mục / dịch vụ
+  // 11. Ghi nhận hành vi click quan tâm chuyên mục / dịch vụ
   function trackServiceInterest(serviceName, category) {
     if (!serviceName) return;
     try {
@@ -373,7 +508,7 @@
     } catch (e) {}
   }
 
-  // 10. Tự động gắn bộ lắng nghe click cho các chuyên mục trên Web Tổng
+  // 12. Tự động gắn bộ lắng nghe click cho các chuyên mục trên Web Tổng
   function setupAutoTrackers() {
     try {
       document.querySelectorAll('.eco-panel, .header-cta, .cta-btn').forEach(function (el) {
@@ -387,7 +522,40 @@
     } catch (e) {}
   }
 
-  // 11. Heartbeat duy trì trạng thái online mỗi 45 giây
+  // 13. Lắng nghe sự kiện đăng nhập / đăng xuất để tự động cập nhật danh tính IP
+  function setupAuthListener() {
+    try {
+      const handleAuth = function (user) {
+        if (!user) return;
+        const cachedGeo = sessionStorage.getItem('ipaviet_geo');
+        if (cachedGeo) {
+          const g = JSON.parse(cachedGeo);
+          if (g && g.ip) {
+            let visitors = getLocalStats('ipaviet_analytics_visitors', []);
+            const idx = visitors.findIndex(v => v.ip === g.ip);
+            if (idx >= 0) {
+              visitors[idx].userEmail = user.email || '';
+              visitors[idx].userName = user.displayName || (user.email ? user.email.split('@')[0] : 'Thành viên');
+              visitors[idx].userUid = user.uid || '';
+              visitors[idx].isMember = true;
+              setLocalStats('ipaviet_analytics_visitors', visitors);
+              if (trackerBC) {
+                trackerBC.postMessage({ type: 'visitor_active', visitor: visitors[idx] });
+              }
+            }
+          }
+        }
+      };
+
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().onAuthStateChanged(handleAuth);
+      } else if (typeof auth !== 'undefined' && auth.onAuthStateChanged) {
+        auth.onAuthStateChanged(handleAuth);
+      }
+    } catch (e) {}
+  }
+
+  // 14. Heartbeat duy trì trạng thái online mỗi 45 giây
   setInterval(function () {
     try {
       const geoCached = sessionStorage.getItem('ipaviet_geo');
@@ -398,22 +566,25 @@
     } catch (e) {}
   }, 45000);
 
-  // 12. Tự khởi chạy
+  // 15. Tự khởi chạy
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       trackPageViewAndVisitor();
       setupAutoTrackers();
+      setupAuthListener();
     });
   } else {
     trackPageViewAndVisitor();
     setupAutoTrackers();
+    setupAuthListener();
   }
 
-  // 13. Xuất hàm ra window
+  // 16. Xuất hàm ra window
   window.IPAVietTracker = {
     trackPageView: trackPageViewAndVisitor,
     trackServiceInterest: trackServiceInterest,
     getDetailedDeviceInfo: getDetailedDeviceInfo,
-    getTodayDateStr: getTodayDateStr
+    getTodayDateStr: getTodayDateStr,
+    getLoggedInUserInfo: getLoggedInUserInfo
   };
 })();

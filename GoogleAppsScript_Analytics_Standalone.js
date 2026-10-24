@@ -244,12 +244,34 @@ function doGet(e) {
         return output.setContent(JSON.stringify({ success: true, recorded: 'search' }));
       }
 
-      // E. GHI NHẬN THÔNG TIN NGƯỜI XEM & IP (VISITOR LOGS)
+      // E. GHI NHẬN THÔNG TIN NGƯỜI XEM & IP (VISITOR LOGS) - GỘP THEO IP & TÀI KHOẢN
       if (type === 'visitor') {
         var sheetVis = getOrCreateSheet(ss, "Visitor_Logs", [
-          "Thời Gian", "Địa Chỉ IP", "Quốc Gia", "Thành Phố", "Nhà Mạng / ISP", "Thiết Bị", "Model Máy", "Trình Duyệt", "Trang Xem", "Nguồn Referrer"
+          "Thời Gian", "Địa Chỉ IP", "Tài Khoản / Email", "Số Lần Xem", "Quốc Gia", "Thành Phố", "Nhà Mạng / ISP", "Thiết Bị", "Model Máy", "Trình Duyệt", "Trang Xem", "Nguồn Referrer"
         ]);
-        var ip = e.parameter.ip || 'Unknown';
+
+        // Tự động nâng cấp cấu trúc cột nếu là sheet cũ (10 cột)
+        var lastCol = sheetVis.getLastColumn();
+        if (lastCol === 10) {
+          var headerCol3 = String(sheetVis.getRange(1, 3).getValue() || '');
+          if (headerCol3.indexOf('Quốc Gia') !== -1) {
+            sheetVis.insertColumnsAfter(2, 2);
+            sheetVis.getRange(1, 3, 1, 2).setValues([["Tài Khoản / Email", "Số Lần Xem"]]);
+            sheetVis.getRange(1, 3, 1, 2).setFontWeight("bold").setBackground("#f1f5f9");
+          }
+        }
+
+        var ip = String(e.parameter.ip || 'Unknown').trim();
+        var userEmail = String(e.parameter.userEmail || '').trim();
+        var userName = String(e.parameter.userName || '').trim();
+        var isMember = e.parameter.isMember === 'true';
+        var userDisplay = '';
+        if (userEmail) {
+          userDisplay = userName ? (userName + ' (' + userEmail + ')') : userEmail;
+        } else if (userName) {
+          userDisplay = userName;
+        }
+
         var country = e.parameter.country || 'Việt Nam';
         var city = e.parameter.city || '';
         var isp = e.parameter.isp || '';
@@ -258,8 +280,42 @@ function doGet(e) {
         var browser = e.parameter.browser || '';
         var page = e.parameter.page || '';
         var ref = e.parameter.referrer || '';
-        sheetVis.appendRow([nowIso, ip, country, city, isp, dev, devModel, browser, page, ref]);
-        return output.setContent(JSON.stringify({ success: true, recorded: 'visitor' }));
+
+        var lastRow = sheetVis.getLastRow();
+        var foundRow = -1;
+        var existingVisits = 0;
+        var existingUser = '';
+
+        if (lastRow > 1 && ip !== 'Unknown') {
+          var ipColValues = sheetVis.getRange(2, 2, lastRow - 1, 1).getValues();
+          for (var r = 0; r < ipColValues.length; r++) {
+            if (String(ipColValues[r][0]).trim() === ip) {
+              foundRow = r + 2;
+              break;
+            }
+          }
+        }
+
+        if (foundRow > 1) {
+          // IP đã tồn tại: Cập nhật in-place, gộp vào 1 dòng duy nhất
+          existingUser = String(sheetVis.getRange(foundRow, 3).getValue() || '');
+          existingVisits = Number(sheetVis.getRange(foundRow, 4).getValue()) || 1;
+          
+          sheetVis.getRange(foundRow, 1).setValue(nowIso); // Cập nhật giờ hoạt động gần nhất
+          if (userDisplay && (!existingUser || existingUser === 'Khách vãng lai' || isMember)) {
+            sheetVis.getRange(foundRow, 3).setValue(userDisplay);
+          }
+          sheetVis.getRange(foundRow, 4).setValue(existingVisits + 1); // Tăng lượt xem của IP này
+          if (page) sheetVis.getRange(foundRow, 11).setValue(page); // Trang xem mới nhất
+          if (devModel) sheetVis.getRange(foundRow, 9).setValue(devModel);
+          if (browser) sheetVis.getRange(foundRow, 10).setValue(browser);
+        } else {
+          // IP mới: Thêm dòng mới
+          var finalUser = userDisplay || 'Khách vãng lai';
+          sheetVis.appendRow([nowIso, ip, finalUser, 1, country, city, isp, dev, devModel, browser, page, ref]);
+        }
+
+        return output.setContent(JSON.stringify({ success: true, recorded: 'visitor', ip: ip, isExisting: foundRow > 1 }));
       }
     }
 
@@ -359,27 +415,51 @@ function doGet(e) {
         if (searchList.length > 50) searchList = searchList.slice(0, 50);
       }
 
-      // 5. Visitor Logs (50 khách gần nhất)
+      // 5. Visitor Logs (Top 60 khách theo IP, kèm tài khoản & số lượt xem)
       var sVis = ss.getSheetByName("Visitor_Logs");
       var visitorsList = [];
-      if (sVis) {
+      if (sVis && sVis.getLastRow() > 1) {
         var vVals = sVis.getDataRange().getValues();
-        var startV = Math.max(1, vVals.length - 50);
+        var headers = vVals[0] || [];
+        var hasUserCol = String(headers[2] || '').indexOf('Tài Khoản') !== -1;
+        var startV = Math.max(1, vVals.length - 60);
         for (var vi = vVals.length - 1; vi >= startV; vi--) {
           var vRow = vVals[vi];
           if (vRow[1]) {
-            visitorsList.push({
-              time: String(vRow[0] || ''),
-              ip: String(vRow[1]),
-              country: String(vRow[2] || 'Việt Nam'),
-              city: String(vRow[3] || ''),
-              isp: String(vRow[4] || ''),
-              deviceType: String(vRow[5] || 'other'),
-              deviceModel: String(vRow[6] || ''),
-              browser: String(vRow[7] || ''),
-              page: String(vRow[8] || 'Trang Chủ'),
-              referrer: String(vRow[9] || 'Trực tiếp')
-            });
+            if (hasUserCol) {
+              var uAcc = String(vRow[2] || '');
+              visitorsList.push({
+                time: String(vRow[0] || ''),
+                ip: String(vRow[1]),
+                userEmail: uAcc,
+                isMember: uAcc !== '' && uAcc !== 'Khách vãng lai',
+                visits: Number(vRow[3]) || 1,
+                country: String(vRow[4] || 'Việt Nam'),
+                city: String(vRow[5] || ''),
+                isp: String(vRow[6] || ''),
+                deviceType: String(vRow[7] || 'other'),
+                deviceModel: String(vRow[8] || ''),
+                browser: String(vRow[9] || ''),
+                page: String(vRow[10] || 'Trang Chủ'),
+                referrer: String(vRow[11] || 'Trực tiếp')
+              });
+            } else {
+              visitorsList.push({
+                time: String(vRow[0] || ''),
+                ip: String(vRow[1]),
+                userEmail: '',
+                isMember: false,
+                visits: 1,
+                country: String(vRow[2] || 'Việt Nam'),
+                city: String(vRow[3] || ''),
+                isp: String(vRow[4] || ''),
+                deviceType: String(vRow[5] || 'other'),
+                deviceModel: String(vRow[6] || ''),
+                browser: String(vRow[7] || ''),
+                page: String(vRow[8] || 'Trang Chủ'),
+                referrer: String(vRow[9] || 'Trực tiếp')
+              });
+            }
           }
         }
       }
