@@ -147,7 +147,7 @@
           <i data-lucide="layout-dashboard" class="w-4 h-4 mr-3"></i> Tổng Quan
         </button>
         <button onclick="switchTab('analytics')" id="nav-analytics" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
-          <i data-lucide="bar-chart-3" class="w-4 h-4 mr-3"></i> Doanh Thu & Số Liệu
+          <i data-lucide="bar-chart-3" class="w-4 h-4 mr-3"></i> Thống Kê & Hành Vi
         </button>
       </div>
 
@@ -348,6 +348,183 @@
               <p class="text-center py-8 text-xs text-gray-400">Chưa có nhật ký hoạt động mới.</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ================= TAB: ANALYTICS & USER HABITS ================= -->
+      <div id="tab-analytics" class="hidden max-w-6xl mx-auto space-y-6">
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-[#0f172a] rounded-3xl p-6 md:p-8 text-white shadow-apple flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span class="text-xs font-bold text-cyan-300 uppercase tracking-widest">Real-time Analytics & User Habits</span>
+            </div>
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Thống Kê Kho IPA & Hành Vi Người Dùng</h2>
+            <p class="text-white/70 text-xs md:text-sm mt-1">Theo dõi lượt xem, tải ứng dụng nhiều nhất và xu hướng tìm kiếm thực tế của khách hàng.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="loadAppAnalytics(true)" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 backdrop-blur-md border border-white/10">
+              <i data-lucide="refresh-cw" id="analyticsRefreshIcon" class="w-3.5 h-3.5"></i> Làm Mới Dữ Liệu
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Stat Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Lượt Xem Hôm Nay</span>
+              <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <h3 class="text-2xl font-extrabold text-gray-900" id="statTodayViews">0</h3>
+            <span class="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1" id="statTodayUniques">
+              <i data-lucide="user-check" class="w-3 h-3"></i> 0 khách riêng biệt
+            </span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Lượt Tải Hôm Nay</span>
+              <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i data-lucide="download-cloud" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <h3 class="text-2xl font-extrabold text-emerald-600" id="statTodayDownloads">0</h3>
+            <span class="text-[11px] text-gray-400 mt-1 block">Tải IPA trong ngày</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tổng Tải Toàn Sàn</span>
+              <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                <i data-lucide="hard-drive" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <h3 class="text-2xl font-extrabold text-purple-600" id="statTotalDownloads">0</h3>
+            <span class="text-[11px] text-gray-400 mt-1 block" id="statTotalTrackedApps">0 app đã ghi nhận</span>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Top #1 Vua Tải</span>
+              <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <i data-lucide="trophy" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <h3 class="text-base font-extrabold text-gray-900 truncate" id="statTopAppName">Đang tải...</h3>
+            <span class="text-[11px] text-amber-600 font-bold mt-1 block" id="statTopAppCount">0 lượt tải</span>
+          </div>
+        </div>
+
+        <!-- Device & Platform Breakdown Bar -->
+        <div class="bg-white rounded-2xl p-4 border border-black/[0.06] shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2 font-bold text-gray-700">
+            <i data-lucide="smartphone" class="w-4 h-4 text-appleBlue"></i>
+            <span>Thiết Bị Truy Cập Hôm Nay:</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-3" id="deviceStatsContainer">
+            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
+              <i data-lucide="apple" class="w-3.5 h-3.5 text-gray-900"></i> iOS: <b id="statDevIos">0</b>
+            </span>
+            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
+              <i data-lucide="bot" class="w-3.5 h-3.5 text-emerald-600"></i> Android: <b id="statDevAndroid">0</b>
+            </span>
+            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
+              <i data-lucide="laptop" class="w-3.5 h-3.5 text-gray-700"></i> Mac: <b id="statDevMac">0</b>
+            </span>
+            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
+              <i data-lucide="monitor" class="w-3.5 h-3.5 text-blue-600"></i> Windows: <b id="statDevWindows">0</b>
+            </span>
+            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
+              Khác: <b id="statDevOther">0</b>
+            </span>
+          </div>
+        </div>
+
+        <!-- Main 2-Column Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          <!-- Column Left: Top Downloaded Apps Leaderboard (7 cols) -->
+          <div class="lg:col-span-7 space-y-4">
+            <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-3">
+                <div>
+                  <h3 class="font-extrabold text-sm md:text-base text-gray-900 flex items-center gap-2">
+                    <i data-lucide="flame" class="w-5 h-5 text-rose-500"></i> Bảng Xếp Hạng App Tải Nhiều Nhất
+                  </h3>
+                  <p class="text-xs text-gray-400 mt-0.5">Xếp hạng theo số lần người dùng nhấn tải trực tiếp</p>
+                </div>
+                <div class="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl text-xs font-semibold">
+                  <button id="btnSortDownloads" onclick="setAppSort('downloads')" class="px-3 py-1 bg-white text-gray-800 rounded-lg shadow-sm">Tải Nhiều Nhất</button>
+                  <button id="btnSortViews" onclick="setAppSort('views')" class="px-3 py-1 text-gray-500 hover:text-gray-800 rounded-lg transition">Xem Nhiều Nhất</button>
+                </div>
+              </div>
+
+              <!-- Top Apps Table -->
+              <div class="overflow-x-auto mt-3">
+                <table class="w-full text-left text-xs text-gray-600">
+                  <thead>
+                    <tr class="text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                      <th class="py-3 px-2 w-12 text-center">Hạng</th>
+                      <th class="py-3 px-3">Ứng Dụng</th>
+                      <th class="py-3 px-3 text-right">Lượt Tải</th>
+                      <th class="py-3 px-3 text-right">Lượt Xem</th>
+                      <th class="py-3 px-3 text-right">Tỷ Lệ Tải</th>
+                    </tr>
+                  </thead>
+                  <tbody id="analyticsAppTableBody" class="divide-y divide-gray-50">
+                    <tr>
+                      <td colspan="5" class="text-center py-8 text-gray-400">
+                        <div class="flex flex-col items-center justify-center gap-2">
+                          <i data-lucide="loader" class="w-5 h-5 animate-spin text-appleBlue"></i>
+                          <span>Đang tổng hợp dữ liệu...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column Right: Top Searches & Recent Downloads (5 cols) -->
+          <div class="lg:col-span-5 space-y-6">
+            
+            <!-- Top Searches Card -->
+            <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm">
+              <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                <div>
+                  <h3 class="font-extrabold text-sm md:text-base text-gray-900 flex items-center gap-2">
+                    <i data-lucide="search" class="w-4 h-4 text-appleBlue"></i> Từ Khóa Tìm Kiếm Hot
+                  </h3>
+                  <p class="text-xs text-gray-400 mt-0.5">Nhu cầu thực tế khách tìm trên thanh Search</p>
+                </div>
+                <span class="text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full" id="searchKeywordsTotal">0 từ</span>
+              </div>
+              <div id="analyticsSearchList" class="space-y-3 mt-4">
+                <p class="text-center py-6 text-xs text-gray-400">Chưa có dữ liệu tìm kiếm.</p>
+              </div>
+            </div>
+
+            <!-- Recent Downloads Stream -->
+            <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm">
+              <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                  <h3 class="font-extrabold text-sm md:text-base text-gray-900">Hoạt Động Tải Gần Đây</h3>
+                </div>
+                <span class="text-[11px] text-gray-400 font-medium">Real-time</span>
+              </div>
+              <div id="analyticsRecentDownloadsList" class="space-y-3 mt-4 max-h-[380px] overflow-y-auto pr-1">
+                <p class="text-center py-6 text-xs text-gray-400">Chưa có lượt tải nào gần đây.</p>
+              </div>
+            </div>
+
+          </div>
+
         </div>
       </div>
 
@@ -1441,6 +1618,13 @@
         startAdminChatPolling();
       } catch(chatErr) {
         console.warn("Support chats fetch warning:", chatErr);
+      }
+
+      // 7. Fetch IPA & User Habit Analytics
+      try {
+        await loadAppAnalytics(false);
+      } catch(analyticsErr) {
+        console.warn("App analytics fetch warning:", analyticsErr);
       }
 
       updateDashboardMetrics();
@@ -2557,7 +2741,7 @@
       if (currentNav) currentNav.className = "w-full flex items-center px-3.5 py-2.5 rounded-xl font-bold bg-appleBlue/10 text-appleBlue transition";
 
       const titleMap = {
-        dashboard: 'Tổng Quan', analytics: 'Phân Tích Doanh Thu', mmo_orders: 'Đơn Hàng Mall',
+        dashboard: 'Tổng Quan', analytics: 'Thống Kê Kho IPA & Hành Vi Người Dùng', mmo_orders: 'Đơn Hàng Mall',
         mmo_products: 'Kho Sản Phẩm', mmo_categories: 'Quản Lý Danh Mục', mmo_dealhot: 'Deal Hot Banner',
         users: 'Khách Hàng', transactions: 'Lịch Sử Nạp Tiền', shortcuts: 'Kho Phím Tắt',
         ai_knowledge: 'Tri Thức AI', audit: 'Nhật Ký Hoạt Động', system_settings: 'Cài Đặt Hệ Thống',
@@ -2568,6 +2752,10 @@
       if (tabId === 'support_chat') {
         fetchSupportChats(false);
         startAdminChatPolling();
+      }
+
+      if (tabId === 'analytics') {
+        loadAppAnalytics(false);
       }
 
       if (window.innerWidth < 768) toggleSidebar(false);
@@ -2607,6 +2795,7 @@
 
     const COMMAND_ITEMS = [
       { label: 'Tổng Quan Hệ Thống', action: () => switchTab('dashboard'), category: 'Điều Hướng' },
+      { label: 'Thống Kê Kho IPA & Hành Vi', action: () => switchTab('analytics'), category: 'Điều Hướng' },
       { label: 'Chat Hỗ Trợ Khách Hàng', action: () => switchTab('support_chat'), category: 'Điều Hướng' },
       { label: 'Duyệt Đơn Hàng Mall', action: () => switchTab('mmo_orders'), category: 'Điều Hướng' },
       { label: 'Quản Lý Kho Sản Phẩm', action: () => switchTab('mmo_products'), category: 'Điều Hướng' },
@@ -3175,6 +3364,271 @@
 
     function closeActionModal() {
       document.getElementById('actionModal').classList.add('hidden');
+    }
+
+    // ==========================================
+    // 16. IPA ANALYTICS & USER HABIT TRACKING
+    // ==========================================
+    function getTodayDateStr() {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function timeAgo(timestamp) {
+      if (!timestamp) return 'Vừa xong';
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+      if (seconds < 60) return 'Vừa xong';
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}p trước`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h trước`;
+      const days = Math.floor(hours / 24);
+      return `${days} ngày trước`;
+    }
+
+    let appAnalyticsCache = {
+      apps: [],
+      currentSort: 'downloads'
+    };
+
+    async function loadAppAnalytics(isManualRefresh = false) {
+      const icon = document.getElementById('analyticsRefreshIcon');
+      if (icon) icon.classList.add('animate-spin');
+
+      try {
+        const todayStr = getTodayDateStr();
+
+        // 1. Fetch Today's Daily Stats
+        try {
+          const dailyDoc = await db.collection("analytics_daily").doc(todayStr).get();
+          if (dailyDoc.exists) {
+            const d = dailyDoc.data();
+            document.getElementById('statTodayViews').innerText = (d.pageviews || 0).toLocaleString();
+            document.getElementById('statTodayUniques').innerHTML = `<i data-lucide="user-check" class="w-3 h-3"></i> ${(d.uniqueVisitors || 0).toLocaleString()} khách riêng biệt`;
+            document.getElementById('statTodayDownloads').innerText = (d.downloads || 0).toLocaleString();
+
+            const devs = d.devices || {};
+            document.getElementById('statDevIos').innerText = (devs.ios || 0).toLocaleString();
+            document.getElementById('statDevAndroid').innerText = (devs.android || 0).toLocaleString();
+            document.getElementById('statDevMac').innerText = (devs.mac || 0).toLocaleString();
+            document.getElementById('statDevWindows').innerText = (devs.windows || 0).toLocaleString();
+            document.getElementById('statDevOther').innerText = (devs.other || 0).toLocaleString();
+          } else {
+            document.getElementById('statTodayViews').innerText = "0";
+            document.getElementById('statTodayUniques').innerHTML = `<i data-lucide="user-check" class="w-3 h-3"></i> 0 khách riêng biệt`;
+            document.getElementById('statTodayDownloads').innerText = "0";
+            document.getElementById('statDevIos').innerText = "0";
+            document.getElementById('statDevAndroid').innerText = "0";
+            document.getElementById('statDevMac').innerText = "0";
+            document.getElementById('statDevWindows').innerText = "0";
+            document.getElementById('statDevOther').innerText = "0";
+          }
+        } catch (e) {
+          console.warn("Could not load daily stats", e);
+        }
+
+        // 2. Fetch Apps Analytics
+        try {
+          const appsSnap = await db.collection("analytics_apps").get();
+          const appsList = [];
+          let totalDownloads = 0;
+          appsSnap.forEach(doc => {
+            const data = doc.data();
+            const dl = data.downloads || 0;
+            const vw = data.views || 0;
+            totalDownloads += dl;
+            appsList.push({ id: doc.id, ...data, downloads: dl, views: vw });
+          });
+
+          appAnalyticsCache.apps = appsList;
+          document.getElementById('statTotalDownloads').innerText = totalDownloads.toLocaleString();
+          document.getElementById('statTotalTrackedApps').innerText = `${appsList.length} app đã ghi nhận`;
+
+          renderAnalyticsAppTable();
+        } catch (e) {
+          console.warn("Could not load apps stats", e);
+        }
+
+        // 3. Fetch Top Searches
+        try {
+          const searchSnap = await db.collection("analytics_searches").orderBy("count", "desc").limit(10).get();
+          const searchListEl = document.getElementById('analyticsSearchList');
+          const totalSearchEl = document.getElementById('searchKeywordsTotal');
+          if (searchSnap.empty) {
+            searchListEl.innerHTML = `<p class="text-center py-6 text-xs text-gray-400">Chưa có từ khóa nào được tìm kiếm.</p>`;
+            if (totalSearchEl) totalSearchEl.innerText = `0 từ`;
+          } else {
+            let maxCount = 1;
+            searchSnap.forEach(d => {
+              const c = d.data().count || 0;
+              if (c > maxCount) maxCount = c;
+            });
+
+            if (totalSearchEl) totalSearchEl.innerText = `${searchSnap.size} từ hot`;
+
+            let html = '';
+            let idx = 0;
+            searchSnap.forEach(doc => {
+              const data = doc.data();
+              const count = data.count || 0;
+              const pct = Math.min(100, Math.round((count / maxCount) * 100));
+              html += `
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2 truncate">
+                      <span class="w-4 text-gray-400 font-bold text-center text-[11px]">#${idx + 1}</span>
+                      <span class="font-bold text-gray-800 truncate">${data.query || doc.id}</span>
+                    </div>
+                    <span class="font-extrabold text-appleBlue text-[11px]">${count.toLocaleString()} lượt</span>
+                  </div>
+                  <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-appleBlue h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                  </div>
+                </div>`;
+              idx++;
+            });
+            searchListEl.innerHTML = html;
+          }
+        } catch (e) {
+          console.warn("Could not load searches", e);
+        }
+
+        // 4. Fetch Recent Downloads Feed
+        try {
+          const recentSnap = await db.collection("analytics_recent_downloads").orderBy("timestamp", "desc").limit(20).get();
+          const recentListEl = document.getElementById('analyticsRecentDownloadsList');
+          if (recentSnap.empty) {
+            recentListEl.innerHTML = `<p class="text-center py-6 text-xs text-gray-400">Chưa có lượt tải nào gần đây.</p>`;
+          } else {
+            let html = '';
+            recentSnap.forEach(doc => {
+              const item = doc.data();
+              const typeBadge = item.type === 'VIP' 
+                ? 'bg-amber-100 text-amber-700' 
+                : (item.type && item.type.includes('Xu') ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600');
+              html += `
+                <div class="flex items-center justify-between p-2.5 rounded-2xl bg-gray-50/80 hover:bg-gray-100/80 transition">
+                  <div class="flex items-center gap-2.5 overflow-hidden">
+                    <img src="${item.icon || 'https://placehold.co/40x40/f3f4f6/333?text=IPA'}" class="w-8 h-8 rounded-xl object-cover border border-black/[0.04] shrink-0" onerror="this.src='https://placehold.co/40x40/f3f4f6/333?text=IPA'">
+                    <div class="truncate">
+                      <div class="flex items-center gap-1.5 truncate">
+                        <p class="font-bold text-xs text-gray-900 truncate">${item.appName || 'Ứng dụng'}</p>
+                        ${item.isMod ? '<span class="px-1 py-0.2 text-[8px] font-black rounded bg-emerald-100 text-emerald-700">MOD</span>' : ''}
+                      </div>
+                      <p class="text-[10px] text-gray-400 truncate">${item.userEmail || 'Khách vãng lai'}</p>
+                    </div>
+                  </div>
+                  <div class="text-right shrink-0 ml-2">
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${typeBadge}">${item.type || 'Free'}</span>
+                    <p class="text-[9px] text-gray-400 mt-0.5">${timeAgo(item.timestamp)}</p>
+                  </div>
+                </div>`;
+            });
+            recentListEl.innerHTML = html;
+          }
+        } catch (e) {
+          console.warn("Could not load recent downloads", e);
+        }
+
+        if (isManualRefresh && typeof showToast === 'function') {
+          showToast('Đã làm mới dữ liệu thống kê!', 'success');
+        }
+      } catch (err) {
+        console.error("loadAppAnalytics error:", err);
+      } finally {
+        if (icon) icon.classList.remove('animate-spin');
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function setAppSort(sortBy) {
+      appAnalyticsCache.currentSort = sortBy;
+      const btnDl = document.getElementById('btnSortDownloads');
+      const btnVw = document.getElementById('btnSortViews');
+      if (sortBy === 'downloads') {
+        if (btnDl) btnDl.className = "px-3 py-1 bg-white text-gray-800 rounded-lg shadow-sm";
+        if (btnVw) btnVw.className = "px-3 py-1 text-gray-500 hover:text-gray-800 rounded-lg transition";
+      } else {
+        if (btnVw) btnVw.className = "px-3 py-1 bg-white text-gray-800 rounded-lg shadow-sm";
+        if (btnDl) btnDl.className = "px-3 py-1 text-gray-500 hover:text-gray-800 rounded-lg transition";
+      }
+      renderAnalyticsAppTable();
+    }
+
+    function renderAnalyticsAppTable() {
+      const tbody = document.getElementById('analyticsAppTableBody');
+      if (!tbody) return;
+
+      const apps = [...appAnalyticsCache.apps];
+      const sortBy = appAnalyticsCache.currentSort || 'downloads';
+
+      apps.sort((a, b) => (b[sortBy] || 0) - (a[sortBy] || 0));
+
+      if (apps.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-400">Chưa ghi nhận dữ liệu ứng dụng nào được xem hoặc tải.</td></tr>`;
+        document.getElementById('statTopAppName').innerText = "Chưa có";
+        document.getElementById('statTopAppCount').innerText = "0 lượt tải";
+        return;
+      }
+
+      // Set Top #1 App in KPI card
+      const topApp = apps[0];
+      document.getElementById('statTopAppName').innerText = topApp.name || "Chưa có";
+      document.getElementById('statTopAppCount').innerText = `${(topApp.downloads || 0).toLocaleString()} lượt tải`;
+
+      const maxDl = Math.max(1, ...apps.map(a => a.downloads || 0));
+
+      let html = '';
+      apps.slice(0, 30).forEach((app, idx) => {
+        let rankBadge = `<span class="w-6 h-6 rounded-full bg-gray-100 text-gray-500 font-bold text-xs flex items-center justify-center">#${idx + 1}</span>`;
+        if (idx === 0) rankBadge = `<span class="w-6 h-6 rounded-full bg-amber-100 text-amber-700 font-black text-xs flex items-center justify-center ring-2 ring-amber-300">1</span>`;
+        else if (idx === 1) rankBadge = `<span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center ring-2 ring-slate-300">2</span>`;
+        else if (idx === 2) rankBadge = `<span class="w-6 h-6 rounded-full bg-orange-100 text-orange-700 font-black text-xs flex items-center justify-center ring-2 ring-orange-300">3</span>`;
+
+        const dlPct = Math.min(100, Math.round(((app.downloads || 0) / maxDl) * 100));
+        const views = app.views || 0;
+        const downloads = app.downloads || 0;
+        const convRate = views > 0 ? ((downloads / views) * 100).toFixed(1) : (downloads > 0 ? '100.0' : '0.0');
+
+        html += `
+          <tr class="hover:bg-gray-50/70 transition">
+            <td class="py-3 px-2 text-center">${rankBadge}</td>
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-3">
+                <img src="${app.icon || 'https://placehold.co/40x40/f3f4f6/333?text=IPA'}" class="w-9 h-9 rounded-xl object-cover shrink-0 border border-gray-100 shadow-xs" onerror="this.src='https://placehold.co/40x40/f3f4f6/333?text=IPA'">
+                <div class="truncate max-w-[200px]">
+                  <div class="flex items-center gap-1.5 truncate">
+                    <span class="font-bold text-gray-900 truncate">${app.name || 'Ứng dụng'}</span>
+                    ${app.isMod ? '<span class="px-1.5 py-0.5 text-[8px] font-black rounded bg-emerald-100 text-emerald-700 uppercase">MOD</span>' : ''}
+                    ${app.isVip ? '<span class="px-1.5 py-0.5 text-[8px] font-black rounded bg-amber-100 text-amber-700 uppercase">VIP</span>' : ''}
+                  </div>
+                  <p class="text-[10px] text-gray-400 truncate">${app.category || app.bundleId || 'Tiện ích'}</p>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-right">
+              <div class="font-extrabold text-gray-900">${downloads.toLocaleString()}</div>
+              <div class="w-16 bg-gray-100 rounded-full h-1 ml-auto overflow-hidden mt-1">
+                <div class="bg-emerald-500 h-full rounded-full" style="width: ${dlPct}%"></div>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-right font-bold text-gray-700">
+              ${views.toLocaleString()}
+            </td>
+            <td class="py-3 px-3 text-right">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${parseFloat(convRate) >= 15 ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'}">
+                ${convRate}%
+              </span>
+            </td>
+          </tr>`;
+      });
+
+      tbody.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
     }
 
     // DOM Ready Initialization

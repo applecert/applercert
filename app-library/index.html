@@ -562,6 +562,124 @@ auth.onAuthStateChanged(user => {
   }
 });
 
+/* ─── Client Analytics & Habit Tracking ─── */
+function getTodayDateStr() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getDeviceType() {
+  const ua = navigator.userAgent || '';
+  if (/iPad|iPhone|iPod/.test(ua)) return 'ios';
+  if (/Android/.test(ua)) return 'android';
+  if (/Macintosh|Mac OS X/.test(ua)) return 'mac';
+  if (/Windows/.test(ua)) return 'windows';
+  return 'other';
+}
+
+function recordPageView() {
+  try {
+    const today = getTodayDateStr();
+    const devType = getDeviceType();
+    const isNewToday = localStorage.getItem('ipaviet_pv_date') !== today;
+
+    const updateData = {
+      date: today,
+      pageviews: firebase.firestore.FieldValue.increment(1),
+      [`devices.${devType}`]: firebase.firestore.FieldValue.increment(1),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if (isNewToday) {
+      updateData.uniqueVisitors = firebase.firestore.FieldValue.increment(1);
+      localStorage.setItem('ipaviet_pv_date', today);
+    }
+    db.collection("analytics_daily").doc(today).set(updateData, { merge: true }).catch(() => {});
+  } catch (e) {}
+}
+
+function recordAppView(app) {
+  if (!app) return;
+  try {
+    const rawKey = (app.bundleIdentifier || app.bundleId || app.id || app.name || 'app').toLowerCase();
+    const docId = rawKey.replace(/[^a-z0-9_-]/g, '_').substring(0, 80) || 'app_default';
+    const today = getTodayDateStr();
+
+    db.collection("analytics_apps").doc(docId).set({
+      name: app.name || app.title || 'Ứng dụng',
+      bundleId: app.bundleIdentifier || app.bundleId || '',
+      icon: app.icon || app.iconUrl || '',
+      category: app.category || 'Tiện ích',
+      isMod: !!app.isMod,
+      isVip: !!app.isVip,
+      views: firebase.firestore.FieldValue.increment(1),
+      lastViewedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
+
+    db.collection("analytics_daily").doc(today).set({
+      appViews: firebase.firestore.FieldValue.increment(1),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
+  } catch (e) {}
+}
+
+function recordAppDownload(app, downloadType) {
+  if (!app) return;
+  try {
+    const rawKey = (app.bundleIdentifier || app.bundleId || app.id || app.name || 'app').toLowerCase();
+    const docId = rawKey.replace(/[^a-z0-9_-]/g, '_').substring(0, 80) || 'app_default';
+    const today = getTodayDateStr();
+
+    db.collection("analytics_apps").doc(docId).set({
+      name: app.name || app.title || 'Ứng dụng',
+      bundleId: app.bundleIdentifier || app.bundleId || '',
+      icon: app.icon || app.iconUrl || '',
+      category: app.category || 'Tiện ích',
+      isMod: !!app.isMod,
+      isVip: !!app.isVip,
+      downloads: firebase.firestore.FieldValue.increment(1),
+      lastDownloadedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
+
+    db.collection("analytics_daily").doc(today).set({
+      downloads: firebase.firestore.FieldValue.increment(1),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
+
+    db.collection("analytics_recent_downloads").add({
+      appName: app.name || app.title || 'Ứng dụng',
+      bundleId: app.bundleIdentifier || app.bundleId || '',
+      icon: app.icon || app.iconUrl || '',
+      isMod: !!app.isMod,
+      isVip: !!app.isVip,
+      type: downloadType || 'Free',
+      userEmail: (currentUser && currentUser.email) ? currentUser.email : 'Khách vãng lai',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(() => {});
+  } catch (e) {}
+}
+
+let searchAnalyticsTimer = null;
+function recordSearchQuery(query) {
+  clearTimeout(searchAnalyticsTimer);
+  if (!query) return;
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return;
+
+  searchAnalyticsTimer = setTimeout(() => {
+    try {
+      const docId = q.replace(/[^a-z0-9_\u00C0-\u024F\u1E00-\u1EFF]/gi, '_').substring(0, 60) || 'search';
+      db.collection("analytics_searches").doc(docId).set({
+        query: query.trim(),
+        count: firebase.firestore.FieldValue.increment(1),
+        lastSearchedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch(() => {});
+    } catch (e) {}
+  }, 1000);
+}
+
 /* ─── 20 IPA Repositories (Curated, SideStore, Vietnamese & TrollStore) ─── */
 const SOURCES_CONFIG = [
   // 1. Kho Tuyển chọn & VIP (Curated & FastSign)
@@ -1323,9 +1441,10 @@ function changePage(p) {
   window.scrollTo({ top: 350, behavior: 'smooth' });
 }
 
-document.getElementById('searchInput').addEventListener('input', () => {
+document.getElementById('searchInput').addEventListener('input', (e) => {
   STATE.currentPage = 1;
   renderContent();
+  recordSearchQuery(e.target.value);
 });
 
 /* ─── App Detail View ─── */
@@ -1333,6 +1452,7 @@ function openAppView(appId) {
   const i = window.allAppsMap[appId];
   if (!i) return;
   STATE.currentItem = i;
+  recordAppView(i);
 
   let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA';
   const heroBg = document.getElementById('detailHeroBg');
@@ -1703,7 +1823,10 @@ async function downloadVipApp(btnEl) {
   btnEl.disabled = true;
   try {
     const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-    if (rawLink) { window.location.href = rawLink; }
+    if (rawLink) {
+      recordAppDownload(STATE.currentItem, 'VIP');
+      window.location.href = rawLink;
+    }
     else { showToast("Không tìm thấy link tải"); }
   } catch (error) { showToast("Lỗi kết nối"); }
   setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
@@ -1725,6 +1848,7 @@ async function buyAppWithCoins(btnEl) {
     if (rawLink) {
       await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-APP_PRICE) }, { merge: true });
       await db.collection("users").doc(currentUser.uid).collection("transactions").add({ amount: -APP_PRICE, desc: `Tải lẻ: ${appName}`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+      recordAppDownload(STATE.currentItem, 'Xu (1000đ)');
       showToast(`Đã thanh toán ${APP_PRICE.toLocaleString()}đ`);
       window.location.href = rawLink;
     } else { showToast("Không tìm thấy link tải"); }
@@ -1740,7 +1864,10 @@ async function downloadFreeStore(btnEl) {
   try {
     const res = await fetch(GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(btoa(rawLink)));
     const data = await res.json();
-    if (data.success && data.link) { window.location.href = data.link; }
+    if (data.success && data.link) {
+      recordAppDownload(STATE.currentItem, 'Free Ads');
+      window.location.href = data.link;
+    }
     else { showToast("Hệ thống rút gọn link đang quá tải"); }
   } catch (error) { showToast("Lỗi kết nối máy chủ"); }
   btnEl.innerHTML = originalText;
@@ -1906,6 +2033,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   loadData();
+  recordPageView();
 });
 
 // Keyboard shortcuts
