@@ -581,9 +581,9 @@ function doGet(e) {
     }
 
     // -------------------------------------------------------------
-    // ACTION 4: RÚT GỌN LINK TẢI FREE BẰNG LINK4M (VƯỢT LINK BẮT BUỘC)
+    // ACTION 4: RÚT GỌN LINK TẢI FREE (HỖ TRỢ YEUMONEY, LINK4M, V.V.)
     // -------------------------------------------------------------
-    if (action === 'get_free_link' || action === 'shorten_link4m') {
+    if (action === 'get_free_link' || action === 'shorten_link' || action === 'shorten_link4m') {
       var rawTargetUrl = e.parameter.url || '';
       if (!rawTargetUrl) {
         return output.setContent(JSON.stringify({ success: false, message: "Thiếu URL cần rút gọn" }));
@@ -595,32 +595,58 @@ function doGet(e) {
         }
       } catch (e) {}
 
-      var apiToken = "691eb05d63b1b86d4a3bca1e";
-      var apiUrl = "https://link4m.co/api-shorten/v2?api=" + encodeURIComponent(apiToken) + "&url=" + encodeURIComponent(targetUrl);
+      var provider = String(e.parameter.provider || 'yeumoney').toLowerCase().trim();
+      var apiToken = e.parameter.token || '';
       var shortened = null;
 
-      try {
-        var response = UrlFetchApp.fetch(apiUrl, {
-          method: "GET",
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-          },
-          muteHttpExceptions: true
-        });
-        var resText = response.getContentText();
-        var json = JSON.parse(resText);
-        if (json && json.status === "success" && json.shortenedUrl) {
-          shortened = json.shortenedUrl;
-        }
-      } catch (err) {}
+      if (provider === 'yeumoney') {
+        apiToken = apiToken || "f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb";
+        var ymApiUrl = "https://yeumoney.com/QL_api.php?token=" + encodeURIComponent(apiToken) + "&format=json&url=" + encodeURIComponent(targetUrl);
+        try {
+          var response = UrlFetchApp.fetch(ymApiUrl, {
+            method: "GET",
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            },
+            muteHttpExceptions: true
+          });
+          var resText = response.getContentText();
+          var json = JSON.parse(resText);
+          if (json && json.status === "success" && json.shortenedUrl) {
+            shortened = json.shortenedUrl;
+          }
+        } catch (err) {}
 
-      // Nếu API tạm bận hoặc timeout, dùng ngay cổng chuyển hướng QuickLink trực tiếp của Link4m:
-      if (!shortened) {
-        shortened = "https://link4m.co/st?api=" + encodeURIComponent(apiToken) + "&url=" + encodeURIComponent(targetUrl);
+        if (!shortened) {
+          shortened = "https://yeumoney.com/QL_api.php?token=" + encodeURIComponent(apiToken) + "&url=" + encodeURIComponent(targetUrl);
+        }
+      } else {
+        // Link4m
+        apiToken = apiToken || "691eb05d63b1b86d4a3bca1e";
+        var l4mApiUrl = "https://link4m.co/api-shorten/v2?api=" + encodeURIComponent(apiToken) + "&url=" + encodeURIComponent(targetUrl);
+        try {
+          var response = UrlFetchApp.fetch(l4mApiUrl, {
+            method: "GET",
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            },
+            muteHttpExceptions: true
+          });
+          var resText = response.getContentText();
+          var json = JSON.parse(resText);
+          if (json && json.status === "success" && json.shortenedUrl) {
+            shortened = json.shortenedUrl;
+          }
+        } catch (err) {}
+
+        if (!shortened) {
+          shortened = "https://link4m.co/st?api=" + encodeURIComponent(apiToken) + "&url=" + encodeURIComponent(targetUrl);
+        }
       }
 
       return output.setContent(JSON.stringify({
         success: true,
+        provider: provider,
         shortenedUrl: shortened,
         link: shortened
       }));

@@ -510,8 +510,24 @@ const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW
 // PHƯƠNG ÁN 2: URL Web App Google Sheet Thống Kê Riêng Biệt (Không đụng chạm hệ thống nạp tiền)
 const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || 'https://script.google.com/macros/s/AKfycbyx3HSoUoQFWBGgPxkPJME_Qj0w8ltzLTmrFhUpkODdnlRK8r_-a45PCy9rU0dlS9SZ/exec';
 
-// CẤU HÌNH VƯỢT LINK LINK4M CHO KHÁCH TẢI FREE (CHỐNG LỖ HỔNG TẢI CHÙA)
-const LINK4M_API_TOKEN = '691eb05d63b1b86d4a3bca1e';
+// CẤU HÌNH VƯỢT LINK TẢI FREE (ĐỒNG BỘ THỜI GIAN THỰC VỚI ADMIN)
+const DEFAULT_SHORTENER_CONFIG = {
+  enabled: true,
+  provider: 'yeumoney', // 'yeumoney' | 'link4m' | 'custom'
+  yeumoney_token: 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
+  link4m_token: '691eb05d63b1b86d4a3bca1e',
+  custom_api_template: '',
+  custom_token: ''
+};
+
+let SHORTENER_CONFIG = (function() {
+  try {
+    const saved = localStorage.getItem('ipaviet_shortener_config');
+    return saved ? Object.assign({}, DEFAULT_SHORTENER_CONFIG, JSON.parse(saved)) : DEFAULT_SHORTENER_CONFIG;
+  } catch(e) {
+    return DEFAULT_SHORTENER_CONFIG;
+  }
+})();
 
 const firebaseConfig = {
   apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
@@ -524,6 +540,20 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Tự động lắng nghe thay đổi cấu hình cổng vượt link từ Admin theo thời gian thực (Firestore)
+try {
+  if (typeof db !== 'undefined') {
+    db.collection('system_config').doc('shortener_settings').onSnapshot(doc => {
+      if (doc && doc.exists) {
+        const data = doc.data();
+        SHORTENER_CONFIG = Object.assign({}, DEFAULT_SHORTENER_CONFIG, data);
+        localStorage.setItem('ipaviet_shortener_config', JSON.stringify(SHORTENER_CONFIG));
+        console.log("Cổng vượt link đã cập nhật từ Admin:", SHORTENER_CONFIG.provider);
+      }
+    });
+  }
+} catch(e) {}
 
 let currentUser = null;
 let currentCoins = 0;
@@ -2131,7 +2161,7 @@ async function checkFreePassCallback() {
       name: payload.name,
       bundleId: payload.bundleId,
       fileLink: payload.rawLink
-    }, 'Free Ads (Link4m Completed)');
+    }, 'Free Ads (Completed)');
 
     // Chờ 1 chút để DOM và allAppsMap sẵn sàng
     setTimeout(() => {
@@ -2156,7 +2186,7 @@ async function checkFreePassCallback() {
         panel.innerHTML = `
           <div class="purchase-panel" style="border: 1px solid var(--accent-emerald); background: rgba(16,185,129,0.08); padding: 18px; border-radius: 14px; margin-top: 14px; text-align: center;">
             <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--accent-emerald);font-weight:700;font-size:16px;margin-bottom:8px;">
-              <i data-lucide="check-circle-2" style="width:22px;height:22px;"></i> VƯỢT LINK LINK4M THÀNH CÔNG!
+              <i data-lucide="check-circle-2" style="width:22px;height:22px;"></i> VƯỢT LINK THÀNH CÔNG!
             </div>
             <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
               Cảm ơn bạn đã ủng hộ IPAVIET. Quá trình tải xuống <b>${payload.name}</b> đang tự động bắt đầu.
@@ -2183,31 +2213,91 @@ async function checkFreePassCallback() {
   }
 }
 
-// 6. Rút gọn URL cổng vượt link qua Link4m API / QuickLink
-async function getLink4mShortenedUrl(destinationUrl) {
+// 6. Rút gọn URL cổng vượt link qua bên cung cấp đang kích hoạt (YeuMoney, Link4m, Custom)
+async function getShortenedUrl(destinationUrl) {
   if (!destinationUrl) return null;
 
-  try {
-    const apiUrl = (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) ? ANALYTICS_API_URL : GOOGLE_API_URL;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
-    const res = await fetch(`${apiUrl}?action=get_free_link&url=${encodeURIComponent(destinationUrl)}&t=${Date.now()}`, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const data = await res.json();
-      if (data && (data.shortenedUrl || data.link)) {
-        return data.shortenedUrl || data.link;
-      }
-    }
-  } catch (e) {
-    console.warn("GAS shortener fetch fallback to Link4m QuickLink:", e);
+  const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+  if (cfg.enabled === false) {
+    return destinationUrl; // Tắt vượt link thì trả về URL gốc
   }
 
-  // Fallback trực tiếp vào Cổng QuickLink Gateway chính thức của Link4m:
-  return `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(destinationUrl)}`;
+  const provider = (cfg.provider || 'yeumoney').toLowerCase().trim();
+
+  // ─── 1. BÊN CUNG CẤP: YEUMONEY (yeumoney.com - Khuyên dùng) ───
+  if (provider === 'yeumoney') {
+    const token = cfg.yeumoney_token || 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb';
+    // Thử gọi trực tiếp API YeuMoney (nhanh ~300ms, hỗ trợ CORS đầy đủ)
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const ymUrl = `https://yeumoney.com/QL_api.php?token=${encodeURIComponent(token)}&format=json&url=${encodeURIComponent(destinationUrl)}`;
+      const res = await fetch(ymUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.status === 'success' && data.shortenedUrl) {
+          return data.shortenedUrl;
+        }
+      }
+    } catch(e) {
+      console.warn("Direct YeuMoney fetch failed, trying GAS proxy:", e);
+    }
+
+    // Proxy qua Google Apps Script nếu trực tiếp gặp sự cố
+    try {
+      const apiUrl = (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) ? ANALYTICS_API_URL : GOOGLE_API_URL;
+      const res = await fetch(`${apiUrl}?action=get_free_link&provider=yeumoney&token=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}&t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.shortenedUrl || data.link)) {
+          return data.shortenedUrl || data.link;
+        }
+      }
+    } catch(e) {}
+
+    // Fallback URL YeuMoney
+    return `https://yeumoney.com/QL_api.php?token=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}`;
+  }
+
+  // ─── 2. BÊN CUNG CẤP: LINK4M (link4m.co / link4m.net) ───
+  if (provider === 'link4m') {
+    const token = cfg.link4m_token || '691eb05d63b1b86d4a3bca1e';
+    try {
+      const apiUrl = (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) ? ANALYTICS_API_URL : GOOGLE_API_URL;
+      const res = await fetch(`${apiUrl}?action=get_free_link&provider=link4m&token=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}&t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.shortenedUrl || data.link)) {
+          return data.shortenedUrl || data.link;
+        }
+      }
+    } catch(e) {}
+
+    return `https://link4m.co/st?api=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}`;
+  }
+
+  // ─── 3. BÊN CUNG CẤP: TÙY CHỈNH (CUSTOM) ───
+  if (provider === 'custom' && cfg.custom_api_template) {
+    try {
+      const endpoint = cfg.custom_api_template
+        .replace('{TOKEN}', encodeURIComponent(cfg.custom_token || ''))
+        .replace('{URL}', encodeURIComponent(destinationUrl));
+      const res = await fetch(endpoint);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.shortenedUrl || data.link || data.url) {
+          return data.shortenedUrl || data.link || data.url;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Mặc định fallback về YeuMoney
+  return `https://yeumoney.com/QL_api.php?token=f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb&url=${encodeURIComponent(destinationUrl)}`;
 }
 
-// 7. Bắt đầu quy trình Tải Free: Tạo cổng xác thực & Chuyển hướng sang Link4m
+// 7. Bắt đầu quy trình Tải Free: Tạo cổng xác thực & Chuyển hướng sang Cổng Vượt Link
 async function downloadFreeStore(btnEl) {
   const originalText = btnEl.innerHTML;
   btnEl.innerHTML = `<div style="width:16px;height:16px;border:2px solid var(--text-tertiary);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>`;
@@ -2221,37 +2311,47 @@ async function downloadFreeStore(btnEl) {
     return;
   }
 
+  const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+  const providerLabel = (cfg.provider === 'link4m') ? 'Link4m' : (cfg.provider === 'yeumoney' ? 'YeuMoney' : 'Cổng Vượt Link');
+
+  // Nếu Admin tắt tính năng vượt link
+  if (cfg.enabled === false) {
+    showToast("Bắt đầu tải ứng dụng...");
+    await recordAppDownload(STATE.currentItem, 'Free Direct (Admin Disabled Ads)');
+    setTimeout(() => {
+      window.location.href = rawLink;
+      btnEl.innerHTML = originalText;
+      btnEl.disabled = false;
+    }, 500);
+    return;
+  }
+
   try {
-    showToast("Đang tạo cổng vượt link Link4m...");
-    await recordAppDownload(STATE.currentItem, 'Free Ads (Link4m Redirect)');
+    showToast(`Đang tạo cổng vượt link ${providerLabel}...`);
+    await recordAppDownload(STATE.currentItem, `Free Ads (${providerLabel})`);
 
     // BẢO VỆ CHỐNG LỖ HỔNG (CRITICAL ANTI-BYPASS SECURITY):
-    // 1. Tuyệt đối KHÔNG gửi trực tiếp link file IPA sang Link4m:
+    // 1. Tuyệt đối KHÔNG gửi trực tiếp link file IPA sang bên thứ ba:
     //    - Tránh tình trạng người dùng back lại trang rồi bấm lại phát tải được ngay
     //    - Tránh bị lộ link tải gốc trên thanh địa chỉ URL
     // 2. Điểm đến bắt buộc là trang cổng xác thực của hệ thống IPAVIET:
     //    https://ipaviet.site/app-library/index.html?free_pass=1&token=...
-    // 3. Người dùng bắt buộc phải hoàn thành vượt link Link4m thì Link4m mới trả về trang này để nhận link!
+    // 3. Người dùng bắt buộc phải hoàn thành vượt link thì bên thứ ba mới trả về trang này để nhận link!
     const token = createFreePassToken(STATE.currentItem, rawLink);
     const gateReturnUrl = `${window.location.origin}${window.location.pathname}?free_pass=1&token=${token}`;
 
-    const link4mTarget = await getLink4mShortenedUrl(gateReturnUrl);
+    const shortTarget = await getShortenedUrl(gateReturnUrl);
 
-    showToast("Chuyển hướng đến cổng Link4m để vượt link...");
+    showToast(`Chuyển hướng đến ${providerLabel} để vượt link...`);
     setTimeout(() => {
-      if (link4mTarget && (link4mTarget.includes('link4m.co') || link4mTarget.includes('link4m.org') || link4mTarget.includes('link4m.net') || link4mTarget.includes('link4m'))) {
-        window.location.href = link4mTarget;
-      } else {
-        const safeFallback = `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(gateReturnUrl)}`;
-        window.location.href = safeFallback;
-      }
+      window.location.href = shortTarget || gateReturnUrl;
     }, 350);
 
   } catch (error) {
-    console.error("Link4m error:", error);
+    console.error("Shortener redirect error:", error);
     const token = createFreePassToken(STATE.currentItem, rawLink);
     const gateReturnUrl = `${window.location.origin}${window.location.pathname}?free_pass=1&token=${token}`;
-    const safeFallback = `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(gateReturnUrl)}`;
+    const safeFallback = `https://yeumoney.com/QL_api.php?token=f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb&url=${encodeURIComponent(gateReturnUrl)}`;
     window.location.href = safeFallback;
   } finally {
     setTimeout(() => {
