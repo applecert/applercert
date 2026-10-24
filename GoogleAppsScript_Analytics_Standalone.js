@@ -87,7 +87,7 @@ function doGet(e) {
         var data = sheetDaily.getDataRange().getValues();
         var foundRow = -1;
         for (var i = 1; i < data.length; i++) {
-          if (String(data[i][0]) === today) {
+          if (isSameDate(data[i][0], today)) {
             foundRow = i + 1;
             break;
           }
@@ -202,7 +202,7 @@ function doGet(e) {
         var dData = sDaily.getDataRange().getValues();
         var dRow = -1;
         for (var j = 1; j < dData.length; j++) {
-          if (String(dData[j][0]) === today) {
+          if (isSameDate(dData[j][0], today)) {
             dRow = j + 1;
             break;
           }
@@ -263,7 +263,7 @@ function doGet(e) {
       if (sDaily) {
         var dVals = sDaily.getDataRange().getValues();
         for (var i = 1; i < dVals.length; i++) {
-          if (String(dVals[i][0]) === queryDate) {
+          if (isSameDate(dVals[i][0], queryDate)) {
             todayStat.pageviews = Number(dVals[i][1]) || 0;
             todayStat.uniqueVisitors = Number(dVals[i][2]) || 0;
             todayStat.downloads = Number(dVals[i][3]) || 0;
@@ -378,4 +378,19 @@ function getOrCreateSheet(ss, sheetName, headers) {
     }
   }
   return sheet;
+}
+
+/**
+ * Hàm so khớp ngày an toàn (xử lý cả kiểu Date của Google Sheet lẫn chuỗi YYYY-MM-DD)
+ */
+function isSameDate(val, targetStr) {
+  if (!val || !targetStr) return false;
+  if (val instanceof Date) {
+    try {
+      var dStr = Utilities.formatDate(val, "GMT+7", "yyyy-MM-dd");
+      return dStr === targetStr;
+    } catch(e) {}
+  }
+  var s = String(val).trim();
+  return s === targetStr || s.indexOf(targetStr) === 0;
 }
