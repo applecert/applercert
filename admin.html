@@ -363,7 +363,10 @@
             <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Thống Kê Kho IPA & Hành Vi Người Dùng</h2>
             <p class="text-white/70 text-xs md:text-sm mt-1">Theo dõi lượt xem, tải ứng dụng nhiều nhất và xu hướng tìm kiếm thực tế của khách hàng.</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="openAnalyticsSettingsModal()" class="px-3.5 py-2.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 backdrop-blur-md border border-indigo-400/30" title="Cài đặt kết nối Google Sheet Thống Kê Độc Lập (Phương Án 2)">
+              <i data-lucide="sheet" class="w-3.5 h-3.5"></i> Cài Sheet Riêng
+            </button>
             <button onclick="injectSampleDownloadTest()" class="px-3.5 py-2.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 backdrop-blur-md border border-cyan-400/30" title="Bấm để mô phỏng 1 lượt tải test kiểm tra hệ thống">
               <i data-lucide="play-circle" class="w-3.5 h-3.5"></i> Test 1 Lượt Tải
             </button>
@@ -1370,6 +1373,8 @@
     };
 
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec";
+    // PHƯƠNG ÁN 2: URL Web App Google Sheet Thống Kê Độc Lập (Hoàn toàn tách biệt khỏi hệ thống nạp tiền)
+    let ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || '';
     
     // Firebase Initialization
     const firebaseConfig = { 
@@ -3460,71 +3465,74 @@
         renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
 
         // ----------------------------------------------------
-        // 2. STEP 2: FETCH FROM GOOGLE APPS SCRIPT CLOUD BACKEND
+        // 2. STEP 2: FETCH FROM STANDALONE GOOGLE APPS SCRIPT (PHƯƠNG ÁN 2)
         // ----------------------------------------------------
-        try {
-          const gasRes = await fetch(`${GOOGLE_API_URL}?action=get_analytics&date=${todayStr}&t=${Date.now()}`);
-          if (gasRes.ok) {
-            const gasData = await gasRes.json();
-            if (gasData.success) {
-              if (gasData.today) {
-                dailyViews = Math.max(dailyViews, gasData.today.pageviews || 0);
-                dailyUniques = Math.max(dailyUniques, gasData.today.uniqueVisitors || 0);
-                dailyDownloads = Math.max(dailyDownloads, gasData.today.downloads || 0);
-                if (gasData.today.devices) {
-                  devStats.ios = Math.max(devStats.ios || 0, gasData.today.devices.ios || 0);
-                  devStats.android = Math.max(devStats.android || 0, gasData.today.devices.android || 0);
-                  devStats.mac = Math.max(devStats.mac || 0, gasData.today.devices.mac || 0);
-                  devStats.windows = Math.max(devStats.windows || 0, gasData.today.devices.windows || 0);
-                  devStats.other = Math.max(devStats.other || 0, gasData.today.devices.other || 0);
+        if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
+          try {
+            const gasRes = await fetch(`${ANALYTICS_API_URL}?action=get_analytics&date=${todayStr}&t=${Date.now()}`);
+            if (gasRes.ok) {
+              const gasData = await gasRes.json();
+              if (gasData.success) {
+                if (gasData.today) {
+                  dailyViews = Math.max(dailyViews, gasData.today.pageviews || 0);
+                  dailyUniques = Math.max(dailyUniques, gasData.today.uniqueVisitors || 0);
+                  dailyDownloads = Math.max(dailyDownloads, gasData.today.downloads || 0);
+                  if (gasData.today.devices) {
+                    devStats.ios = Math.max(devStats.ios || 0, gasData.today.devices.ios || 0);
+                    devStats.android = Math.max(devStats.android || 0, gasData.today.devices.android || 0);
+                    devStats.mac = Math.max(devStats.mac || 0, gasData.today.devices.mac || 0);
+                    devStats.windows = Math.max(devStats.windows || 0, gasData.today.devices.windows || 0);
+                    devStats.other = Math.max(devStats.other || 0, gasData.today.devices.other || 0);
+                  }
                 }
-              }
 
-              // Merge Apps
-              if (Array.isArray(gasData.apps)) {
-                gasData.apps.forEach(app => {
-                  const key = app.id || app.name;
-                  if (!appsMasterMap[key]) {
-                    appsMasterMap[key] = app;
-                  } else {
-                    appsMasterMap[key].downloads = Math.max(appsMasterMap[key].downloads || 0, app.downloads || 0);
-                    appsMasterMap[key].views = Math.max(appsMasterMap[key].views || 0, app.views || 0);
-                    if (app.icon && !appsMasterMap[key].icon) appsMasterMap[key].icon = app.icon;
-                  }
-                });
-              }
-
-              // Merge Recent
-              if (Array.isArray(gasData.recent) && gasData.recent.length > 0) {
-                const combinedRecent = [...recentDownloads, ...gasData.recent];
-                const seenRecents = new Set();
-                recentDownloads = combinedRecent.filter(r => {
-                  const rKey = (r.appName || '') + (r.timestamp || '') + (r.type || '');
-                  if (seenRecents.has(rKey)) return false;
-                  seenRecents.add(rKey);
-                  return true;
-                }).slice(0, 30);
-              }
-
-              // Merge Searches
-              if (Array.isArray(gasData.searches)) {
-                gasData.searches.forEach(s => {
-                  const qKey = (s.query || '').toLowerCase().trim();
-                  if (qKey) {
-                    if (!searchMap[qKey]) {
-                      searchMap[qKey] = s;
+                // Merge Apps
+                if (Array.isArray(gasData.apps)) {
+                  gasData.apps.forEach(app => {
+                    const key = app.id || app.name;
+                    if (!appsMasterMap[key]) {
+                      appsMasterMap[key] = app;
                     } else {
-                      searchMap[qKey].count = Math.max(searchMap[qKey].count || 0, s.count || 0);
+                      appsMasterMap[key].downloads = Math.max(appsMasterMap[key].downloads || 0, app.downloads || 0);
+                      appsMasterMap[key].views = Math.max(appsMasterMap[key].views || 0, app.views || 0);
+                      if (app.icon && !appsMasterMap[key].icon) appsMasterMap[key].icon = app.icon;
                     }
-                  }
-                });
-              }
+                  });
+                }
 
-              renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
+                // Merge Recent Downloads
+                const recList = gasData.recentDownloads || gasData.recent;
+                if (Array.isArray(recList) && recList.length > 0) {
+                  const combinedRecent = [...recentDownloads, ...recList];
+                  const seenRecents = new Set();
+                  recentDownloads = combinedRecent.filter(r => {
+                    const rKey = (r.appName || '') + (r.timestamp || '') + (r.type || '');
+                    if (seenRecents.has(rKey)) return false;
+                    seenRecents.add(rKey);
+                    return true;
+                  }).slice(0, 30);
+                }
+
+                // Merge Searches
+                if (Array.isArray(gasData.searches)) {
+                  gasData.searches.forEach(s => {
+                    const qKey = (s.query || '').toLowerCase().trim();
+                    if (qKey) {
+                      if (!searchMap[qKey]) {
+                        searchMap[qKey] = s;
+                      } else {
+                        searchMap[qKey].count = Math.max(searchMap[qKey].count || 0, s.count || 0);
+                      }
+                    }
+                  });
+                }
+
+                renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
+              }
             }
+          } catch (gasErr) {
+            console.warn("GAS Analytics fetch notice:", gasErr);
           }
-        } catch (gasErr) {
-          console.warn("GAS Analytics fetch notice:", gasErr);
         }
 
         // ----------------------------------------------------
@@ -3747,27 +3755,52 @@
         try { ADMIN_ANALYTICS_BC.postMessage({ type: 'update' }); } catch(e) {}
       }
 
-      // Also fire to GAS
+      // Also fire to Standalone Analytics Backend (nếu sếp đã cài đặt URL riêng)
       try {
-        const p = new URLSearchParams({
-          action: 'record_analytics',
-          type: 'app_download',
-          date: today,
-          appKey: docId,
-          appName: picked.name,
-          bundleId: picked.bundleId,
-          icon: picked.icon,
-          category: picked.category,
-          isMod: picked.isMod ? 'true' : 'false',
-          isVip: 'false',
-          dlType: pickedType,
-          user: 'test_khach@ipaviet.site'
-        });
-        fetch(`${GOOGLE_API_URL}?${p.toString()}`, { mode: 'no-cors' }).catch(() => {});
+        if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
+          const p = new URLSearchParams({
+            action: 'record_analytics',
+            type: 'app_download',
+            date: today,
+            appKey: docId,
+            appName: picked.name,
+            bundleId: picked.bundleId,
+            icon: picked.icon,
+            category: picked.category,
+            isMod: picked.isMod ? 'true' : 'false',
+            isVip: 'false',
+            dlType: pickedType,
+            user: 'test_khach@ipaviet.site'
+          });
+          fetch(`${ANALYTICS_API_URL}?${p.toString()}`, { mode: 'no-cors' }).catch(() => {});
+        }
       } catch(e) {}
 
       loadAppAnalytics(false);
       showToast(`Đã mô phỏng 1 lượt tải test: ${picked.name} (${pickedType})!`, 'success');
+    }
+
+    function openAnalyticsSettingsModal() {
+      const currentUrl = localStorage.getItem('ipaviet_analytics_api_url') || '';
+      const promptMsg = "CẤU HÌNH GOOGLE SHEET THỐNG KÊ RIÊNG BIỆT (PHƯƠNG ÁN 2):\n\n" +
+        "1. Tạo 1 Google Sheet mới tinh và dán code từ file 'GoogleAppsScript_Analytics_Standalone.js'\n" +
+        "2. Triển khai Ứng dụng web (Web App) với quyền 'Bất kỳ ai' (Anyone)\n" +
+        "3. Dán Web App URL vào ô dưới đây:\n\n" +
+        "(Để trống nếu muốn chạy chế độ nội bộ LocalStorage/Firestore, không ghi lên Google Sheet)";
+      
+      const newUrl = prompt(promptMsg, currentUrl);
+      if (newUrl !== null) {
+        const cleanUrl = newUrl.trim();
+        localStorage.setItem('ipaviet_analytics_api_url', cleanUrl);
+        ANALYTICS_API_URL = cleanUrl;
+        if (cleanUrl) {
+          showToast('Đã lưu URL Web App Thống Kê riêng biệt!', 'success');
+          loadAppAnalytics(true);
+        } else {
+          showToast('Đã xóa cấu hình URL riêng. Chạy chế độ nội bộ!', 'info');
+          loadAppAnalytics(false);
+        }
+      }
     }
 
     function setAppSort(sortBy) {

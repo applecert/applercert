@@ -507,6 +507,8 @@
    ================================================================ */
 
 const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec';
+// PHƯƠNG ÁN 2: URL Web App Google Sheet Thống Kê Riêng Biệt (Không đụng chạm hệ thống nạp tiền)
+const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || '';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
@@ -617,10 +619,12 @@ function recordPageView() {
     setLocalAnalytics('ipaviet_analytics_daily', dailyMap);
   } catch(e) {}
 
-  // 2. Google Apps Script Background
+  // 2. Google Apps Script Background (Chỉ gửi khi có cấu hình Sheet Thống Kê riêng - Phương Án 2)
   try {
-    const gasUrl = `${GOOGLE_API_URL}?action=record_analytics&type=pageview&date=${today}&device=${devType}&isUnique=${isNewToday}`;
-    fetch(gasUrl, { mode: 'no-cors', keepalive: true }).catch(() => {});
+    if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
+      const gasUrl = `${ANALYTICS_API_URL}?action=record_analytics&type=pageview&date=${today}&device=${devType}&isUnique=${isNewToday}`;
+      fetch(gasUrl, { mode: 'no-cors', keepalive: true }).catch(() => {});
+    }
   } catch (e) {}
 
   // 3. Firestore (when quota available)
@@ -659,20 +663,22 @@ function recordAppView(app) {
     setLocalAnalytics('ipaviet_analytics_apps', appsMap);
   } catch(e) {}
 
-  // 2. Google Apps Script
+  // 2. Google Apps Script (Chỉ gửi khi có cấu hình Sheet Thống Kê riêng - Phương Án 2)
   try {
-    const p = new URLSearchParams({
-      action: 'record_analytics',
-      type: 'app_view',
-      appKey: docId,
-      appName: name,
-      bundleId,
-      icon,
-      category,
-      isMod: app.isMod ? 'true' : 'false',
-      isVip: app.isVip ? 'true' : 'false'
-    });
-    fetch(`${GOOGLE_API_URL}?${p.toString()}`, { mode: 'no-cors', keepalive: true }).catch(() => {});
+    if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
+      const p = new URLSearchParams({
+        action: 'record_analytics',
+        type: 'app_view',
+        appKey: docId,
+        appName: name,
+        bundleId,
+        icon,
+        category,
+        isMod: app.isMod ? 'true' : 'false',
+        isVip: app.isVip ? 'true' : 'false'
+      });
+      fetch(`${ANALYTICS_API_URL}?${p.toString()}`, { mode: 'no-cors', keepalive: true }).catch(() => {});
+    }
   } catch (e) {}
 
   // 3. Firestore
@@ -740,23 +746,25 @@ async function recordAppDownload(app, downloadType) {
     setLocalAnalytics('ipaviet_analytics_recent', recentList);
   } catch(e) {}
 
-  // 2. Google Apps Script
+  // 2. Google Apps Script (Chỉ gửi khi có cấu hình Sheet Thống Kê riêng - Phương Án 2)
   try {
-    const p = new URLSearchParams({
-      action: 'record_analytics',
-      type: 'app_download',
-      date: today,
-      appKey: docId,
-      appName: name,
-      bundleId,
-      icon,
-      category,
-      isMod: app.isMod ? 'true' : 'false',
-      isVip: app.isVip ? 'true' : 'false',
-      dlType: downloadType || 'Free',
-      user: userEmail
-    });
-    fetch(`${GOOGLE_API_URL}?${p.toString()}`, { mode: 'no-cors', keepalive: true }).catch(() => {});
+    if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
+      const p = new URLSearchParams({
+        action: 'record_analytics',
+        type: 'app_download',
+        date: today,
+        appKey: docId,
+        appName: name,
+        bundleId,
+        icon,
+        category,
+        isMod: app.isMod ? 'true' : 'false',
+        isVip: app.isVip ? 'true' : 'false',
+        dlType: downloadType || 'Free',
+        user: userEmail
+      });
+      fetch(`${ANALYTICS_API_URL}?${p.toString()}`, { mode: 'no-cors', keepalive: true }).catch(() => {});
+    }
   } catch (e) {}
 
   // 3. Firestore
@@ -808,14 +816,16 @@ function recordSearchQuery(query) {
       setLocalAnalytics('ipaviet_analytics_searches', searchesMap);
     } catch(e) {}
 
-    // 2. Google Apps Script
+    // 2. Google Apps Script (Chỉ gửi khi có cấu hình Sheet Thống Kê riêng - Phương Án 2)
     try {
-      const p = new URLSearchParams({
-        action: 'record_analytics',
-        type: 'search',
-        query: query.trim()
-      });
-      fetch(`${GOOGLE_API_URL}?${p.toString()}`, { mode: 'no-cors', keepalive: true }).catch(() => {});
+      if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
+        const p = new URLSearchParams({
+          action: 'record_analytics',
+          type: 'search',
+          query: query.trim()
+        });
+        fetch(`${ANALYTICS_API_URL}?${p.toString()}`, { mode: 'no-cors', keepalive: true }).catch(() => {});
+      }
     } catch (e) {}
 
     // 3. Firestore
