@@ -166,6 +166,10 @@
         <button onclick="switchTab('mmo_dealhot')" id="nav-mmo_dealhot" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition">
           <i data-lucide="flame" class="w-4 h-4 mr-3"></i> Cấu Hình Deal Hot
         </button>
+        <a href="tap-hoa-mmo.html?admin_key=200912aB" target="_blank" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-blue-600 hover:bg-blue-50 transition">
+          <div class="flex items-center"><i data-lucide="external-link" class="w-4 h-4 mr-3"></i> Vào Xem Trang MMO</div>
+          <span class="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">Bảo trì</span>
+        </a>
       </div>
 
       <div>
@@ -284,7 +288,10 @@
             <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Xin chào, <span id="dashAdminName">Quí</span> 👋</h2>
             <p class="text-white/60 text-xs md:text-sm mt-1" id="dashDateStr">Hôm nay: Thứ Bảy, 26 tháng 9, 2026</p>
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap items-center">
+            <a href="tap-hoa-mmo.html?admin_key=200912aB" target="_blank" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="store" class="w-3.5 h-3.5"></i> Xem Trang MMO
+            </a>
             <button onclick="switchTab('mmo_orders')" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5">
               <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> Duyệt Đơn
             </button>
@@ -1016,8 +1023,16 @@
 
             <div class="py-3 flex items-center justify-between">
               <div>
-                <p class="font-bold text-gray-800">Chế Độ Bảo Trì (Maintenance Mode)</p>
-                <p class="text-gray-400">Tạm dừng tiếp nhận đơn và nạp tiền</p>
+                <div class="flex items-center gap-2">
+                  <p class="font-bold text-gray-800">Chế Độ Bảo Trì Chợ MMO</p>
+                  <span id="mmoMaintBadge" class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200">Đang bật bảo trì</span>
+                </div>
+                <p class="text-gray-400 text-xs mt-0.5">Khách vào trang MMO sẽ thấy màn hình bảo trì. Chỉ Admin mới vào xem được.</p>
+                <div class="mt-2">
+                  <a href="tap-hoa-mmo.html?admin_key=200912aB" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Mở xem trang MMO (Quyền Admin)
+                  </a>
+                </div>
               </div>
               <input type="checkbox" id="flagMaintenance" checked onchange="toggleMaintenanceMode(this.checked)" class="w-5 h-5 accent-rose-600 rounded cursor-pointer">
             </div>
@@ -2906,6 +2921,13 @@
 
     function toggleMaintenanceMode(checked) {
       localStorage.setItem('mmo_maintenance_mode', checked ? 'true' : 'false');
+      const badge = document.getElementById('mmoMaintBadge');
+      if (badge) {
+        badge.textContent = checked ? 'Đang bật bảo trì' : 'Đang mở cho khách';
+        badge.className = checked 
+          ? 'text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200'
+          : 'text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200';
+      }
       try {
         if (typeof db !== 'undefined') {
           db.collection('system_config').doc('mmo_maintenance').set({
@@ -3901,6 +3923,17 @@
     // DOM Ready Initialization
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
+      // Khởi tạo trạng thái bảo trì MMO
+      const mmoMaint = localStorage.getItem('mmo_maintenance_mode') !== 'false';
+      const flagMaint = document.getElementById('flagMaintenance');
+      if (flagMaint) flagMaint.checked = mmoMaint;
+      const badgeMaint = document.getElementById('mmoMaintBadge');
+      if (badgeMaint) {
+        badgeMaint.textContent = mmoMaint ? 'Đang bật bảo trì' : 'Đang mở cho khách';
+        badgeMaint.className = mmoMaint 
+          ? 'text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200'
+          : 'text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200';
+      }
     });
   </script>
 </body>

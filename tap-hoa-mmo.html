@@ -417,17 +417,20 @@ body{
 <!-- ================================================================
      ADMIN TOP BANNER (HIỂN THỊ KHI ADMIN ĐANG XEM TRONG LÚC BẢO TRÌ)
      ================================================================ -->
-<div id="mmoAdminBanner" style="position:fixed;top:0;left:0;right:0;z-index:9999999;background:linear-gradient(90deg,#b45309,#d97706,#c2410c);color:#fff;padding:9px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.3);display:none;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;">
+<div id="mmoAdminBanner" style="position:fixed;top:0;left:0;right:0;z-index:9999999;background:linear-gradient(90deg,#0f172a,#1e293b);border-bottom:1px solid rgba(255,255,255,0.12);color:#fff;padding:8px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.3);display:none;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;">
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff;animation:pulse 1.5s infinite;"></span>
-    <span>[CHẾ ĐỘ QUẢN TRỊ VIÊN] MMO đang <strong>BẬT BẢO TRÌ</strong>. Khách hàng thông thường đang thấy màn hình bảo trì.</span>
+    <span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;background:rgba(245,158,11,0.2);color:#fbbf24;font-size:11px;font-weight:800;border:1px solid rgba(245,158,11,0.4);">
+      <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span>
+      ĐANG BẢO TRÌ (QUYỀN ADMIN)
+    </span>
+    <span style="color:#94a3b8;font-size:11.5px;font-weight:500;">Khách ngoài chỉ thấy màn hình bảo trì.</span>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
-    <button type="button" onclick="lockMaintenanceAgain()" style="padding:4px 12px;background:rgba(0,0,0,0.35);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;">
-      <i class="fa-solid fa-lock"></i> Khóa lại (Xem bảo trì)
-    </button>
-    <button type="button" onclick="adminDisableMaintenance()" style="padding:4px 12px;background:#fff;color:#0f172a;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">
-      Tắt Bảo Trì (Mở Cho Khách)
+    <a href="admin.html" style="padding:4px 10px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+      <i class="fa-solid fa-gauge"></i> Về Admin
+    </a>
+    <button type="button" onclick="lockMaintenanceAgain()" style="padding:4px 10px;background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid rgba(255,255,255,0.1);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+      <i class="fa-solid fa-eye"></i> Xem Lại Màn Hình Khách
     </button>
   </div>
 </div>
@@ -514,14 +517,6 @@ body{
         <a href="https://t.me/ipaviet" target="_blank" style="padding:12px 20px;background:rgba(255,255,255,0.08);color:#fff;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.15);">
           <i class="fa-brands fa-telegram" style="color:#38bdf8"></i> Hỗ Trợ Telegram
         </a>
-      </div>
-
-      <!-- Mở khóa cho Admin -->
-      <div style="padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);display:flex;flex-direction:column;align-items:center;gap:6px;">
-        <button type="button" onclick="promptAdminUnlock()" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);color:#fcd34d;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;">
-          <i class="fa-solid fa-key"></i> Đăng Nhập Quản Trị Viên (Mở Khóa Xem Trang)
-        </button>
-        <span style="font-size:10.5px;color:#64748b;">(Chỉ dành cho Admin đang chuẩn bị làm lại giao diện)</span>
       </div>
     </div>
   </main>
@@ -1049,18 +1044,34 @@ let HIST_TAB='orders';
 // ══════════════════════════════════════════════════════
 const SECRET_ADMIN_PASS = "200912aB";
 
-// Trạng thái mở khóa xem trang MMO cho phiên làm việc này (sessionStorage)
+// Kiểm tra quyền Admin truy cập (Từ Admin Panel hoặc link có key bí mật)
 function isMmoUnlockedForAdmin() {
   try {
-    // 1. Cho phép mở khóa nhanh bằng tham số URL: ?unlock=200912aB hoặc ?pin=200912aB hoặc ?admin=200912aB
+    // 1. Vào bằng liên kết mở từ Admin: ?admin_key=200912aB hoặc ?pin=200912aB hoặc ?admin=200912aB
     const urlParams = new URLSearchParams(window.location.search);
-    const pin = urlParams.get('unlock') || urlParams.get('admin') || urlParams.get('pin') || urlParams.get('admin_key');
+    const pin = urlParams.get('admin_key') || urlParams.get('unlock') || urlParams.get('admin') || urlParams.get('pin');
     if (pin === SECRET_ADMIN_PASS) {
       sessionStorage.setItem('mmo_admin_unlocked', 'true');
+      try {
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } catch (e) {}
       return true;
     }
-    // 2. Chỉ mở khóa nếu admin đã bấm nút Mở Khóa và nhập đúng PIN trong tab này
-    return sessionStorage.getItem('mmo_admin_unlocked') === 'true';
+    // 2. Đã mở khóa trước đó trong phiên tab này
+    if (sessionStorage.getItem('mmo_admin_unlocked') === 'true') {
+      return true;
+    }
+    // 3. Nếu chuyển hướng trực tiếp từ admin.html và đã có phiên Admin xác thực
+    const ref = document.referrer || '';
+    if (ref.includes('admin.html')) {
+      const savedPin = localStorage.getItem('adminPin') || localStorage.getItem('admin_verified_pin') || sessionStorage.getItem('admin_session_pin');
+      if (savedPin === SECRET_ADMIN_PASS) {
+        sessionStorage.setItem('mmo_admin_unlocked', 'true');
+        return true;
+      }
+    }
+    return false;
   } catch (e) {
     return false;
   }
