@@ -1303,6 +1303,9 @@ async function loadData() {
 
   switchTab(STATE.currentTab);
 
+  // Kiểm tra nếu người dùng vừa hoàn thành vượt link Link4m quay lại
+  checkFreePassCallback();
+
   // Init scroll reveal và hide loading
   initScrollReveal();
   setTimeout(() => {
@@ -2054,11 +2057,136 @@ async function buyAppWithCoins(btnEl) {
   setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
 }
 
-// HÀM RÚT GỌN LINK BẮT BUỘC VƯỢT LINK QUA CỔNG LINK4M
+// ═══════════════════════════════════════════════════════════════════
+// HỆ THỐNG BẢO MẬT VƯỢT LINK LINK4M (CHỐNG LỖ HỔNG BACK ĐỂ TẢI CHÙA)
+// ═══════════════════════════════════════════════════════════════════
+
+// 1. Mã hóa Payload an toàn kèm thời gian và chuỗi chống Replay (Nonce)
+function createFreePassToken(app, rawLink) {
+  const payload = {
+    bundleId: app.bundleId || '',
+    name: app.name || app.title || 'App',
+    rawLink: rawLink,
+    t: Date.now(),
+    nonce: Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
+  };
+  return encodeURIComponent(btoa(encodeURIComponent(JSON.stringify(payload))));
+}
+
+// 2. Giải mã Payload từ Link4m trả về
+function decodeFreePassToken(tokenStr) {
+  try {
+    const jsonStr = decodeURIComponent(atob(decodeURIComponent(tokenStr)));
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    return null;
+  }
+}
+
+// 3. Xác thực tính hợp lệ của Token
+function verifyFreePassToken(payload) {
+  if (!payload || !payload.rawLink || !payload.t || !payload.nonce) return false;
+  // Cho phép tối đa 30 phút để người dùng hoàn thành vượt link
+  const age = Date.now() - payload.t;
+  if (age < 0 || age > 30 * 60 * 1000) return false;
+
+  // Kiểm tra chống dùng lại token (Anti-Replay)
+  const usedKey = 'ipaviet_used_pass_' + payload.nonce;
+  if (sessionStorage.getItem(usedKey) || localStorage.getItem(usedKey)) return false;
+
+  return true;
+}
+
+// 4. Đánh dấu Token đã được sử dụng
+function consumeFreePassToken(payload) {
+  const usedKey = 'ipaviet_used_pass_' + payload.nonce;
+  sessionStorage.setItem(usedKey, '1');
+  localStorage.setItem(usedKey, '1');
+}
+
+// 5. Kiểm tra Callback khi người dùng hoàn thành vượt link quay về trang
+async function checkFreePassCallback() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('free_pass') !== '1') return;
+
+  const rawToken = urlParams.get('token') || urlParams.get('sig');
+  if (!rawToken) return;
+
+  // Xóa ngay tham số trên thanh địa chỉ URL để bảo mật và chống F5 tải lại
+  const cleanUrl = window.location.origin + window.location.pathname;
+  window.history.replaceState({}, document.title, cleanUrl);
+
+  try {
+    const payload = decodeFreePassToken(rawToken);
+    if (!payload || !verifyFreePassToken(payload)) {
+      showToast("Liên kết vượt link đã hết hạn hoặc không hợp lệ. Vui lòng thử lại!");
+      return;
+    }
+
+    // Đánh dấu đã sử dụng token (Chống replay attack)
+    consumeFreePassToken(payload);
+
+    // Ghi nhận tải ứng dụng thành công sau khi vượt link
+    await recordAppDownload({
+      name: payload.name,
+      bundleId: payload.bundleId,
+      fileLink: payload.rawLink
+    }, 'Free Ads (Link4m Completed)');
+
+    // Chờ 1 chút để DOM và allAppsMap sẵn sàng
+    setTimeout(() => {
+      // Tìm app trong danh sách để mở xem chi tiết
+      let matchedApp = null;
+      if (window.allAppsMap) {
+        matchedApp = Object.values(window.allAppsMap).find(a => 
+          (payload.bundleId && a.bundleId === payload.bundleId) || 
+          (payload.name && (a.name === payload.name || a.title === payload.name))
+        );
+      }
+      if (matchedApp) {
+        openAppView(matchedApp._id);
+      }
+
+      // Hiển thị thông báo chúc mừng vượt link thành công
+      showToast(`🎉 Xác thực thành công! Bắt đầu tải ${payload.name || 'ứng dụng'}...`);
+
+      // Hiển thị panel tải thành công trên giao diện
+      const panel = document.getElementById('detailPurchasePanel');
+      if (panel) {
+        panel.innerHTML = `
+          <div class="purchase-panel" style="border: 1px solid var(--accent-emerald); background: rgba(16,185,129,0.08); padding: 18px; border-radius: 14px; margin-top: 14px; text-align: center;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--accent-emerald);font-weight:700;font-size:16px;margin-bottom:8px;">
+              <i data-lucide="check-circle-2" style="width:22px;height:22px;"></i> VƯỢT LINK LINK4M THÀNH CÔNG!
+            </div>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+              Cảm ơn bạn đã ủng hộ IPAVIET. Quá trình tải xuống <b>${payload.name}</b> đang tự động bắt đầu.
+            </p>
+            <a href="${payload.rawLink}" style="text-decoration:none;">
+              <button class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;background:var(--accent-emerald);color:#fff;">
+                <i data-lucide="download" style="width:16px;height:16px;"></i> NẾU CHƯA TẢI BẤM VÀO ĐÂY
+              </button>
+            </a>
+          </div>
+        `;
+        lucide.createIcons();
+      }
+
+      // Bắt đầu tải file
+      setTimeout(() => {
+        window.location.href = payload.rawLink;
+      }, 1000);
+    }, 600);
+
+  } catch (err) {
+    console.error("Lỗi xử lý callback vượt link:", err);
+    showToast("Không thể xác thực link tải. Vui lòng bấm tải lại!");
+  }
+}
+
+// 6. Rút gọn URL cổng vượt link qua Link4m API / QuickLink
 async function getLink4mShortenedUrl(destinationUrl) {
   if (!destinationUrl) return null;
 
-  // 1. Cố gắng lấy link rút gọn chính xác từ backend Apps Script (nếu có)
   try {
     const apiUrl = (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) ? ANALYTICS_API_URL : GOOGLE_API_URL;
     const controller = new AbortController();
@@ -2075,13 +2203,11 @@ async function getLink4mShortenedUrl(destinationUrl) {
     console.warn("GAS shortener fetch fallback to Link4m QuickLink:", e);
   }
 
-  // 2. Fallback trực tiếp vào Cổng QuickLink Gateway chính thức của Link4m:
-  // Định dạng: https://link4m.co/st?api={TOKEN}&url={DESTINATION_URL}
-  // Khi trình duyệt truy cập vào link này, Link4m sẽ ghi nhận vào tài khoản 691eb05d63b1b86d4a3bca1e
-  // và tự động 302 chuyển hướng khách sang trang vượt link (https://link4m.org/xxxxxx)!
+  // Fallback trực tiếp vào Cổng QuickLink Gateway chính thức của Link4m:
   return `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(destinationUrl)}`;
 }
 
+// 7. Bắt đầu quy trình Tải Free: Tạo cổng xác thực & Chuyển hướng sang Link4m
 async function downloadFreeStore(btnEl) {
   const originalText = btnEl.innerHTML;
   btnEl.innerHTML = `<div style="width:16px;height:16px;border:2px solid var(--text-tertiary);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>`;
@@ -2096,29 +2222,36 @@ async function downloadFreeStore(btnEl) {
   }
 
   try {
-    showToast("Đang tạo link vượt quảng cáo Link4m...");
-    await recordAppDownload(STATE.currentItem, 'Free Ads (Link4m)');
+    showToast("Đang tạo cổng vượt link Link4m...");
+    await recordAppDownload(STATE.currentItem, 'Free Ads (Link4m Redirect)');
 
-    // TẠO LINK RÚT GỌN LINK4M BẮT BUỘC VƯỢT LINK
-    const link4mTarget = await getLink4mShortenedUrl(rawLink);
+    // BẢO VỆ CHỐNG LỖ HỔNG (CRITICAL ANTI-BYPASS SECURITY):
+    // 1. Tuyệt đối KHÔNG gửi trực tiếp link file IPA sang Link4m:
+    //    - Tránh tình trạng người dùng back lại trang rồi bấm lại phát tải được ngay
+    //    - Tránh bị lộ link tải gốc trên thanh địa chỉ URL
+    // 2. Điểm đến bắt buộc là trang cổng xác thực của hệ thống IPAVIET:
+    //    https://ipaviet.site/app-library/index.html?free_pass=1&token=...
+    // 3. Người dùng bắt buộc phải hoàn thành vượt link Link4m thì Link4m mới trả về trang này để nhận link!
+    const token = createFreePassToken(STATE.currentItem, rawLink);
+    const gateReturnUrl = `${window.location.origin}${window.location.pathname}?free_pass=1&token=${token}`;
 
-    // BẢO VỆ CHỐNG LỖ HỔNG (CRITICAL ANTI-LEAK SECURITY):
-    // Tuyệt đối KHÔNG BAO GIỜ gán lại rawLink nếu là tải Free!
-    // Bắt buộc đích đến phải là đường dẫn Link4m để người dùng phải vượt link mới tải được!
-    if (link4mTarget && (link4mTarget.includes('link4m.co') || link4mTarget.includes('link4m.org') || link4mTarget.includes('link4m'))) {
-      showToast("Chuyển hướng đến cổng vượt link Link4m...");
-      setTimeout(() => {
+    const link4mTarget = await getLink4mShortenedUrl(gateReturnUrl);
+
+    showToast("Chuyển hướng đến cổng Link4m để vượt link...");
+    setTimeout(() => {
+      if (link4mTarget && (link4mTarget.includes('link4m.co') || link4mTarget.includes('link4m.org') || link4mTarget.includes('link4m.net') || link4mTarget.includes('link4m'))) {
         window.location.href = link4mTarget;
-      }, 350);
-    } else {
-      // Ngay cả khi xảy ra sự cố mạng, vẫn điều hướng qua QuickLink Link4m chứ KHÔNG BAO GIỜ nhả link gốc!
-      const safeFallback = `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(rawLink)}`;
-      window.location.href = safeFallback;
-    }
+      } else {
+        const safeFallback = `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(gateReturnUrl)}`;
+        window.location.href = safeFallback;
+      }
+    }, 350);
+
   } catch (error) {
     console.error("Link4m error:", error);
-    // Vẫn bảo vệ bằng QuickLink Link4m
-    const safeFallback = `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(rawLink)}`;
+    const token = createFreePassToken(STATE.currentItem, rawLink);
+    const gateReturnUrl = `${window.location.origin}${window.location.pathname}?free_pass=1&token=${token}`;
+    const safeFallback = `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(gateReturnUrl)}`;
     window.location.href = safeFallback;
   } finally {
     setTimeout(() => {
@@ -2288,6 +2421,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
   loadData();
   // Telemetry được xử lý thống nhất bởi ipaviet-tracker.js (tránh đếm trùng)
+});
+
+// Khôi phục trạng thái nút bấm & kiểm tra vượt link khi người dùng Back lại trang (Bfcache)
+window.addEventListener('pageshow', () => {
+  document.querySelectorAll('button[onclick*="downloadFreeStore"]').forEach(btn => {
+    btn.disabled = false;
+  });
+  checkFreePassCallback();
 });
 
 // Keyboard shortcuts
