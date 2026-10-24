@@ -364,6 +364,9 @@
             <p class="text-white/70 text-xs md:text-sm mt-1">Theo dõi lượt xem, tải ứng dụng nhiều nhất và xu hướng tìm kiếm thực tế của khách hàng.</p>
           </div>
           <div class="flex items-center gap-2">
+            <button onclick="injectSampleDownloadTest()" class="px-3.5 py-2.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 backdrop-blur-md border border-cyan-400/30" title="Bấm để mô phỏng 1 lượt tải test kiểm tra hệ thống">
+              <i data-lucide="play-circle" class="w-3.5 h-3.5"></i> Test 1 Lượt Tải
+            </button>
             <button onclick="loadAppAnalytics(true)" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 backdrop-blur-md border border-white/10">
               <i data-lucide="refresh-cw" id="analyticsRefreshIcon" class="w-3.5 h-3.5"></i> Làm Mới Dữ Liệu
             </button>
@@ -3369,6 +3372,24 @@
     // ==========================================
     // 16. IPA ANALYTICS & USER HABIT TRACKING
     // ==========================================
+    const ADMIN_ANALYTICS_BC = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('ipaviet_analytics_channel') : null;
+    if (ADMIN_ANALYTICS_BC) {
+      ADMIN_ANALYTICS_BC.onmessage = () => {
+        const tabEl = document.getElementById('tab-analytics');
+        if (tabEl && !tabEl.classList.contains('hidden')) {
+          loadAppAnalytics(false);
+        }
+      };
+    }
+    window.addEventListener('storage', (e) => {
+      if (e.key && e.key.startsWith('ipaviet_analytics_')) {
+        const tabEl = document.getElementById('tab-analytics');
+        if (tabEl && !tabEl.classList.contains('hidden')) {
+          loadAppAnalytics(false);
+        }
+      }
+    });
+
     function getTodayDateStr() {
       const d = new Date();
       const year = d.getFullYear();
@@ -3395,6 +3416,19 @@
       currentSort: 'downloads'
     };
 
+    function getLocalAnalytics(key, defVal) {
+      try {
+        const val = localStorage.getItem(key);
+        return val ? JSON.parse(val) : defVal;
+      } catch (e) { return defVal; }
+    }
+
+    function setLocalAnalytics(key, val) {
+      try {
+        localStorage.setItem(key, JSON.stringify(val));
+      } catch (e) {}
+    }
+
     async function loadAppAnalytics(isManualRefresh = false) {
       const icon = document.getElementById('analyticsRefreshIcon');
       if (icon) icon.classList.add('animate-spin');
@@ -3402,136 +3436,135 @@
       try {
         const todayStr = getTodayDateStr();
 
-        // 1. Fetch Today's Daily Stats
-        try {
-          const dailyDoc = await db.collection("analytics_daily").doc(todayStr).get();
-          if (dailyDoc.exists) {
-            const d = dailyDoc.data();
-            document.getElementById('statTodayViews').innerText = (d.pageviews || 0).toLocaleString();
-            document.getElementById('statTodayUniques').innerHTML = `<i data-lucide="user-check" class="w-3 h-3"></i> ${(d.uniqueVisitors || 0).toLocaleString()} khách riêng biệt`;
-            document.getElementById('statTodayDownloads').innerText = (d.downloads || 0).toLocaleString();
+        // ----------------------------------------------------
+        // 1. STEP 1: LOAD IMMEDIATELY FROM LOCALSTORAGE (0ms)
+        // ----------------------------------------------------
+        const localDailyMap = getLocalAnalytics('ipaviet_analytics_daily', {});
+        const localDaily = localDailyMap[todayStr] || { date: todayStr, pageviews: 0, uniqueVisitors: 0, downloads: 0, devices: { ios: 0, android: 0, mac: 0, windows: 0, other: 0 } };
+        
+        let dailyViews = localDaily.pageviews || 0;
+        let dailyUniques = localDaily.uniqueVisitors || 0;
+        let dailyDownloads = localDaily.downloads || 0;
+        let devStats = localDaily.devices || { ios: 0, android: 0, mac: 0, windows: 0, other: 0 };
 
-            const devs = d.devices || {};
-            document.getElementById('statDevIos').innerText = (devs.ios || 0).toLocaleString();
-            document.getElementById('statDevAndroid').innerText = (devs.android || 0).toLocaleString();
-            document.getElementById('statDevMac').innerText = (devs.mac || 0).toLocaleString();
-            document.getElementById('statDevWindows').innerText = (devs.windows || 0).toLocaleString();
-            document.getElementById('statDevOther').innerText = (devs.other || 0).toLocaleString();
-          } else {
-            document.getElementById('statTodayViews').innerText = "0";
-            document.getElementById('statTodayUniques').innerHTML = `<i data-lucide="user-check" class="w-3 h-3"></i> 0 khách riêng biệt`;
-            document.getElementById('statTodayDownloads').innerText = "0";
-            document.getElementById('statDevIos').innerText = "0";
-            document.getElementById('statDevAndroid').innerText = "0";
-            document.getElementById('statDevMac').innerText = "0";
-            document.getElementById('statDevWindows').innerText = "0";
-            document.getElementById('statDevOther').innerText = "0";
+        const localAppsMap = getLocalAnalytics('ipaviet_analytics_apps', {});
+        const appsMasterMap = {};
+        Object.keys(localAppsMap).forEach(k => {
+          appsMasterMap[k] = { ...localAppsMap[k] };
+        });
+
+        let recentDownloads = getLocalAnalytics('ipaviet_analytics_recent', []);
+        let searchMap = getLocalAnalytics('ipaviet_analytics_searches', {});
+
+        // Render Local Data right away so user sees instant results
+        renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
+
+        // ----------------------------------------------------
+        // 2. STEP 2: FETCH FROM GOOGLE APPS SCRIPT CLOUD BACKEND
+        // ----------------------------------------------------
+        try {
+          const gasRes = await fetch(`${GOOGLE_API_URL}?action=get_analytics&date=${todayStr}&t=${Date.now()}`);
+          if (gasRes.ok) {
+            const gasData = await gasRes.json();
+            if (gasData.success) {
+              if (gasData.today) {
+                dailyViews = Math.max(dailyViews, gasData.today.pageviews || 0);
+                dailyUniques = Math.max(dailyUniques, gasData.today.uniqueVisitors || 0);
+                dailyDownloads = Math.max(dailyDownloads, gasData.today.downloads || 0);
+                if (gasData.today.devices) {
+                  devStats.ios = Math.max(devStats.ios || 0, gasData.today.devices.ios || 0);
+                  devStats.android = Math.max(devStats.android || 0, gasData.today.devices.android || 0);
+                  devStats.mac = Math.max(devStats.mac || 0, gasData.today.devices.mac || 0);
+                  devStats.windows = Math.max(devStats.windows || 0, gasData.today.devices.windows || 0);
+                  devStats.other = Math.max(devStats.other || 0, gasData.today.devices.other || 0);
+                }
+              }
+
+              // Merge Apps
+              if (Array.isArray(gasData.apps)) {
+                gasData.apps.forEach(app => {
+                  const key = app.id || app.name;
+                  if (!appsMasterMap[key]) {
+                    appsMasterMap[key] = app;
+                  } else {
+                    appsMasterMap[key].downloads = Math.max(appsMasterMap[key].downloads || 0, app.downloads || 0);
+                    appsMasterMap[key].views = Math.max(appsMasterMap[key].views || 0, app.views || 0);
+                    if (app.icon && !appsMasterMap[key].icon) appsMasterMap[key].icon = app.icon;
+                  }
+                });
+              }
+
+              // Merge Recent
+              if (Array.isArray(gasData.recent) && gasData.recent.length > 0) {
+                const combinedRecent = [...recentDownloads, ...gasData.recent];
+                const seenRecents = new Set();
+                recentDownloads = combinedRecent.filter(r => {
+                  const rKey = (r.appName || '') + (r.timestamp || '') + (r.type || '');
+                  if (seenRecents.has(rKey)) return false;
+                  seenRecents.add(rKey);
+                  return true;
+                }).slice(0, 30);
+              }
+
+              // Merge Searches
+              if (Array.isArray(gasData.searches)) {
+                gasData.searches.forEach(s => {
+                  const qKey = (s.query || '').toLowerCase().trim();
+                  if (qKey) {
+                    if (!searchMap[qKey]) {
+                      searchMap[qKey] = s;
+                    } else {
+                      searchMap[qKey].count = Math.max(searchMap[qKey].count || 0, s.count || 0);
+                    }
+                  }
+                });
+              }
+
+              renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
+            }
           }
-        } catch (e) {
-          console.warn("Could not load daily stats", e);
+        } catch (gasErr) {
+          console.warn("GAS Analytics fetch notice:", gasErr);
         }
 
-        // 2. Fetch Apps Analytics
+        // ----------------------------------------------------
+        // 3. STEP 3: TRY FIRESTORE MERGE (IF AVAILABLE)
+        // ----------------------------------------------------
         try {
-          const appsSnap = await db.collection("analytics_apps").get();
-          const appsList = [];
-          let totalDownloads = 0;
-          appsSnap.forEach(doc => {
-            const data = doc.data();
-            const dl = data.downloads || 0;
-            const vw = data.views || 0;
-            totalDownloads += dl;
-            appsList.push({ id: doc.id, ...data, downloads: dl, views: vw });
-          });
+          if (typeof db !== 'undefined') {
+            const dailyDoc = await db.collection("analytics_daily").doc(todayStr).get().catch(() => null);
+            if (dailyDoc && dailyDoc.exists) {
+              const d = dailyDoc.data();
+              dailyViews = Math.max(dailyViews, d.pageviews || 0);
+              dailyUniques = Math.max(dailyUniques, d.uniqueVisitors || 0);
+              dailyDownloads = Math.max(dailyDownloads, d.downloads || 0);
+              if (d.devices) {
+                devStats.ios = Math.max(devStats.ios || 0, d.devices.ios || 0);
+                devStats.android = Math.max(devStats.android || 0, d.devices.android || 0);
+                devStats.mac = Math.max(devStats.mac || 0, d.devices.mac || 0);
+                devStats.windows = Math.max(devStats.windows || 0, d.devices.windows || 0);
+                devStats.other = Math.max(devStats.other || 0, d.devices.other || 0);
+              }
+            }
 
-          appAnalyticsCache.apps = appsList;
-          document.getElementById('statTotalDownloads').innerText = totalDownloads.toLocaleString();
-          document.getElementById('statTotalTrackedApps').innerText = `${appsList.length} app đã ghi nhận`;
+            const appsSnap = await db.collection("analytics_apps").get().catch(() => null);
+            if (appsSnap && !appsSnap.empty) {
+              appsSnap.forEach(doc => {
+                const data = doc.data();
+                const key = doc.id;
+                if (!appsMasterMap[key]) {
+                  appsMasterMap[key] = { id: key, ...data };
+                } else {
+                  appsMasterMap[key].downloads = Math.max(appsMasterMap[key].downloads || 0, data.downloads || 0);
+                  appsMasterMap[key].views = Math.max(appsMasterMap[key].views || 0, data.views || 0);
+                }
+              });
+            }
 
-          renderAnalyticsAppTable();
-        } catch (e) {
-          console.warn("Could not load apps stats", e);
-        }
-
-        // 3. Fetch Top Searches
-        try {
-          const searchSnap = await db.collection("analytics_searches").orderBy("count", "desc").limit(10).get();
-          const searchListEl = document.getElementById('analyticsSearchList');
-          const totalSearchEl = document.getElementById('searchKeywordsTotal');
-          if (searchSnap.empty) {
-            searchListEl.innerHTML = `<p class="text-center py-6 text-xs text-gray-400">Chưa có từ khóa nào được tìm kiếm.</p>`;
-            if (totalSearchEl) totalSearchEl.innerText = `0 từ`;
-          } else {
-            let maxCount = 1;
-            searchSnap.forEach(d => {
-              const c = d.data().count || 0;
-              if (c > maxCount) maxCount = c;
-            });
-
-            if (totalSearchEl) totalSearchEl.innerText = `${searchSnap.size} từ hot`;
-
-            let html = '';
-            let idx = 0;
-            searchSnap.forEach(doc => {
-              const data = doc.data();
-              const count = data.count || 0;
-              const pct = Math.min(100, Math.round((count / maxCount) * 100));
-              html += `
-                <div class="space-y-1">
-                  <div class="flex items-center justify-between text-xs">
-                    <div class="flex items-center gap-2 truncate">
-                      <span class="w-4 text-gray-400 font-bold text-center text-[11px]">#${idx + 1}</span>
-                      <span class="font-bold text-gray-800 truncate">${data.query || doc.id}</span>
-                    </div>
-                    <span class="font-extrabold text-appleBlue text-[11px]">${count.toLocaleString()} lượt</span>
-                  </div>
-                  <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                    <div class="bg-appleBlue h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
-                  </div>
-                </div>`;
-              idx++;
-            });
-            searchListEl.innerHTML = html;
+            renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
           }
-        } catch (e) {
-          console.warn("Could not load searches", e);
-        }
-
-        // 4. Fetch Recent Downloads Feed
-        try {
-          const recentSnap = await db.collection("analytics_recent_downloads").orderBy("timestamp", "desc").limit(20).get();
-          const recentListEl = document.getElementById('analyticsRecentDownloadsList');
-          if (recentSnap.empty) {
-            recentListEl.innerHTML = `<p class="text-center py-6 text-xs text-gray-400">Chưa có lượt tải nào gần đây.</p>`;
-          } else {
-            let html = '';
-            recentSnap.forEach(doc => {
-              const item = doc.data();
-              const typeBadge = item.type === 'VIP' 
-                ? 'bg-amber-100 text-amber-700' 
-                : (item.type && item.type.includes('Xu') ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600');
-              html += `
-                <div class="flex items-center justify-between p-2.5 rounded-2xl bg-gray-50/80 hover:bg-gray-100/80 transition">
-                  <div class="flex items-center gap-2.5 overflow-hidden">
-                    <img src="${item.icon || 'https://placehold.co/40x40/f3f4f6/333?text=IPA'}" class="w-8 h-8 rounded-xl object-cover border border-black/[0.04] shrink-0" onerror="this.src='https://placehold.co/40x40/f3f4f6/333?text=IPA'">
-                    <div class="truncate">
-                      <div class="flex items-center gap-1.5 truncate">
-                        <p class="font-bold text-xs text-gray-900 truncate">${item.appName || 'Ứng dụng'}</p>
-                        ${item.isMod ? '<span class="px-1 py-0.2 text-[8px] font-black rounded bg-emerald-100 text-emerald-700">MOD</span>' : ''}
-                      </div>
-                      <p class="text-[10px] text-gray-400 truncate">${item.userEmail || 'Khách vãng lai'}</p>
-                    </div>
-                  </div>
-                  <div class="text-right shrink-0 ml-2">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${typeBadge}">${item.type || 'Free'}</span>
-                    <p class="text-[9px] text-gray-400 mt-0.5">${timeAgo(item.timestamp)}</p>
-                  </div>
-                </div>`;
-            });
-            recentListEl.innerHTML = html;
-          }
-        } catch (e) {
-          console.warn("Could not load recent downloads", e);
+        } catch (fbErr) {
+          // Quota exceeded or network issue, silently handled by local + GAS data
         }
 
         if (isManualRefresh && typeof showToast === 'function') {
@@ -3543,6 +3576,198 @@
         if (icon) icon.classList.remove('animate-spin');
         if (window.lucide) lucide.createIcons();
       }
+    }
+
+    function renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap) {
+      // 1. KPI Cards
+      const elViews = document.getElementById('statTodayViews');
+      if (elViews) elViews.innerText = (dailyViews || 0).toLocaleString();
+
+      const elUniques = document.getElementById('statTodayUniques');
+      if (elUniques) elUniques.innerHTML = `<i data-lucide="user-check" class="w-3 h-3"></i> ${(dailyUniques || 0).toLocaleString()} khách riêng biệt`;
+
+      const elDl = document.getElementById('statTodayDownloads');
+      if (elDl) elDl.innerText = (dailyDownloads || 0).toLocaleString();
+
+      const elDevIos = document.getElementById('statDevIos');
+      if (elDevIos) elDevIos.innerText = (devStats.ios || 0).toLocaleString();
+      const elDevAndroid = document.getElementById('statDevAndroid');
+      if (elDevAndroid) elDevAndroid.innerText = (devStats.android || 0).toLocaleString();
+      const elDevMac = document.getElementById('statDevMac');
+      if (elDevMac) elDevMac.innerText = (devStats.mac || 0).toLocaleString();
+      const elDevWin = document.getElementById('statDevWindows');
+      if (elDevWin) elDevWin.innerText = (devStats.windows || 0).toLocaleString();
+      const elDevOth = document.getElementById('statDevOther');
+      if (elDevOth) elDevOth.innerText = (devStats.other || 0).toLocaleString();
+
+      // 2. Apps Table
+      const appsList = Object.values(appsMasterMap);
+      appAnalyticsCache.apps = appsList;
+      let totalAllTimeDownloads = 0;
+      appsList.forEach(a => { totalAllTimeDownloads += (a.downloads || 0); });
+
+      const elTotalDl = document.getElementById('statTotalDownloads');
+      if (elTotalDl) elTotalDl.innerText = totalAllTimeDownloads.toLocaleString();
+
+      const elTotalApps = document.getElementById('statTotalTrackedApps');
+      if (elTotalApps) elTotalApps.innerText = `${appsList.length} app đã ghi nhận`;
+
+      renderAnalyticsAppTable();
+
+      // 3. Top Searches
+      const searchListEl = document.getElementById('analyticsSearchList');
+      const totalSearchEl = document.getElementById('searchKeywordsTotal');
+      const searchItems = Object.values(searchMap).sort((a, b) => (b.count || 0) - (a.count || 0));
+
+      if (searchItems.length === 0) {
+        if (searchListEl) searchListEl.innerHTML = `<p class="text-center py-6 text-xs text-gray-400">Chưa có từ khóa nào được tìm kiếm.</p>`;
+        if (totalSearchEl) totalSearchEl.innerText = `0 từ`;
+      } else {
+        if (totalSearchEl) totalSearchEl.innerText = `${searchItems.length} từ hot`;
+        const maxCount = Math.max(1, ...searchItems.map(s => s.count || 0));
+        let html = '';
+        searchItems.slice(0, 10).forEach((s, idx) => {
+          const count = s.count || 0;
+          const pct = Math.min(100, Math.round((count / maxCount) * 100));
+          html += `
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2 truncate">
+                  <span class="w-4 text-gray-400 font-bold text-center text-[11px]">#${idx + 1}</span>
+                  <span class="font-bold text-gray-800 truncate">${escapeHTML(s.query || '')}</span>
+                </div>
+                <span class="font-extrabold text-appleBlue text-[11px]">${count.toLocaleString()} lượt</span>
+              </div>
+              <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-appleBlue h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+              </div>
+            </div>`;
+        });
+        if (searchListEl) searchListEl.innerHTML = html;
+      }
+
+      // 4. Recent Downloads Feed
+      const recentListEl = document.getElementById('analyticsRecentDownloadsList');
+      if (recentListEl) {
+        if (recentDownloads.length === 0) {
+          recentListEl.innerHTML = `<p class="text-center py-6 text-xs text-gray-400">Chưa có lượt tải nào gần đây.</p>`;
+        } else {
+          let rHtml = '';
+          recentDownloads.slice(0, 20).forEach(item => {
+            const isVipType = item.type === 'VIP';
+            const isCoinType = item.type && item.type.includes('Xu');
+            const typeBadge = isVipType 
+              ? 'bg-amber-100 text-amber-700' 
+              : (isCoinType ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600');
+            rHtml += `
+              <div class="flex items-center justify-between p-2.5 rounded-2xl bg-gray-50/80 hover:bg-gray-100/80 transition">
+                <div class="flex items-center gap-2.5 overflow-hidden">
+                  <img src="${escapeHTML(item.icon || 'https://placehold.co/40x40/f3f4f6/333?text=IPA')}" class="w-8 h-8 rounded-xl object-cover border border-black/[0.04] shrink-0" onerror="this.src='https://placehold.co/40x40/f3f4f6/333?text=IPA'">
+                  <div class="truncate">
+                    <div class="flex items-center gap-1.5 truncate">
+                      <p class="font-bold text-xs text-gray-900 truncate">${escapeHTML(item.appName || 'Ứng dụng')}</p>
+                      ${item.isMod ? '<span class="px-1 py-0.2 text-[8px] font-black rounded bg-emerald-100 text-emerald-700">MOD</span>' : ''}
+                    </div>
+                    <p class="text-[10px] text-gray-400 truncate">${escapeHTML(item.userEmail || 'Khách vãng lai')}</p>
+                  </div>
+                </div>
+                <div class="text-right shrink-0 ml-2">
+                  <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${typeBadge}">${escapeHTML(item.type || 'Free')}</span>
+                  <p class="text-[9px] text-gray-400 mt-0.5">${timeAgo(item.timestamp)}</p>
+                </div>
+              </div>`;
+          });
+          recentListEl.innerHTML = rHtml;
+        }
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function injectSampleDownloadTest() {
+      const sampleApps = [
+        { name: 'Minecraft PE MOD Menu', bundleId: 'com.mojang.minecraftpe', icon: 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/bf/16/99/bf1699f8-adcf-e28a-7764-75ebff03fa7d/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/256x256bb.jpg', isMod: true, category: 'Trò chơi' },
+        { name: 'Spotify++ No Ads VIP', bundleId: 'com.spotify.client', icon: 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/ec/3b/b1/ec3bb114-1e5b-38ec-d760-2e061806385f/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/256x256bb.jpg', isMod: true, category: 'Âm nhạc' },
+        { name: 'TikTok LRD Mod Xu', bundleId: 'com.zhiliaoapp.musically', icon: 'https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/44/21/df/4421dfc6-745d-c6a0-a7d1-ba6669ec3f7e/AppIcon_TikTok-0-0-1x_U007emarketing-0-7-0-85-220.png/256x256bb.jpg', isMod: true, category: 'Mạng xã hội' },
+        { name: 'Liên Quân Mobile Map Sáng', bundleId: 'com.garena.game.kgvn', icon: 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/d5/43/d3/d543d3a0-7603-7cb5-ebc9-8d74ba1e3dbe/AppIcon-0-0-1x_U007emarketing-0-7-0-85-220.png/256x256bb.jpg', isMod: true, category: 'Trò chơi' }
+      ];
+
+      const picked = sampleApps[Math.floor(Math.random() * sampleApps.length)];
+      const types = ['VIP', 'Xu (1000đ)', 'Free Ads'];
+      const pickedType = types[Math.floor(Math.random() * types.length)];
+      const today = getTodayDateStr();
+      const nowIso = new Date().toISOString();
+      const docId = picked.bundleId.replace(/[^a-z0-9_-]/g, '_');
+
+      // 1. Local Apps
+      const appsMap = getLocalAnalytics('ipaviet_analytics_apps', {});
+      if (!appsMap[docId]) {
+        appsMap[docId] = { id: docId, name: picked.name, bundleId: picked.bundleId, icon: picked.icon, category: picked.category, isMod: picked.isMod, isVip: false, views: 3, downloads: 0 };
+      }
+      appsMap[docId].downloads = (appsMap[docId].downloads || 0) + 1;
+      appsMap[docId].views = (appsMap[docId].views || 0) + 1;
+      appsMap[docId].lastDownloadedAt = nowIso;
+      setLocalAnalytics('ipaviet_analytics_apps', appsMap);
+
+      // 2. Local Daily
+      const dailyMap = getLocalAnalytics('ipaviet_analytics_daily', {});
+      if (!dailyMap[today]) {
+        dailyMap[today] = { date: today, pageviews: 2, uniqueVisitors: 1, downloads: 0, devices: { ios: 1, android: 0, mac: 1, windows: 0, other: 0 } };
+      }
+      dailyMap[today].downloads = (dailyMap[today].downloads || 0) + 1;
+      dailyMap[today].pageviews = (dailyMap[today].pageviews || 0) + 1;
+      setLocalAnalytics('ipaviet_analytics_daily', dailyMap);
+
+      // 3. Local Recent
+      const recentList = getLocalAnalytics('ipaviet_analytics_recent', []);
+      recentList.unshift({
+        appName: picked.name,
+        bundleId: picked.bundleId,
+        icon: picked.icon,
+        isMod: picked.isMod,
+        isVip: false,
+        type: pickedType,
+        userEmail: 'test_khach@ipaviet.site',
+        timestamp: nowIso
+      });
+      if (recentList.length > 50) recentList.length = 50;
+      setLocalAnalytics('ipaviet_analytics_recent', recentList);
+
+      // 4. Local Searches
+      const searchMap = getLocalAnalytics('ipaviet_analytics_searches', {});
+      const q = picked.name.split(' ')[0].toLowerCase();
+      if (!searchMap[q]) {
+        searchMap[q] = { query: picked.name.split(' ')[0], count: 0, lastSearchedAt: nowIso };
+      }
+      searchMap[q].count = (searchMap[q].count || 0) + 1;
+      setLocalAnalytics('ipaviet_analytics_searches', searchMap);
+
+      // Broadcast to other tabs
+      if (ADMIN_ANALYTICS_BC) {
+        try { ADMIN_ANALYTICS_BC.postMessage({ type: 'update' }); } catch(e) {}
+      }
+
+      // Also fire to GAS
+      try {
+        const p = new URLSearchParams({
+          action: 'record_analytics',
+          type: 'app_download',
+          date: today,
+          appKey: docId,
+          appName: picked.name,
+          bundleId: picked.bundleId,
+          icon: picked.icon,
+          category: picked.category,
+          isMod: picked.isMod ? 'true' : 'false',
+          isVip: 'false',
+          dlType: pickedType,
+          user: 'test_khach@ipaviet.site'
+        });
+        fetch(`${GOOGLE_API_URL}?${p.toString()}`, { mode: 'no-cors' }).catch(() => {});
+      } catch(e) {}
+
+      loadAppAnalytics(false);
+      showToast(`Đã mô phỏng 1 lượt tải test: ${picked.name} (${pickedType})!`, 'success');
     }
 
     function setAppSort(sortBy) {
