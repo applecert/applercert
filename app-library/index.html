@@ -513,7 +513,7 @@ const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || '
 // CẤU HÌNH VƯỢT LINK TẢI FREE (ĐỒNG BỘ THỜI GIAN THỰC VỚI ADMIN)
 const DEFAULT_SHORTENER_CONFIG = {
   enabled: true,
-  provider: 'yeumoney', // 'yeumoney' | 'link4m' | 'custom'
+  provider: 'link4m', // 'link4m' | 'yeumoney' | 'custom'
   yeumoney_token: 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
   link4m_token: '691eb05d63b1b86d4a3bca1e',
   custom_api_template: '',
@@ -2208,6 +2208,53 @@ async function checkFreePassCallback() {
         }
       }, 500);
     }
+
+    // Dọn dẹp URL sau 2.5s để tránh loop
+    setTimeout(() => {
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }, 2500);
+    return;
+  }
+
+  // KIỂM TRA CHỐNG TỰ ĐỘNG CHUYỂN VỀ / CHƯA HOÀN THÀNH NHIỆM VỤ (ANTI-FAST BYPASS):
+  // Để hoàn thành vượt link (Recaptcha, tìm từ khóa Google, chờ đếm 60s), người dùng cần ít nhất 15-60 giây.
+  // Nếu quay lại trang trong dưới 15 giây (age < 15000ms), chứng tỏ bị bên thứ 3 tự chuyển về hoặc người dùng chưa làm nhiệm vụ:
+  const age = Date.now() - payload.t;
+  if (age < 15000) {
+    console.warn("Chưa hoàn thành vượt link (thời gian quá nhanh: " + age + "ms)");
+    showToast("⚠️ Bạn chưa hoàn thành nhiệm vụ vượt link. Vui lòng thử lại!");
+
+    // Giữ người dùng ở lại modal ứng dụng và hiện thông báo yêu cầu làm nhiệm vụ thật
+    setTimeout(() => {
+      let matchedApp = null;
+      if (window.allAppsMap) {
+        matchedApp = Object.values(window.allAppsMap).find(a => 
+          (payload.bundleId && a.bundleId === payload.bundleId) || 
+          (payload.name && (a.name === payload.name || a.title === payload.name))
+        );
+      }
+      if (matchedApp) {
+        openAppView(matchedApp._id);
+        const panel = document.getElementById('detailPurchasePanel');
+        if (panel) {
+          panel.innerHTML = `
+            <div class="purchase-panel" style="border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08); padding: 18px; border-radius: 14px; margin-top: 14px; text-align: center;">
+              <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:#ef4444;font-weight:700;font-size:15px;margin-bottom:8px;">
+                <i data-lucide="alert-triangle" style="width:20px;height:20px;"></i> BẠN CHƯA VƯỢT LINK!
+              </div>
+              <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+                Hệ thống phát hiện bạn vừa quay lại quá nhanh (dưới 15 giây) và chưa thực hiện xong các bước tìm mã trên trang quảng cáo. Vui lòng bấm bên dưới để vượt link nhận link tải miễn phí!
+              </p>
+              <button onclick="downloadFreeStore(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;background:#ef4444;color:#fff;">
+                <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i> BẤM VÀO ĐÂY ĐỂ VƯỢT LINK
+              </button>
+            </div>
+          `;
+          if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+        }
+      }
+    }, 400);
 
     // Dọn dẹp URL sau 2.5s để tránh loop
     setTimeout(() => {
