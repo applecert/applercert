@@ -253,6 +253,11 @@ function doGet(e) {
           "Thời Gian", "Địa Chỉ IP", "Tài Khoản / Email", "Số Lần Xem", "Quốc Gia", "Thành Phố", "Nhà Mạng / ISP", "Thiết Bị", "Model Máy", "Trình Duyệt", "Trang Xem", "Nguồn Referrer"
         ]);
 
+        // Cố định định dạng cột B (IP) luôn luôn là Plain Text để Google Sheet không bao giờ nuốt dấu chấm
+        try {
+          sheetVis.getRange(1, 2, sheetVis.getMaxRows(), 1).setNumberFormat("@");
+        } catch (e) {}
+
         // Tự động nâng cấp cấu trúc cột nếu là sheet cũ (10 cột)
         var lastCol = sheetVis.getLastColumn();
         if (lastCol === 10) {
@@ -264,7 +269,8 @@ function doGet(e) {
           }
         }
 
-        var ip = String(e.parameter.ip || 'Unknown').trim();
+        var rawIp = String(e.parameter.ip || 'Unknown').trim();
+        var ip = restoreIpDots(rawIp);
         var userEmail = String(e.parameter.userEmail || '').trim();
         var userName = String(e.parameter.userName || '').trim();
         var isMember = e.parameter.isMember === 'true';
@@ -292,7 +298,9 @@ function doGet(e) {
         if (lastRow > 1 && ip !== 'Unknown') {
           var ipColValues = sheetVis.getRange(2, 2, lastRow - 1, 1).getValues();
           for (var r = 0; r < ipColValues.length; r++) {
-            if (String(ipColValues[r][0]).trim() === ip) {
+            var rowIpClean = restoreIpDots(ipColValues[r][0]);
+            var rawCell = String(ipColValues[r][0] || '').trim().replace(/^'/, '');
+            if (rowIpClean === ip || rawCell === ip || rawCell === rawIp) {
               foundRow = r + 2;
               break;
             }
@@ -305,20 +313,49 @@ function doGet(e) {
           existingVisits = Number(sheetVis.getRange(foundRow, 4).getValue()) || 1;
           
           sheetVis.getRange(foundRow, 1).setValue(nowIso); // Cập nhật giờ hoạt động gần nhất
+          // Luôn chuẩn hóa lại IP có dấu chấm đầy đủ và định dạng text
+          sheetVis.getRange(foundRow, 2).setNumberFormat("@").setValue("'" + ip);
           if (userDisplay && (!existingUser || existingUser === 'Khách vãng lai' || isMember)) {
             sheetVis.getRange(foundRow, 3).setValue(userDisplay);
           }
           sheetVis.getRange(foundRow, 4).setValue(existingVisits + 1); // Tăng lượt xem của IP này
-          if (page) sheetVis.getRange(foundRow, 11).setValue(page); // Trang xem mới nhất
+          if (country) sheetVis.getRange(foundRow, 5).setValue(country);
+          if (city) sheetVis.getRange(foundRow, 6).setValue(city);
+          if (isp) sheetVis.getRange(foundRow, 7).setValue(isp);
+          if (dev) sheetVis.getRange(foundRow, 8).setValue(dev);
           if (devModel) sheetVis.getRange(foundRow, 9).setValue(devModel);
           if (browser) sheetVis.getRange(foundRow, 10).setValue(browser);
+          if (page) sheetVis.getRange(foundRow, 11).setValue(page); // Trang xem mới nhất
+          if (ref) sheetVis.getRange(foundRow, 12).setValue(ref);
         } else {
-          // IP mới: Thêm dòng mới
+          // IP mới: Thêm dòng mới (thêm tiền tố nháy đơn ' để ép Google Sheet hiểu là chuỗi Text thuần túy)
           var finalUser = userDisplay || 'Khách vãng lai';
-          sheetVis.appendRow([nowIso, ip, finalUser, 1, country, city, isp, dev, devModel, browser, page, ref]);
+          sheetVis.appendRow([nowIso, "'" + ip, finalUser, 1, country, city, isp, dev, devModel, browser, page, ref]);
         }
 
         return output.setContent(JSON.stringify({ success: true, recorded: 'visitor', ip: ip, isExisting: foundRow > 1 }));
+      }
+
+      // F. NHỊP TIM DUY TRÌ TRẠNG THÁI ONLINE (HEARTBEAT)
+      if (type === 'heartbeat') {
+        var hbRawIp = String(e.parameter.ip || '').trim();
+        var hbIp = restoreIpDots(hbRawIp);
+        if (hbIp && hbIp !== 'Unknown') {
+          var sVisHb = ss.getSheetByName("Visitor_Logs");
+          if (sVisHb && sVisHb.getLastRow() > 1) {
+            var lr = sVisHb.getLastRow();
+            var ipVals = sVisHb.getRange(2, 2, lr - 1, 1).getValues();
+            for (var hbi = 0; hbi < ipVals.length; hbi++) {
+              var cIp = restoreIpDots(ipVals[hbi][0]);
+              var rCell = String(ipVals[hbi][0] || '').trim().replace(/^'/, '');
+              if (cIp === hbIp || rCell === hbIp || rCell === hbRawIp) {
+                sVisHb.getRange(hbi + 2, 1).setValue(nowIso); // Cập nhật thời gian hoạt động mới nhất
+                break;
+              }
+            }
+          }
+        }
+        return output.setContent(JSON.stringify({ success: true, heartbeat: true, ip: hbIp }));
       }
     }
 
@@ -450,11 +487,27 @@ function doGet(e) {
         for (var vi = vVals.length - 1; vi >= startV; vi--) {
           var vRow = vVals[vi];
           if (vRow[1]) {
+            var timeVal = vRow[0];
+            var timeIso = '';
+            var timeStampMs = 0;
+            if (timeVal instanceof Date) {
+              timeIso = Utilities.formatDate(timeVal, "GMT+7", "yyyy-MM-dd HH:mm:ss");
+              timeStampMs = timeVal.getTime();
+            } else if (timeVal) {
+              timeIso = String(timeVal).replace(/\s*\([^)]*\)/g, '').trim();
+              var pDate = new Date(timeIso);
+              timeStampMs = isNaN(pDate.getTime()) ? 0 : pDate.getTime();
+            }
+
+            var cleanIp = restoreIpDots(vRow[1]);
+
             if (hasUserCol) {
               var uAcc = String(vRow[2] || '');
               visitorsList.push({
-                time: String(vRow[0] || ''),
-                ip: String(vRow[1]),
+                time: timeIso,
+                timestamp: timeStampMs,
+                lastActive: timeStampMs,
+                ip: cleanIp,
                 userEmail: uAcc,
                 isMember: uAcc !== '' && uAcc !== 'Khách vãng lai',
                 visits: Number(vRow[3]) || 1,
@@ -469,8 +522,10 @@ function doGet(e) {
               });
             } else {
               visitorsList.push({
-                time: String(vRow[0] || ''),
-                ip: String(vRow[1]),
+                time: timeIso,
+                timestamp: timeStampMs,
+                lastActive: timeStampMs,
+                ip: cleanIp,
                 userEmail: '',
                 isMember: false,
                 visits: 1,
@@ -567,4 +622,24 @@ function isSameDate(val, targetStr) {
   }
   var s = String(val).trim();
   return s === targetStr || s.indexOf(targetStr) === 0;
+}
+
+/**
+ * Phục hồi dấu chấm IP nếu bị Google Sheet (locale VN) tự ý nuốt dấu chấm biến thành số
+ * Ví dụ: 113161194193 -> 113.161.194.193
+ *        14175157129  -> 14.175.157.129
+ */
+function restoreIpDots(rawIp) {
+  if (!rawIp) return 'Unknown';
+  var s = String(rawIp).trim().replace(/^'/, '');
+  if (s.indexOf(':') !== -1 || s.indexOf('.') !== -1) return s;
+  if (/^\d{10,12}$/.test(s)) {
+    var last3Part = s.slice(-9);
+    var octet1 = s.slice(0, -9);
+    var octet2 = last3Part.slice(0, 3);
+    var octet3 = last3Part.slice(3, 6);
+    var octet4 = last3Part.slice(6, 9);
+    return octet1 + '.' + octet2 + '.' + octet3 + '.' + octet4;
+  }
+  return s;
 }

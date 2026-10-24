@@ -555,16 +555,50 @@
     } catch (e) {}
   }
 
-  // 14. Heartbeat duy trì trạng thái online mỗi 45 giây
-  setInterval(function () {
+  // 14. Heartbeat đa nền tảng (Cross-Device) duy trì trạng thái Online chuẩn xác mỗi 35 giây
+  function sendHeartbeat() {
     try {
       const geoCached = sessionStorage.getItem('ipaviet_geo');
-      if (geoCached && trackerBC) {
-        const g = JSON.parse(geoCached);
-        trackerBC.postMessage({ type: 'heartbeat', ip: g.ip, page: getPageName(), time: Date.now() });
+      if (!geoCached) return;
+      const g = JSON.parse(geoCached);
+      if (!g || !g.ip || g.ip === 'Unknown') return;
+
+      const now = Date.now();
+      const curPage = getPageName();
+      const curPath = window.location.pathname;
+
+      // 1. Đồng bộ qua BroadcastChannel (cho các tab cùng máy)
+      if (trackerBC) {
+        try {
+          trackerBC.postMessage({ type: 'heartbeat', ip: g.ip, page: curPage, time: now });
+        } catch (e) {}
+      }
+
+      // 2. Đồng bộ qua Firebase Firestore Realtime (cho các máy khác như iPhone, iPad, PC khác)
+      try {
+        if (typeof db !== 'undefined' && db.collection) {
+          const docId = 'ip_' + String(g.ip).replace(/[^a-zA-Z0-9_]/g, '_');
+          db.collection('analytics_visitors').doc(docId).set({
+            lastActive: now,
+            online: true,
+            page: curPage,
+            path: curPath,
+            updatedAt: (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) ? firebase.firestore.FieldValue.serverTimestamp() : now
+          }, { merge: true }).catch(function () {});
+        }
+      } catch (e) {}
+
+      // 3. Đồng bộ qua Google Apps Script (khi tab đang mở)
+      if (ANALYTICS_API_URL && !document.hidden) {
+        fetch(`${ANALYTICS_API_URL}?action=record_analytics&type=heartbeat&ip=${encodeURIComponent(g.ip)}&t=${now}`, { mode: 'no-cors', keepalive: true }).catch(function () {});
       }
     } catch (e) {}
-  }, 45000);
+  }
+
+  setInterval(sendHeartbeat, 35000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) sendHeartbeat();
+  });
 
   // 15. Tự khởi chạy
   if (document.readyState === 'loading') {

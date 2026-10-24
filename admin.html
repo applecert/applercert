@@ -1469,15 +1469,15 @@
   <!-- MODAL: VISITOR TELEMETRY DETAIL -->
   <div id="modalVisitorDetail" class="fixed inset-0 z-[230] hidden flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeVisitorDetailModal()"></div>
-    <div class="bg-white rounded-3xl shadow-modal w-full max-w-lg p-6 relative z-10 space-y-4 max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-3xl shadow-modal w-full max-w-xl p-6 relative z-10 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between pb-3 border-b border-gray-100">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-            <i data-lucide="info" class="w-5 h-5"></i>
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
           </div>
           <div>
-            <h3 class="font-extrabold text-base text-gray-900">Chi Tiết Người Xem & Thông Tin IP</h3>
-            <p class="text-[11px] text-gray-400 font-mono" id="mvisId">ID: Đang nạp...</p>
+            <h3 class="font-black text-base text-gray-900">Hồ Sơ Toàn Diện Khách & Thông Số IP</h3>
+            <div class="text-[11px] text-gray-500 font-mono mt-0.5" id="mvisId">Đang nạp hồ sơ...</div>
           </div>
         </div>
         <button onclick="closeVisitorDetailModal()" class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition">
@@ -1485,14 +1485,19 @@
         </button>
       </div>
 
-      <div class="space-y-3 text-xs" id="mvisBody">
+      <div class="space-y-3.5 text-xs" id="mvisBody">
         <!-- Content dynamically injected -->
       </div>
 
-      <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
-        <button id="btnCopyVisIp" onclick="copyCurrentVisitorIP()" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition">
-          <i data-lucide="copy" class="w-3.5 h-3.5"></i> Sao Chép Địa Chỉ IP
-        </button>
+      <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-2">
+          <button id="btnCopyVisIp" onclick="copyCurrentVisitorIP()" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Sao Chép IP
+          </button>
+          <button onclick="filterTableByCurrentVisitorIP()" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition">
+            <i data-lucide="filter" class="w-3.5 h-3.5"></i> Lọc Trên Bảng
+          </button>
+        </div>
         <button onclick="closeVisitorDetailModal()" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold text-xs transition">
           Đóng
         </button>
@@ -4048,11 +4053,62 @@
       firestoreUnsub: null
     };
 
+    // --- HÀM TIỆN ÍCH HỖ TRỢ XỬ LÝ DỮ LIỆU IP & THỜI GIAN KHÁCH TRUY CẬP ---
+
+    // 1. Phục hồi dấu chấm IP nếu bị Google Sheet (locale VN) nuốt dấu chấm biến thành số (ví dụ: 113161194193 -> 113.161.194.193)
+    function restoreIpDots(rawIp) {
+      if (!rawIp) return 'Unknown';
+      let s = String(rawIp).trim().replace(/^'/, '');
+      if (s.includes(':') || s.includes('.')) return s;
+      if (/^\d{10,12}$/.test(s)) {
+        const last3Part = s.slice(-9);
+        const octet1 = s.slice(0, -9);
+        const octet2 = last3Part.slice(0, 3);
+        const octet3 = last3Part.slice(3, 6);
+        const octet4 = last3Part.slice(6, 9);
+        return `${octet1}.${octet2}.${octet3}.${octet4}`;
+      }
+      return s;
+    }
+
+    // 2. Chuyển đổi an toàn mọi định dạng thời gian (Google Sheet, ISO, Date object, millisecond) thành timestamp ms
+    function parseDateToTimestamp(rawTime) {
+      if (!rawTime) return 0;
+      if (typeof rawTime === 'number') return rawTime;
+      if (rawTime.toDate) return rawTime.toDate().getTime();
+      let clean = String(rawTime).replace(/\s*\([^)]*\)/g, '').trim();
+      let ts = Date.parse(clean);
+      if (!isNaN(ts) && ts > 0) return ts;
+      const mIso = clean.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+      if (mIso) {
+        return new Date(parseInt(mIso[1], 10), parseInt(mIso[2], 10) - 1, parseInt(mIso[3], 10), parseInt(mIso[4] || 0, 10), parseInt(mIso[5] || 0, 10), parseInt(mIso[6] || 0, 10)).getTime();
+      }
+      const fallback = new Date(clean).getTime();
+      return isNaN(fallback) ? 0 : fallback;
+    }
+
+    // 3. Định dạng thời gian rõ ràng, đẹp mắt, không bao giờ bị vỡ dòng (HH:mm:ss • DD/MM/YYYY)
+    function formatVisitorTime(timestamp) {
+      if (!timestamp) return 'Gần đây';
+      const ts = typeof timestamp === 'number' ? timestamp : parseDateToTimestamp(timestamp);
+      if (!ts) return String(timestamp).slice(0, 24);
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return String(timestamp).slice(0, 24);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const MM = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `${hh}:${mm}:${ss} • ${dd}/${MM}/${yyyy}`;
+    }
+
     // 1. Nhận tín hiệu người dùng đang lướt web (Gộp theo IP thời gian thực)
     function handleIncomingLiveVisitor(visitor) {
       if (!visitor || !visitor.ip) return;
       const list = visitorLogsCache.visitors;
-      const cleanIp = String(visitor.ip).trim();
+      const cleanIp = restoreIpDots(visitor.ip);
+      const incomingTs = Number(visitor.lastActive || visitor.timestamp) || parseDateToTimestamp(visitor.time || visitor.timeStr) || Date.now();
       const idx = list.findIndex(v => String(v.ip).trim() === cleanIp);
 
       if (idx >= 0) {
@@ -4071,8 +4127,8 @@
           mergedHistory.push({
             page: visitor.page,
             path: visitor.path || '/',
-            time: visitor.timeStr || '',
-            timestamp: Date.now()
+            time: formatVisitorTime(incomingTs),
+            timestamp: incomingTs
           });
         }
         if (mergedHistory.length > 25) mergedHistory = mergedHistory.slice(-25);
@@ -4080,13 +4136,16 @@
         list[idx] = {
           ...existing,
           ...visitor,
+          ip: cleanIp,
           visits: mergedVisits,
           history: mergedHistory,
           userEmail: visitor.userEmail || existing.userEmail || '',
           userName: visitor.userName || existing.userName || '',
           userUid: visitor.userUid || existing.userUid || '',
           isMember: visitor.isMember || existing.isMember || false,
-          lastActive: Date.now(),
+          lastActive: incomingTs,
+          timestamp: incomingTs,
+          timeStr: formatVisitorTime(incomingTs),
           online: true
         };
 
@@ -4097,14 +4156,17 @@
         // IP mới tinh
         list.unshift({
           ...visitor,
+          ip: cleanIp,
           visits: visitor.visits || 1,
           online: true,
-          lastActive: Date.now(),
+          lastActive: incomingTs,
+          timestamp: incomingTs,
+          timeStr: formatVisitorTime(incomingTs),
           history: Array.isArray(visitor.history) ? visitor.history : [{
             page: visitor.page || 'Trang Chủ',
             path: visitor.path || '/',
-            time: visitor.timeStr || '',
-            timestamp: Date.now()
+            time: formatVisitorTime(incomingTs),
+            timestamp: incomingTs
           }]
         });
       }
@@ -4116,7 +4178,7 @@
     // 2. Nhận nhịp tim lướt web (Heartbeat) của IP
     function handleVisitorHeartbeat(ip) {
       if (!ip) return;
-      const cleanIp = String(ip).trim();
+      const cleanIp = restoreIpDots(ip);
       const v = visitorLogsCache.visitors.find(x => String(x.ip).trim() === cleanIp);
       if (v) {
         v.lastActive = Date.now();
@@ -4132,14 +4194,22 @@
 
       try {
         const ipMap = new Map();
+        const now = Date.now();
 
         // A. Nạp từ LocalStorage (0ms)
         const localVisitors = getLocalAnalytics('ipaviet_analytics_visitors', []);
         if (Array.isArray(localVisitors)) {
           localVisitors.forEach(v => {
             if (v && v.ip) {
-              const cleanIp = String(v.ip).trim();
-              ipMap.set(cleanIp, { ...v, ip: cleanIp });
+              const cleanIp = restoreIpDots(v.ip);
+              const vTs = Number(v.lastActive || v.timestamp) || parseDateToTimestamp(v.timeStr) || now;
+              ipMap.set(cleanIp, { 
+                ...v, 
+                ip: cleanIp, 
+                timestamp: vTs, 
+                lastActive: vTs,
+                timeStr: v.timeStr || formatVisitorTime(vTs)
+              });
             }
           });
         }
@@ -4154,7 +4224,11 @@
               if (data && Array.isArray(data.visitors)) {
                 data.visitors.forEach(gv => {
                   if (!gv || !gv.ip) return;
-                  const cleanIp = String(gv.ip).trim();
+                  const cleanIp = restoreIpDots(gv.ip);
+                  // Lấy timestamp thật của thiết bị, không bao giờ dùng cứng 1h trước!
+                  const parsedTs = Number(gv.timestamp || gv.lastActive) || parseDateToTimestamp(gv.time) || now;
+                  const isOnline = (now - parsedTs) < 180000; // < 3 phút là Online chuẩn xác
+
                   if (ipMap.has(cleanIp)) {
                     const ex = ipMap.get(cleanIp);
                     ex.visits = Math.max(ex.visits || 1, gv.visits || 1);
@@ -4162,27 +4236,39 @@
                       ex.userEmail = gv.userEmail;
                       ex.isMember = gv.isMember;
                     }
-                    if (!ex.timeStr && gv.time) ex.timeStr = gv.time;
+                    if (parsedTs > (ex.lastActive || ex.timestamp || 0)) {
+                      ex.lastActive = parsedTs;
+                      ex.timestamp = parsedTs;
+                      ex.timeStr = gv.time ? formatVisitorTime(parsedTs) : ex.timeStr;
+                      ex.page = gv.page || ex.page;
+                      ex.deviceModel = gv.deviceModel || ex.deviceModel;
+                      ex.browser = gv.browser || ex.browser;
+                      ex.isp = gv.isp || ex.isp;
+                      ex.city = gv.city || ex.city;
+                    }
                   } else {
                     ipMap.set(cleanIp, {
                       id: 'gas_' + Math.random().toString(36).substr(2, 6),
                       ip: cleanIp,
                       city: gv.city || 'Việt Nam',
+                      region: gv.region || '',
                       country: gv.country || 'Việt Nam',
                       flag: '🇻🇳',
                       isp: gv.isp || 'Nhà mạng',
                       deviceType: gv.deviceType || 'other',
                       deviceModel: gv.deviceModel || 'Thiết Bị',
                       browser: gv.browser || 'Trình Duyệt',
+                      screen: gv.screen || '',
                       page: gv.page || 'Trang Chủ',
                       referrer: gv.referrer || 'Trực tiếp',
-                      timestamp: Date.now() - 3600000,
-                      timeStr: gv.time || '',
+                      timestamp: parsedTs,
+                      lastActive: parsedTs,
+                      timeStr: formatVisitorTime(parsedTs),
                       userEmail: gv.userEmail || '',
                       isMember: gv.isMember || false,
                       visits: gv.visits || 1,
-                      online: false,
-                      history: [{ page: gv.page || 'Trang Chủ', time: gv.time || '', path: '/' }]
+                      online: isOnline,
+                      history: [{ page: gv.page || 'Trang Chủ', time: formatVisitorTime(parsedTs), path: '/' }]
                     });
                   }
                 });
@@ -4199,20 +4285,34 @@
               snap.forEach(doc => {
                 const fData = doc.data();
                 if (!fData || !fData.ip) return;
-                const cleanIp = String(fData.ip).trim();
+                const cleanIp = restoreIpDots(fData.ip);
+                const fTs = Number(fData.lastActive || fData.timestamp) || 
+                  (fData.updatedAt && fData.updatedAt.toMillis && fData.updatedAt.toMillis()) || 
+                  parseDateToTimestamp(fData.timeStr) || now;
+
                 if (ipMap.has(cleanIp)) {
                   const ex = ipMap.get(cleanIp);
                   ipMap.set(cleanIp, {
                     ...ex,
                     ...fData,
+                    ip: cleanIp,
                     visits: Math.max(ex.visits || 1, fData.visits || 1),
                     userEmail: fData.userEmail || ex.userEmail || '',
                     userName: fData.userName || ex.userName || '',
                     isMember: fData.isMember || ex.isMember || false,
+                    lastActive: Math.max(ex.lastActive || 0, fTs),
+                    timestamp: Math.max(ex.timestamp || 0, fTs),
                     history: (Array.isArray(fData.history) && fData.history.length > 0) ? fData.history : (ex.history || [])
                   });
                 } else {
-                  ipMap.set(cleanIp, { id: doc.id, ...fData, ip: cleanIp });
+                  ipMap.set(cleanIp, { 
+                    id: doc.id, 
+                    ...fData, 
+                    ip: cleanIp,
+                    lastActive: fTs,
+                    timestamp: fTs,
+                    timeStr: fData.timeStr || formatVisitorTime(fTs)
+                  });
                 }
               });
             }
@@ -4238,7 +4338,7 @@
         renderVisitorTable();
 
         if (isManual && typeof showToast === 'function') {
-          showToast(`Đã làm mới! Đang quản lý ${visitorLogsCache.visitors.length} IP duy nhất`, 'success');
+          showToast(`Đã làm mới! Đang theo dõi ${visitorLogsCache.visitors.length} IP khách thật`, 'success');
         }
       } catch (err) {
         console.error("loadVisitorLogs error:", err);
@@ -4273,8 +4373,9 @@
       const pageMap = {};
 
       allVisitors.forEach(v => {
-        const timeDiff = now - (v.lastActive || v.timestamp || 0);
-        const isOnline = timeDiff < 180000; // 3 phút
+        const activeTime = v.lastActive || v.timestamp || 0;
+        const timeDiff = now - activeTime;
+        const isOnline = timeDiff < 180000; // < 3 phút là Online chuẩn xác
         if (isOnline) onlineCount++;
 
         const isUserMember = Boolean(v.isMember || (v.userEmail && v.userEmail !== 'Khách vãng lai'));
@@ -4303,7 +4404,13 @@
 
       const elOnline = document.getElementById('liveOnlineVisitors');
       if (elOnline) {
-        elOnline.innerText = `${Math.max(1, onlineCount)} khách đang online`;
+        elOnline.innerHTML = `
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>${Math.max(1, onlineCount)} thiết bị đang online</span>
+        `;
       }
 
       const elBadgeCount = document.getElementById('visitorCountBadge');
@@ -4331,7 +4438,8 @@
         if (devFilter !== 'ALL' && (v.deviceType || '').toLowerCase() !== devFilter.toLowerCase()) {
           return false;
         }
-        const timeDiff = now - (v.lastActive || v.timestamp || 0);
+        const activeTime = v.lastActive || v.timestamp || 0;
+        const timeDiff = now - activeTime;
         const isOnline = timeDiff < 180000;
         const isUserMember = Boolean(v.isMember || (v.userEmail && v.userEmail !== 'Khách vãng lai'));
 
@@ -4368,30 +4476,40 @@
 
       let html = '';
       filtered.forEach((vis) => {
-        const timeDiff = now - (vis.lastActive || vis.timestamp || 0);
+        const activeTime = vis.lastActive || vis.timestamp || now;
+        const timeDiff = now - activeTime;
         const isOnline = timeDiff < 180000; // < 3 phút
-        const isIdle = timeDiff >= 180000 && timeDiff < 900000; // 3 - 15 phút
-        const timeAgoStr = timeAgo(vis.lastActive || vis.timestamp || now);
+        const isRecent = timeDiff >= 180000 && timeDiff < 900000; // 3 - 15 phút
+        const timeAgoStr = timeAgo(activeTime);
+
+        // Định dạng thời gian sạch sẽ 2 hàng: HH:mm:ss ở trên, DD/MM/YYYY ở dưới
+        const formattedFull = formatVisitorTime(activeTime);
+        const parts = formattedFull.split(' • ');
+        const timeHour = parts[0] || '';
+        const timeDay = parts[1] || '';
 
         let statusBadge = '';
         if (isOnline) {
           statusBadge = `
-            <div class="flex items-center gap-1.5 font-bold text-emerald-600 text-[11px]">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-bold shadow-xs">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
               <span>Online</span>
-            </div>`;
-        } else if (isIdle) {
+            </span>`;
+        } else if (isRecent) {
           statusBadge = `
-            <div class="flex items-center gap-1.5 font-semibold text-amber-600 text-[11px]">
-              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-              <span>Chờ • ${timeAgoStr}</span>
-            </div>`;
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80 text-[11px] font-semibold">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span>${timeAgoStr}</span>
+            </span>`;
         } else {
           statusBadge = `
-            <div class="flex items-center gap-1.5 text-gray-400 text-[11px]">
-              <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10.5px] font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
               <span>${timeAgoStr}</span>
-            </div>`;
+            </span>`;
         }
 
         let devIcon = '<i data-lucide="smartphone" class="w-4 h-4 text-gray-500"></i>';
@@ -4406,6 +4524,7 @@
         else if (pageLower.includes('mmo')) pageBadgeClass = 'bg-amber-50 text-amber-800 border border-amber-200/60';
         else if (pageLower.includes('nạp') || pageLower.includes('tien')) pageBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200/60';
         else if (pageLower.includes('chủ')) pageBadgeClass = 'bg-purple-50 text-purple-700 border border-purple-200/60';
+        else if (pageLower.includes('vsign')) pageBadgeClass = 'bg-indigo-50 text-indigo-700 border border-indigo-200/60';
 
         const locParts = [vis.city, vis.region].filter(Boolean);
         const locStr = locParts.length > 0 ? locParts.join(', ') : (vis.country || 'Việt Nam');
@@ -4441,27 +4560,36 @@
         }
 
         const journeyCount = Array.isArray(vis.history) ? vis.history.length : 1;
+        const cleanIpDisplay = restoreIpDots(vis.ip);
+        const isIpv6 = cleanIpDisplay.includes(':');
+        const ipTypeLabel = isIpv6 ? 'IPv6' : 'IPv4';
 
         html += `
           <tr class="hover:bg-blue-50/30 transition group">
             <td class="py-3 px-3">
               ${statusBadge}
-              <div class="text-[10px] text-gray-400 font-mono mt-0.5">${escapeHTML(vis.timeStr || '')}</div>
+              <div class="mt-1 font-mono">
+                <div class="text-xs font-bold text-gray-800">${escapeHTML(timeHour)}</div>
+                <div class="text-[10px] text-gray-400">${escapeHTML(timeDay)}</div>
+              </div>
             </td>
             <td class="py-3 px-3">
               <div class="flex items-center gap-1.5">
-                <span class="font-mono font-bold text-gray-900 text-xs px-2 py-0.5 bg-gray-100 group-hover:bg-blue-100 rounded-lg transition">
-                  ${escapeHTML(vis.ip || 'Unknown')}
+                <span class="font-mono font-black text-gray-900 text-xs px-2 py-0.5 bg-gray-100 group-hover:bg-blue-50 border border-gray-200/60 rounded-lg transition tracking-wide select-all" title="Địa chỉ IP chuẩn">
+                  ${escapeHTML(cleanIpDisplay)}
                 </span>
-                <button type="button" onclick="copyVisitorIP('${escapeHTML(vis.ip || '')}')" class="text-gray-300 hover:text-blue-600 transition p-1" title="Sao chép IP">
+                <button type="button" onclick="copyVisitorIP('${escapeHTML(cleanIpDisplay)}')" class="text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition p-1 rounded-md" title="Sao chép IP">
                   <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
               <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                <span class="text-[9.5px] px-1.5 py-0.5 rounded-md font-bold bg-blue-50 text-blue-700 border border-blue-200/50">
+                <span class="text-[9px] px-1.5 py-0.2 rounded font-extrabold ${isIpv6 ? 'bg-purple-50 text-purple-700 border border-purple-200/60' : 'bg-blue-50 text-blue-700 border border-blue-200/60'}">
+                  ${ipTypeLabel}
+                </span>
+                <span class="text-[9.5px] px-1.5 py-0.2 rounded-md font-bold bg-gray-100 text-gray-700">
                   👁️ ${vis.visits || 1} lượt xem
                 </span>
-                ${vis.isBot ? '<span class="text-[9px] px-1.5 py-0.5 rounded-md font-bold bg-rose-50 text-rose-700 border border-rose-200/50">🤖 Bot</span>' : ''}
+                ${vis.isBot ? '<span class="text-[9px] px-1.5 py-0.2 rounded-md font-bold bg-rose-50 text-rose-700 border border-rose-200/50">🤖 Bot</span>' : ''}
               </div>
             </td>
             <td class="py-3 px-3">
@@ -4469,38 +4597,47 @@
             </td>
             <td class="py-3 px-3">
               <div class="flex items-center gap-1.5 font-bold text-gray-800">
-                <span>${vis.flag || '🇻🇳'}</span>
-                <span class="truncate max-w-[140px]">${escapeHTML(locStr)}</span>
+                <span class="text-base">${vis.flag || '🇻🇳'}</span>
+                <span class="truncate max-w-[140px] text-xs">${escapeHTML(locStr)}</span>
               </div>
-              <div class="text-[10.5px] text-gray-400 truncate max-w-[150px] mt-0.5 flex items-center gap-1">
-                <i data-lucide="wifi" class="w-3 h-3 text-gray-400 shrink-0"></i>
-                <span class="truncate">${escapeHTML(vis.isp || 'Nhà mạng')}</span>
+              <div class="text-[10.5px] text-gray-500 truncate max-w-[150px] mt-0.5 flex items-center gap-1">
+                <i data-lucide="wifi" class="w-3 h-3 text-blue-500 shrink-0"></i>
+                <span class="truncate font-medium">${escapeHTML(vis.isp || 'Nhà mạng')}</span>
               </div>
             </td>
             <td class="py-3 px-3">
               <div class="flex items-center gap-2">
-                <div class="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                <div class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 border border-gray-200/50">
                   ${devIcon}
                 </div>
-                <div class="truncate max-w-[150px]">
-                  <div class="font-bold text-gray-900 truncate">${escapeHTML(vis.deviceModel || 'Thiết bị')}</div>
-                  <div class="text-[10px] text-gray-400 truncate">${escapeHTML(vis.browser || 'Trình duyệt')}</div>
+                <div class="truncate max-w-[160px]">
+                  <div class="font-bold text-gray-900 text-xs truncate">${escapeHTML(vis.deviceModel || 'Thiết bị')}</div>
+                  <div class="text-[10px] text-gray-500 truncate flex items-center gap-1">
+                    <span>${escapeHTML(vis.browser || 'Trình duyệt')}</span>
+                    ${vis.screen ? `<span class="text-gray-300">•</span><span class="font-mono text-[9.5px]">${escapeHTML(vis.screen)}</span>` : ''}
+                  </div>
                 </div>
               </div>
             </td>
             <td class="py-3 px-3">
               <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold text-[11px] ${pageBadgeClass}">
                 <i data-lucide="compass" class="w-3 h-3"></i>
-                <span class="truncate max-w-[130px]">${escapeHTML(vis.page || 'Trang Chủ')}</span>
+                <span class="truncate max-w-[140px]">${escapeHTML(vis.page || 'Trang Chủ')}</span>
               </span>
-              <div class="text-[10px] text-gray-400 mt-1 flex items-center gap-1 font-medium">
-                <i data-lucide="route" class="w-3 h-3 text-indigo-400 shrink-0"></i>
-                <span>${journeyCount} bước trong hành trình</span>
+              <div class="text-[10px] text-gray-500 mt-1 flex items-center gap-1.5 font-medium">
+                <span class="flex items-center gap-0.5 text-indigo-600 font-bold">
+                  <i data-lucide="route" class="w-3 h-3"></i>
+                  ${journeyCount} trang
+                </span>
+                <span class="text-gray-300">•</span>
+                <span class="truncate max-w-[110px] text-gray-400" title="${escapeHTML(vis.referrer || 'Trực tiếp')}">
+                  ${escapeHTML(vis.referrer || 'Trực tiếp')}
+                </span>
               </div>
             </td>
             <td class="py-3 px-3 text-center">
-              <button onclick="openVisitorDetailModal('${vis.id}')" class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-600 flex items-center justify-center transition active:scale-95 mx-auto" title="Xem hành trình & thông số">
-                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+              <button onclick="openVisitorDetailModal('${vis.id}')" class="w-8 h-8 rounded-xl bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 flex items-center justify-center transition active:scale-90 mx-auto shadow-xs border border-blue-100" title="Xem hồ sơ chi tiết & hành trình">
+                <i data-lucide="scan-face" class="w-4 h-4"></i>
               </button>
             </td>
           </tr>`;
@@ -4510,39 +4647,52 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    // 5. Mở Popup Chi Tiết Người Xem & Customer Journey Flow
+    // 5. Mở Popup Chi Tiết Người Xem & Customer Journey Flow (Hồ sơ đầy đủ chuyên sâu)
     function openVisitorDetailModal(visId) {
       const vis = visitorLogsCache.visitors.find(v => v.id === visId);
       if (!vis) return;
 
       visitorLogsCache.currentSelectedId = visId;
-      document.getElementById('mvisId').innerText = `IP: ${vis.ip} • Hoạt động: ${vis.timeStr || ''}`;
-
+      const cleanIp = restoreIpDots(vis.ip);
+      const isIpv6 = cleanIp.includes(':');
       const now = Date.now();
-      const timeDiff = now - (vis.lastActive || vis.timestamp || 0);
+      const activeTime = vis.lastActive || vis.timestamp || now;
+      const timeDiff = now - activeTime;
       const isOnline = timeDiff < 180000;
+      const timeAgoStr = timeAgo(activeTime);
+      const formattedTime = formatVisitorTime(activeTime);
+
+      const elTitleId = document.getElementById('mvisId');
+      if (elTitleId) {
+        elTitleId.innerHTML = `<span class="font-bold text-gray-800">${escapeHTML(cleanIp)}</span> • ${isOnline ? '<span class="text-emerald-600 font-bold">🟢 Đang Online</span>' : '<span class="text-gray-500 font-medium">⚪ ' + timeAgoStr + '</span>'}`;
+      }
+
       const isUserMember = Boolean(vis.isMember || (vis.userEmail && vis.userEmail !== 'Khách vãng lai'));
 
-      // Render Customer Journey Timeline
+      // Render Customer Journey Timeline (Hành trình từng bước)
       const historyList = Array.isArray(vis.history) && vis.history.length > 0 
         ? vis.history 
-        : [{ page: vis.page || 'Trang Chủ', path: vis.path || '/', time: vis.timeStr || 'Gần đây' }];
+        : [{ page: vis.page || 'Trang Chủ', path: vis.path || '/', time: formattedTime }];
 
       let journeyHtml = '';
       historyList.forEach((step, sIdx) => {
         const isCurrent = sIdx === historyList.length - 1;
+        const stepTimeStr = step.time || (step.timestamp ? formatVisitorTime(step.timestamp) : 'Gần đây');
         journeyHtml += `
           <div class="flex items-start gap-3 relative pb-3 last:pb-0">
             ${sIdx < historyList.length - 1 ? '<div class="absolute left-2.5 top-3 bottom-0 w-0.5 bg-indigo-200"></div>' : ''}
-            <div class="w-5 h-5 rounded-full ${isCurrent ? 'bg-indigo-600 text-white animate-pulse' : 'bg-indigo-100 text-indigo-600'} text-[10px] font-black flex items-center justify-center shrink-0 z-10">
+            <div class="w-5 h-5 rounded-full ${isCurrent ? 'bg-indigo-600 text-white animate-pulse' : 'bg-indigo-100 text-indigo-600'} text-[10px] font-black flex items-center justify-center shrink-0 z-10 shadow-xs">
               ${sIdx + 1}
             </div>
             <div class="flex-1 bg-white p-2.5 rounded-xl border ${isCurrent ? 'border-indigo-300 shadow-sm' : 'border-gray-100'}">
               <div class="flex items-center justify-between gap-2">
                 <span class="font-bold text-gray-900 text-xs">${escapeHTML(step.page || 'Trang Web')}</span>
-                <span class="text-[10px] font-mono text-gray-400">${escapeHTML(step.time || '')}</span>
+                <span class="text-[10px] font-mono text-gray-400">${escapeHTML(stepTimeStr)}</span>
               </div>
-              <div class="text-[10.5px] font-mono text-indigo-600 mt-0.5">${escapeHTML(step.path || '/')}</div>
+              <div class="text-[10.5px] font-mono text-indigo-600 mt-0.5 flex items-center gap-1">
+                <i data-lucide="link" class="w-3 h-3 text-indigo-400 shrink-0"></i>
+                <span>${escapeHTML(step.path || '/')}</span>
+              </div>
             </div>
           </div>`;
       });
@@ -4550,68 +4700,104 @@
       const body = document.getElementById('mvisBody');
       body.innerHTML = `
         <!-- USER PROFILE CARD -->
-        <div class="p-3.5 rounded-2xl border ${isUserMember ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200' : 'bg-gray-50 border-gray-100'} space-y-2">
+        <div class="p-4 rounded-2xl border ${isUserMember ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200' : 'bg-gray-50 border-gray-100'} space-y-2.5">
           <div class="flex items-center justify-between">
-            <span class="text-[10.5px] font-extrabold uppercase tracking-wider ${isUserMember ? 'text-amber-800' : 'text-gray-400'}">
+            <span class="text-[10.5px] font-black uppercase tracking-wider ${isUserMember ? 'text-amber-800' : 'text-gray-500'}">
               ${isUserMember ? '⭐ Tài Khoản Thành Viên Đã Đăng Nhập' : '👤 Khách Vãng Lai (Chưa Đăng Nhập)'}
             </span>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isUserMember ? 'bg-amber-200 text-amber-900' : 'bg-gray-200 text-gray-600'}">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isUserMember ? 'bg-amber-200 text-amber-900' : 'bg-gray-200 text-gray-700'}">
               ${isUserMember ? 'ĐÃ XÁC THỰC' : 'GUEST'}
             </span>
           </div>
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl ${isUserMember ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-500'} flex items-center justify-center font-black text-sm shadow-sm">
+            <div class="w-11 h-11 rounded-2xl ${isUserMember ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-500'} flex items-center justify-center font-black text-base shadow-sm shrink-0">
               ${isUserMember ? '⭐' : '<i data-lucide="user" class="w-5 h-5"></i>'}
             </div>
             <div class="truncate flex-1">
-              <div class="font-black text-gray-900 text-sm truncate">
-                ${escapeHTML(vis.userName || (vis.userEmail ? vis.userEmail.split('@')[0] : 'Khách vãng lai'))}
+              <div class="font-black text-gray-900 text-sm truncate flex items-center gap-1.5">
+                <span>${escapeHTML(vis.userName || (vis.userEmail ? vis.userEmail.split('@')[0] : 'Khách vãng lai'))}</span>
               </div>
-              <div class="text-xs text-gray-500 font-mono truncate">
-                ${escapeHTML(vis.userEmail || 'Chưa liên kết email')}
+              <div class="text-xs text-gray-500 font-mono truncate mt-0.5" title="${escapeHTML(vis.userEmail || '')}">
+                ${escapeHTML(vis.userEmail || 'Chưa liên kết email tài khoản')}
               </div>
+              ${vis.userUid ? `<div class="text-[10px] text-gray-400 font-mono truncate">UID: ${escapeHTML(vis.userUid)}</div>` : ''}
             </div>
           </div>
         </div>
 
-        <!-- IP & REALTIME STATS -->
+        <!-- IP & NETWORK DOSSIER -->
         <div class="grid grid-cols-2 gap-3">
-          <div class="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-            <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Địa Chỉ IP Khách</span>
-            <span class="text-sm font-mono font-black text-gray-900 mt-1 block">${escapeHTML(vis.ip)}</span>
-            <span class="text-[10px] font-bold text-blue-600 mt-0.5 block">👁️ Đã xem ${vis.visits || 1} lần</span>
+          <div class="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Địa Chỉ IP Khách</span>
+              <span class="text-[9px] font-black px-1.5 py-0.2 rounded ${isIpv6 ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">${isIpv6 ? 'IPv6' : 'IPv4'}</span>
+            </div>
+            <span class="text-sm font-mono font-black text-gray-900 mt-1 block select-all">${escapeHTML(cleanIp)}</span>
+            <div class="flex items-center gap-2 mt-1.5">
+              <span class="text-[10.5px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">👁️ Đã xem ${vis.visits || 1} lần</span>
+              <a href="https://ipwho.is/${encodeURIComponent(cleanIp)}" target="_blank" class="text-[10.5px] font-semibold text-gray-500 hover:text-blue-600 underline flex items-center gap-0.5">
+                <span>Tra cứu Whois</span>
+                <i data-lucide="external-link" class="w-2.5 h-2.5"></i>
+              </a>
+            </div>
           </div>
-          <div class="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-            <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Trạng Thái Kết Nối</span>
-            <span class="text-xs font-black mt-1 block flex items-center gap-1.5 ${isOnline ? 'text-emerald-600' : 'text-gray-500'}">
-              <span class="w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-ping' : 'bg-gray-400'}"></span>
-              ${isOnline ? 'Đang Trực Tuyến (Online)' : 'Vừa Xem Website'}
-            </span>
-            <span class="text-[10px] text-gray-400 mt-0.5 block">${escapeHTML(vis.timeStr || '')}</span>
+          <div class="p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Trạng Thái Kết Nối</span>
+            <div class="mt-1">
+              ${isOnline ? `
+                <span class="inline-flex items-center gap-1.5 text-xs font-black text-emerald-600">
+                  <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span>Đang Trực Tuyến (Online)</span>
+                </span>` : `
+                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500">
+                  <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                  <span>Ngoại tuyến • ${timeAgoStr}</span>
+                </span>`
+              }
+            </div>
+            <span class="text-[10.5px] text-gray-500 font-mono mt-1.5 block">${escapeHTML(formattedTime)}</span>
           </div>
         </div>
 
-        <!-- GEO & HARDWARE DETAILS -->
-        <div class="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-gray-500 font-bold">Vị Trí Địa Lý:</span>
-            <span class="font-black text-gray-900 flex items-center gap-1">${vis.flag || '🇻🇳'} ${escapeHTML(vis.city || '')}, ${escapeHTML(vis.country || 'Việt Nam')}</span>
+        <!-- GEO & HARDWARE TECHNICAL SPECS -->
+        <div class="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 space-y-2 text-xs">
+          <div class="flex items-center justify-between pb-1 border-b border-gray-200/50">
+            <span class="text-gray-400 font-bold text-[11px] uppercase tracking-wider">Thông Số Kỹ Thuật Chi Tiết</span>
+            <span class="text-[10px] font-mono text-gray-400">Telemetry Engine v2.5</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-500 font-bold">Nhà Mạng / ISP:</span>
+            <span class="text-gray-500 font-medium">Vị Trí Địa Lý:</span>
+            <span class="font-black text-gray-900 flex items-center gap-1.5 text-right">
+              <span class="text-base">${vis.flag || '🇻🇳'}</span>
+              <span>${escapeHTML([vis.city, vis.region].filter(Boolean).join(', ') || vis.country || 'Việt Nam')}</span>
+            </span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-medium">Nhà Mạng / ISP:</span>
             <span class="font-bold text-blue-600">${escapeHTML(vis.isp || 'Chưa xác định')}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-500 font-bold">Thiết Bị & Model:</span>
-            <span class="font-bold text-gray-900">${escapeHTML(vis.deviceModel || 'Thiết bị')}</span>
+            <span class="text-gray-500 font-medium">Thiết Bị & Model:</span>
+            <span class="font-bold text-gray-900">${escapeHTML(vis.deviceModel || 'Thiết bị')} (${escapeHTML(vis.deviceType || 'other')})</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-500 font-bold">Trình Duyệt:</span>
+            <span class="text-gray-500 font-medium">Trình Duyệt & Engine:</span>
             <span class="font-bold text-gray-900">${escapeHTML(vis.browser || 'Trình duyệt')}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-500 font-bold">Màn Hình & Nguồn:</span>
-            <span class="font-mono text-gray-700">${escapeHTML(vis.screen || '390x844')} • ${escapeHTML(vis.referrer || 'Trực tiếp')}</span>
+            <span class="text-gray-500 font-medium">Độ Phân Giải Màn Hình:</span>
+            <span class="font-mono text-gray-800 font-bold">${escapeHTML(vis.screen || '390x844 (Retina)')}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-medium">Nguồn Truy Cập (Referrer):</span>
+            <span class="font-medium text-indigo-600 truncate max-w-[200px]" title="${escapeHTML(vis.referrer || 'Trực tiếp')}">${escapeHTML(vis.referrer || 'Truy cập trực tiếp')}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-medium">Trang Đang Mở Hiện Tại:</span>
+            <span class="font-bold text-gray-900">${escapeHTML(vis.page || 'Trang Chủ')}</span>
           </div>
         </div>
 
@@ -4620,7 +4806,7 @@
           <div class="flex items-center justify-between pb-1.5 border-b border-indigo-100/60">
             <span class="text-xs font-black text-indigo-900 flex items-center gap-1.5">
               <i data-lucide="git-branch" class="w-4 h-4 text-indigo-600"></i>
-              Hành Trình Trải Nghiệm Của IP Này (Customer Journey)
+              Hành Trình Trải Nghiệm Khách Hàng (Customer Journey)
             </span>
             <span class="text-[10px] font-bold text-indigo-600 bg-indigo-100/80 px-2 py-0.5 rounded-full">
               ${historyList.length} bước đã duyệt
@@ -4644,7 +4830,23 @@
     function copyCurrentVisitorIP() {
       const vis = visitorLogsCache.visitors.find(v => v.id === visitorLogsCache.currentSelectedId);
       if (vis && vis.ip) {
-        copyVisitorIP(vis.ip);
+        copyVisitorIP(restoreIpDots(vis.ip));
+      }
+    }
+
+    function filterTableByCurrentVisitorIP() {
+      const vis = visitorLogsCache.visitors.find(v => v.id === visitorLogsCache.currentSelectedId);
+      if (vis && vis.ip) {
+        const cleanIp = restoreIpDots(vis.ip);
+        const qInput = document.getElementById('visitorSearchInput');
+        if (qInput) {
+          qInput.value = cleanIp;
+          renderVisitorTable();
+        }
+        closeVisitorDetailModal();
+        if (typeof showToast === 'function') {
+          showToast(`Đã lọc nhật ký theo IP: ${cleanIp}`, 'info');
+        }
       }
     }
 
@@ -4675,12 +4877,14 @@
       visitors.forEach(v => {
         const isMem = Boolean(v.isMember || (v.userEmail && v.userEmail !== 'Khách vãng lai'));
         const journeyStr = Array.isArray(v.history) ? v.history.map(h => h.page).join(" -> ") : (v.page || '');
+        const cleanIpCsv = restoreIpDots(v.ip);
+        const timeFormattedCsv = formatVisitorTime(v.lastActive || v.timestamp);
         const row = [
-          `"${v.ip || ''}"`,
+          `"${cleanIpCsv}"`,
           `"${v.userEmail || ''}"`,
           `"${isMem ? 'Thành viên' : 'Khách vãng lai'}"`,
           `"${v.visits || 1}"`,
-          `"${(v.timeStr || '')} ${(v.dateStr || '')}"`,
+          `"${timeFormattedCsv}"`,
           `"${v.country || ''}"`,
           `"${v.city || ''}"`,
           `"${v.isp || ''}"`,
@@ -4722,6 +4926,14 @@
       }
       // Nạp danh sách người xem
       loadVisitorLogs(false);
+
+      // Tự động làm mới danh sách khách trực tuyến mỗi 25 giây khi admin đang xem tab Thống Kê
+      setInterval(() => {
+        const sec = document.getElementById('analyticsSection');
+        if (sec && !sec.classList.contains('hidden') && !document.hidden) {
+          loadVisitorLogs(false);
+        }
+      }, 25000);
     });
   </script>
 </body>
