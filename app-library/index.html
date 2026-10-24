@@ -209,7 +209,7 @@
     .detail-info-value { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text-primary); }
     .detail-info-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; }
     .detail-section-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); opacity: 0; transform: translateY(20px); }
-    .detail-desc { font-size: 15px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 48px; opacity: 0; transform: translateY(20px); }
+    .detail-desc { font-size: 14.5px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 48px; opacity: 0; transform: translateY(20px); white-space: pre-wrap; word-break: break-word; }
     .detail-screenshots { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; margin-bottom: 48px; scrollbar-width: none; }
     .detail-screenshots::-webkit-scrollbar { display: none; }
     .detail-screenshots img { height: 400px; border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: transform 0.4s var(--ease-spring); flex-shrink: 0; }
@@ -607,46 +607,66 @@ function categorizeApp(name, desc) {
 /* ─── Smart MOD & Hack Feature Extractor ─── */
 function extractModFeatures(app) {
   const name = String(app.name || app.title || '');
-  const desc = String(app.localizedDescription || app.description || app.desc || app.subtitle || '');
-  const fullText = (name + ' ' + desc).toLowerCase();
+  const vObj = (app.versions && app.versions[0]) || {};
+  const rootLocalizedDesc = (typeof app.localizedDescription === 'string') ? app.localizedDescription.trim() : '';
+  const rootDesc = (typeof app.description === 'string') ? app.description.trim() : '';
+  const rootVDesc = (typeof app.versionDescription === 'string') ? app.versionDescription.trim() : '';
+  const vLocalizedDesc = (typeof vObj.localizedDescription === 'string') ? vObj.localizedDescription.trim() : '';
+  const vDesc = (typeof vObj.versionDescription === 'string') ? vObj.versionDescription.trim() : '';
+  const vDescription = (typeof vObj.description === 'string') ? vObj.description.trim() : '';
+  const subtitle = (typeof app.subtitle === 'string') ? app.subtitle.trim() : '';
+
+  const allTexts = [subtitle, vLocalizedDesc, rootVDesc, vDesc, vDescription, rootLocalizedDesc, rootDesc, app.desc, app.fullDesc].filter(Boolean);
+  const combinedDesc = [...new Set(allTexts)].join('\n\n');
+  const fullText = (name + ' ' + combinedDesc).toLowerCase();
 
   const modKeywords = [
-    'mod', 'hack', 'cheat', 'unlimited', 'premium', 'vip', 'pro unlocked', 'pro version', 
-    'no ads', 'adblock', 'chặn quảng cáo', 'mở khóa', 'vô hạn', 'god mode', 'bất tử', 
-    'tweak', 'plus', '++', 'patched', 'crack', 'anti-ban', 'isponsorblock', 'rocket', 
+    'mod', 'hack', 'cheat', 'unlimited', 'premium', 'vip', 'pro unlocked', 'pro version', 'pro subcription', 'pro subscription', 'lifetime pro',
+    'no ads', 'adblock', 'chặn quảng cáo', 'chặn qc', 'mở khóa', 'vô hạn', 'god mode', 'bất tử', 
+    'tweak', 'tweaked', 'plus', '++', 'patched', 'crack', 'cracked', 'anti-ban', 'antiban', 'isponsorblock', 'rocket', 
     'cercube', 'uyou', 'enmity', 'bhtwitter', 'bhinstagram', 'dlinsta', 'infinit', 
-    'free in-app', 'iap free', 'full unlocked', 'speed hack', 'aimbot', 'esp'
+    'free in-app', 'iap free', 'full unlocked', 'speed hack', 'aimbot', 'esp', 'việt hóa', 'viethoa',
+    'one hit', 'onehit', 'no cooldown', 'no assistant cooldown', 'chức năng', 'tính năng hack', 'tính năng mod', 'chức năng mod',
+    'instant skill', 'freeze enemies', 'xuyên tường', 'cài song song', 'nhân bản'
   ];
 
-  const hasModKeyword = modKeywords.some(kw => fullText.includes(kw)) || 
-                        /(\+\+|\[mod|\[hack|\(mod|\(hack|modded|vô hạn|unlimited)/i.test(name) ||
-                        app._type === 'VIP';
+  const isMod = modKeywords.some(kw => fullText.includes(kw)) || 
+                /(\+\+|\[mod|\[hack|\(mod|\(hack|modded|vô hạn|unlimited|tweak|việt hóa)/i.test(name) ||
+                /(\bmod\b|\bhack\b|chức năng|tính năng hack|tính năng mod|việt hóa|patched|unlocked)/i.test(subtitle) ||
+                app._type === 'VIP';
 
-  if (!hasModKeyword) {
-    return { isMod: false, modSummary: '', modFeatures: [] };
-  }
+  if (!isMod) return { isMod: false, modSummary: '', modFeatures: [] };
 
-  // Extract highlight summary (e.g. from brackets in name like "Spotify (Premium, No Ads)")
   let summary = '';
-  const bracketMatch = name.match(/[\(\[\{](.*?(?:mod|hack|vip|pro|premium|unlimited|tweak|no ads|vô hạn).*?)[\)\]\}]/i);
+  const bracketMatch = name.match(/[\(\[\{](.*?(?:mod|hack|vip|pro|premium|unlimited|tweak|no ads|vô hạn|việt hóa).*?)[\)\]\}]/i);
   if (bracketMatch && bracketMatch[1]) {
     summary = bracketMatch[1].trim();
   }
 
-  // Extract explicit bullet points from description
   const features = [];
-  const lines = desc.split(/[\r\n]+/);
+  const lines = combinedDesc.split(/[\r\n]+/);
   lines.forEach(line => {
     const trimmed = line.trim();
-    if (/^[-*•+>✔✅⚡★]\s*/.test(trimmed)) {
-      const clean = trimmed.replace(/^[-*•+>✔✅⚡★]\s*/, '').trim();
-      if (clean.length > 5 && clean.length < 90 && !clean.toLowerCase().startsWith('http')) {
+    if (/^[-*•+>✔✅⚡★🦠🔩🔧💎💚⚙📝🟢🚀🛡️]\s*/.test(trimmed)) {
+      const clean = trimmed.replace(/^[-*•+>✔✅⚡★🦠🔩🔧💎💚⚙📝🟢🚀🛡️]\s*/, '').trim();
+      if (clean.length > 3 && clean.length < 90 && 
+          !clean.toLowerCase().startsWith('http') && 
+          !clean.toLowerCase().includes('tính năng hack') && 
+          !clean.toLowerCase().includes('tính năng mod') && 
+          !clean.toLowerCase().includes('chức năng') && 
+          !clean.toLowerCase().includes('repo gốc')) {
         features.push(clean);
       }
     }
   });
 
-  // If features list is still empty, synthesize smart high-impact feature badges based on keywords
+  if (features.length === 0 && subtitle) {
+    const subParts = subtitle.split(/[,;•|]/).map(s => s.trim()).filter(s => s.length > 3 && s.length < 60);
+    if (subParts.length > 1) {
+      features.push(...subParts);
+    }
+  }
+
   if (features.length === 0) {
     if (/unlimited|vô hạn|money|tiền|coin|gem|kim cương/i.test(fullText)) {
       features.push('Vô hạn tiền, vàng & kim cương không giới hạn');
@@ -669,6 +689,9 @@ function extractModFeatures(app) {
     if (/download|tải|save/i.test(fullText) || /tiktok|insta|twitter|youtube|threads/i.test(name.toLowerCase())) {
       features.push('Cho phép tải video, reels, nhạc chất lượng gốc về máy');
     }
+    if (/việt hóa|viethoa/i.test(fullText)) {
+      features.push('Đã Việt Hóa giao diện người dùng tiếng Việt');
+    }
     if (/tweak|jailbreak|sideload|trollstore/i.test(fullText)) {
       features.push('Tùy biến giao diện & nâng cấp tính năng hệ thống');
     }
@@ -684,11 +707,7 @@ function extractModFeatures(app) {
     summary = features.slice(0, 2).join(' • ');
   }
 
-  return {
-    isMod: true,
-    modSummary: summary,
-    modFeatures: features.slice(0, 6)
-  };
+  return { isMod: true, modSummary: summary, modFeatures: features.slice(0, 10) };
 }
 
 /* ─── Normalizer with Smart API Metadata Detection ─── */
@@ -712,10 +731,33 @@ function normalizeRepoApp(app, sourceMeta) {
   }
   const hasNativeScreenshots = screenshots.length > 0;
 
-  const rawDesc = app.localizedDescription || app.description || app.desc || app.subtitle || '';
-  const hasNativeDesc = Boolean(rawDesc && rawDesc.trim().length > 15 && !rawDesc.toLowerCase().includes('bản ipa thường'));
-  const desc = hasNativeDesc ? rawDesc.trim() : (app.subtitle || 'Ứng dụng tuyển chọn từ hệ thống IPAVIET.');
-  const fullDesc = hasNativeDesc ? rawDesc.trim() : '';
+  // Gather all description candidates
+  const vObj = (app.versions && app.versions[0]) || {};
+  const rootLocalizedDesc = (typeof app.localizedDescription === 'string') ? app.localizedDescription.trim() : '';
+  const rootDesc = (typeof app.description === 'string') ? app.description.trim() : '';
+  const rootVDesc = (typeof app.versionDescription === 'string') ? app.versionDescription.trim() : '';
+  const vLocalizedDesc = (typeof vObj.localizedDescription === 'string') ? vObj.localizedDescription.trim() : '';
+  const vDesc = (typeof vObj.versionDescription === 'string') ? vObj.versionDescription.trim() : '';
+  const vDescription = (typeof vObj.description === 'string') ? vObj.description.trim() : '';
+  const subtitle = (typeof app.subtitle === 'string') ? app.subtitle.trim() : '';
+
+  let fullDesc = '';
+  const candidateDescs = [vLocalizedDesc, rootVDesc, vDesc, vDescription, rootLocalizedDesc, rootDesc].filter(Boolean);
+  const hackDesc = candidateDescs.find(d => /hack|mod|chức năng|tính năng|việt hóa|patched|unlocked|tweak/i.test(d));
+  const generalDesc = candidateDescs.find(d => d !== hackDesc && d.length > 20);
+
+  if (hackDesc && generalDesc) {
+    fullDesc = hackDesc + '\n\n' + generalDesc;
+  } else if (hackDesc) {
+    fullDesc = hackDesc;
+  } else if (candidateDescs.length > 0) {
+    fullDesc = candidateDescs[0];
+  } else if (subtitle) {
+    fullDesc = subtitle;
+  }
+
+  const hasNativeDesc = Boolean(fullDesc && fullDesc.length > 10 && !fullDesc.toLowerCase().includes('bản ipa thường'));
+  const desc = hasNativeDesc ? fullDesc : (subtitle || 'Ứng dụng tuyển chọn từ hệ thống IPAVIET.');
 
   const name = app.name || app.title || 'Unknown App';
   const version = app.version || (app.versions && app.versions[0] && app.versions[0].version) || '1.0';
@@ -1323,7 +1365,10 @@ function openAppView(appId) {
   title.innerText = i.name || i.title || 'Unknown App';
   dev.innerText = i.developer || 'IPAVIET Studio';
   const descEl = document.getElementById('detailDesc');
-  descEl.innerText = i.fullDesc || i.description || i.desc || "Ứng dụng tuyệt vời được phân phối bởi hệ thống IPAVIET.";
+  const modFallbackDesc = (i.isMod && i.modFeatures && i.modFeatures.length > 0)
+    ? (i.modSummary ? i.modSummary + '\n\n' : '') + i.modFeatures.map(f => '• ' + f).join('\n')
+    : "Ứng dụng tuyệt vời được phân phối bởi hệ thống IPAVIET.";
+  descEl.innerText = i.fullDesc || i.description || i.desc || modFallbackDesc;
   document.getElementById('dInfoDev').innerText = i.developer || 'IPAVIET Studio';
   document.getElementById('dInfoCat').innerText = i.category || 'Tiện ích';
   document.getElementById('dInfoVer').innerText = i.version || '1.0.0';
@@ -1348,6 +1393,9 @@ function openAppView(appId) {
 
   const modPanel = document.getElementById('detailModPanel');
   if (modPanel) {
+    // Reset inline styles so it does not stay at opacity 0 from closeAppView
+    modPanel.style.opacity = '1';
+    modPanel.style.transform = 'translateY(0)';
     if (i.isMod) {
       const feats = (i.modFeatures && i.modFeatures.length > 0) ? i.modFeatures : [
         'Đã kích hoạt các tính năng nâng cao & đặc quyền',
@@ -1406,6 +1454,7 @@ function openAppView(appId) {
   // TÍNH NĂNG LỌC API THÔNG MINH:
   // - Nếu API có sẵn screenshots và mô tả: dùng ngay, KHÔNG gọi thêm
   // - Chỉ khi thiếu screenshots hoặc mô tả mới gọi Apple iTunes fallback
+  // - Không bao giờ ghi đè mô tả hack của bản MOD bằng mô tả gốc App Store
   // ═════════════════════════════════════════════════════════════
   if (Array.isArray(i.screenshots) && i.screenshots.length > 0) {
     renderSS(i.screenshots);
@@ -1418,7 +1467,7 @@ function openAppView(appId) {
         gsap.to(ssWrap, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
         gsap.to('.detail-section-title', { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' });
       }
-      if (!i.hasNativeDesc && meta && meta.description) {
+      if (!i.hasNativeDesc && meta && meta.description && !i.isMod) {
         i.fullDesc = meta.description;
         descEl.innerText = meta.description;
       }
@@ -1502,6 +1551,15 @@ function openAppView(appId) {
       opacity: 1, y: 0, duration: 0.5,
       stagger: 0.08, ease: 'power2.out'
     }, 0.55);
+
+    // 8.5 MOD Panel slide in with glowing effect
+    if (i.isMod && modPanel && modPanel.style.display !== 'none') {
+      tl.fromTo(modPanel,
+        { opacity: 0, y: 25 },
+        { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' },
+        0.58
+      );
+    }
 
     // 9. Body content slide up
     tl.to(body, { opacity: 1, y: 0, duration: 0.6 }, 0.6);
