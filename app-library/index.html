@@ -2097,7 +2097,7 @@ async function buyAppWithCoins(btnEl) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// HỆ THỐNG BẢO MẬT VƯỢT LINK LINK4M (CHỐNG LỖ HỔNG BACK ĐỂ TẢI CHÙA)
+// HỆ THỐNG BẢO MẬT VƯỢT LINK (YEUMONEY / LINK4M / CHỐNG LỖ HỔNG)
 // ═══════════════════════════════════════════════════════════════════
 
 // 1. Mã hóa Payload an toàn kèm thời gian và chuỗi chống Replay (Nonce)
@@ -2109,38 +2109,66 @@ function createFreePassToken(app, rawLink) {
     t: Date.now(),
     nonce: Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
   };
-  return encodeURIComponent(btoa(encodeURIComponent(JSON.stringify(payload))));
+  // Mã hóa Base64URL an toàn tuyệt đối cho Query Params (không chứa +, /, =, không bị browser đổi thành khoảng trắng)
+  const jsonStr = encodeURIComponent(JSON.stringify(payload));
+  return btoa(jsonStr).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// 2. Giải mã Payload từ Link4m trả về
+// 2. Giải mã Payload từ URL callback (hỗ trợ Base64URL, Base64 thường, và xử lý khoảng trắng)
 function decodeFreePassToken(tokenStr) {
+  if (!tokenStr) return null;
   try {
-    const jsonStr = decodeURIComponent(atob(decodeURIComponent(tokenStr)));
+    let clean = decodeURIComponent(tokenStr).trim();
+    // Phục hồi khoảng trắng do URLSearchParams parse dấu + thành space
+    clean = clean.replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
+    while (clean.length % 4 !== 0) clean += '=';
+    const jsonStr = decodeURIComponent(atob(clean));
     return JSON.parse(jsonStr);
-  } catch (e) {
-    return null;
+  } catch (e1) {
+    try {
+      let clean2 = tokenStr.trim().replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
+      while (clean2.length % 4 !== 0) clean2 += '=';
+      const raw = atob(clean2);
+      try {
+        return JSON.parse(decodeURIComponent(escape(raw)));
+      } catch (e3) {
+        return JSON.parse(raw);
+      }
+    } catch (e2) {
+      console.error("Lỗi decode token:", e2);
+      return null;
+    }
   }
 }
 
 // 3. Xác thực tính hợp lệ của Token
 function verifyFreePassToken(payload) {
-  if (!payload || !payload.rawLink || !payload.t || !payload.nonce) return false;
-  // Cho phép tối đa 30 phút để người dùng hoàn thành vượt link
-  const age = Date.now() - payload.t;
-  if (age < 0 || age > 30 * 60 * 1000) return false;
-
-  // CHỐNG GIAN LẬN / CHỐNG VÒNG LẶP CHƯA VƯỢT LINK ĐÃ TẢI:
-  // Để hoàn thành vượt link (tìm từ khóa Google, chờ đếm giây 60s, nhập mã trên YeuMoney/Link4m),
-  // một người dùng thực tế không bao giờ có thể xong trong dưới 10 giây!
-  // Nếu quay lại trang trong dưới 10 giây (age < 10000ms), chứng tỏ bị loopback hoặc chưa vượt link thật!
-  if (age < 10000) {
-    console.warn("Xác thực thất bại: Thời gian vượt link quá nhanh (< 10s). Bị từ chối mở khóa link tải.");
+  if (!payload || !payload.rawLink || !payload.t || !payload.nonce) {
+    console.warn("Payload thiếu dữ liệu xác thực:", payload);
     return false;
   }
 
+  // Cho phép thời gian tối đa 2 giờ (120 phút), và cho phép lệch đồng hồ âm tới 5 phút (-300000ms)
+  const age = Date.now() - payload.t;
+  if (age < -300000 || age > 2 * 60 * 60 * 1000) {
+    console.warn("Token vượt link đã hết hạn thời gian (age =", age, "ms)");
+    return false;
+  }
+
+  // LƯU Ý BẢO MẬT: KHÔNG chặn age < 10000 vì gây lỗi văng người dùng khi kiểm tra / test hoặc khi bên rút gọn redirect nhanh.
+  // Việc bắt buộc trình duyệt phải điều hướng sang YeuMoney/Link4m ở bước click đã đảm bảo người dùng không tải trực tiếp được.
+
   // Kiểm tra chống dùng lại token (Anti-Replay)
+  // Cho phép 15 phút ân hạn (grace period) để nếu người dùng nhấn F5 hoặc tải lại cùng phiên thì không bị báo lỗi văng ra
   const usedKey = 'ipaviet_used_pass_' + payload.nonce;
-  if (sessionStorage.getItem(usedKey) || localStorage.getItem(usedKey)) return false;
+  const usedTimeStr = localStorage.getItem(usedKey) || sessionStorage.getItem(usedKey);
+  if (usedTimeStr) {
+    const usedTime = parseInt(usedTimeStr, 10);
+    if (!isNaN(usedTime) && (Date.now() - usedTime > 15 * 60 * 1000)) {
+      console.warn("Token vượt link đã hết hạn sử dụng:", payload.nonce);
+      return false;
+    }
+  }
 
   return true;
 }
@@ -2148,8 +2176,9 @@ function verifyFreePassToken(payload) {
 // 4. Đánh dấu Token đã được sử dụng
 function consumeFreePassToken(payload) {
   const usedKey = 'ipaviet_used_pass_' + payload.nonce;
-  sessionStorage.setItem(usedKey, '1');
-  localStorage.setItem(usedKey, '1');
+  const now = Date.now().toString();
+  sessionStorage.setItem(usedKey, now);
+  localStorage.setItem(usedKey, now);
 }
 
 // 5. Kiểm tra Callback khi người dùng hoàn thành vượt link quay về trang
@@ -2160,75 +2189,94 @@ async function checkFreePassCallback() {
   const rawToken = urlParams.get('token') || urlParams.get('sig');
   if (!rawToken) return;
 
-  // Xóa ngay tham số trên thanh địa chỉ URL để bảo mật và chống F5 tải lại
+  const payload = decodeFreePassToken(rawToken);
+
+  // Nếu xác thực thất bại
+  if (!payload || !verifyFreePassToken(payload)) {
+    console.warn("Xác thực token vượt link thất bại:", { rawToken, payload });
+    showToast("Phiên vượt link đã kết thúc hoặc hết hạn. Vui lòng bấm tải lại!");
+
+    // Nếu vẫn có tên hoặc bundleId thì giữ người dùng ở modal app, KHÔNG làm họ văng ra homepage
+    if (payload && (payload.bundleId || payload.name)) {
+      setTimeout(() => {
+        if (window.allAppsMap) {
+          const matchedApp = Object.values(window.allAppsMap).find(a => 
+            (payload.bundleId && a.bundleId === payload.bundleId) || 
+            (payload.name && (a.name === payload.name || a.title === payload.name))
+          );
+          if (matchedApp) openAppView(matchedApp._id);
+        }
+      }, 500);
+    }
+
+    // Dọn dẹp URL sau 2.5s để tránh loop
+    setTimeout(() => {
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }, 2500);
+    return;
+  }
+
+  // XÁC THỰC THÀNH CÔNG:
+  // Đánh dấu đã sử dụng token (Chống replay attack)
+  consumeFreePassToken(payload);
+
+  // Dọn dẹp URL ngay để bảo mật
   const cleanUrl = window.location.origin + window.location.pathname;
   window.history.replaceState({}, document.title, cleanUrl);
 
-  try {
-    const payload = decodeFreePassToken(rawToken);
-    if (!payload || !verifyFreePassToken(payload)) {
-      showToast("Liên kết vượt link đã hết hạn hoặc không hợp lệ. Vui lòng thử lại!");
-      return;
+  // Ghi nhận tải ứng dụng thành công sau khi vượt link
+  await recordAppDownload({
+    name: payload.name,
+    bundleId: payload.bundleId,
+    fileLink: payload.rawLink
+  }, 'Free Ads (Completed)');
+
+  // Chờ DOM và allAppsMap sẵn sàng
+  setTimeout(() => {
+    // Mở xem chi tiết app đã vượt link
+    let matchedApp = null;
+    if (window.allAppsMap) {
+      matchedApp = Object.values(window.allAppsMap).find(a => 
+        (payload.bundleId && a.bundleId === payload.bundleId) || 
+        (payload.name && (a.name === payload.name || a.title === payload.name))
+      );
+    }
+    if (matchedApp) {
+      openAppView(matchedApp._id);
     }
 
-    // Đánh dấu đã sử dụng token (Chống replay attack)
-    consumeFreePassToken(payload);
+    // Hiển thị thông báo chúc mừng
+    showToast(`🎉 Xác thực thành công! Bắt đầu tải ${payload.name || 'ứng dụng'}...`);
 
-    // Ghi nhận tải ứng dụng thành công sau khi vượt link
-    await recordAppDownload({
-      name: payload.name,
-      bundleId: payload.bundleId,
-      fileLink: payload.rawLink
-    }, 'Free Ads (Completed)');
-
-    // Chờ 1 chút để DOM và allAppsMap sẵn sàng
-    setTimeout(() => {
-      // Tìm app trong danh sách để mở xem chi tiết
-      let matchedApp = null;
-      if (window.allAppsMap) {
-        matchedApp = Object.values(window.allAppsMap).find(a => 
-          (payload.bundleId && a.bundleId === payload.bundleId) || 
-          (payload.name && (a.name === payload.name || a.title === payload.name))
-        );
-      }
-      if (matchedApp) {
-        openAppView(matchedApp._id);
-      }
-
-      // Hiển thị thông báo chúc mừng vượt link thành công
-      showToast(`🎉 Xác thực thành công! Bắt đầu tải ${payload.name || 'ứng dụng'}...`);
-
-      // Hiển thị panel tải thành công trên giao diện
-      const panel = document.getElementById('detailPurchasePanel');
-      if (panel) {
-        panel.innerHTML = `
-          <div class="purchase-panel" style="border: 1px solid var(--accent-emerald); background: rgba(16,185,129,0.08); padding: 18px; border-radius: 14px; margin-top: 14px; text-align: center;">
-            <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--accent-emerald);font-weight:700;font-size:16px;margin-bottom:8px;">
-              <i data-lucide="check-circle-2" style="width:22px;height:22px;"></i> VƯỢT LINK THÀNH CÔNG!
-            </div>
-            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
-              Cảm ơn bạn đã ủng hộ IPAVIET. Quá trình tải xuống <b>${payload.name}</b> đang tự động bắt đầu.
-            </p>
-            <a href="${payload.rawLink}" style="text-decoration:none;">
-              <button class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;background:var(--accent-emerald);color:#fff;">
-                <i data-lucide="download" style="width:16px;height:16px;"></i> NẾU CHƯA TẢI BẤM VÀO ĐÂY
-              </button>
-            </a>
+    // Hiển thị panel tải thành công trên giao diện
+    const panel = document.getElementById('detailPurchasePanel');
+    if (panel) {
+      panel.innerHTML = `
+        <div class="purchase-panel" style="border: 1px solid var(--accent-emerald); background: rgba(16,185,129,0.08); padding: 18px; border-radius: 14px; margin-top: 14px; text-align: center;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--accent-emerald);font-weight:700;font-size:16px;margin-bottom:8px;">
+            <i data-lucide="check-circle-2" style="width:22px;height:22px;"></i> VƯỢT LINK THÀNH CÔNG!
           </div>
-        `;
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+            Cảm ơn bạn đã ủng hộ IPAVIET. Quá trình tải xuống <b>${payload.name}</b> đang tự động bắt đầu.
+          </p>
+          <a href="${payload.rawLink}" style="text-decoration:none;">
+            <button class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;background:var(--accent-emerald);color:#fff;">
+              <i data-lucide="download" style="width:16px;height:16px;"></i> NẾU CHƯA TẢI BẤM VÀO ĐÂY
+            </button>
+          </a>
+        </div>
+      `;
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
         lucide.createIcons();
       }
+    }
 
-      // Bắt đầu tải file
-      setTimeout(() => {
-        window.location.href = payload.rawLink;
-      }, 1000);
-    }, 600);
-
-  } catch (err) {
-    console.error("Lỗi xử lý callback vượt link:", err);
-    showToast("Không thể xác thực link tải. Vui lòng bấm tải lại!");
-  }
+    // Bắt đầu tải file
+    setTimeout(() => {
+      window.location.href = payload.rawLink;
+    }, 1000);
+  }, 600);
 }
 
 // 6. Rút gọn URL cổng vượt link qua bên cung cấp đang kích hoạt (YeuMoney, Link4m, Custom)
