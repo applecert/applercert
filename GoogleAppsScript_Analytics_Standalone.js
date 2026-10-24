@@ -580,6 +580,52 @@ function doGet(e) {
       }));
     }
 
+    // -------------------------------------------------------------
+    // ACTION 4: RÚT GỌN LINK TẢI FREE BẰNG LINK4M (VƯỢT LINK BẮT BUỘC)
+    // -------------------------------------------------------------
+    if (action === 'get_free_link' || action === 'shorten_link4m') {
+      var rawTargetUrl = e.parameter.url || '';
+      if (!rawTargetUrl) {
+        return output.setContent(JSON.stringify({ success: false, message: "Thiếu URL cần rút gọn" }));
+      }
+      var targetUrl = rawTargetUrl;
+      try {
+        if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+          targetUrl = Utilities.newBlob(Utilities.base64Decode(targetUrl)).getDataAsString();
+        }
+      } catch (e) {}
+
+      var apiToken = "691eb05d63b1b86d4a3bca1e";
+      var apiUrl = "https://link4m.co/api-shorten/v2?api=" + encodeURIComponent(apiToken) + "&url=" + encodeURIComponent(targetUrl);
+      var shortened = null;
+
+      try {
+        var response = UrlFetchApp.fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          },
+          muteHttpExceptions: true
+        });
+        var resText = response.getContentText();
+        var json = JSON.parse(resText);
+        if (json && json.status === "success" && json.shortenedUrl) {
+          shortened = json.shortenedUrl;
+        }
+      } catch (err) {}
+
+      // Nếu API tạm bận hoặc timeout, dùng ngay cổng chuyển hướng QuickLink trực tiếp của Link4m:
+      if (!shortened) {
+        shortened = "https://link4m.co/st?api=" + encodeURIComponent(apiToken) + "&url=" + encodeURIComponent(targetUrl);
+      }
+
+      return output.setContent(JSON.stringify({
+        success: true,
+        shortenedUrl: shortened,
+        link: shortened
+      }));
+    }
+
     return output.setContent(JSON.stringify({ success: false, message: "Hành động không hợp lệ: " + action }));
   } catch (err) {
     return output.setContent(JSON.stringify({ success: false, error: err.toString() }));

@@ -510,6 +510,9 @@ const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW
 // PHƯƠNG ÁN 2: URL Web App Google Sheet Thống Kê Riêng Biệt (Không đụng chạm hệ thống nạp tiền)
 const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || 'https://script.google.com/macros/s/AKfycbyx3HSoUoQFWBGgPxkPJME_Qj0w8ltzLTmrFhUpkODdnlRK8r_-a45PCy9rU0dlS9SZ/exec';
 
+// CẤU HÌNH VƯỢT LINK LINK4M CHO KHÁCH TẢI FREE (CHỐNG LỖ HỔNG TẢI CHÙA)
+const LINK4M_API_TOKEN = '691eb05d63b1b86d4a3bca1e';
+
 const firebaseConfig = {
   apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
   authDomain: "ipaviet-st.firebaseapp.com",
@@ -2051,38 +2054,77 @@ async function buyAppWithCoins(btnEl) {
   setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
 }
 
+// HÀM RÚT GỌN LINK BẮT BUỘC VƯỢT LINK QUA CỔNG LINK4M
+async function getLink4mShortenedUrl(destinationUrl) {
+  if (!destinationUrl) return null;
+
+  // 1. Cố gắng lấy link rút gọn chính xác từ backend Apps Script (nếu có)
+  try {
+    const apiUrl = (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) ? ANALYTICS_API_URL : GOOGLE_API_URL;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
+    const res = await fetch(`${apiUrl}?action=get_free_link&url=${encodeURIComponent(destinationUrl)}&t=${Date.now()}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && (data.shortenedUrl || data.link)) {
+        return data.shortenedUrl || data.link;
+      }
+    }
+  } catch (e) {
+    console.warn("GAS shortener fetch fallback to Link4m QuickLink:", e);
+  }
+
+  // 2. Fallback trực tiếp vào Cổng QuickLink Gateway chính thức của Link4m:
+  // Định dạng: https://link4m.co/st?api={TOKEN}&url={DESTINATION_URL}
+  // Khi trình duyệt truy cập vào link này, Link4m sẽ ghi nhận vào tài khoản 691eb05d63b1b86d4a3bca1e
+  // và tự động 302 chuyển hướng khách sang trang vượt link (https://link4m.org/xxxxxx)!
+  return `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(destinationUrl)}`;
+}
+
 async function downloadFreeStore(btnEl) {
   const originalText = btnEl.innerHTML;
   btnEl.innerHTML = `<div style="width:16px;height:16px;border:2px solid var(--text-tertiary);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>`;
   btnEl.disabled = true;
-  const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
+
+  const rawLink = STATE.currentItem && (STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link);
+  if (!rawLink) {
+    showToast("Không tìm thấy link tải ứng dụng");
+    btnEl.innerHTML = originalText;
+    btnEl.disabled = false;
+    return;
+  }
+
   try {
-    await recordAppDownload(STATE.currentItem, 'Free Ads');
-    let downloadTarget = rawLink;
-    try {
-      const res = await fetch(GOOGLE_API_URL + '?action=get_free_link&url=' + encodeURIComponent(btoa(rawLink)));
-      const data = await res.json();
-      if (data.success && data.link) {
-        downloadTarget = data.link;
-      }
-    } catch (e) {
-      downloadTarget = rawLink;
-    }
-    if (downloadTarget) {
-      showToast("Bắt đầu tải ứng dụng...");
+    showToast("Đang tạo link vượt quảng cáo Link4m...");
+    await recordAppDownload(STATE.currentItem, 'Free Ads (Link4m)');
+
+    // TẠO LINK RÚT GỌN LINK4M BẮT BUỘC VƯỢT LINK
+    const link4mTarget = await getLink4mShortenedUrl(rawLink);
+
+    // BẢO VỆ CHỐNG LỖ HỔNG (CRITICAL ANTI-LEAK SECURITY):
+    // Tuyệt đối KHÔNG BAO GIỜ gán lại rawLink nếu là tải Free!
+    // Bắt buộc đích đến phải là đường dẫn Link4m để người dùng phải vượt link mới tải được!
+    if (link4mTarget && (link4mTarget.includes('link4m.co') || link4mTarget.includes('link4m.org') || link4mTarget.includes('link4m'))) {
+      showToast("Chuyển hướng đến cổng vượt link Link4m...");
       setTimeout(() => {
-        window.location.href = downloadTarget;
-      }, 250);
+        window.location.href = link4mTarget;
+      }, 350);
     } else {
-      showToast("Không tìm thấy link tải hợp lệ");
+      // Ngay cả khi xảy ra sự cố mạng, vẫn điều hướng qua QuickLink Link4m chứ KHÔNG BAO GIỜ nhả link gốc!
+      const safeFallback = `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(rawLink)}`;
+      window.location.href = safeFallback;
     }
   } catch (error) {
-    showToast("Lỗi kết nối máy chủ");
+    console.error("Link4m error:", error);
+    // Vẫn bảo vệ bằng QuickLink Link4m
+    const safeFallback = `https://link4m.co/st?api=${encodeURIComponent(LINK4M_API_TOKEN)}&url=${encodeURIComponent(rawLink)}`;
+    window.location.href = safeFallback;
   } finally {
     setTimeout(() => {
       btnEl.innerHTML = originalText;
       btnEl.disabled = false;
-    }, 2000);
+    }, 2500);
   }
 }
 
