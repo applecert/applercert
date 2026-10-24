@@ -23,6 +23,33 @@
  * =========================================================================
  */
 
+/**
+ * =========================================================================
+ * BƯỚC KHỞI ĐỘNG NHANH: CHỌN HÀM NÀY VÀ BẤM NÚT "CHẠY" (RUN) TRÊN THANH CÔNG CỤ
+ * =========================================================================
+ * Sẽ tự động cấp quyền (Review Permissions) và tạo ngay 4 bảng:
+ * 1. Daily_Summary (Thống kê theo ngày & thiết bị)
+ * 2. App_Stats (Thống kê lượt xem & tải từng ứng dụng)
+ * 3. Recent_Downloads (Nhật ký 500 lượt tải gần nhất)
+ * 4. Search_Queries (Xu hướng tìm kiếm)
+ */
+function setup() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  getOrCreateSheet(ss, "Daily_Summary", [
+    "Ngày", "Lượt xem trang", "Khách riêng biệt", "Lượt tải IPA", "iOS", "Android", "Mac", "Windows", "Khác", "Cập nhật lúc"
+  ]);
+  getOrCreateSheet(ss, "App_Stats", [
+    "App ID", "Tên Ứng Dụng", "Bundle ID", "Danh Mục", "Loại", "Icon URL", "Lượt Xem", "Lượt Tải", "Cập Nhật Lúc"
+  ]);
+  getOrCreateSheet(ss, "Recent_Downloads", [
+    "Thời Gian", "Tên Ứng Dụng", "Bundle ID", "Loại Tải", "Khách Hàng", "Loại App", "Icon URL"
+  ]);
+  getOrCreateSheet(ss, "Search_Queries", [
+    "Từ Khóa", "Số Lần Tìm", "Tìm Lần Cuối"
+  ]);
+  Logger.log(">>> KHỞI TẠO THÀNH CÔNG TOÀN BỘ CÁC BẢNG TRÊN GOOGLE SHEET! <<<");
+}
+
 function doGet(e) {
   var output = ContentService.createTextOutput().setMimeType(ContentService.MimeType.JSON);
   
