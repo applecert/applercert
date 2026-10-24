@@ -1019,7 +1019,7 @@
                 <p class="font-bold text-gray-800">Chế Độ Bảo Trì (Maintenance Mode)</p>
                 <p class="text-gray-400">Tạm dừng tiếp nhận đơn và nạp tiền</p>
               </div>
-              <input type="checkbox" id="flagMaintenance" onchange="toggleMaintenanceMode(this.checked)" class="w-5 h-5 accent-rose-600 rounded cursor-pointer">
+              <input type="checkbox" id="flagMaintenance" checked onchange="toggleMaintenanceMode(this.checked)" class="w-5 h-5 accent-rose-600 rounded cursor-pointer">
             </div>
           </div>
         </div>
@@ -2905,8 +2905,17 @@
     }
 
     function toggleMaintenanceMode(checked) {
-      showToast(checked ? 'Đã kích hoạt chế độ bảo trì!' : 'Đã tắt chế độ bảo trì.', checked ? 'warning' : 'success');
-      addAuditLog('MAINTENANCE_TOGGLE', `Chế độ bảo trì: ${checked ? 'BẬT' : 'TẮT'}`);
+      localStorage.setItem('mmo_maintenance_mode', checked ? 'true' : 'false');
+      try {
+        if (typeof db !== 'undefined') {
+          db.collection('system_config').doc('mmo_maintenance').set({
+            enabled: checked,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true }).catch(() => {});
+        }
+      } catch(e) {}
+      showToast(checked ? 'Đã kích hoạt chế độ bảo trì MMO! Khách hàng sẽ thấy màn hình bảo trì.' : 'Đã tắt bảo trì MMO. Cửa hàng đã mở lại cho khách.', checked ? 'warning' : 'success');
+      addAuditLog('MAINTENANCE_TOGGLE', `Chế độ bảo trì MMO: ${checked ? 'BẬT' : 'TẮT'}`);
     }
 
     // ==========================================
