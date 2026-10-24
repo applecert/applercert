@@ -1129,12 +1129,21 @@
               </div>
               <p class="text-xs text-gray-500 mt-1">Quản lý và chuyển đổi linh hoạt giữa các bên rút gọn link kiếm tiền (YeuMoney, Link4m...) mà không cần sửa code.</p>
             </div>
-            <div class="flex items-center gap-3">
-              <span class="text-xs font-bold text-gray-700">Bắt buộc vượt link</span>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="shortenerEnabledToggle" checked class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-              </label>
+            <div class="flex items-center gap-4 flex-wrap">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-gray-700">Bắt buộc đăng nhập</span>
+                <label class="relative inline-flex items-center cursor-pointer" title="Yêu cầu người dùng phải đăng nhập tài khoản trước khi tải ứng dụng">
+                  <input type="checkbox" id="shortenerRequireLoginToggle" checked class="sr-only peer">
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-gray-700">Bắt buộc vượt link</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="shortenerEnabledToggle" checked class="sr-only peer">
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -3282,6 +3291,7 @@
     async function loadShortenerSettingsAdmin() {
       const DEFAULT_CFG = {
         enabled: true,
+        require_login: true,
         provider: 'yeumoney',
         fallback_to_link4m: true,
         yeumoney_token: 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
@@ -3313,6 +3323,9 @@
       const toggle = document.getElementById('shortenerEnabledToggle');
       if (toggle) toggle.checked = (cfg.enabled !== false);
 
+      const reqLoginToggle = document.getElementById('shortenerRequireLoginToggle');
+      if (reqLoginToggle) reqLoginToggle.checked = (cfg.require_login !== false);
+
       const fallbackToggle = document.getElementById('shortenerFallbackLink4mToggle');
       if (fallbackToggle) fallbackToggle.checked = (cfg.fallback_to_link4m !== false);
 
@@ -3333,6 +3346,8 @@
 
     async function saveShortenerSettingsAdmin() {
       const toggle = document.getElementById('shortenerEnabledToggle');
+      const reqLoginToggle = document.getElementById('shortenerRequireLoginToggle');
+      const requireLogin = reqLoginToggle ? reqLoginToggle.checked : true;
       const fallbackToggle = document.getElementById('shortenerFallbackLink4mToggle');
       const fallbackToLink4m = fallbackToggle ? fallbackToggle.checked : true;
       const ymToken = (document.getElementById('shortenerTokenYeumoney')?.value || '').trim();
@@ -3342,6 +3357,7 @@
 
       const cfg = {
         enabled: toggle ? toggle.checked : true,
+        require_login: requireLogin,
         provider: currentShortenerProvider || 'yeumoney',
         fallback_to_link4m: fallbackToLink4m,
         yeumoney_token: ymToken || 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
@@ -3363,8 +3379,8 @@
         console.warn("Firestore save warning:", e);
       }
 
-      showToast(`Đã lưu cấu hình Cổng Vượt Link: ${currentShortenerProvider.toUpperCase()} (${cfg.enabled ? 'Đang BẬT' : 'Đang TẮT'}, Dự phòng Link4m: ${fallbackToLink4m ? 'BẬT' : 'TẮT'})`, 'success');
-      addAuditLog('SHORTENER_SETTINGS_UPDATE', `Cập nhật Cổng Vượt Link: ${currentShortenerProvider} - ${cfg.enabled ? 'BẬT' : 'TẮT'} (Dự phòng Link4m: ${fallbackToLink4m ? 'BẬT' : 'TẮT'})`);
+      showToast(`Đã lưu cấu hình Cổng Vượt Link: ${currentShortenerProvider.toUpperCase()} (${cfg.enabled ? 'Đang BẬT' : 'Đang TẮT'}, Đăng nhập: ${requireLogin ? 'BẬT' : 'TẮT'}, Dự phòng Link4m: ${fallbackToLink4m ? 'BẬT' : 'TẮT'})`, 'success');
+      addAuditLog('SHORTENER_SETTINGS_UPDATE', `Cập nhật Cổng Vượt Link: ${currentShortenerProvider} - ${cfg.enabled ? 'BẬT' : 'TẮT'} (Đăng nhập: ${requireLogin ? 'BẬT' : 'TẮT'}, Dự phòng Link4m: ${fallbackToLink4m ? 'BẬT' : 'TẮT'})`);
     }
 
     async function testShortenerApiLive() {

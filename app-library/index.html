@@ -513,6 +513,7 @@ const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || '
 // CẤU HÌNH VƯỢT LINK TẢI FREE (ĐỒNG BỘ THỜI GIAN THỰC VỚI ADMIN)
 const DEFAULT_SHORTENER_CONFIG = {
   enabled: true,
+  require_login: true, // Bắt buộc người dùng phải đăng nhập mới được tải ứng dụng
   provider: 'yeumoney', // 'yeumoney' | 'link4m' | 'custom'
   fallback_to_link4m: true, // Tự động chuyển Link4m khi YeuMoney gặp sự cố (Admin có thể tắt/bật)
   yeumoney_token: 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
@@ -1969,6 +1970,30 @@ function shareApp() {
 function showDownloadAction() {
   const panel = document.getElementById('detailPurchasePanel');
   const isAppVIP = STATE.currentItem._type === 'VIP';
+  const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+  const isLoginRequired = (cfg && cfg.require_login !== false);
+
+  if (!currentUser && isLoginRequired) {
+    panel.innerHTML = `
+      <div class="purchase-panel purchase-panel-normal" style="border: 1px solid rgba(6,182,212,0.3); background: rgba(6,182,212,0.06); padding: 22px; border-radius: 18px; text-align: center;">
+        <div style="width:48px;height:48px;border-radius:14px;background:rgba(6,182,212,0.15);color:var(--accent-cyan);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+          <i data-lucide="lock" style="width:24px;height:24px;"></i>
+        </div>
+        <p style="font-size:11px;font-weight:700;color:var(--accent-cyan);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">YÊU CẦU ĐĂNG NHẬP</p>
+        <h4 style="font-size:18px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);margin-bottom:8px;">Đăng Nhập Để Tải Ứng Dụng</h4>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:18px;line-height:1.5;">
+          Vui lòng đăng nhập hoặc đăng ký tài khoản IPAVIET để mở khóa tính năng tải ứng dụng (Hỗ trợ tải miễn phí qua Vượt Link hoặc tải trực tiếp VIP).
+        </p>
+        <a href="../account.html" style="text-decoration:none;">
+          <button class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;font-size:14px;background:var(--accent-cyan);color:#000;font-weight:700;">
+            <i data-lucide="log-in" style="width:16px;height:16px;"></i> ĐĂNG NHẬP / ĐĂNG KÝ NGAY
+          </button>
+        </a>
+      </div>`;
+    lucide.createIcons();
+    panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
 
   if (!currentUser) {
     panel.innerHTML = `
@@ -2189,6 +2214,27 @@ async function checkFreePassCallback() {
 
   const rawToken = urlParams.get('token') || urlParams.get('sig');
   if (!rawToken) return;
+
+  // Đợi Firebase Auth sẵn sàng nếu cần
+  const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+  if (!currentUser && typeof auth !== 'undefined' && auth) {
+    await new Promise(resolve => {
+      const unsub = auth.onAuthStateChanged(() => {
+        try { unsub(); } catch(e) {}
+        resolve();
+      });
+      setTimeout(resolve, 800);
+    });
+  }
+
+  // Nếu cấu hình yêu cầu đăng nhập mà người dùng chưa đăng nhập:
+  if (!currentUser && cfg && cfg.require_login !== false) {
+    showToast("⚠️ Vui lòng đăng nhập tài khoản để nhận link tải!");
+    setTimeout(() => {
+      window.location.href = '../account.html';
+    }, 1200);
+    return;
+  }
 
   const payload = decodeFreePassToken(rawToken);
 
@@ -2457,6 +2503,17 @@ async function downloadFreeStore(btnEl) {
 
   const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
   const providerLabel = (cfg.provider === 'link4m') ? 'Link4m' : (cfg.provider === 'yeumoney' ? 'YeuMoney' : 'Cổng Vượt Link');
+
+  // Bắt buộc đăng nhập nếu cấu hình yêu cầu
+  if (!currentUser && cfg && cfg.require_login !== false) {
+    showToast("⚠️ Vui lòng đăng nhập tài khoản để tải ứng dụng!");
+    btnEl.innerHTML = originalText;
+    btnEl.disabled = false;
+    setTimeout(() => {
+      window.location.href = '../account.html';
+    }, 1000);
+    return;
+  }
 
   // Chỉ cho phép tải trực tiếp khi Admin CHỦ ĐỘNG tắt vượt link trong Admin
   if (cfg && cfg.enabled === false) {
