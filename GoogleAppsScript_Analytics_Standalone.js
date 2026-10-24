@@ -243,6 +243,24 @@ function doGet(e) {
         }
         return output.setContent(JSON.stringify({ success: true, recorded: 'search' }));
       }
+
+      // E. GHI NHẬN THÔNG TIN NGƯỜI XEM & IP (VISITOR LOGS)
+      if (type === 'visitor') {
+        var sheetVis = getOrCreateSheet(ss, "Visitor_Logs", [
+          "Thời Gian", "Địa Chỉ IP", "Quốc Gia", "Thành Phố", "Nhà Mạng / ISP", "Thiết Bị", "Model Máy", "Trình Duyệt", "Trang Xem", "Nguồn Referrer"
+        ]);
+        var ip = e.parameter.ip || 'Unknown';
+        var country = e.parameter.country || 'Việt Nam';
+        var city = e.parameter.city || '';
+        var isp = e.parameter.isp || '';
+        var dev = e.parameter.device || 'other';
+        var devModel = e.parameter.deviceModel || '';
+        var browser = e.parameter.browser || '';
+        var page = e.parameter.page || '';
+        var ref = e.parameter.referrer || '';
+        sheetVis.appendRow([nowIso, ip, country, city, isp, dev, devModel, browser, page, ref]);
+        return output.setContent(JSON.stringify({ success: true, recorded: 'visitor' }));
+      }
     }
 
     // -------------------------------------------------------------
@@ -341,12 +359,38 @@ function doGet(e) {
         if (searchList.length > 50) searchList = searchList.slice(0, 50);
       }
 
+      // 5. Visitor Logs (50 khách gần nhất)
+      var sVis = ss.getSheetByName("Visitor_Logs");
+      var visitorsList = [];
+      if (sVis) {
+        var vVals = sVis.getDataRange().getValues();
+        var startV = Math.max(1, vVals.length - 50);
+        for (var vi = vVals.length - 1; vi >= startV; vi--) {
+          var vRow = vVals[vi];
+          if (vRow[1]) {
+            visitorsList.push({
+              time: String(vRow[0] || ''),
+              ip: String(vRow[1]),
+              country: String(vRow[2] || 'Việt Nam'),
+              city: String(vRow[3] || ''),
+              isp: String(vRow[4] || ''),
+              deviceType: String(vRow[5] || 'other'),
+              deviceModel: String(vRow[6] || ''),
+              browser: String(vRow[7] || ''),
+              page: String(vRow[8] || 'Trang Chủ'),
+              referrer: String(vRow[9] || 'Trực tiếp')
+            });
+          }
+        }
+      }
+
       return output.setContent(JSON.stringify({
         success: true,
         today: todayStat,
         apps: appsList,
         recentDownloads: recentList,
         searches: searchList,
+        visitors: visitorsList,
         serverTime: new Date().toISOString()
       }));
     }

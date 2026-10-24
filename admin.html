@@ -539,6 +539,121 @@
           </div>
 
         </div>
+
+        <!-- ================= LIVE VISITOR & IP TRACKING SECTION ================= -->
+        <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm space-y-4">
+          <!-- Header & Top Stats -->
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-gray-100 gap-4">
+            <div>
+              <div class="flex items-center gap-2.5">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <h3 class="font-extrabold text-base text-gray-900 flex items-center gap-2">
+                  <i data-lucide="radio" class="w-5 h-5 text-emerald-600"></i> Bảng Khách Truy Cập & Địa Chỉ IP Thời Gian Thực
+                </h3>
+                <span id="visitorCountBadge" class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  0 lượt
+                </span>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">Theo dõi chi tiết IP, Vị trí (Tỉnh/Thành), Nhà mạng (ISP), Thiết bị, Trình duyệt và Trang khách đang xem trên toàn hệ thống.</p>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+              <!-- Real-time Active Pulse Counter -->
+              <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200/60 font-bold text-xs shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="liveOnlineVisitors">1 khách đang online</span>
+              </div>
+              <!-- CSV Export -->
+              <button onclick="exportVisitorsCSV()" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Xuất CSV
+              </button>
+              <!-- Refresh Data -->
+              <button onclick="loadVisitorLogs(true)" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+                <i data-lucide="rotate-cw" id="visRefreshIcon" class="w-3.5 h-3.5"></i> Tải Lại
+              </button>
+            </div>
+          </div>
+
+          <!-- Micro Analytics Quick Bar: Geo & ISP Breakdown -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+              <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Khu Vực Hàng Đầu</span>
+              <span class="text-xs font-extrabold text-gray-800 mt-0.5 truncate block" id="statTopCity">Đang phân tích...</span>
+            </div>
+            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+              <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Nhà Mạng / ISP Phổ Biến</span>
+              <span class="text-xs font-extrabold text-gray-800 mt-0.5 truncate block" id="statTopISP">Đang phân tích...</span>
+            </div>
+            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+              <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Trang Được Xem Nhiều</span>
+              <span class="text-xs font-extrabold text-gray-800 mt-0.5 truncate block" id="statTopVisitedPage">Kho IPA</span>
+            </div>
+            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+              <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Thiết Bị Chủ Đạo</span>
+              <span class="text-xs font-extrabold text-gray-800 mt-0.5 truncate block" id="statTopDeviceModel">Apple iPhone (iOS)</span>
+            </div>
+          </div>
+
+          <!-- Filter & Search Controls -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+            <div class="relative flex-1 max-w-md">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              <input type="text" id="visitorSearchInput" oninput="renderVisitorTable()" placeholder="Tìm theo IP, Tỉnh/Thành, Nhà mạng, Thiết bị, Trang xem..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-appleBlue transition">
+            </div>
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+              <select id="visitorDeviceFilter" onchange="renderVisitorTable()" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:border-appleBlue">
+                <option value="ALL">Mọi Thiết Bị</option>
+                <option value="ios">Chỉ iOS (iPhone/iPad)</option>
+                <option value="android">Chỉ Android</option>
+                <option value="mac">Chỉ Mac</option>
+                <option value="windows">Chỉ Windows</option>
+              </select>
+              <select id="visitorStatusFilter" onchange="renderVisitorTable()" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:border-appleBlue">
+                <option value="ALL">Tất Cả Khách</option>
+                <option value="ONLINE">Chỉ Khách Đang Online</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Visitor Table -->
+          <div class="overflow-x-auto rounded-2xl border border-gray-100">
+            <table class="w-full text-left text-xs text-gray-600">
+              <thead>
+                <tr class="bg-gray-50/80 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                  <th class="py-3 px-3 w-36">Trạng Thái & Giờ</th>
+                  <th class="py-3 px-3 w-40">Địa Chỉ IP</th>
+                  <th class="py-3 px-3">Vị Trí & Nhà Mạng (ISP)</th>
+                  <th class="py-3 px-3">Thiết Bị & Trình Duyệt</th>
+                  <th class="py-3 px-3">Trang Đang Xem</th>
+                  <th class="py-3 px-3">Nguồn Đến</th>
+                  <th class="py-3 px-3 text-center w-16">Chi Tiết</th>
+                </tr>
+              </thead>
+              <tbody id="visitorTableBody" class="divide-y divide-gray-100">
+                <tr>
+                  <td colspan="7" class="text-center py-10 text-gray-400">
+                    <div class="flex flex-col items-center justify-center gap-2">
+                      <i data-lucide="loader" class="w-5 h-5 animate-spin text-appleBlue"></i>
+                      <span>Đang nạp nhật ký người xem...</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Table Footer Pagination/Status -->
+          <div class="flex items-center justify-between text-xs text-gray-400 pt-2 px-1">
+            <span id="visitorTableStatusText">Đang hiển thị 0 khách truy cập</span>
+            <span class="text-[11px] text-gray-400 font-mono flex items-center gap-1">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500"></i> Tự động đồng bộ thời gian thực
+            </span>
+          </div>
+        </div>
+
       </div>
 
       <!-- ================= TAB: USERS ================= -->
@@ -1348,13 +1463,40 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toastContainer" class="fixed top-6 right-6 z-[300] space-y-2 pointer-events-none"></div>
 
-  <!-- CONFIRMATION / ACTION MODAL -->
-  <div id="actionModal" class="fixed inset-0 z-[220] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeActionModal()"></div>
-    <div id="actionModalPanel" class="bg-white rounded-3xl shadow-modal w-full max-w-sm p-6 relative z-10 text-center space-y-4">
-      <div id="actionModalContent"></div>
+  <!-- MODAL: VISITOR TELEMETRY DETAIL -->
+  <div id="modalVisitorDetail" class="fixed inset-0 z-[230] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeVisitorDetailModal()"></div>
+    <div class="bg-white rounded-3xl shadow-modal w-full max-w-lg p-6 relative z-10 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <i data-lucide="info" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base text-gray-900">Chi Tiết Người Xem & Thông Tin IP</h3>
+            <p class="text-[11px] text-gray-400 font-mono" id="mvisId">ID: Đang nạp...</p>
+          </div>
+        </div>
+        <button onclick="closeVisitorDetailModal()" class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs" id="mvisBody">
+        <!-- Content dynamically injected -->
+      </div>
+
+      <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
+        <button id="btnCopyVisIp" onclick="copyCurrentVisitorIP()" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i> Sao Chép Địa Chỉ IP
+        </button>
+        <button onclick="closeVisitorDetailModal()" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold text-xs transition">
+          Đóng
+        </button>
+      </div>
     </div>
   </div>
+
 
   <!-- ================= 6. JAVASCRIPT CORE LOGIC ================= -->
   <script>
@@ -2779,6 +2921,7 @@
 
       if (tabId === 'analytics') {
         loadAppAnalytics(false);
+        loadVisitorLogs(false);
       }
 
       if (window.innerWidth < 768) toggleSidebar(false);
@@ -3410,7 +3553,15 @@
     // ==========================================
     const ADMIN_ANALYTICS_BC = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('ipaviet_analytics_channel') : null;
     if (ADMIN_ANALYTICS_BC) {
-      ADMIN_ANALYTICS_BC.onmessage = () => {
+      ADMIN_ANALYTICS_BC.onmessage = (ev) => {
+        const msg = ev && ev.data;
+        if (msg) {
+          if (msg.type === 'visitor_active' && msg.visitor) {
+            handleIncomingLiveVisitor(msg.visitor);
+          } else if (msg.type === 'heartbeat' && msg.ip) {
+            handleVisitorHeartbeat(msg.ip);
+          }
+        }
         const tabEl = document.getElementById('tab-analytics');
         if (tabEl && !tabEl.classList.contains('hidden')) {
           loadAppAnalytics(false);
@@ -3920,6 +4071,457 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    // ==========================================
+    // 17. VISITOR TELEMETRY & LIVE IP TRACKING
+    // ==========================================
+    const visitorLogsCache = {
+      visitors: [],
+      currentSelectedId: null,
+      firestoreUnsub: null
+    };
+
+    function handleIncomingLiveVisitor(visitor) {
+      if (!visitor || !visitor.ip) return;
+      const list = visitorLogsCache.visitors;
+      const idx = list.findIndex(v => v.ip === visitor.ip && (Date.now() - (v.timestamp || 0) < 600000));
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], ...visitor, lastActive: Date.now(), online: true };
+      } else {
+        list.unshift({ ...visitor, online: true });
+      }
+      visitorLogsCache.visitors = list.slice(0, 100);
+      renderVisitorTable();
+    }
+
+    function handleVisitorHeartbeat(ip) {
+      if (!ip) return;
+      const v = visitorLogsCache.visitors.find(x => x.ip === ip);
+      if (v) {
+        v.lastActive = Date.now();
+        v.online = true;
+        renderVisitorTable();
+      }
+    }
+
+    async function loadVisitorLogs(isManual = false) {
+      const visIcon = document.getElementById('visRefreshIcon');
+      if (visIcon) visIcon.classList.add('animate-spin');
+
+      try {
+        // 1. Đọc ngay lập tức từ LocalStorage (0ms)
+        const localVisitors = getLocalAnalytics('ipaviet_analytics_visitors', []);
+        let merged = Array.isArray(localVisitors) ? [...localVisitors] : [];
+
+        // 2. Đọc từ Standalone Google Sheet nếu có
+        if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
+          try {
+            const todayStr = getTodayDateStr();
+            const res = await fetch(`${ANALYTICS_API_URL}?action=get_analytics&date=${todayStr}&t=${Date.now()}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && Array.isArray(data.visitors)) {
+                data.visitors.forEach(gv => {
+                  if (gv.ip && !merged.some(m => m.ip === gv.ip && m.timeStr === gv.time)) {
+                    merged.push({
+                      id: 'gas_' + Math.random().toString(36).substr(2, 6),
+                      ip: gv.ip,
+                      city: gv.city || 'Việt Nam',
+                      country: gv.country || 'Việt Nam',
+                      flag: '🇻🇳',
+                      isp: gv.isp || 'Nhà mạng',
+                      deviceType: gv.deviceType || 'other',
+                      deviceModel: gv.deviceModel || 'Thiết Bị',
+                      browser: gv.browser || 'Trình Duyệt',
+                      page: gv.page || 'Trang Chủ',
+                      referrer: gv.referrer || 'Trực tiếp',
+                      timestamp: Date.now() - 3600000,
+                      timeStr: gv.time || '',
+                      online: false
+                    });
+                  }
+                });
+              }
+            }
+          } catch(e) {}
+        }
+
+        // 3. Đọc từ Firestore nếu có kết nối
+        try {
+          if (typeof db !== 'undefined' && db.collection) {
+            const snap = await db.collection('analytics_visitors').orderBy('timestamp', 'desc').limit(50).get().catch(() => null);
+            if (snap && !snap.empty) {
+              snap.forEach(doc => {
+                const fData = doc.data();
+                if (fData && fData.ip && !merged.some(m => m.ip === fData.ip && Math.abs((m.timestamp || 0) - (fData.timestamp || 0)) < 5000)) {
+                  merged.push({
+                    id: doc.id,
+                    ...fData
+                  });
+                }
+              });
+            }
+
+            // Thiết lập Realtime Firestore Listener 1 lần duy nhất
+            if (!visitorLogsCache.firestoreUnsub) {
+              visitorLogsCache.firestoreUnsub = db.collection('analytics_visitors').orderBy('timestamp', 'desc').limit(20)
+                .onSnapshot(s => {
+                  s.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                      handleIncomingLiveVisitor({ id: change.doc.id, ...change.doc.data() });
+                    }
+                  });
+                }, () => {});
+            }
+          }
+        } catch(e) {}
+
+        // Sắp xếp theo thời gian mới nhất lên đầu
+        merged.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        visitorLogsCache.visitors = merged.slice(0, 100);
+        renderVisitorTable();
+
+        if (isManual && typeof showToast === 'function') {
+          showToast('Đã làm mới nhật ký người xem!', 'success');
+        }
+      } catch (err) {
+        console.error("loadVisitorLogs error:", err);
+      } finally {
+        if (visIcon) visIcon.classList.remove('animate-spin');
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function renderVisitorTable() {
+      const tbody = document.getElementById('visitorTableBody');
+      if (!tbody) return;
+
+      const qInput = document.getElementById('visitorSearchInput');
+      const devSelect = document.getElementById('visitorDeviceFilter');
+      const statSelect = document.getElementById('visitorStatusFilter');
+
+      const query = (qInput ? qInput.value : '').toLowerCase().trim();
+      const devFilter = devSelect ? devSelect.value : 'ALL';
+      const statFilter = statSelect ? statSelect.value : 'ALL';
+
+      const now = Date.now();
+      const allVisitors = visitorLogsCache.visitors || [];
+
+      // 1. Phân tích Micro KPI
+      let onlineCount = 0;
+      const cityMap = {};
+      const ispMap = {};
+      const pageMap = {};
+      const devModelMap = {};
+
+      allVisitors.forEach(v => {
+        const isOnline = (now - (v.lastActive || v.timestamp || 0)) < 300000;
+        if (isOnline) onlineCount++;
+
+        const city = v.city || 'Việt Nam';
+        if (city && city !== 'Việt Nam') cityMap[city] = (cityMap[city] || 0) + 1;
+
+        const isp = v.isp || '';
+        if (isp && !isp.toLowerCase().includes('unknown') && !isp.toLowerCase().includes('internet')) {
+          ispMap[isp] = (ispMap[isp] || 0) + 1;
+        }
+
+        const pg = v.page || 'Trang Chủ';
+        pageMap[pg] = (pageMap[pg] || 0) + 1;
+
+        const dm = v.deviceModel || 'Thiết bị';
+        devModelMap[dm] = (devModelMap[dm] || 0) + 1;
+      });
+
+      const getTopKey = (map, fallback) => {
+        const keys = Object.keys(map);
+        if (keys.length === 0) return fallback;
+        keys.sort((a, b) => map[b] - map[a]);
+        return `${keys[0]} (${map[keys[0]]})`;
+      };
+
+      const elOnline = document.getElementById('liveOnlineVisitors');
+      if (elOnline) {
+        elOnline.innerText = `${Math.max(1, onlineCount)} khách đang online`;
+      }
+
+      const elBadgeCount = document.getElementById('visitorCountBadge');
+      if (elBadgeCount) {
+        elBadgeCount.innerText = `${allVisitors.length} lượt xem gần nhất`;
+      }
+
+      const elCity = document.getElementById('statTopCity');
+      if (elCity) elCity.innerText = getTopKey(cityMap, 'Hồ Chí Minh / Hà Nội');
+
+      const elISP = document.getElementById('statTopISP');
+      if (elISP) elISP.innerText = getTopKey(ispMap, 'Viettel / VNPT / FPT');
+
+      const elTopPage = document.getElementById('statTopVisitedPage');
+      if (elTopPage) elTopPage.innerText = getTopKey(pageMap, 'Kho IPA (app-library)');
+
+      const elTopDev = document.getElementById('statTopDeviceModel');
+      if (elTopDev) elTopDev.innerText = getTopKey(devModelMap, 'Apple iPhone (iOS)');
+
+      // 2. Lọc danh sách
+      const filtered = allVisitors.filter(v => {
+        if (devFilter !== 'ALL' && (v.deviceType || '').toLowerCase() !== devFilter.toLowerCase()) {
+          return false;
+        }
+        const isOnline = (now - (v.lastActive || v.timestamp || 0)) < 300000;
+        if (statFilter === 'ONLINE' && !isOnline) {
+          return false;
+        }
+        if (query) {
+          const matchStr = `${v.ip} ${v.city} ${v.region} ${v.country} ${v.isp} ${v.deviceModel} ${v.browser} ${v.page} ${v.referrer}`.toLowerCase();
+          if (!matchStr.includes(query)) return false;
+        }
+        return true;
+      });
+
+      const elStatusText = document.getElementById('visitorTableStatusText');
+      if (elStatusText) {
+        elStatusText.innerText = `Đang hiển thị ${filtered.length} / ${allVisitors.length} khách truy cập`;
+      }
+
+      // 3. Render Rows
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="text-center py-10 text-gray-400">
+              <i data-lucide="user-x" class="w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+              <p class="font-bold">Không tìm thấy khách truy cập phù hợp bộ lọc.</p>
+              <p class="text-[11px] text-gray-400 mt-0.5">Dữ liệu sẽ tự động xuất hiện khi có người lướt website.</p>
+            </td>
+          </tr>`;
+        if (window.lucide) lucide.createIcons();
+        return;
+      }
+
+      let html = '';
+      filtered.forEach((vis) => {
+        const isOnline = (now - (vis.lastActive || vis.timestamp || 0)) < 300000;
+        const timeAgoStr = timeAgo(vis.timestamp || now);
+
+        let statusBadge = isOnline
+          ? `<div class="flex items-center gap-1.5 font-bold text-emerald-600 text-[11px]">
+               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+               <span>Online</span>
+             </div>`
+          : `<div class="flex items-center gap-1.5 text-gray-400 text-[11px]">
+               <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+               <span>${timeAgoStr}</span>
+             </div>`;
+
+        let devIcon = '<i data-lucide="smartphone" class="w-4 h-4 text-gray-500"></i>';
+        if (vis.deviceType === 'ios') devIcon = '<i data-lucide="apple" class="w-4 h-4 text-gray-900"></i>';
+        else if (vis.deviceType === 'android') devIcon = '<i data-lucide="bot" class="w-4 h-4 text-emerald-600"></i>';
+        else if (vis.deviceType === 'mac') devIcon = '<i data-lucide="laptop" class="w-4 h-4 text-gray-800"></i>';
+        else if (vis.deviceType === 'windows') devIcon = '<i data-lucide="monitor" class="w-4 h-4 text-blue-600"></i>';
+
+        let pageBadgeClass = 'bg-gray-100 text-gray-700';
+        const pageLower = (vis.page || '').toLowerCase();
+        if (pageLower.includes('kho') || pageLower.includes('ipa')) pageBadgeClass = 'bg-blue-50 text-blue-700 border border-blue-200/60';
+        else if (pageLower.includes('mmo')) pageBadgeClass = 'bg-amber-50 text-amber-800 border border-amber-200/60';
+        else if (pageLower.includes('nạp') || pageLower.includes('tien')) pageBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200/60';
+        else if (pageLower.includes('chủ')) pageBadgeClass = 'bg-purple-50 text-purple-700 border border-purple-200/60';
+
+        const locParts = [vis.city, vis.region].filter(Boolean);
+        const locStr = locParts.length > 0 ? locParts.join(', ') : (vis.country || 'Việt Nam');
+
+        html += `
+          <tr class="hover:bg-blue-50/30 transition group">
+            <td class="py-3 px-3">
+              ${statusBadge}
+              <div class="text-[10px] text-gray-400 font-mono mt-0.5">${escapeHTML(vis.timeStr || '')}</div>
+            </td>
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono font-bold text-gray-900 text-xs px-2 py-0.5 bg-gray-100 group-hover:bg-blue-100 rounded-lg transition">
+                  ${escapeHTML(vis.ip || 'Unknown')}
+                </span>
+                <button type="button" onclick="copyVisitorIP('${escapeHTML(vis.ip || '')}')" class="text-gray-300 hover:text-blue-600 transition p-1" title="Sao chép IP">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+              <div class="text-[10px] text-gray-400 mt-0.5 font-mono">IPv4 • VN</div>
+            </td>
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-1.5 font-bold text-gray-800">
+                <span>${vis.flag || '🇻🇳'}</span>
+                <span class="truncate max-w-[150px]">${escapeHTML(locStr)}</span>
+              </div>
+              <div class="text-[10.5px] text-gray-400 truncate max-w-[170px] mt-0.5 flex items-center gap-1">
+                <i data-lucide="wifi" class="w-3 h-3 text-gray-400 shrink-0"></i>
+                <span class="truncate">${escapeHTML(vis.isp || 'Nhà mạng')}</span>
+              </div>
+            </td>
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                  ${devIcon}
+                </div>
+                <div class="truncate max-w-[160px]">
+                  <div class="font-bold text-gray-900 truncate">${escapeHTML(vis.deviceModel || 'Thiết bị')}</div>
+                  <div class="text-[10px] text-gray-400 truncate">${escapeHTML(vis.browser || 'Trình duyệt')}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3">
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold text-[11px] ${pageBadgeClass}">
+                <i data-lucide="compass" class="w-3 h-3"></i>
+                <span class="truncate max-w-[130px]">${escapeHTML(vis.page || 'Trang Chủ')}</span>
+              </span>
+            </td>
+            <td class="py-3 px-3">
+              <span class="text-[11px] text-gray-600 font-medium truncate max-w-[120px] block" title="${escapeHTML(vis.referrer || '')}">
+                ${escapeHTML(vis.referrer || 'Trực tiếp')}
+              </span>
+            </td>
+            <td class="py-3 px-3 text-center">
+              <button onclick="openVisitorDetailModal('${vis.id}')" class="w-7 h-7 rounded-lg bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-600 flex items-center justify-center transition active:scale-95 mx-auto" title="Xem toàn bộ thông số">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>`;
+      });
+
+      tbody.innerHTML = html;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openVisitorDetailModal(visId) {
+      const vis = visitorLogsCache.visitors.find(v => v.id === visId);
+      if (!vis) return;
+
+      visitorLogsCache.currentSelectedId = visId;
+      document.getElementById('mvisId').innerText = `ID: ${vis.id} • Lần cuối: ${vis.timeStr || ''}`;
+
+      const isOnline = (Date.now() - (vis.lastActive || vis.timestamp || 0)) < 300000;
+
+      const body = document.getElementById('mvisBody');
+      body.innerHTML = `
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-3 bg-gray-50 rounded-2xl border border-gray-100">
+            <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Địa Chỉ IP Khách</span>
+            <span class="text-sm font-mono font-black text-gray-900 mt-1 block">${escapeHTML(vis.ip)}</span>
+          </div>
+          <div class="p-3 bg-gray-50 rounded-2xl border border-gray-100">
+            <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Trạng Thái Kết Nối</span>
+            <span class="text-xs font-black mt-1 block flex items-center gap-1.5 ${isOnline ? 'text-emerald-600' : 'text-gray-500'}">
+              <span class="w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-ping' : 'bg-gray-400'}"></span>
+              ${isOnline ? 'Đang Trực Tuyến (Live)' : 'Vừa Xem Website'}
+            </span>
+          </div>
+        </div>
+
+        <div class="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-bold">Vị Trí Địa Lý:</span>
+            <span class="font-black text-gray-900 flex items-center gap-1">${vis.flag || '🇻🇳'} ${escapeHTML(vis.city || '')}, ${escapeHTML(vis.country || 'Việt Nam')}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-bold">Nhà Mạng / ISP:</span>
+            <span class="font-bold text-blue-600">${escapeHTML(vis.isp || 'Chưa xác định')}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-bold">Thiết Bị & Model:</span>
+            <span class="font-bold text-gray-900">${escapeHTML(vis.deviceModel || 'Thiết bị')}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-bold">Trình Duyệt Sử Dụng:</span>
+            <span class="font-bold text-gray-900">${escapeHTML(vis.browser || 'Trình duyệt')}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-gray-500 font-bold">Độ Phân Giải Màn Hình:</span>
+            <span class="font-mono text-gray-700">${escapeHTML(vis.screen || '390x844')}</span>
+          </div>
+        </div>
+
+        <div class="p-3.5 bg-blue-50/50 rounded-2xl border border-blue-100/60 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-blue-900 font-bold">Trang Khách Xem:</span>
+            <span class="font-bold text-blue-700">${escapeHTML(vis.page || 'Trang Chủ')}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-blue-900 font-bold">Đường Dẫn URL:</span>
+            <span class="font-mono text-[11px] text-gray-600 truncate max-w-[220px]">${escapeHTML(vis.path || '/')}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-blue-900 font-bold">Nguồn Giới Thiệu:</span>
+            <span class="font-bold text-gray-800">${escapeHTML(vis.referrer || 'Trực tiếp')}</span>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('modalVisitorDetail').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeVisitorDetailModal() {
+      const m = document.getElementById('modalVisitorDetail');
+      if (m) m.classList.add('hidden');
+    }
+
+    function copyCurrentVisitorIP() {
+      const vis = visitorLogsCache.visitors.find(v => v.id === visitorLogsCache.currentSelectedId);
+      if (vis && vis.ip) {
+        copyVisitorIP(vis.ip);
+      }
+    }
+
+    function copyVisitorIP(ip) {
+      if (!ip) return;
+      navigator.clipboard.writeText(ip).then(() => {
+        if (typeof showToast === 'function') {
+          showToast(`Đã sao chép IP: ${ip}`, 'success');
+        } else {
+          alert(`Đã sao chép IP: ${ip}`);
+        }
+      }).catch(() => {
+        alert(`Địa chỉ IP: ${ip}`);
+      });
+    }
+
+    function exportVisitorsCSV() {
+      const visitors = visitorLogsCache.visitors || [];
+      if (visitors.length === 0) {
+        alert('Chưa có dữ liệu khách truy cập để xuất file!');
+        return;
+      }
+
+      let csv = "\uFEFF"; // UTF-8 BOM
+      csv += "Thời Gian,Địa Chỉ IP,Quốc Gia,Tỉnh Thành,Nhà Mạng ISP,Hệ Điều Hành,Model Máy,Trình Duyệt,Màn Hình,Trang Xem,Đường Dẫn,Nguồn Đến\n";
+
+      visitors.forEach(v => {
+        const row = [
+          `"${(v.timeStr || '')} ${(v.dateStr || '')}"`,
+          `"${v.ip || ''}"`,
+          `"${v.country || ''}"`,
+          `"${v.city || ''}"`,
+          `"${v.isp || ''}"`,
+          `"${v.deviceType || ''}"`,
+          `"${v.deviceModel || ''}"`,
+          `"${v.browser || ''}"`,
+          `"${v.screen || ''}"`,
+          `"${v.page || ''}"`,
+          `"${v.path || ''}"`,
+          `"${v.referrer || ''}"`
+        ];
+        csv += row.join(",") + "\n";
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `IPAViet_Visitors_Log_${getTodayDateStr()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (typeof showToast === 'function') {
+        showToast('Đã tải xuống file CSV nhật ký khách truy cập!', 'success');
+      }
+    }
+
     // DOM Ready Initialization
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
@@ -3934,6 +4536,8 @@
           ? 'text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200'
           : 'text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200';
       }
+      // Nạp danh sách người xem
+      loadVisitorLogs(false);
     });
   </script>
 </body>
