@@ -1988,16 +1988,25 @@ function showDownloadAction() {
   }
 
   if (isUserVip) {
+    const pName = (SHORTENER_CONFIG && SHORTENER_CONFIG.provider === 'link4m') ? 'Link4m' : 'YeuMoney';
     panel.innerHTML = `
       <div class="purchase-panel purchase-panel-vip">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div>
             <p style="font-size:11px;font-weight:700;color:var(--accent-amber);letter-spacing:0.1em;text-transform:uppercase;">Đặc quyền VIP</p>
-            <p style="font-size:22px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">Miễn phí tải</p>
+            <p style="font-size:20px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">Miễn phí tải trực tiếp</p>
           </div>
-          <i data-lucide="crown" style="width:32px;height:32px;color:var(--accent-amber);"></i>
+          <i data-lucide="crown" style="width:28px;height:28px;color:var(--accent-amber);"></i>
         </div>
-        <button onclick="downloadVipApp(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;"><i data-lucide="zap" style="width:16px;height:16px;"></i> TẢI XUỐNG NGAY</button>
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+          Tài khoản của bạn là <b>Hội Viên VIP</b> nên được tải trực tiếp siêu tốc, không cần thực hiện vượt link quảng cáo.
+        </p>
+        <button onclick="downloadVipApp(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;margin-bottom:10px;">
+          <i data-lucide="zap" style="width:16px;height:16px;"></i> TẢI XUỐNG NGAY (VIP TRỰC TIẾP)
+        </button>
+        <button onclick="downloadFreeStore(this)" class="detail-btn detail-btn-secondary magnetic" style="width:100%;justify-content:center;font-size:12px;opacity:0.85;">
+          <i data-lucide="cloud-lightning" style="width:14px;height:14px;"></i> Thử Nghiệm Vượt Link Ads (${pName})
+        </button>
       </div>`;
   } else {
     if (isAppVIP) {
@@ -2120,6 +2129,15 @@ function verifyFreePassToken(payload) {
   const age = Date.now() - payload.t;
   if (age < 0 || age > 30 * 60 * 1000) return false;
 
+  // CHỐNG GIAN LẬN / CHỐNG VÒNG LẶP CHƯA VƯỢT LINK ĐÃ TẢI:
+  // Để hoàn thành vượt link (tìm từ khóa Google, chờ đếm giây 60s, nhập mã trên YeuMoney/Link4m),
+  // một người dùng thực tế không bao giờ có thể xong trong dưới 10 giây!
+  // Nếu quay lại trang trong dưới 10 giây (age < 10000ms), chứng tỏ bị loopback hoặc chưa vượt link thật!
+  if (age < 10000) {
+    console.warn("Xác thực thất bại: Thời gian vượt link quá nhanh (< 10s). Bị từ chối mở khóa link tải.");
+    return false;
+  }
+
   // Kiểm tra chống dùng lại token (Anti-Replay)
   const usedKey = 'ipaviet_used_pass_' + payload.nonce;
   if (sessionStorage.getItem(usedKey) || localStorage.getItem(usedKey)) return false;
@@ -2218,10 +2236,6 @@ async function getShortenedUrl(destinationUrl) {
   if (!destinationUrl) return null;
 
   const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
-  if (cfg.enabled === false) {
-    return destinationUrl; // Tắt vượt link thì trả về URL gốc
-  }
-
   const provider = (cfg.provider || 'yeumoney').toLowerCase().trim();
 
   // ─── 1. BÊN CUNG CẤP: YEUMONEY (yeumoney.com - Khuyên dùng) ───
@@ -2256,7 +2270,7 @@ async function getShortenedUrl(destinationUrl) {
       }
     } catch(e) {}
 
-    // Fallback URL YeuMoney
+    // Fallback URL YeuMoney Gateway chính thức (Bắt buộc điều hướng ra bên ngoài)
     return `https://yeumoney.com/QL_api.php?token=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}`;
   }
 
@@ -2293,7 +2307,7 @@ async function getShortenedUrl(destinationUrl) {
     } catch(e) {}
   }
 
-  // Mặc định fallback về YeuMoney
+  // Mặc định fallback về YeuMoney Gateway
   return `https://yeumoney.com/QL_api.php?token=f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb&url=${encodeURIComponent(destinationUrl)}`;
 }
 
@@ -2314,8 +2328,8 @@ async function downloadFreeStore(btnEl) {
   const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
   const providerLabel = (cfg.provider === 'link4m') ? 'Link4m' : (cfg.provider === 'yeumoney' ? 'YeuMoney' : 'Cổng Vượt Link');
 
-  // Nếu Admin tắt tính năng vượt link
-  if (cfg.enabled === false) {
+  // Chỉ cho phép tải trực tiếp khi Admin CHỦ ĐỘNG tắt vượt link trong Admin
+  if (cfg && cfg.enabled === false) {
     showToast("Bắt đầu tải ứng dụng...");
     await recordAppDownload(STATE.currentItem, 'Free Direct (Admin Disabled Ads)');
     setTimeout(() => {
@@ -2338,20 +2352,43 @@ async function downloadFreeStore(btnEl) {
     //    https://ipaviet.site/app-library/index.html?free_pass=1&token=...
     // 3. Người dùng bắt buộc phải hoàn thành vượt link thì bên thứ ba mới trả về trang này để nhận link!
     const token = createFreePassToken(STATE.currentItem, rawLink);
-    const gateReturnUrl = `${window.location.origin}${window.location.pathname}?free_pass=1&token=${token}`;
+    const origin = (window.location.origin && window.location.origin !== 'null' && window.location.origin.startsWith('http'))
+      ? window.location.origin
+      : 'https://ipaviet.site';
+    const gateReturnUrl = `${origin}${window.location.pathname}?free_pass=1&token=${token}`;
 
     const shortTarget = await getShortenedUrl(gateReturnUrl);
 
+    // KIỂM TRA ĐIỀU HƯỚNG BẮT BUỘC RA CỔNG NGOÀI (TUYỆT ĐỐI KHÔNG TẢI TRỰC TIẾP TRÊN TRANG NÀY):
+    if (shortTarget && typeof shortTarget === 'string' && (shortTarget.startsWith('http://') || shortTarget.startsWith('https://')) && !shortTarget.includes(window.location.hostname)) {
+      showToast(`Chuyển hướng đến ${providerLabel} để vượt link...`);
+      setTimeout(() => {
+        window.location.href = shortTarget;
+      }, 350);
+      return;
+    }
+
+    // Nếu không lấy được shortTarget hợp lệ bên ngoài, chuyển hướng thẳng sang Gateway API chính thức:
+    const ymToken = cfg.yeumoney_token || 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb';
+    const l4mToken = cfg.link4m_token || '691eb05d63b1b86d4a3bca1e';
+    const directGatewayUrl = (cfg.provider === 'link4m')
+      ? `https://link4m.co/st?api=${encodeURIComponent(l4mToken)}&url=${encodeURIComponent(gateReturnUrl)}`
+      : `https://yeumoney.com/QL_api.php?token=${encodeURIComponent(ymToken)}&url=${encodeURIComponent(gateReturnUrl)}`;
+
     showToast(`Chuyển hướng đến ${providerLabel} để vượt link...`);
     setTimeout(() => {
-      window.location.href = shortTarget || gateReturnUrl;
+      window.location.href = directGatewayUrl;
     }, 350);
 
   } catch (error) {
     console.error("Shortener redirect error:", error);
     const token = createFreePassToken(STATE.currentItem, rawLink);
-    const gateReturnUrl = `${window.location.origin}${window.location.pathname}?free_pass=1&token=${token}`;
-    const safeFallback = `https://yeumoney.com/QL_api.php?token=f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb&url=${encodeURIComponent(gateReturnUrl)}`;
+    const origin = (window.location.origin && window.location.origin !== 'null' && window.location.origin.startsWith('http'))
+      ? window.location.origin
+      : 'https://ipaviet.site';
+    const gateReturnUrl = `${origin}${window.location.pathname}?free_pass=1&token=${token}`;
+    const ymToken = (cfg && cfg.yeumoney_token) || 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb';
+    const safeFallback = `https://yeumoney.com/QL_api.php?token=${encodeURIComponent(ymToken)}&url=${encodeURIComponent(gateReturnUrl)}`;
     window.location.href = safeFallback;
   } finally {
     setTimeout(() => {
