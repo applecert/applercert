@@ -1218,6 +1218,26 @@
                 <input type="text" id="shortenerCustomToken" placeholder="Nhập token..." class="w-full text-xs font-mono p-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-purple-500 focus:outline-none transition">
               </div>
             </div>
+          <!-- Tính Năng Dự Phòng Thông Minh (Smart Fallback Link4m) -->
+          <div class="p-3.5 rounded-2xl border border-amber-200 bg-amber-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-start gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 mt-0.5">
+                <i data-lucide="shield-alert" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-gray-900">Tự động chuyển sang Link4m khi YeuMoney gặp sự cố</span>
+                  <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded border border-amber-200">Dự phòng</span>
+                </div>
+                <p class="text-[11px] text-gray-600 mt-0.5">Nếu YeuMoney bị lỗi API, lag server, hết nhiệm vụ hoặc không kết nối được, hệ thống sẽ tự động dùng cổng Link4m để người dùng vẫn vượt link tải bình thường. Bạn có thể chủ động bật/tắt tính năng này bất kỳ lúc nào.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="shortenerFallbackLink4mToggle" checked class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+              </label>
+            </div>
           </div>
 
           <!-- Nút bấm hành động & Kết quả Test -->
@@ -3263,6 +3283,7 @@
       const DEFAULT_CFG = {
         enabled: true,
         provider: 'yeumoney',
+        fallback_to_link4m: true,
         yeumoney_token: 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
         link4m_token: '691eb05d63b1b86d4a3bca1e',
         custom_api_template: '',
@@ -3292,6 +3313,9 @@
       const toggle = document.getElementById('shortenerEnabledToggle');
       if (toggle) toggle.checked = (cfg.enabled !== false);
 
+      const fallbackToggle = document.getElementById('shortenerFallbackLink4mToggle');
+      if (fallbackToggle) fallbackToggle.checked = (cfg.fallback_to_link4m !== false);
+
       const ymTokenInput = document.getElementById('shortenerTokenYeumoney');
       if (ymTokenInput) ymTokenInput.value = cfg.yeumoney_token || DEFAULT_CFG.yeumoney_token;
 
@@ -3309,6 +3333,8 @@
 
     async function saveShortenerSettingsAdmin() {
       const toggle = document.getElementById('shortenerEnabledToggle');
+      const fallbackToggle = document.getElementById('shortenerFallbackLink4mToggle');
+      const fallbackToLink4m = fallbackToggle ? fallbackToggle.checked : true;
       const ymToken = (document.getElementById('shortenerTokenYeumoney')?.value || '').trim();
       const l4mToken = (document.getElementById('shortenerTokenLink4m')?.value || '').trim();
       const customTemplate = (document.getElementById('shortenerCustomTemplate')?.value || '').trim();
@@ -3317,6 +3343,7 @@
       const cfg = {
         enabled: toggle ? toggle.checked : true,
         provider: currentShortenerProvider || 'yeumoney',
+        fallback_to_link4m: fallbackToLink4m,
         yeumoney_token: ymToken || 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
         link4m_token: l4mToken || '691eb05d63b1b86d4a3bca1e',
         custom_api_template: customTemplate,
@@ -3336,8 +3363,8 @@
         console.warn("Firestore save warning:", e);
       }
 
-      showToast(`Đã lưu cấu hình Cổng Vượt Link: ${currentShortenerProvider.toUpperCase()} (${cfg.enabled ? 'Đang BẬT' : 'Đang TẮT'})`, 'success');
-      addAuditLog('SHORTENER_SETTINGS_UPDATE', `Cập nhật Cổng Vượt Link: ${currentShortenerProvider} - ${cfg.enabled ? 'BẬT' : 'TẮT'}`);
+      showToast(`Đã lưu cấu hình Cổng Vượt Link: ${currentShortenerProvider.toUpperCase()} (${cfg.enabled ? 'Đang BẬT' : 'Đang TẮT'}, Dự phòng Link4m: ${fallbackToLink4m ? 'BẬT' : 'TẮT'})`, 'success');
+      addAuditLog('SHORTENER_SETTINGS_UPDATE', `Cập nhật Cổng Vượt Link: ${currentShortenerProvider} - ${cfg.enabled ? 'BẬT' : 'TẮT'} (Dự phòng Link4m: ${fallbackToLink4m ? 'BẬT' : 'TẮT'})`);
     }
 
     async function testShortenerApiLive() {
