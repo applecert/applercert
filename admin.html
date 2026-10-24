@@ -1138,9 +1138,9 @@
                 </label>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-gray-700">Bắt buộc vượt link</span>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" id="shortenerEnabledToggle" checked class="sr-only peer">
+                <span class="text-xs font-bold text-gray-700">Kích hoạt Vượt Link (Free Pass)</span>
+                <label class="relative inline-flex items-center cursor-pointer" title="Bật hoặc Tạm Khóa tính năng vượt link nhận app miễn phí">
+                  <input type="checkbox" id="shortenerEnabledToggle" class="sr-only peer">
                   <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                 </label>
               </div>
@@ -3289,7 +3289,8 @@
 
     async function loadShortenerSettingsAdmin() {
       const DEFAULT_CFG = {
-        enabled: true,
+        enabled: false, // Mặc định tạm thời khóa tính năng vượt link nhận app
+        free_pass_locked: true,
         require_login: true,
         provider: 'link4m',
         fallback_to_link4m: true,
@@ -3320,7 +3321,7 @@
 
       // Đưa dữ liệu lên UI
       const toggle = document.getElementById('shortenerEnabledToggle');
-      if (toggle) toggle.checked = (cfg.enabled !== false);
+      if (toggle) toggle.checked = (cfg.enabled === true && !cfg.free_pass_locked);
 
       const reqLoginToggle = document.getElementById('shortenerRequireLoginToggle');
       if (reqLoginToggle) reqLoginToggle.checked = (cfg.require_login !== false);
@@ -3354,10 +3355,12 @@
       const customTemplate = (document.getElementById('shortenerCustomTemplate')?.value || '').trim();
       const customToken = (document.getElementById('shortenerCustomToken')?.value || '').trim();
 
+      const isEnabled = toggle ? toggle.checked : false;
       const cfg = {
-        enabled: toggle ? toggle.checked : true,
+        enabled: isEnabled,
+        free_pass_locked: !isEnabled,
         require_login: requireLogin,
-        provider: currentShortenerProvider || 'yeumoney',
+        provider: currentShortenerProvider || 'link4m',
         fallback_to_link4m: fallbackToLink4m,
         yeumoney_token: ymToken || 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
         link4m_token: l4mToken || '691eb05d63b1b86d4a3bca1e',
