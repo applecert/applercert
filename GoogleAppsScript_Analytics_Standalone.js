@@ -103,9 +103,12 @@ function doGet(e) {
           else if (device === 'windows') colDev = 8;
           var curDev = Number(sheetDaily.getRange(foundRow, colDev).getValue()) || 0;
 
-          sheetDaily.getRange(foundRow, 2).setValue(curViews + 1);
-          if (isUnique) sheetDaily.getRange(foundRow, 3).setValue(curUniques + 1);
-          sheetDaily.getRange(foundRow, colDev).setValue(curDev + 1);
+          // CHUẨN XÁC: Chỉ tăng lượt xem khi là IP truy cập mới (1 IP = 1 lượt xem chuẩn, không đếm trùng khi F5)
+          if (isUnique) {
+            sheetDaily.getRange(foundRow, 2).setValue(curViews + 1);
+            sheetDaily.getRange(foundRow, 3).setValue(curUniques + 1);
+            sheetDaily.getRange(foundRow, colDev).setValue(curDev + 1);
+          }
           sheetDaily.getRange(foundRow, 10).setValue(nowIso);
         } else {
           var ios = (device === 'ios' ? 1 : 0);
@@ -113,7 +116,7 @@ function doGet(e) {
           var mac = (device === 'mac' ? 1 : 0);
           var win = (device === 'windows' ? 1 : 0);
           var oth = (!['ios', 'android', 'mac', 'windows'].includes(device) ? 1 : 0);
-          sheetDaily.appendRow([today, 1, (isUnique ? 1 : 1), 0, ios, android, mac, win, oth, nowIso]);
+          sheetDaily.appendRow([today, 1, 1, 0, ios, android, mac, win, oth, nowIso]);
         }
         return output.setContent(JSON.stringify({ success: true, recorded: 'pageview' }));
       }
@@ -415,13 +418,34 @@ function doGet(e) {
         if (searchList.length > 50) searchList = searchList.slice(0, 50);
       }
 
-      // 5. Visitor Logs (Top 60 khách theo IP, kèm tài khoản & số lượt xem)
+      // 5. Visitor Logs (Đọc và tính toán số liệu THẬT 100% dựa trên danh sách IP thực tế)
       var sVis = ss.getSheetByName("Visitor_Logs");
       var visitorsList = [];
+      var realUniqueIpsToday = 0;
+      var realDevicesToday = { ios: 0, android: 0, mac: 0, windows: 0, other: 0 };
+
       if (sVis && sVis.getLastRow() > 1) {
         var vVals = sVis.getDataRange().getValues();
         var headers = vVals[0] || [];
         var hasUserCol = String(headers[2] || '').indexOf('Tài Khoản') !== -1;
+
+        // Quét toàn bộ bảng để đếm số IP thực tế đã truy cập hôm nay
+        for (var vi = 1; vi < vVals.length; vi++) {
+          var vRow = vVals[vi];
+          if (vRow[1]) {
+            if (isSameDate(vRow[0], queryDate)) {
+              realUniqueIpsToday++;
+              var dType = String(vRow[hasUserCol ? 7 : 5] || 'other').toLowerCase();
+              if (dType === 'ios') realDevicesToday.ios++;
+              else if (dType === 'android') realDevicesToday.android++;
+              else if (dType === 'mac') realDevicesToday.mac++;
+              else if (dType === 'windows') realDevicesToday.windows++;
+              else realDevicesToday.other++;
+            }
+          }
+        }
+
+        // Lấy danh sách khách mới nhất để hiển thị bảng (tối đa 60 khách)
         var startV = Math.max(1, vVals.length - 60);
         for (var vi = vVals.length - 1; vi >= startV; vi--) {
           var vRow = vVals[vi];
@@ -459,6 +483,32 @@ function doGet(e) {
                 page: String(vRow[8] || 'Trang Chủ'),
                 referrer: String(vRow[9] || 'Trực tiếp')
               });
+            }
+          }
+        }
+      }
+
+      // ĐỒNG BỘ CHUẨN XÁC:
+      // Nếu số liệu trong Daily_Summary bị ảo (ví dụ 90 do F5 cũ) trong khi số IP thật là ít hơn,
+      // tự động đồng bộ theo số IP thật 100%, xóa bỏ hoàn toàn số ảo!
+      if (realUniqueIpsToday > 0) {
+        todayStat.uniqueVisitors = realUniqueIpsToday;
+        todayStat.pageviews = realUniqueIpsToday; // Cùng 1 IP = 1 lượt xem chuẩn
+        todayStat.devices = realDevicesToday;
+
+        // Cập nhật lại vào sheet Daily_Summary để lưu số thật
+        if (sDaily) {
+          var dData = sDaily.getDataRange().getValues();
+          for (var di = 1; di < dData.length; di++) {
+            if (isSameDate(dData[di][0], queryDate)) {
+              sDaily.getRange(di + 1, 2).setValue(realUniqueIpsToday);
+              sDaily.getRange(di + 1, 3).setValue(realUniqueIpsToday);
+              sDaily.getRange(di + 1, 5).setValue(realDevicesToday.ios);
+              sDaily.getRange(di + 1, 6).setValue(realDevicesToday.android);
+              sDaily.getRange(di + 1, 7).setValue(realDevicesToday.mac);
+              sDaily.getRange(di + 1, 8).setValue(realDevicesToday.windows);
+              sDaily.getRange(di + 1, 9).setValue(realDevicesToday.other);
+              break;
             }
           }
         }

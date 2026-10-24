@@ -3565,20 +3565,8 @@
             handleVisitorHeartbeat(msg.ip);
           }
         }
-        const tabEl = document.getElementById('tab-analytics');
-        if (tabEl && !tabEl.classList.contains('hidden')) {
-          loadAppAnalytics(false);
-        }
       };
     }
-    window.addEventListener('storage', (e) => {
-      if (e.key && e.key.startsWith('ipaviet_analytics_')) {
-        const tabEl = document.getElementById('tab-analytics');
-        if (tabEl && !tabEl.classList.contains('hidden')) {
-          loadAppAnalytics(false);
-        }
-      }
-    });
 
     function getTodayDateStr() {
       const d = new Date();
@@ -3626,14 +3614,16 @@
       try {
         const todayStr = getTodayDateStr();
 
-        // ----------------------------------------------------
-        // 1. STEP 1: LOAD IMMEDIATELY FROM LOCALSTORAGE (0ms)
-        // ----------------------------------------------------
+        // 1. Lấy số lượng khách thực tế từ bảng khách
+        const realVisitors = visitorLogsCache.visitors || [];
+        const realIpCount = realVisitors.length;
+
+        // 2. Nạp từ LocalStorage
         const localDailyMap = getLocalAnalytics('ipaviet_analytics_daily', {});
-        const localDaily = localDailyMap[todayStr] || { date: todayStr, pageviews: 0, uniqueVisitors: 0, downloads: 0, devices: { ios: 0, android: 0, mac: 0, windows: 0, other: 0 } };
-        
-        let dailyViews = localDaily.pageviews || 0;
-        let dailyUniques = localDaily.uniqueVisitors || 0;
+        const localDaily = localDailyMap[todayStr] || { date: todayStr, pageviews: realIpCount, uniqueVisitors: realIpCount, downloads: 0, devices: { ios: 0, android: 0, mac: 0, windows: 0, other: 0 } };
+
+        let dailyViews = localDaily.pageviews || realIpCount || 0;
+        let dailyUniques = localDaily.uniqueVisitors || realIpCount || 0;
         let dailyDownloads = localDaily.downloads || 0;
         let devStats = localDaily.devices || { ios: 0, android: 0, mac: 0, windows: 0, other: 0 };
 
@@ -3646,12 +3636,7 @@
         let recentDownloads = getLocalAnalytics('ipaviet_analytics_recent', []);
         let searchMap = getLocalAnalytics('ipaviet_analytics_searches', {});
 
-        // Render Local Data right away so user sees instant results
-        renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
-
-        // ----------------------------------------------------
-        // 2. STEP 2: FETCH FROM STANDALONE GOOGLE APPS SCRIPT (PHƯƠNG ÁN 2)
-        // ----------------------------------------------------
+        // 3. Nạp từ Google Apps Script
         if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
           try {
             const gasRes = await fetch(`${ANALYTICS_API_URL}?action=get_analytics&date=${todayStr}&t=${Date.now()}`);
@@ -3659,16 +3644,18 @@
               const gasData = await gasRes.json();
               if (gasData.success) {
                 if (gasData.today) {
-                  dailyViews = Math.max(dailyViews, gasData.today.pageviews || 0);
-                  dailyUniques = Math.max(dailyUniques, gasData.today.uniqueVisitors || 0);
-                  dailyDownloads = Math.max(dailyDownloads, gasData.today.downloads || 0);
+                  // Lấy số liệu chuẩn từ máy chủ (đã được làm sạch theo IP thật)
+                  dailyViews = gasData.today.pageviews || dailyViews;
+                  dailyUniques = gasData.today.uniqueVisitors || dailyUniques;
+                  dailyDownloads = gasData.today.downloads || dailyDownloads;
                   if (gasData.today.devices) {
-                    devStats.ios = Math.max(devStats.ios || 0, gasData.today.devices.ios || 0);
-                    devStats.android = Math.max(devStats.android || 0, gasData.today.devices.android || 0);
-                    devStats.mac = Math.max(devStats.mac || 0, gasData.today.devices.mac || 0);
-                    devStats.windows = Math.max(devStats.windows || 0, gasData.today.devices.windows || 0);
-                    devStats.other = Math.max(devStats.other || 0, gasData.today.devices.other || 0);
+                    devStats = { ...gasData.today.devices };
                   }
+                }
+
+                if (Array.isArray(gasData.visitors) && gasData.visitors.length > 0 && realVisitors.length === 0) {
+                  dailyUniques = gasData.visitors.length;
+                  dailyViews = gasData.visitors.length;
                 }
 
                 // Merge Apps
@@ -3711,8 +3698,6 @@
                     }
                   });
                 }
-
-                renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
               }
             }
           } catch (gasErr) {
@@ -3720,48 +3705,28 @@
           }
         }
 
-        // ----------------------------------------------------
-        // 3. STEP 3: TRY FIRESTORE MERGE (IF AVAILABLE)
-        // ----------------------------------------------------
-        try {
-          if (typeof db !== 'undefined') {
-            const dailyDoc = await db.collection("analytics_daily").doc(todayStr).get().catch(() => null);
-            if (dailyDoc && dailyDoc.exists) {
-              const d = dailyDoc.data();
-              dailyViews = Math.max(dailyViews, d.pageviews || 0);
-              dailyUniques = Math.max(dailyUniques, d.uniqueVisitors || 0);
-              dailyDownloads = Math.max(dailyDownloads, d.downloads || 0);
-              if (d.devices) {
-                devStats.ios = Math.max(devStats.ios || 0, d.devices.ios || 0);
-                devStats.android = Math.max(devStats.android || 0, d.devices.android || 0);
-                devStats.mac = Math.max(devStats.mac || 0, d.devices.mac || 0);
-                devStats.windows = Math.max(devStats.windows || 0, d.devices.windows || 0);
-                devStats.other = Math.max(devStats.other || 0, d.devices.other || 0);
-              }
-            }
-
-            const appsSnap = await db.collection("analytics_apps").get().catch(() => null);
-            if (appsSnap && !appsSnap.empty) {
-              appsSnap.forEach(doc => {
-                const data = doc.data();
-                const key = doc.id;
-                if (!appsMasterMap[key]) {
-                  appsMasterMap[key] = { id: key, ...data };
-                } else {
-                  appsMasterMap[key].downloads = Math.max(appsMasterMap[key].downloads || 0, data.downloads || 0);
-                  appsMasterMap[key].views = Math.max(appsMasterMap[key].views || 0, data.views || 0);
-                }
-              });
-            }
-
-            renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
-          }
-        } catch (fbErr) {
-          // Quota exceeded or network issue, silently handled by local + GAS data
+        // 4. Đồng bộ CHUẨN XÁC với danh sách khách thực tế (1 IP = 1 khách)
+        if (visitorLogsCache.visitors && visitorLogsCache.visitors.length > 0) {
+          const vCount = visitorLogsCache.visitors.length;
+          dailyUniques = vCount;
+          dailyViews = vCount; // 1 IP = 1 lượt xem chuẩn
         }
 
+        // Lưu ngược lại vào LocalStorage để lần tải sau hiển thị tức thì, KHÔNG BỊ NHẢY SỐ
+        localDailyMap[todayStr] = {
+          date: todayStr,
+          pageviews: dailyViews,
+          uniqueVisitors: dailyUniques,
+          downloads: dailyDownloads,
+          devices: devStats
+        };
+        setLocalAnalytics('ipaviet_analytics_daily', localDailyMap);
+
+        // Vẽ giao diện đúng 1 lần duy nhất, số liệu chuẩn xác
+        renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
+
         if (isManualRefresh && typeof showToast === 'function') {
-          showToast('Đã làm mới dữ liệu thống kê!', 'success');
+          showToast('Đã làm mới dữ liệu thống kê chuẩn xác!', 'success');
         }
       } catch (err) {
         console.error("loadAppAnalytics error:", err);
