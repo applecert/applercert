@@ -673,6 +673,36 @@ function doGet(e) {
       }));
     }
 
+    // -------------------------------------------------------------
+    // ACTION 5: GỬI THÔNG BÁO VƯỢT LINK QUA TELEGRAM BOT RIÊNG BIỆT
+    // -------------------------------------------------------------
+    if (action === 'send_shortener_telegram' || action === 'telegram_notify') {
+      var botToken = e.parameter.bot_token || '';
+      var chatId = e.parameter.chat_id || '';
+      var messageText = e.parameter.message || '';
+      if (!botToken || !chatId || !messageText) {
+        return output.setContent(JSON.stringify({ success: false, message: "Thiếu bot_token, chat_id hoặc message" }));
+      }
+      var teleUrl = "https://api.telegram.org/bot" + botToken + "/sendMessage";
+      try {
+        var response = UrlFetchApp.fetch(teleUrl, {
+          method: "POST",
+          contentType: "application/json",
+          payload: JSON.stringify({
+            chat_id: chatId,
+            text: messageText,
+            parse_mode: "HTML",
+            disable_web_page_preview: true
+          }),
+          muteHttpExceptions: true
+        });
+        var resJson = JSON.parse(response.getContentText());
+        return output.setContent(JSON.stringify({ success: resJson.ok === true, data: resJson }));
+      } catch (err) {
+        return output.setContent(JSON.stringify({ success: false, error: err.toString() }));
+      }
+    }
+
     return output.setContent(JSON.stringify({ success: false, message: "Hành động không hợp lệ: " + action }));
   } catch (err) {
     return output.setContent(JSON.stringify({ success: false, error: err.toString() }));

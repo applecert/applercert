@@ -434,7 +434,11 @@
       fallback_to_link4m: true,
       site2s_token: '9c105d1f5c6c770dcdf75101509cfba77b9ee5bd',
       yeumoney_token: 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
-      link4m_token: '691eb05d63b1b86d4a3bca1e'
+      link4m_token: '691eb05d63b1b86d4a3bca1e',
+      tele_notify_enabled: false,
+      tele_bot_token: '',
+      tele_chat_id: '',
+      reward_per_pass: 500
     };
 
     let SHORTENER_CONFIG = (function() {
@@ -447,7 +451,7 @@
     })();
 
     const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzkd0-c3d5eP2L2l3qf-12345/exec";
-    const ANALYTICS_API_URL = "https://script.google.com/macros/s/AKfycbyx3HSoUoQFWBGgPxkPJME_Qj0w8ltzLTmrFhUpkODdnlRK8r_-a45PCy9rU0dlS9SZ/exec";
+    const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || "https://script.google.com/macros/s/AKfycbyx3HSoUoQFWBGgPxkPJME_Qj0w8ltzLTmrFhUpkODdnlRK8r_-a45PCy9rU0dlS9SZ/exec";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
@@ -499,17 +503,125 @@
     // 2. MÃ HÓA & XÁC THỰC TOKEN VƯỢT LINK (CHỐNG LỖ HỔNG)
     // ═════════════════════════════════════════════════════════════
     function createFreePassToken(app, rawLink) {
+      const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
       const payload = {
         bundleId: app.bundleId || '',
         name: app.name || app.title || 'App',
         rawLink: rawLink,
         slug: app._id || '',
         uid: (currentUser && currentUser.uid) ? currentUser.uid : '',
+        userEmail: (currentUser && currentUser.email) || '',
+        provider: (cfg.provider || 'site2s').toLowerCase().trim(),
         t: Date.now(),
         nonce: Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
       };
       const jsonStr = encodeURIComponent(JSON.stringify(payload));
       return btoa(jsonStr).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    // Gửi thông báo Telegram Bot riêng biệt về lượt vượt link (không đụng chạm bot tiền)
+    async function sendShortenerTelegramNotification(payload, app) {
+      try {
+        const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+        if (!cfg || cfg.tele_notify_enabled !== true) return;
+        const botToken = (cfg.tele_bot_token || '').trim();
+        const chatId = (cfg.tele_chat_id || '').trim();
+        if (!botToken || !chatId) return;
+
+        const providerKey = ((payload && payload.provider) || (cfg.provider || 'site2s')).toLowerCase().trim();
+        let providerName = 'Site2S';
+        let taskDesc = 'Quảng cáo Direct / Xen kẽ Interstitial Ads (site2s.com)';
+        if (providerKey === 'link4m') {
+          providerName = 'Link4m';
+          taskDesc = 'Tìm từ khóa Google 60s & Recaptcha (link4m.co)';
+        } else if (providerKey === 'yeumoney') {
+          providerName = 'YeuMoney';
+          taskDesc = 'Nhiệm vụ tìm kiếm web Google & YeuMoney (yeumoney.com)';
+        } else if (providerKey === 'custom') {
+          providerName = 'Custom API';
+          taskDesc = 'Cổng rút gọn API Tùy Chỉnh';
+        }
+
+        const reward = (cfg.reward_per_pass !== undefined && cfg.reward_per_pass !== null)
+          ? parseInt(cfg.reward_per_pass, 10) || 0
+          : 500;
+        const rewardFormatted = reward > 0 ? `+${reward.toLocaleString('vi-VN')}đ` : '0đ';
+
+        // Thời gian làm nhiệm vụ
+        let elapsedStr = 'Không xác định';
+        if (payload && payload.t) {
+          const elapsedSec = Math.max(1, Math.round((Date.now() - payload.t) / 1000));
+          if (elapsedSec < 60) {
+            elapsedStr = `${elapsedSec} giây`;
+          } else {
+            const m = Math.floor(elapsedSec / 60);
+            const s = elapsedSec % 60;
+            elapsedStr = `${m} phút ${s} giây (${elapsedSec}s)`;
+          }
+        }
+
+        // Thông tin người dùng
+        const userEmail = (currentUser && currentUser.email) || (payload && payload.userEmail) || '';
+        const userId = (currentUser && currentUser.uid) || (payload && payload.uid) || '';
+        let userInfo = 'Khách vãng lai';
+        if (userEmail) {
+          userInfo = `${userEmail} (${userId ? userId.substring(0, 8) + '...' : ''})`;
+        } else if (userId) {
+          userInfo = `UID: ${userId.substring(0, 8)}...`;
+        }
+
+        // Thiết bị
+        const ua = navigator.userAgent || '';
+        let deviceOS = 'Khác';
+        if (/iPhone|iPad|iPod/i.test(ua)) deviceOS = '📱 iOS (iPhone/iPad)';
+        else if (/Android/i.test(ua)) deviceOS = '🤖 Android';
+        else if (/Macintosh|Mac OS X/i.test(ua)) deviceOS = '💻 macOS';
+        else if (/Windows/i.test(ua)) deviceOS = '🖥️ Windows';
+
+        const nowStr = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        const appName = (app && (app.name || app.title)) || (payload && payload.name) || 'Ứng dụng IPA';
+
+        const msg = [
+          '🚀 <b>THÔNG BÁO VƯỢT LINK THÀNH CÔNG!</b>',
+          '',
+          `📱 <b>Ứng dụng tải:</b> <b>${appName}</b>`,
+          `💰 <b>Cộng tiền doanh thu:</b> <code>${rewardFormatted}</code>`,
+          `🌐 <b>Cổng vượt link:</b> <b>${providerName}</b>`,
+          `🎯 <b>Loại nhiệm vụ:</b> <i>${taskDesc}</i>`,
+          `⏱️ <b>Thời gian làm nhiệm vụ:</b> <code>${elapsedStr}</code>`,
+          `👤 <b>Người dùng:</b> <code>${userInfo}</code>`,
+          `💻 <b>Thiết bị:</b> ${deviceOS}`,
+          `🕒 <b>Thời gian:</b> ${nowStr}`,
+          '',
+          '<i>🔔 Bot thông báo vượt link độc lập (IPAVIET Bot).</i>'
+        ].join('\n');
+
+        // Gửi qua Telegram API trực tiếp
+        let sent = false;
+        try {
+          const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: msg,
+              parse_mode: 'HTML',
+              disable_web_page_preview: true
+            })
+          });
+          if (res.ok) sent = true;
+        } catch(e) {}
+
+        // Nếu gửi trực tiếp bị chặn bởi adblock, proxy qua Google Apps Script Analytics
+        if (!sent && typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
+          try {
+            const proxyUrl = `${ANALYTICS_API_URL}?action=send_shortener_telegram&bot_token=${encodeURIComponent(botToken)}&chat_id=${encodeURIComponent(chatId)}&message=${encodeURIComponent(msg)}&t=${Date.now()}`;
+            await fetch(proxyUrl, { method: 'GET', mode: 'no-cors' });
+          } catch(e) {}
+        }
+      } catch(err) {
+        console.warn("Lỗi gửi thông báo Telegram vượt link:", err);
+      }
     }
 
     function decodeFreePassToken(tokenStr) {
@@ -903,6 +1015,9 @@
       // Dọn dẹp URL sạch sẽ
       const cleanUrl = window.location.origin + window.location.pathname + `?id=${encodeURIComponent(urlParams.get('id') || '')}`;
       window.history.replaceState({}, document.title, cleanUrl);
+
+      // Gửi thông báo Telegram Bot riêng biệt về lượt vượt link
+      sendShortenerTelegramNotification(payload, CURRENT_APP || { name: payload.name, fileLink: payload.rawLink });
 
       // Ghi nhận lượt tải
       await recordAppDownload(CURRENT_APP || { name: payload.name, fileLink: payload.rawLink }, 'Free Ads (Completed)');
