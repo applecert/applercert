@@ -1019,6 +1019,20 @@ function extractModFeatures(app) {
   return { isMod: true, modSummary: summary, modFeatures: features.slice(0, 10) };
 }
 
+/* ─── Deterministic Anti-Collision Unique Slug Generator ─── */
+function getAppSlug(name, version, fileLink) {
+  const cleanName = String(name || 'app').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const cleanVer = String(version || '1-0').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const link = String(fileLink || '');
+  let hash = 0;
+  for (let i = 0; i < link.length; i++) {
+    hash = ((hash << 5) - hash) + link.charCodeAt(i);
+    hash |= 0;
+  }
+  const hashStr = Math.abs(hash).toString(36).slice(0, 5) || 'ipa';
+  return `${cleanName}-${cleanVer}-${hashStr}`;
+}
+
 /* ─── Normalizer with Smart API Metadata Detection ─── */
 function normalizeRepoApp(app, sourceMeta) {
   if (!app) return null;
@@ -1083,7 +1097,7 @@ function normalizeRepoApp(app, sourceMeta) {
   const modData = extractModFeatures(app);
 
   return {
-    _id: 'app_' + Math.random().toString(36).substr(2, 9),
+    _id: getAppSlug(name, version, downloadUrl),
     _type: 'IPA',
     name: name,
     title: name,
@@ -1286,7 +1300,7 @@ async function loadData() {
         const vipData = JSON.parse(vipRes.value);
         if (Array.isArray(vipData)) {
           DB.vip = vipData.map(item => {
-            item._id = 'vip_' + Math.random().toString(36).substr(2, 9);
+            item._id = getAppSlug(item.name || item.title, item.version, item.fileLink || item.downloadUrl || 'vip');
             item._type = 'VIP';
             item.developer = item.developer || 'IPAVIET Studio';
             item.isMod = true;
@@ -1316,6 +1330,15 @@ async function loadData() {
     });
 
     DB.ipa = sortItemsByDate(getUniqueApps(allTier1Apps));
+
+    try {
+      // Lưu subset app vào localStorage để app.html tra cứu siêu tốc khi mở tab mới
+      const cacheMap = {};
+      Object.keys(window.allAppsMap).slice(0, 1500).forEach(k => {
+        cacheMap[k] = window.allAppsMap[k];
+      });
+      localStorage.setItem('ipaviet_cached_apps_map', JSON.stringify(cacheMap));
+    } catch(e) {}
   } catch(e) { console.error("Lỗi tổng loadData", e); }
 
   // Update stats
@@ -1641,12 +1664,22 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
   recordSearchQuery(e.target.value);
 });
 
-/* ─── App Detail View ─── */
+/* ─── App Detail View (Dedicated Page Navigation) ─── */
 function openAppView(appId) {
   const i = window.allAppsMap[appId];
   if (!i) return;
   STATE.currentItem = i;
   recordAppView(i);
+
+  // Lưu app hiện tại vào sessionStorage & localStorage để trang app.html mở ra tức thì 0ms
+  try {
+    sessionStorage.setItem('ipaviet_current_app', JSON.stringify(i));
+    localStorage.setItem('ipaviet_current_app', JSON.stringify(i));
+  } catch(e) {}
+
+  // Mở trang chi tiết app riêng biệt
+  window.location.href = `app.html?id=${encodeURIComponent(i._id || appId)}`;
+  return;
 
   let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA';
   const heroBg = document.getElementById('detailHeroBg');

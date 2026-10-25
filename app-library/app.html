@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="vi" class="antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title id="pageTitle">Chi Tiết Ứng Dụng — IPAVIET</title>
+  
+  <meta name="description" content="Tải file IPA, ứng dụng Mod, Hack và Tweak iOS miễn phí chất lượng cao từ IPAVIET OS.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-display: 'Space Grotesk', sans-serif;
+      --void: #03040a;
+      --deep: #080a14;
+      --surface: #0d0f1a;
+      --elevated: #121420;
+      --glass: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.06);
+      --glass-highlight: rgba(255,255,255,0.08);
+      --accent-cyan: #00f0ff;
+      --accent-violet: #8b5cf6;
+      --accent-rose: #f43f5e;
+      --accent-amber: #f59e0b;
+      --accent-emerald: #10b981;
+      --text-primary: #f0f2f8;
+      --text-secondary: rgba(240,242,248,0.55);
+      --text-tertiary: rgba(240,242,248,0.3);
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 32px;
+      --radius-xl: 48px;
+      --radius-full: 9999px;
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* Ambient Background */
+    .ambient-layer { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+    .aurora-blob { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.35; animation: auroraFloat 20s ease-in-out infinite; }
+    .aurora-blob:nth-child(1) { width: 600px; height: 600px; background: radial-gradient(circle, rgba(139,92,246,0.35), transparent 70%); top: -10%; left: -10%; }
+    .aurora-blob:nth-child(2) { width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,240,255,0.25), transparent 70%); bottom: -10%; right: -5%; animation-delay: -7s; }
+    .aurora-blob:nth-child(3) { width: 400px; height: 400px; background: radial-gradient(circle, rgba(244,63,94,0.18), transparent 70%); top: 40%; left: 50%; animation-delay: -14s; }
+    @keyframes auroraFloat { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,-30px) scale(1.05); } }
+    .noise-overlay { position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px; }
+
+    /* Top Navigation */
+    .top-nav {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      width: calc(100% - 32px); max-width: 900px; padding: 8px 16px;
+      background: rgba(3,4,10,0.75); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+    }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 700;
+      padding: 8px 16px; border-radius: var(--radius-full); transition: all 0.3s var(--ease-spring);
+      cursor: pointer;
+    }
+    .btn-back:hover { background: rgba(0,240,255,0.12); border-color: rgba(0,240,255,0.3); color: var(--accent-cyan); transform: translateX(-2px); }
+    .nav-brand { font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: 2px; color: var(--text-primary); text-decoration: none; }
+    .nav-user { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .coin-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.2);
+      color: var(--accent-cyan); font-family: var(--font-display); font-weight: 700; font-size: 12px;
+      padding: 6px 12px; border-radius: var(--radius-full);
+    }
+
+    /* Main Container */
+    .app-page { position: relative; z-index: 10; max-width: 860px; margin: 0 auto; padding: 100px 20px 120px; }
+
+    /* Hero Section */
+    .hero-wrap {
+      position: relative; border-radius: var(--radius-xl); overflow: hidden;
+      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(40px);
+      padding: 48px 24px 36px; text-align: center; margin-bottom: 24px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    }
+    .hero-bg-blur {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    }
+    .hero-bg-blur img {
+      width: 100%; height: 100%; object-fit: cover; filter: blur(70px) saturate(2);
+      opacity: 0.25; transform: scale(1.3);
+    }
+    .hero-bg-blur::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 0%, rgba(3,4,10,0.85) 100%);
+    }
+
+    .hero-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
+
+    /* 3D App Icon */
+    .app-icon-wrap {
+      width: 128px; height: 128px; border-radius: 30px; overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.15), 0 0 50px rgba(0,240,255,0.15);
+      animation: iconFloat 6s ease-in-out infinite;
+      margin-bottom: 20px; position: relative;
+    }
+    @keyframes iconFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .app-icon-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .app-title {
+      font-family: var(--font-display); font-size: clamp(24px, 5vw, 36px);
+      font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary);
+      margin-bottom: 8px; line-height: 1.2; word-break: break-word;
+    }
+    .app-developer {
+      font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;
+      display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
+    }
+
+    /* Badges */
+    .badges-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 28px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .badge-ipa { background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.25); color: var(--accent-cyan); }
+    .badge-vip { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: var(--accent-amber); }
+    .badge-mod { background: linear-gradient(135deg, rgba(244,63,94,0.2), rgba(139,92,246,0.2)); border: 1px solid rgba(244,63,94,0.4); color: #fda4af; box-shadow: 0 0 16px rgba(244,63,94,0.2); }
+    .badge-verified { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); color: var(--accent-emerald); }
+
+    /* Action Buttons */
+    .hero-actions { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 12px; }
+    .btn-action {
+      width: 100%; padding: 14px 24px; border-radius: var(--radius-full);
+      font-size: 14.5px; font-weight: 800; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all 0.3s var(--ease-spring); text-decoration: none;
+    }
+    .btn-action-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+      color: #03040a; box-shadow: 0 8px 30px rgba(0,240,255,0.3);
+    }
+    .btn-action-primary:hover { transform: scale(1.02) translateY(-2px); box-shadow: 0 12px 40px rgba(0,240,255,0.4); }
+    .btn-action-vip {
+      background: linear-gradient(135deg, var(--accent-amber), #ea580c);
+      color: #03040a; box-shadow: 0 8px 30px rgba(245,158,11,0.3);
+    }
+    .btn-action-vip:hover { transform: scale(1.02) translateY(-2px); box-shadow: 0 12px 40px rgba(245,158,11,0.4); }
+    .btn-action-secondary {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-primary);
+    }
+    .btn-action-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+
+    /* Stats Grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card {
+      background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-md); padding: 16px 10px; text-align: center;
+    }
+    .stat-val { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--text-primary); }
+    .stat-lbl { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+    /* MOD Feature Showcase Card */
+    .mod-card {
+      background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(139,92,246,0.08));
+      border: 1px solid rgba(236,72,153,0.3); border-radius: var(--radius-lg);
+      padding: 24px; margin-bottom: 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+      position: relative; overflow: hidden;
+    }
+    .mod-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #ec4899, #a855f7, transparent); }
+    .mod-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+    .mod-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+      border-radius: var(--radius-full); background: linear-gradient(135deg, #ec4899, #8b5cf6);
+      color: #fff; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .mod-tag { font-size: 11px; font-weight: 700; color: var(--accent-emerald); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); padding: 4px 10px; border-radius: var(--radius-full); }
+    .mod-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+    .mod-item {
+      display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px;
+      border-radius: var(--radius-sm); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+      font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.4;
+    }
+    .mod-item-icon { width: 18px; height: 18px; border-radius: 5px; background: rgba(236,72,153,0.25); color: #f43f5e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+
+    /* Content Cards */
+    .card-section {
+      background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-lg); padding: 28px; margin-bottom: 24px;
+    }
+    .card-title {
+      font-family: var(--font-display); font-size: 18px; font-weight: 700;
+      color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Screenshots Slider */
+    .screenshots-scroll {
+      display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+    .screenshots-scroll::-webkit-scrollbar { height: 4px; }
+    .screenshots-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .screenshots-scroll img {
+      height: 340px; border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      flex-shrink: 0; transition: transform 0.3s;
+    }
+    .screenshots-scroll img:hover { transform: scale(1.02); }
+
+    /* Description */
+    .app-desc-text {
+      font-size: 14.5px; line-height: 1.75; color: var(--text-secondary);
+      white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* Technical Data Table */
+    .data-table { display: flex; flex-direction: column; }
+    .data-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 13.5px;
+    }
+    .data-row:last-child { border-bottom: none; }
+    .data-lbl { color: var(--text-secondary); }
+    .data-val { font-weight: 600; color: var(--text-primary); font-family: var(--font-display); text-align: right; max-width: 60%; word-break: break-all; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px);
+      padding: 14px 28px; border-radius: var(--radius-full);
+      background: rgba(13,15,26,0.95); backdrop-filter: blur(40px);
+      color: var(--text-primary); font-size: 14px; font-weight: 600; z-index: 1000;
+      opacity: 0; transition: all 0.4s var(--ease-spring); pointer-events: none;
+      border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+      text-align: center; max-width: 90%;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* Loading Overlay */
+    .loader-overlay {
+      position: fixed; inset: 0; z-index: 500; background: var(--void);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+    .loader-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .spin-ring { width: 48px; height: 48px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.08); border-top-color: var(--accent-cyan); animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .app-page { padding-top: 84px; }
+      .screenshots-scroll img { height: 260px; }
+      .hero-wrap { padding: 36px 16px 28px; }
+      .app-icon-wrap { width: 100px; height: 100px; border-radius: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Blobs -->
+  <div class="ambient-layer">
+    <div class="aurora-blob"></div>
+    <div class="aurora-blob"></div>
+    <div class="aurora-blob"></div>
+  </div>
+  <div class="noise-overlay"></div>
+
+  <!-- Loading State -->
+  <div class="loader-overlay" id="loadingOverlay">
+    <div class="spin-ring"></div>
+    <p style="font-family:var(--font-display);font-size:13px;letter-spacing:0.2em;color:var(--text-tertiary);margin-top:16px;">ĐANG TẢI ỨNG DỤNG...</p>
+  </div>
+
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <button onclick="handleGoBack()" class="btn-back" title="Quay lại kho ứng dụng">
+      <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Kho App
+    </button>
+    <a href="index.html" class="nav-brand">IPAVIET</a>
+    <div class="nav-user" id="navUserSlot">
+      <a href="../account.html" style="text-decoration:none;" class="coin-badge" id="userCoinBadge">
+        <i data-lucide="coins" style="width:14px;height:14px;color:var(--accent-amber);"></i> <span id="coinText">Đăng nhập</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="app-page">
+    
+    <!-- Hero Box -->
+    <section class="hero-wrap">
+      <div class="hero-bg-blur">
+        <img id="heroBgImg" src="" alt="">
+      </div>
+      <div class="hero-content">
+        <div class="app-icon-wrap">
+          <img id="appIcon" src="https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA" alt="Icon">
+        </div>
+        <h1 class="app-title" id="appName">Tên Ứng Dụng</h1>
+        <p class="app-developer" id="appDev"><i data-lucide="shield-check" style="width:14px;height:14px;color:var(--accent-cyan);"></i> IPAVIET Studio</p>
+
+        <div class="badges-row" id="appBadges">
+          <span class="badge badge-ipa"><i data-lucide="package" style="width:12px;height:12px;"></i> IPA FILE</span>
+          <span class="badge badge-verified" id="badgeType"><i data-lucide="check" style="width:12px;height:12px;"></i> MIỄN PHÍ</span>
+          <span class="badge badge-mod" id="badgeMod" style="display:none;"><i data-lucide="zap" style="width:12px;height:12px;"></i> MOD ĐẶC QUYỀN</span>
+        </div>
+
+        <div class="hero-actions" id="actionPanel">
+          <!-- Sẽ được điền tự động bằng JavaScript dựa trên tài khoản & VIP -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Stats Grid -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="statVer">1.0</div>
+        <div class="stat-lbl">Phiên bản</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statSize">-- MB</div>
+        <div class="stat-lbl">Kích thước</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--accent-amber);" id="statRating">4.9 ★</div>
+        <div class="stat-lbl">Đánh giá</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--accent-cyan);">iOS 15 - 18+</div>
+        <div class="stat-lbl">Tương thích</div>
+      </div>
+    </section>
+
+    <!-- MOD Features Showcase Card (Chỉ hiện khi là app MOD/Hack) -->
+    <section class="mod-card" id="modShowcase" style="display:none;">
+      <div class="mod-header">
+        <span class="mod-pill"><i data-lucide="zap" style="width:13px;height:13px;"></i> TÍNH NĂNG MOD & HACK ĐẶC QUYỀN</span>
+        <span class="mod-tag"><i data-lucide="check-circle-2" style="width:12px;height:12px;"></i> ĐÃ KÍCH HOẠT SẴN</span>
+      </div>
+      <div class="mod-list" id="modList"></div>
+    </section>
+
+    <!-- Screenshots Preview -->
+    <section class="card-section" id="screenshotsSection" style="display:none;">
+      <h3 class="card-title"><i data-lucide="image" style="width:18px;height:18px;color:var(--accent-cyan);"></i> Xem Trước Giao Diện</h3>
+      <div class="screenshots-scroll" id="screenshotsList"></div>
+    </section>
+
+    <!-- Description -->
+    <section class="card-section">
+      <h3 class="card-title"><i data-lucide="file-text" style="width:18px;height:18px;color:var(--accent-violet);"></i> Mô Tả & Giới Thiệu</h3>
+      <p class="app-desc-text" id="appDesc">Đang tải mô tả ứng dụng...</p>
+    </section>
+
+    <!-- Technical Details Table -->
+    <section class="card-section">
+      <h3 class="card-title"><i data-lucide="cpu" style="width:18px;height:18px;color:var(--accent-emerald);"></i> Thông Tin Tệp IPA</h3>
+      <div class="data-table">
+        <div class="data-row">
+          <span class="data-lbl">Tên gói (Bundle ID)</span>
+          <span class="data-val" id="dBundle">--</span>
+        </div>
+        <div class="data-row">
+          <span class="data-lbl">Nhà phát triển</span>
+          <span class="data-val" id="dDeveloper">--</span>
+        </div>
+        <div class="data-row">
+          <span class="data-lbl">Thể loại</span>
+          <span class="data-val" id="dCategory">Tiện ích</span>
+        </div>
+        <div class="data-row">
+          <span class="data-lbl">Ngày cập nhật</span>
+          <span class="data-val" id="dDate">Hôm nay</span>
+        </div>
+        <div class="data-row">
+          <span class="data-lbl">Định dạng</span>
+          <span class="data-val" style="color:var(--accent-cyan);">Apple iOS Binary (.IPA)</span>
+        </div>
+        <div class="data-row">
+          <span class="data-lbl">Mã định danh bảo mật</span>
+          <span class="data-val" id="dSlug" style="font-family:monospace;font-size:12px;color:var(--text-tertiary);">--</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- VSign Recommend Card -->
+    <section class="card-section" style="border-color:rgba(0,240,255,0.2);background:linear-gradient(135deg,rgba(0,240,255,0.04),rgba(139,92,246,0.04));">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <img src="https://i.ibb.co/cSmzsSRv/T-n-D-n-13-Copy-Copy-Copy-Original.png" style="width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);" alt="VSign">
+          <div>
+            <h4 style="font-size:15px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">Cài Đặt Trực Tiếp Qua VSign</h4>
+            <p style="font-size:12.5px;color:var(--text-secondary);margin-top:2px;">Tự động ký chứng chỉ & cài đặt trực tiếp trên iPhone không cần máy tính.</p>
+          </div>
+        </div>
+        <a href="https://vsign.site" target="_blank" class="btn-action btn-action-primary" style="width:auto;padding:10px 20px;font-size:13px;">
+          <i data-lucide="sparkles" style="width:15px;height:15px;"></i> Khám Phá VSign
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Element -->
+  <div class="toast" id="toastMsg"></div>
+
+  <!-- JAVASCRIPT LOGIC ENGINE -->
+  <script>
+    // ═════════════════════════════════════════════════════════════
+    // 1. CẤU HÌNH HỆ THỐNG & FIREBASE
+    // ═════════════════════════════════════════════════════════════
+    const DEFAULT_SHORTENER_CONFIG = {
+      enabled: true,
+      free_pass_locked: false,
+      require_login: true,
+      provider: 'site2s',
+      fallback_to_link4m: true,
+      site2s_token: '9c105d1f5c6c770dcdf75101509cfba77b9ee5bd',
+      yeumoney_token: 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb',
+      link4m_token: '691eb05d63b1b86d4a3bca1e'
+    };
+
+    let SHORTENER_CONFIG = (function() {
+      try {
+        const saved = localStorage.getItem('ipaviet_shortener_config');
+        return saved ? Object.assign({}, DEFAULT_SHORTENER_CONFIG, JSON.parse(saved)) : DEFAULT_SHORTENER_CONFIG;
+      } catch(e) {
+        return DEFAULT_SHORTENER_CONFIG;
+      }
+    })();
+
+    const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbzkd0-c3d5eP2L2l3qf-12345/exec";
+    const ANALYTICS_API_URL = "https://script.google.com/macros/s/AKfycbyx3HSoUoQFWBGgPxkPJME_Qj0w8ltzLTmrFhUpkODdnlRK8r_-a45PCy9rU0dlS9SZ/exec";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+      authDomain: "ipaviet-st.firebaseapp.com",
+      projectId: "ipaviet-st",
+      storageBucket: "ipaviet-st.firebasestorage.app",
+      messagingSenderId: "127619650916",
+      appId: "1:127619650916:web:fc8904c99804eeb7539671"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    try {
+      if (typeof db !== 'undefined') {
+        db.collection('system_config').doc('shortener_settings').onSnapshot(doc => {
+          if (doc && doc.exists) {
+            SHORTENER_CONFIG = Object.assign({}, DEFAULT_SHORTENER_CONFIG, doc.data());
+            localStorage.setItem('ipaviet_shortener_config', JSON.stringify(SHORTENER_CONFIG));
+          }
+        });
+      }
+    } catch(e) {}
+
+    let currentUser = null;
+    let currentCoins = 0;
+    let isUserVip = false;
+    let CURRENT_APP = null;
+
+    // Toast Function
+    function showToast(msg) {
+      const t = document.getElementById('toastMsg');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    function handleGoBack() {
+      if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.hostname)) {
+        window.history.back();
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    // 2. MÃ HÓA & XÁC THỰC TOKEN VƯỢT LINK (CHỐNG LỖ HỔNG)
+    // ═════════════════════════════════════════════════════════════
+    function createFreePassToken(app, rawLink) {
+      const payload = {
+        bundleId: app.bundleId || '',
+        name: app.name || app.title || 'App',
+        rawLink: rawLink,
+        slug: app._id || '',
+        uid: (currentUser && currentUser.uid) ? currentUser.uid : '',
+        t: Date.now(),
+        nonce: Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
+      };
+      const jsonStr = encodeURIComponent(JSON.stringify(payload));
+      return btoa(jsonStr).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function decodeFreePassToken(tokenStr) {
+      if (!tokenStr) return null;
+      try {
+        let clean = decodeURIComponent(tokenStr).trim().replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
+        while (clean.length % 4 !== 0) clean += '=';
+        return JSON.parse(decodeURIComponent(atob(clean)));
+      } catch(e) {
+        return null;
+      }
+    }
+
+    function verifyFreePassToken(payload) {
+      if (!payload || !payload.rawLink || !payload.t || !payload.nonce) return false;
+      const age = Date.now() - payload.t;
+      if (age < -300000 || age > 2 * 60 * 60 * 1000) return false;
+      const usedKey = 'ipaviet_used_pass_' + payload.nonce;
+      const usedTimeStr = localStorage.getItem(usedKey) || sessionStorage.getItem(usedKey);
+      if (usedTimeStr) {
+        const usedTime = parseInt(usedTimeStr, 10);
+        if (!isNaN(usedTime) && (Date.now() - usedTime > 15 * 60 * 1000)) return false;
+      }
+      return true;
+    }
+
+    function consumeFreePassToken(payload) {
+      const usedKey = 'ipaviet_used_pass_' + payload.nonce;
+      sessionStorage.setItem(usedKey, Date.now().toString());
+      localStorage.setItem(usedKey, Date.now().toString());
+    }
+
+    // Ghi nhận lượt tải ứng dụng
+    async function recordAppDownload(app, method) {
+      try {
+        if (!app) return;
+        if (typeof db !== 'undefined') {
+          const dlRef = db.collection('analytics_downloads').doc();
+          dlRef.set({
+            appName: app.name || app.title || 'Unknown App',
+            bundleId: app.bundleId || '',
+            fileLink: app.fileLink || app.downloadUrl || '',
+            method: method || 'Free',
+            userId: (currentUser && currentUser.uid) || 'guest',
+            userEmail: (currentUser && currentUser.email) || '',
+            isVip: isUserVip,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          }).catch(() => {});
+        }
+      } catch(e) {}
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    // 3. RÚT GỌN LINK SITE2S & CÁC CỔNG DỰ PHÒNG
+    // ═════════════════════════════════════════════════════════════
+    async function getShortenedUrl(destinationUrl) {
+      if (!destinationUrl) return null;
+      const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+      const provider = (cfg.provider || 'site2s').toLowerCase().trim();
+
+      // Site2S
+      if (provider === 'site2s') {
+        const token = cfg.site2s_token || '9c105d1f5c6c770dcdf75101509cfba77b9ee5bd';
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
+          const s2sUrl = `https://site2s.com/api?api=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}&type=1`;
+          const res = await fetch(s2sUrl, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && (data.status === 'success' || data.shortenedUrl) && data.shortenedUrl) {
+              return data.shortenedUrl;
+            }
+          }
+        } catch(e) {}
+
+        // Fallback sang Link4m nếu có cấu hình
+        if (cfg.fallback_to_link4m !== false) {
+          const l4mToken = cfg.link4m_token || '691eb05d63b1b86d4a3bca1e';
+          return `https://link4m.co/st?api=${encodeURIComponent(l4mToken)}&url=${encodeURIComponent(destinationUrl)}`;
+        }
+        return `https://site2s.com/st?api=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}`;
+      }
+
+      // Link4m
+      if (provider === 'link4m') {
+        const token = cfg.link4m_token || '691eb05d63b1b86d4a3bca1e';
+        return `https://link4m.co/st?api=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}`;
+      }
+
+      const s2sToken = cfg.site2s_token || '9c105d1f5c6c770dcdf75101509cfba77b9ee5bd';
+      return `https://site2s.com/st?api=${encodeURIComponent(s2sToken)}&url=${encodeURIComponent(destinationUrl)}`;
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    // 4. QUY TRÌNH TẢI MIỄN PHÍ (SITE2S VƯỢT LINK)
+    // ═════════════════════════════════════════════════════════════
+    async function downloadFreeApp(btnEl) {
+      if (!CURRENT_APP) {
+        showToast("Không tìm thấy thông tin ứng dụng!");
+        return;
+      }
+      const rawLink = CURRENT_APP.fileLink || CURRENT_APP.downloadUrl || CURRENT_APP.link;
+      if (!rawLink) {
+        showToast("Không tìm thấy link file IPA tải về.");
+        return;
+      }
+
+      const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+      if (!currentUser && cfg.require_login !== false) {
+        showToast("⚠️ Vui lòng đăng nhập tài khoản để tải ứng dụng!");
+        setTimeout(() => { window.location.href = '../account.html'; }, 1000);
+        return;
+      }
+
+      const isShortenerActive = (cfg.enabled !== false && !cfg.free_pass_locked);
+      if (!isShortenerActive) {
+        showToast("⚠️ Tính năng tải miễn phí đang tạm thời bảo trì để nâng cấp hệ thống!");
+        return;
+      }
+
+      const originalHtml = btnEl.innerHTML;
+      btnEl.innerHTML = `<div style="width:18px;height:18px;border:2px solid #000;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div> Đang tạo link...`;
+      btnEl.disabled = true;
+
+      try {
+        showToast("Đang tạo cổng tải miễn phí an toàn...");
+        await recordAppDownload(CURRENT_APP, `Free Ads (${cfg.provider || 'site2s'})`);
+
+        // ĐIỂM ĐẾN BẮT BUỘC LÀ CHÍNH TRANG APP.HTML NÀY:
+        const token = createFreePassToken(CURRENT_APP, rawLink);
+        const origin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://ipaviet.site';
+        const gateReturnUrl = `${origin}${window.location.pathname}?id=${encodeURIComponent(CURRENT_APP._id)}&free_pass=1&token=${token}`;
+
+        // Lưu trước app hiện tại vào localStorage để bảo toàn tuyệt đối khi quay lại
+        localStorage.setItem('ipaviet_current_app', JSON.stringify(CURRENT_APP));
+
+        const shortTarget = await getShortenedUrl(gateReturnUrl);
+        if (shortTarget && typeof shortTarget === 'string' && shortTarget.startsWith('http')) {
+          showToast("Chuyển hướng đến cổng xác thực để tiếp tục...");
+          setTimeout(() => { window.location.href = shortTarget; }, 350);
+          return;
+        }
+
+        const s2sToken = cfg.site2s_token || '9c105d1f5c6c770dcdf75101509cfba77b9ee5bd';
+        const directGatewayUrl = `https://site2s.com/st?api=${encodeURIComponent(s2sToken)}&url=${encodeURIComponent(gateReturnUrl)}`;
+        window.location.href = directGatewayUrl;
+
+      } catch(err) {
+        console.error("Lỗi tạo link:", err);
+        showToast("Không thể tạo link tải. Vui lòng thử lại!");
+        btnEl.innerHTML = originalHtml;
+        btnEl.disabled = false;
+      }
+    }
+
+    // Tải VIP
+    async function downloadVipApp(btnEl) {
+      if (!CURRENT_APP) return;
+      const rawLink = CURRENT_APP.fileLink || CURRENT_APP.downloadUrl || CURRENT_APP.link;
+      if (!rawLink) { showToast("Không tìm thấy link tải!"); return; }
+      showToast("Đặc quyền VIP: Bắt đầu tải ứng dụng...");
+      await recordAppDownload(CURRENT_APP, 'VIP');
+      setTimeout(() => { window.location.href = rawLink; }, 300);
+    }
+
+    // Mua bằng Xu
+    async function buyWithCoins(btnEl) {
+      const PRICE = 1000;
+      if (currentCoins < PRICE) {
+        showToast("Số dư không đủ 1.000đ. Vui lòng nạp thêm!");
+        setTimeout(() => { window.location.href = '../dichvu.html'; }, 1000);
+        return;
+      }
+      const rawLink = CURRENT_APP && (CURRENT_APP.fileLink || CURRENT_APP.downloadUrl || CURRENT_APP.link);
+      if (!rawLink) { showToast("Không tìm thấy file!"); return; }
+
+      btnEl.disabled = true;
+      btnEl.innerHTML = `Đang thanh toán...`;
+
+      try {
+        if (typeof db !== 'undefined' && currentUser) {
+          const userRef = db.collection('users').doc(currentUser.uid);
+          await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) throw new Error("Tài khoản không tồn tại");
+            const userData = userDoc.data();
+            const coins = userData.coins || 0;
+            if (coins < PRICE) throw new Error("Số dư không đủ");
+            transaction.update(userRef, {
+              coins: firebase.firestore.FieldValue.increment(-PRICE),
+              totalSpent: firebase.firestore.FieldValue.increment(PRICE)
+            });
+          });
+          currentCoins -= PRICE;
+          updateUserBadge();
+          showToast("Thanh toán thành công! Bắt đầu tải ứng dụng...");
+          await recordAppDownload(CURRENT_APP, 'Coins (1000đ)');
+          setTimeout(() => { window.location.href = rawLink; }, 400);
+        }
+      } catch(e) {
+        showToast(e.message || "Lỗi thanh toán!");
+        renderActions();
+      }
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    // 5. HIỂN THỊ DỮ LIỆU & NÚT TẢI
+    // ═════════════════════════════════════════════════════════════
+    function renderActions() {
+      const panel = document.getElementById('actionPanel');
+      if (!panel || !CURRENT_APP) return;
+      const isAppVIP = CURRENT_APP._type === 'VIP';
+      const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+      const isShortenerActive = (cfg.enabled !== false && !cfg.free_pass_locked);
+
+      if (!currentUser && cfg.require_login !== false) {
+        panel.innerHTML = `
+          <a href="../account.html" class="btn-action btn-action-primary">
+            <i data-lucide="lock" style="width:16px;height:16px;"></i> ĐĂNG NHẬP ĐỂ TẢI ỨNG DỤNG
+          </a>
+          <p style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">Đăng nhập hoặc đăng ký tài khoản miễn phí để nhận quyền tải.</p>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      if (isUserVip) {
+        panel.innerHTML = `
+          <button onclick="downloadVipApp(this)" class="btn-action btn-action-vip">
+            <i data-lucide="crown" style="width:18px;height:18px;"></i> TẢI XUỐNG NGAY (ĐẶC QUYỀN VIP)
+          </button>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      if (isAppVIP) {
+        panel.innerHTML = `
+          <a href="../dichvu.html" class="btn-action btn-action-vip" style="background:linear-gradient(135deg,var(--accent-rose),#be123c);">
+            <i data-lucide="shield-alert" style="width:18px;height:18px;"></i> NÂNG CẤP VIP ĐỂ TẢI APP NÀY
+          </a>
+          <p style="font-size:12px;color:var(--accent-rose);margin-top:4px;">Ứng dụng này nằm trong danh mục độc quyền chỉ dành riêng cho VIP.</p>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      // Normal App Options: Free via Site2S OR Buy with 1.000đ Coins
+      panel.innerHTML = `
+        ${isShortenerActive ? `
+          <button onclick="downloadFreeApp(this)" class="btn-action btn-action-primary">
+            <i data-lucide="cloud-lightning" style="width:18px;height:18px;"></i> TẢI XUỐNG NGAY (MIỄN PHÍ)
+          </button>
+        ` : `
+          <button disabled class="btn-action btn-action-secondary" style="opacity:0.6;border-color:rgba(245,158,11,0.3);color:var(--text-secondary);">
+            <i data-lucide="wrench" style="width:16px;height:16px;color:#f59e0b;"></i> TẢI MIỄN PHÍ (ĐANG BẢO TRÌ)
+          </button>
+        `}
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button onclick="buyWithCoins(this)" class="btn-action btn-action-secondary" style="flex:1;font-size:13px;padding:12px 16px;">
+            <i data-lucide="zap" style="width:15px;height:15px;color:var(--accent-cyan);"></i> Dùng Xu (1.000đ)
+          </button>
+          <a href="../dichvu.html" class="btn-action btn-action-secondary" style="flex:1;font-size:13px;padding:12px 16px;color:var(--accent-emerald);border-color:rgba(16,185,129,0.2);">
+            <i data-lucide="wallet" style="width:15px;height:15px;"></i> Nạp Thêm Xu
+          </a>
+        </div>
+        ${!isShortenerActive ? `
+          <p style="font-size:12px;color:var(--accent-amber);margin-top:6px;background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.3);padding:8px 12px;border-radius:12px;">
+            Tính năng tải miễn phí đang bảo trì nâng cấp hệ thống. Bạn có thể dùng <b>Xu</b> để tải trực tiếp ngay.
+          </p>
+        ` : ''}
+      `;
+      lucide.createIcons();
+    }
+
+    function renderApp(app) {
+      if (!app) return;
+      CURRENT_APP = app;
+
+      // Update Page Title
+      document.title = `${app.name || 'Ứng dụng'} — Tải IPA Miễn Phí | IPAVIET`;
+      const titleEl = document.getElementById('appName');
+      if (titleEl) titleEl.textContent = app.name || 'Unknown App';
+
+      const devEl = document.getElementById('appDev');
+      if (devEl) devEl.innerHTML = `<i data-lucide="shield-check" style="width:14px;height:14px;color:var(--accent-cyan);"></i> ${app.developer || 'IPAVIET Studio'}`;
+
+      const iconImg = document.getElementById('appIcon');
+      const heroBg = document.getElementById('heroBgImg');
+      const safeIcon = app.icon || app.iconUrl || 'https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA';
+      if (iconImg) iconImg.src = safeIcon;
+      if (heroBg) heroBg.src = safeIcon;
+
+      // Badges
+      const badgeType = document.getElementById('badgeType');
+      if (badgeType) {
+        if (app._type === 'VIP') {
+          badgeType.className = 'badge badge-vip';
+          badgeType.innerHTML = `<i data-lucide="crown" style="width:12px;height:12px;"></i> VIP ĐỘC QUYỀN`;
+        } else {
+          badgeType.className = 'badge badge-verified';
+          badgeType.innerHTML = `<i data-lucide="check" style="width:12px;height:12px;"></i> MIỄN PHÍ`;
+        }
+      }
+
+      // Stats
+      const statVer = document.getElementById('statVer');
+      if (statVer) statVer.textContent = app.version || '1.0';
+      const statSize = document.getElementById('statSize');
+      if (statSize) statSize.textContent = app.size || '--';
+
+      // MOD Features Showcase
+      const modShowcase = document.getElementById('modShowcase');
+      const badgeMod = document.getElementById('badgeMod');
+      const modList = document.getElementById('modList');
+
+      if (app.isMod && app.modFeatures && app.modFeatures.length > 0) {
+        if (badgeMod) badgeMod.style.display = 'inline-flex';
+        if (modShowcase) modShowcase.style.display = 'block';
+        if (modList) {
+          modList.innerHTML = app.modFeatures.map(f => `
+            <div class="mod-item">
+              <div class="mod-item-icon"><i data-lucide="zap" style="width:11px;height:11px;"></i></div>
+              <span>${f}</span>
+            </div>
+          `).join('');
+        }
+      } else {
+        if (badgeMod) badgeMod.style.display = 'none';
+        if (modShowcase) modShowcase.style.display = 'none';
+      }
+
+      // Screenshots
+      const ssSec = document.getElementById('screenshotsSection');
+      const ssList = document.getElementById('screenshotsList');
+      if (Array.isArray(app.screenshots) && app.screenshots.length > 0) {
+        if (ssSec) ssSec.style.display = 'block';
+        if (ssList) {
+          ssList.innerHTML = app.screenshots.map(s => `<img src="${s}" alt="Screenshot" onerror="this.remove()">`).join('');
+        }
+      } else {
+        if (ssSec) ssSec.style.display = 'none';
+      }
+
+      // Description
+      const descEl = document.getElementById('appDesc');
+      if (descEl) descEl.textContent = app.desc || app.fullDesc || 'Ứng dụng tuyển chọn từ hệ sinh thái IPAVIET.';
+
+      // Technical Table
+      const dBundle = document.getElementById('dBundle');
+      if (dBundle) dBundle.textContent = app.bundleId || 'com.ipaviet.app';
+      const dDeveloper = document.getElementById('dDeveloper');
+      if (dDeveloper) dDeveloper.textContent = app.developer || 'IPAVIET Studio';
+      const dCategory = document.getElementById('dCategory');
+      if (dCategory) dCategory.textContent = app.category || 'Tiện ích';
+      const dDate = document.getElementById('dDate');
+      if (dDate) dDate.textContent = app.date ? new Date(app.date).toLocaleDateString('vi-VN') : 'Mới cập nhật';
+      const dSlug = document.getElementById('dSlug');
+      if (dSlug) dSlug.textContent = app._id || '--';
+
+      renderActions();
+      lucide.createIcons();
+
+      // Hide Loader
+      const loader = document.getElementById('loadingOverlay');
+      if (loader) loader.classList.add('hidden');
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    // 6. XỬ LÝ QUAY VỀ SAU KHI VƯỢT LINK THÀNH CÔNG (CALLBACK)
+    // ═════════════════════════════════════════════════════════════
+    async function handleFreePassReturn() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('free_pass') !== '1') return;
+
+      const rawToken = urlParams.get('token');
+      if (!rawToken) return;
+
+      const payload = decodeFreePassToken(rawToken);
+      if (!payload || !verifyFreePassToken(payload)) {
+        showToast("Phiên vượt link đã kết thúc hoặc không hợp lệ. Vui lòng bấm tải lại!");
+        return;
+      }
+
+      // Xác thực thành công:
+      consumeFreePassToken(payload);
+      showToast("🎉 VƯỢT LINK THÀNH CÔNG! Đang chuẩn bị tệp IPA...");
+
+      // Dọn dẹp URL sạch sẽ
+      const cleanUrl = window.location.origin + window.location.pathname + `?id=${encodeURIComponent(urlParams.get('id') || '')}`;
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      // Ghi nhận lượt tải
+      await recordAppDownload(CURRENT_APP || { name: payload.name, fileLink: payload.rawLink }, 'Free Ads (Completed)');
+
+      // Hiển thị banner thành công và bắt đầu tải file
+      const panel = document.getElementById('actionPanel');
+      if (panel) {
+        panel.innerHTML = `
+          <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:18px;padding:20px;text-align:center;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--accent-emerald);font-weight:700;font-size:16px;margin-bottom:8px;">
+              <i data-lucide="check-circle" style="width:22px;height:22px;"></i> VƯỢT LINK THÀNH CÔNG!
+            </div>
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">Trình duyệt đang tự động tải tệp IPA về thiết bị của bạn.</p>
+            <a href="${payload.rawLink}" class="btn-action btn-action-primary" style="background:var(--accent-emerald);color:#03040a;">
+              <i data-lucide="download" style="width:16px;height:16px;"></i> Bấm Vào Đây Nếu Tệp Chưa Tự Tải
+            </a>
+          </div>
+        `;
+        lucide.createIcons();
+      }
+
+      setTimeout(() => {
+        if (payload.rawLink) window.location.href = payload.rawLink;
+      }, 600);
+    }
+
+    function updateUserBadge() {
+      const badge = document.getElementById('userCoinBadge');
+      const text = document.getElementById('coinText');
+      if (!badge || !text) return;
+      if (currentUser) {
+        text.textContent = isUserVip ? 'VIP TRỌN ĐỜI' : `${currentCoins.toLocaleString()} Xu`;
+        if (isUserVip) badge.style.borderColor = 'rgba(245,158,11,0.4)';
+      } else {
+        text.textContent = 'Đăng nhập';
+      }
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    // 7. KHỞI CHẠY TRANG & TẢI DỮ LIỆU
+    // ═════════════════════════════════════════════════════════════
+    window.addEventListener('DOMContentLoaded', async () => {
+      lucide.createIcons();
+
+      // Auth Listener
+      auth.onAuthStateChanged(async user => {
+        currentUser = user;
+        if (user) {
+          try {
+            const doc = await db.collection('users').doc(user.uid).get();
+            if (doc.exists) {
+              const data = doc.data();
+              currentCoins = data.coins || 0;
+              isUserVip = Boolean(data.isVip || (data.vipUntil && data.vipUntil.toMillis && data.vipUntil.toMillis() > Date.now()));
+            }
+          } catch(e) {}
+        }
+        updateUserBadge();
+        renderActions();
+      });
+
+      // Lấy ID từ URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedId = urlParams.get('id') || urlParams.get('slug');
+
+      // 1. Thử lấy từ SessionStorage / LocalStorage (Siêu tốc 0ms khi chuyển từ kho)
+      let foundApp = null;
+      try {
+        const cached = sessionStorage.getItem('ipaviet_current_app') || localStorage.getItem('ipaviet_current_app');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (!requestedId || parsed._id === requestedId || parsed.bundleId === requestedId) {
+            foundApp = parsed;
+          }
+        }
+      } catch(e) {}
+
+      // Nếu đã có cache chính xác, render ngay lập tức!
+      if (foundApp) {
+        renderApp(foundApp);
+        handleFreePassReturn();
+        return;
+      }
+
+      // 1.5 Kiểm tra trong map cache toàn bộ kho app:
+      try {
+        const cachedMapStr = localStorage.getItem('ipaviet_cached_apps_map');
+        if (cachedMapStr) {
+          const cacheMap = JSON.parse(cachedMapStr);
+          if (cacheMap[requestedId]) {
+            renderApp(cacheMap[requestedId]);
+            handleFreePassReturn();
+            return;
+          }
+          const matchFromMap = Object.values(cacheMap).find(a => 
+            a._id === requestedId || 
+            (a.bundleId && a.bundleId.toLowerCase() === requestedId.toLowerCase()) ||
+            (a.name && a.name.toLowerCase() === requestedId.toLowerCase())
+          );
+          if (matchFromMap) {
+            renderApp(matchFromMap);
+            handleFreePassReturn();
+            return;
+          }
+        }
+      } catch(e) {}
+
+      // 2. Nếu là link chia sẻ ngoài hoặc F5 không có cache: Tải dữ liệu từ kho
+      try {
+        const vipRes = await fetch(`vip.json?t=${Date.now()}`).then(r => r.json()).catch(() => []);
+        if (Array.isArray(vipRes)) {
+          const matchVip = vipRes.find(a => (a._id === requestedId || a.name === requestedId || a.bundleId === requestedId));
+          if (matchVip) {
+            matchVip._type = 'VIP';
+            matchVip._id = requestedId || ('vip_' + matchVip.name);
+            renderApp(matchVip);
+            handleFreePassReturn();
+            return;
+          }
+        }
+
+        // Tải từ AppTesters hoặc Google API
+        const repoRes = await fetch('https://repository.apptesters.org/').then(r => r.json()).catch(() => null);
+        const apps = (repoRes && repoRes.apps) || [];
+        const matchApp = apps.find(a => (a.bundleIdentifier === requestedId || a.name === requestedId));
+        if (matchApp) {
+          const normalized = {
+            _id: requestedId || ('app_' + matchApp.name),
+            _type: 'IPA',
+            name: matchApp.name,
+            bundleId: matchApp.bundleIdentifier,
+            version: matchApp.version || '1.0',
+            size: matchApp.size ? (matchApp.size / (1024*1024)).toFixed(1) + ' MB' : '--',
+            developer: matchApp.developerName || 'IPAVIET Studio',
+            icon: matchApp.iconURL || '',
+            fileLink: matchApp.downloadURL || '',
+            desc: matchApp.localizedDescription || matchApp.description || 'Ứng dụng tuyển chọn từ IPAVIET.'
+          };
+          renderApp(normalized);
+          handleFreePassReturn();
+          return;
+        }
+      } catch(e) {
+        console.warn("Lỗi tải app từ repo ngoài:", e);
+      }
+
+      // Nếu vẫn không tìm thấy:
+      const loader = document.getElementById('loadingOverlay');
+      if (loader) loader.classList.add('hidden');
+      showToast("Không tìm thấy thông tin ứng dụng này trong kho.");
+      setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+    });
+  </script>
+</body>
+</html>
