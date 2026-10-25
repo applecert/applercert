@@ -599,7 +599,28 @@ function doGet(e) {
       var apiToken = e.parameter.token || '';
       var shortened = null;
 
-      if (provider === 'yeumoney') {
+      if (provider === 'site2s') {
+        apiToken = apiToken || "9c105d1f5c6c770dcdf75101509cfba77b9ee5bd";
+        var s2sApiUrl = "https://site2s.com/api?api=" + encodeURIComponent(apiToken) + "&url=" + encodeURIComponent(targetUrl) + "&type=1";
+        try {
+          var response = UrlFetchApp.fetch(s2sApiUrl, {
+            method: "GET",
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            },
+            muteHttpExceptions: true
+          });
+          var resText = response.getContentText();
+          var json = JSON.parse(resText);
+          if (json && (json.status === "success" || json.shortenedUrl) && json.shortenedUrl) {
+            shortened = json.shortenedUrl;
+          }
+        } catch (err) {}
+
+        if (!shortened) {
+          shortened = "https://site2s.com/st?api=" + encodeURIComponent(apiToken) + "&url=" + encodeURIComponent(targetUrl);
+        }
+      } else if (provider === 'yeumoney') {
         apiToken = apiToken || "f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb";
         var ymApiUrl = "https://yeumoney.com/QL_api.php?token=" + encodeURIComponent(apiToken) + "&format=json&url=" + encodeURIComponent(targetUrl);
         try {
