@@ -522,11 +522,26 @@
     // Gửi thông báo Telegram Bot riêng biệt về lượt vượt link (không đụng chạm bot tiền)
     async function sendShortenerTelegramNotification(payload, app) {
       try {
-        const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
-        if (!cfg || cfg.tele_notify_enabled !== true) return;
+        let cfg = Object.assign({}, DEFAULT_SHORTENER_CONFIG, SHORTENER_CONFIG || {});
+        try {
+          const rawSaved = localStorage.getItem('ipaviet_shortener_config');
+          if (rawSaved) cfg = Object.assign({}, cfg, JSON.parse(rawSaved));
+        } catch(e) {}
+
         const botToken = (cfg.tele_bot_token || '').trim();
         const chatId = (cfg.tele_chat_id || '').trim();
-        if (!botToken || !chatId) return;
+        if (!botToken || !chatId) {
+          console.warn("[Telegram Shortener Notify] Chưa cấu hình Bot Token hoặc Chat ID.");
+          return;
+        }
+
+        // Bật nếu có token và không bị tắt tường minh
+        const isEnabled = (cfg.tele_notify_enabled === true || cfg.tele_notify_enabled === 'true') ||
+                          (cfg.tele_notify_enabled !== false && cfg.tele_notify_enabled !== 'false');
+        if (!isEnabled) {
+          console.warn("[Telegram Shortener Notify] Thông báo đang tắt trong cấu hình.");
+          return;
+        }
 
         const providerKey = ((payload && payload.provider) || (cfg.provider || 'site2s')).toLowerCase().trim();
         let providerName = 'Site2S';
@@ -596,7 +611,9 @@
           '<i>🔔 Bot thông báo vượt link độc lập (IPAVIET Bot).</i>'
         ].join('\n');
 
-        // Gửi qua Telegram API trực tiếp
+        console.log("[Telegram Shortener Notify] Bắt đầu gửi thông báo...", { botToken: botToken.substring(0, 8) + '...', chatId, appName });
+
+        // 1. Gửi qua Telegram API trực tiếp (kèm keepalive: true để không bị browser ngắt khi chuyển hướng)
         let sent = false;
         try {
           const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -607,16 +624,26 @@
               text: msg,
               parse_mode: 'HTML',
               disable_web_page_preview: true
-            })
+            }),
+            keepalive: true
           });
-          if (res.ok) sent = true;
-        } catch(e) {}
+          const resJson = await res.json().catch(() => null);
+          if (res.ok && resJson && resJson.ok) {
+            sent = true;
+            console.log("[Telegram Shortener Notify] Gửi trực tiếp thành công!");
+          } else {
+            console.warn("[Telegram Shortener Notify Direct Fail]", resJson);
+          }
+        } catch(errDirect) {
+          console.warn("[Telegram Shortener Notify Direct Blocked]", errDirect);
+        }
 
-        // Nếu gửi trực tiếp bị chặn bởi adblock, proxy qua Google Apps Script Analytics
+        // 2. Nếu gửi trực tiếp bị chặn bởi adblock, proxy qua Google Apps Script Analytics
         if (!sent && typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
           try {
             const proxyUrl = `${ANALYTICS_API_URL}?action=send_shortener_telegram&bot_token=${encodeURIComponent(botToken)}&chat_id=${encodeURIComponent(chatId)}&message=${encodeURIComponent(msg)}&t=${Date.now()}`;
-            await fetch(proxyUrl, { method: 'GET', mode: 'no-cors' });
+            await fetch(proxyUrl, { method: 'GET', mode: 'no-cors', keepalive: true });
+            console.log("[Telegram Shortener Notify] Đã phát lệnh qua GAS Proxy!");
           } catch(e) {}
         }
       } catch(err) {
@@ -1016,8 +1043,10 @@
       const cleanUrl = window.location.origin + window.location.pathname + `?id=${encodeURIComponent(urlParams.get('id') || '')}`;
       window.history.replaceState({}, document.title, cleanUrl);
 
-      // Gửi thông báo Telegram Bot riêng biệt về lượt vượt link
-      sendShortenerTelegramNotification(payload, CURRENT_APP || { name: payload.name, fileLink: payload.rawLink });
+      // Gửi thông báo Telegram Bot riêng biệt về lượt vượt link (CHỜ ĐẢM BẢO HOÀN TẤT)
+      try {
+        await sendShortenerTelegramNotification(payload, CURRENT_APP || { name: payload.name, fileLink: payload.rawLink });
+      } catch(e) {}
 
       // Ghi nhận lượt tải
       await recordAppDownload(CURRENT_APP || { name: payload.name, fileLink: payload.rawLink }, 'Free Ads (Completed)');
@@ -1034,6 +1063,15 @@
             <a href="${payload.rawLink}" class="btn-action btn-action-primary" style="background:var(--accent-emerald);color:#03040a;">
               <i data-lucide="download" style="width:16px;height:16px;"></i> Bấm Vào Đây Nếu Tệp Chưa Tự Tải
             </a>
+            <div style="margin-top:14px;padding-top:10px;border-top:1px dashed rgba(255,255,255,0.1);font-size:12px;color:var(--text-tertiary);display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+              <a href="index.html?search=${encodeURIComponent(payload.name || '')}" style="color:var(--accent-cyan);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                <i data-lucide="search" style="width:13px;height:13px;"></i> Tìm bản khác trong kho
+              </a>
+              <span>•</span>
+              <button onclick="reportBrokenLink('${encodeURIComponent(payload.name || '')}', '${encodeURIComponent(payload.rawLink || '')}')" style="background:none;border:none;color:var(--accent-rose);cursor:pointer;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                <i data-lucide="flag" style="width:13px;height:13px;"></i> Báo link hỏng 404
+              </button>
+            </div>
           </div>
         `;
         lucide.createIcons();
@@ -1041,7 +1079,27 @@
 
       setTimeout(() => {
         if (payload.rawLink) window.location.href = payload.rawLink;
-      }, 600);
+      }, 1500);
+    }
+
+    async function reportBrokenLink(appName, linkUrl) {
+      const decodedName = decodeURIComponent(appName || '');
+      const decodedLink = decodeURIComponent(linkUrl || '');
+      showToast("Đang gửi báo cáo link hỏng...");
+      try {
+        if (typeof db !== 'undefined') {
+          await db.collection('broken_link_reports').add({
+            appName: decodedName,
+            linkUrl: decodedLink,
+            userId: (currentUser && currentUser.uid) || 'guest',
+            userEmail: (currentUser && currentUser.email) || '',
+            reportedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        showToast("✅ Đã ghi nhận báo cáo! Admin sẽ sớm cập nhật lại link tải mới cho app này.", "success");
+      } catch(e) {
+        showToast("✅ Cảm ơn bạn đã báo link hỏng! Chúng tôi sẽ kiểm tra cập nhật.", "success");
+      }
     }
 
     function updateUserBadge() {
