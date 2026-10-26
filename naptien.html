@@ -3,383 +3,933 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Nạp Tiền - IPAVIET Mall</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <title>Nạp Tiền Vào Ví — IPAVIET Wallet & Ecosystem</title>
+  <meta name="description" content="Nạp tiền tự động 24/7 vào ví IPAVIET qua VietQR ngân hàng ACB, cộng số dư siêu tốc chỉ 3-5 giây.">
+
+  <!-- Apple Favicon & Web App Meta -->
+  <link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/fluency/96/wallet.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <!-- Lucide Icons & SweetAlert2 -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Tailwind CSS CDN with Apple Design System Configuration -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="minimalist-modern.css">
-  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
+          },
+          colors: {
+            apple: {
+              blue: '#0071E3',
+              darkBlue: '#0A84FF',
+              green: '#34C759',
+              amber: '#FF9500',
+              red: '#FF3B30',
+              purple: '#AF52DE',
+              gray: '#86868B',
+              grayLight: '#E5E5EA',
+              grayDark: '#1C1C1E',
+              bgLight: '#F5F5F7',
+              bgDark: '#000000',
+              cardLight: '#FFFFFF',
+              cardDark: '#1C1C1E',
+              separatorLight: 'rgba(0, 0, 0, 0.08)',
+              separatorDark: 'rgba(255, 255, 255, 0.12)'
+            }
+          },
+          boxShadow: {
+            'apple': '0 4px 24px rgba(0, 0, 0, 0.06)',
+            'apple-hover': '0 16px 36px rgba(0, 113, 227, 0.14)',
+            'card': '0 8px 30px rgba(0, 0, 0, 0.08)'
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-  
-  <script>
-    tailwind.config = { 
-        theme: { 
-            extend: { 
-                fontFamily: { 
-                  serif: ['Calistoga', 'serif'], 
-                  sans: ['Inter', 'sans-serif'], 
-                  mono: ['"JetBrains Mono"', 'monospace'] 
-                }, 
-                colors: { 
-                  mall: '#0052FF', 
-                  mallLight: '#4D7CFF', 
-                  bgLight: '#FAFAFA' 
-                } 
-            } 
-        } 
-    }
-  </script>
 
   <style>
-    @import url('fonts.css');
-    
-    body { background-color: var(--background); -webkit-tap-highlight-color: transparent; user-select: none; zoom: 70%; font-family: var(--font-sans), sans-serif !important; }
-    @media (max-width: 768px) {
-      body {
-        zoom: 70% !important;
-        height: auto !important;
-        min-height: 143vh !important;
-        overflow: auto !important;
-      }
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
     }
-    .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-    .mall-header { background: var(--accent); padding-top: env(safe-area-inset-top); }
-    .bottom-nav { background: white; border-top: 1px solid rgba(0,0,0,.05); padding-bottom: env(safe-area-inset-bottom); }
-    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #999; font-size: 10px; font-weight: 500; text-decoration: none; padding: 8px 0; }
-    .nav-item.active { color: var(--accent); font-weight: 700; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
-    th { font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase; background: #fafafa; }
-    td { font-size: 12px; color: #333; }
-  </style>
-</head>
-<body class="text-gray-800 flex flex-col h-[100dvh] overflow-hidden">
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
+      letter-spacing: -0.015em;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  <header class="mall-header z-40 w-full fixed top-0 left-0 shadow-md">
-    <div class="flex items-center justify-between px-3 h-14 max-w-md mx-auto">
-      <div class="flex items-center gap-2 cursor-pointer text-white shrink-0" onclick="window.history.back()">
-          <i data-lucide="chevron-left" class="w-7 h-7"></i>
+    /* Apple Squircle Continuous Curve */
+    .apple-squircle {
+      border-radius: 22.5% !important;
+      overflow: hidden;
+      -webkit-corner-smoothing: antialiased;
+    }
+
+    /* Apple Frosted Glass */
+    .apple-glass {
+      background: rgba(245, 245, 247, 0.85);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    }
+    .dark .apple-glass {
+      background: rgba(22, 22, 23, 0.85);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    }
+
+    /* Apple Titanium Card Metallic Finish */
+    .apple-card-metallic {
+      background: linear-gradient(135deg, #1D1D1F 0%, #2C2C2E 45%, #182236 75%, #0071E3 120%);
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    }
+    .dark .apple-card-metallic {
+      background: linear-gradient(135deg, #111112 0%, #1C1C1E 45%, #0F1E3D 80%, #0071E3 130%);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    }
+
+    /* Radar Pulse Animation for 24/7 scanning */
+    @keyframes radarPulse {
+      0% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.15); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.9; }
+    }
+    .radar-pulse {
+      animation: radarPulse 2s ease-in-out infinite;
+    }
+
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+  </style>
+
+  <script>
+    // Theme initialization before paint
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+</head>
+<body class="bg-apple-bgLight dark:bg-apple-bgDark text-black dark:text-white min-h-screen flex flex-col transition-colors duration-200 overflow-x-hidden max-w-full">
+
+  <!-- ================================================================
+       APPLE STICKY TOP NAVIGATION BAR
+       ================================================================ -->
+  <header class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-all duration-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+      
+      <!-- Back Navigation -->
+      <a href="tap-hoa-mmo.html" class="flex items-center gap-1.5 text-apple-blue font-semibold text-sm sm:text-base hover:opacity-75 transition active:scale-95 shrink-0">
+        <i data-lucide="chevron-left" class="w-5 h-5 sm:w-6 sm:h-6 -ml-1 stroke-[2.5]"></i>
+        <span class="hidden xs:inline">Cửa Hàng MMO</span>
+        <span class="xs:hidden">Quay lại</span>
+      </a>
+
+      <!-- Center Title -->
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 sm:w-8 sm:h-8 apple-squircle bg-apple-blue text-white flex items-center justify-center shadow-sm">
+          <i data-lucide="wallet" class="w-4 h-4"></i>
+        </div>
+        <div class="text-center">
+          <h1 class="font-extrabold text-sm sm:text-base text-black dark:text-white leading-tight">
+            Ví IPAVIET <span class="text-apple-blue font-black">Pay</span>
+          </h1>
+          <p class="text-[9px] sm:text-[10px] text-apple-gray font-semibold tracking-wider uppercase hidden sm:block">
+            Nạp Tiền Tự Động 24/7
+          </p>
+        </div>
       </div>
-      <div class="flex-1 text-center font-black text-white text-[16px] tracking-wide uppercase">
-          Nạp Tiền Tự Động
+
+      <!-- Right Action Items -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Theme Toggle -->
+        <button 
+          onclick="toggleTheme()" 
+          class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/5 dark:bg-white/10 text-black dark:text-white flex items-center justify-center hover:bg-black/10 transition active:scale-95" 
+          title="Đổi giao diện"
+        >
+          <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+          <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
+        </button>
+
+        <!-- User Profile Pill -->
+        <a 
+          href="account.html" 
+          id="navUserLink" 
+          class="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full bg-black/5 dark:bg-white/10 border border-apple-separatorLight dark:border-apple-separatorDark hover:border-apple-blue transition active:scale-95"
+          title="Xem trang cá nhân"
+        >
+          <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-apple-blue text-white flex items-center justify-center text-xs font-bold shrink-0" id="navAvatar">
+            <i data-lucide="user" class="w-3.5 h-3.5"></i>
+          </div>
+          <span id="navUserName" class="text-xs font-bold text-black dark:text-white hidden md:inline">Tài khoản</span>
+        </a>
       </div>
-      <div class="w-7 h-7 shrink-0"></div>
-    </div>
-    <div class="bg-black/10 flex items-center justify-between px-4 py-2 text-white text-[12px] max-w-md mx-auto">
-        <span class="font-bold uppercase tracking-wider">Số dư hiện tại</span>
-        <span class="font-black bg-black/20 px-3 py-1 rounded-full flex items-center gap-1">
-            <i data-lucide="wallet" class="w-4 h-4"></i> 
-            <span id="headerCoins">0đ</span>
-        </span>
+
     </div>
   </header>
 
-  <main class="flex-1 overflow-y-auto scrollbar-hide pt-[95px] pb-[80px] max-w-md mx-auto w-full relative px-4">
-     
-     <div class="bg-[#fff3cd] border border-[#ffeeba] text-[#856404] p-4 rounded-[20px] mb-4 shadow-sm">
-         <h3 class="font-black flex items-center gap-2 mb-2 text-[14px]">
-             <i data-lucide="alert-triangle" class="w-5 h-5 text-orange-500"></i> Lưu ý quan trọng
-         </h3>
-         <ul class="text-[12px] space-y-1.5 font-medium leading-relaxed pl-6 list-disc">
-             <li>Quý khách chuyển khoản ngân hàng qua STK ACB của hệ thống.</li>
-             <li>Lưu ý ghi chính xác <b>Nội dung chuyển khoản</b> (Copy mã lệnh bên dưới). Không bật chế độ dịch tiếng Việt khi copy.</li>
-             <li>Nạp tiền ít nhất 10.000 VNĐ. Nếu nạp dưới mức tối thiểu sẽ không được hỗ trợ hoàn lại.</li>
-             <li class="text-red-600 font-bold">Hệ thống tự động cập nhật số dư trong vài giây. Nếu quá 5 phút không được cộng tiền, vui lòng liên hệ Admin.</li>
-         </ul>
-     </div>
+  <!-- ================================================================
+       MAIN CONTAINER (APPLE WALLET / CASH STORE STYLE)
+       ================================================================ -->
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 pb-28 sm:pb-16">
 
-     <div class="bg-white rounded-[24px] shadow-md border border-gray-100 overflow-hidden mb-6">
-         <div class="bg-[#1a5b9e] text-white p-4 flex items-center gap-2">
-             <i data-lucide="building" class="w-5 h-5"></i> 
-             <span class="font-black text-[14px] uppercase">Ngân Hàng Á Châu (ACB)</span>
-         </div>
-         
-         <div class="p-5 flex flex-col items-center border-b border-gray-100">
-             <div class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">Quét mã QR (Nhập số tiền muốn nạp)</div>
-             <div class="w-56 h-56 bg-gray-50 p-2 rounded-[20px] border-2 border-dashed border-gray-200 flex items-center justify-center mb-2 shadow-inner">
-                 <img id="qrImage" src="" class="w-full h-full object-contain mix-blend-multiply">
-             </div>
-         </div>
+    <!-- ═══ 1. APPLE CASH TITANIUM CARD (HERO CARD) ═══ -->
+    <div class="relative w-full rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 apple-card-metallic text-white overflow-hidden shadow-2xl transition-transform duration-300 hover:scale-[1.01]">
+      
+      <!-- Ambient Card Glow -->
+      <div class="absolute -right-12 -top-12 w-64 h-64 bg-apple-blue/30 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -left-12 -bottom-12 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-         <div class="p-5 space-y-5">
-             <div>
-                 <p class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Chủ tài khoản</p>
-                 <p class="font-black text-[16px] text-gray-800 tracking-wide">TRAN NGUYEN MINH QUI</p>
-             </div>
-             <div>
-                 <p class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Số tài khoản</p>
-                 <div class="flex items-center justify-between bg-gray-50 p-3.5 rounded-xl border border-gray-200">
-                     <span class="font-black text-[18px] tracking-wider text-green-600">22703611</span>
-                     <button onclick="copyText('22703611')" class="text-mall font-bold text-[12px] flex items-center gap-1 active:scale-95 transition bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"><i data-lucide="copy" class="w-4 h-4"></i> Copy</button>
-                 </div>
-             </div>
-             <div>
-                 <p class="text-[11px] font-bold text-mall uppercase tracking-widest mb-1">Nội dung chuyển khoản (BẮT BUỘC)</p>
-                 <div class="flex items-center justify-between bg-red-50 p-3.5 rounded-xl border border-red-200">
-                     <span class="font-black text-[20px] tracking-widest text-mall" id="transferSyntax">ĐANG TẠO MÃ...</span>
-                     <button onclick="copyText(document.getElementById('transferSyntax').innerText)" class="text-white bg-mall px-4 py-2 rounded-lg text-[12px] font-bold flex items-center gap-1 active:scale-95 transition shadow-sm"><i data-lucide="copy" class="w-4 h-4"></i> Copy</button>
-                 </div>
-             </div>
-         </div>
-         
-         <div class="bg-blue-50/50 p-4 text-center border-t border-gray-100" id="pollingStatus">
-             <div class="flex items-center justify-center gap-2 text-blue-600 text-[13px] font-black animate-pulse">
-                 <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> HỆ THỐNG ĐANG QUÉT TIỀN TỰ ĐỘNG...
-             </div>
-         </div>
-     </div>
-     
-     <div class="bg-white rounded-[24px] shadow-md border border-gray-100 overflow-hidden mb-6">
-         <div class="bg-[#293a59] text-white p-4 flex items-center gap-2">
-             <i data-lucide="history" class="w-5 h-5"></i> 
-             <span class="font-black text-[14px] uppercase tracking-wide">Lịch sử nạp tiền</span>
-         </div>
-         
-         <div class="overflow-x-auto w-full scrollbar-hide">
-             <table class="w-full whitespace-nowrap min-w-[500px]">
-                 <thead>
-                     <tr>
-                         <th>Thời gian</th>
-                         <th>Ngân hàng</th>
-                         <th>Mã GD (Nội dung)</th>
-                         <th>Thực nhận</th>
-                         <th class="text-right">Trạng thái</th>
-                     </tr>
-                 </thead>
-                 <tbody id="historyTableBody">
-                     <tr>
-                         <td colspan="5" class="text-center py-10 text-gray-400">
-                             <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-mall"></i>
-                             Đang tải lịch sử...
-                         </td>
-                     </tr>
-                 </tbody>
-             </table>
-         </div>
-     </div>
+      <div class="relative z-10 flex flex-col justify-between min-h-[170px] sm:min-h-[190px]">
+        
+        <!-- Top Row: Chip, Logo, Contactless -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <!-- Simulated EMV Chip -->
+            <div class="w-10 h-7 sm:w-12 sm:h-8 rounded-lg bg-gradient-to-tr from-amber-200 via-amber-300 to-amber-100 p-1 flex items-center justify-center shadow-inner border border-amber-400/40">
+              <div class="w-full h-full border border-amber-600/30 rounded-[4px] grid grid-cols-2 gap-0.5 opacity-60">
+                <div class="border-r border-b border-amber-600/30"></div>
+                <div class="border-b border-amber-600/30"></div>
+                <div class="border-r border-amber-600/30"></div>
+                <div></div>
+              </div>
+            </div>
+            <!-- Contactless Icon -->
+            <i data-lucide="wifi" class="w-5 h-5 text-white/60 rotate-90"></i>
+          </div>
+
+          <div class="flex items-center gap-1.5 text-xs font-black tracking-wider uppercase text-white/90 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md border border-white/15">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-apple-green"></i>
+            <span>VietQR 24/7 Verified</span>
+          </div>
+        </div>
+
+        <!-- Middle: Current Balance -->
+        <div class="my-4 space-y-1">
+          <div class="text-xs font-semibold text-white/70 uppercase tracking-wider flex items-center gap-1.5">
+            <span>Số dư khả dụng trong ví</span>
+            <span class="inline-block w-2 h-2 rounded-full bg-apple-green animate-ping"></span>
+          </div>
+          <div class="text-3xl sm:text-5xl font-black tracking-tight text-white flex items-baseline gap-2">
+            <span id="headerCoins">0đ</span>
+          </div>
+        </div>
+
+        <!-- Bottom: User & Network -->
+        <div class="flex items-center justify-between text-xs text-white/80 border-t border-white/10 pt-3 flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-white tracking-wide" id="cardHolderName">TRAN NGUYEN MINH QUI</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-md bg-white/15 text-white/90 uppercase font-bold tracking-wider">ACB BANK</span>
+          </div>
+          <div class="text-[11px] text-white/60 font-medium">
+            Tự động cộng sau <b class="text-white">3-5 giây</b>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══ CONTEXT BANNER: IF CALLED FROM PRODUCT (LỆNH MUA THIẾU TIỀN) ═══ -->
+    <div id="productTopupAlert" class="hidden rounded-2xl p-4 bg-apple-blue/10 dark:bg-apple-blue/15 border border-apple-blue/30 text-apple-blue flex items-center justify-between gap-3 shadow-sm animate-in fade-in">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-full bg-apple-blue text-white flex items-center justify-center shrink-0">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+        </div>
+        <div class="min-w-0">
+          <h4 class="font-bold text-xs sm:text-sm text-black dark:text-white truncate" id="topupForProductTitle">
+            Nạp tiền theo đơn hàng
+          </h4>
+          <p class="text-[11px] sm:text-xs text-apple-gray truncate">
+            Đã tự động điền số tiền còn thiếu vào mã QR bên dưới.
+          </p>
+        </div>
+      </div>
+      <button onclick="dismissProductAlert()" class="text-apple-gray hover:text-black dark:hover:text-white p-1 rounded-full shrink-0">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- ═══ 2. QUICK AMOUNT PRESETS (CHỌN NHANH MỨC NẠP) ═══ -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm sm:text-base font-bold text-black dark:text-white flex items-center gap-1.5">
+          <i data-lucide="zap" class="w-4 h-4 text-apple-blue"></i>
+          <span>Chọn Mức Nạp Tiền Nhanh</span>
+        </h2>
+        <span class="text-xs text-apple-gray">Tối thiểu: <b>10.000đ</b></span>
+      </div>
+
+      <!-- Preset Chips Grid -->
+      <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5">
+        <button onclick="selectAmount(20000)" data-amount="20000" class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          20.000đ
+        </button>
+        <button onclick="selectAmount(50000)" data-amount="50000" class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          50.000đ
+        </button>
+        <button onclick="selectAmount(100000)" data-amount="100000" class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          100.000đ
+        </button>
+        <button onclick="selectAmount(200000)" data-amount="200000" class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          200.000đ
+        </button>
+        <button onclick="selectAmount(500000)" data-amount="500000" class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          500.000đ
+        </button>
+        <button onclick="selectAmount(1000000)" data-amount="1000000" class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          1.000.000đ
+        </button>
+      </div>
+
+      <!-- Custom Input (Optional) -->
+      <div class="relative flex items-center pt-1">
+        <span class="absolute left-4 text-apple-gray font-bold text-sm pointer-events-none">Số tiền tùy chọn:</span>
+        <input 
+          type="text" 
+          id="customAmountInput" 
+          inputmode="numeric" 
+          placeholder="Nhập số tiền khác (VD: 85000)..." 
+          oninput="onCustomAmountInput(this.value)"
+          class="w-full h-12 pl-36 pr-14 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark text-sm font-bold text-black dark:text-white outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 transition shadow-sm"
+        >
+        <span class="absolute right-4 text-apple-blue font-bold text-xs pointer-events-none">VNĐ</span>
+      </div>
+    </section>
+
+    <!-- ═══ 3. DEPOSIT WORKSPACE: 2 COLUMNS (QR & TRANSFER INFO) ═══ -->
+    <section class="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-start">
+      
+      <!-- ── COLUMN 1: VIETQR SCAN CARD (5 COLS ON MD) ── -->
+      <div class="md:col-span-5 rounded-[28px] bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark p-5 sm:p-6 shadow-sm flex flex-col items-center space-y-4">
+        
+        <div class="w-full flex items-center justify-between pb-2 border-b border-apple-separatorLight dark:border-apple-separatorDark">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-full bg-apple-blue/10 text-apple-blue flex items-center justify-center">
+              <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+            </div>
+            <span class="font-extrabold text-xs sm:text-sm uppercase tracking-wide">Mã VietQR Tự Động</span>
+          </div>
+          <span class="px-2 py-0.5 rounded-full bg-apple-green/10 text-apple-green font-bold text-[10px] uppercase tracking-wider">
+            Miễn Phí 0đ
+          </span>
+        </div>
+
+        <!-- QR Display Container (Apple Squircle) -->
+        <div class="relative w-64 h-64 sm:w-72 sm:h-72 p-3 rounded-[28px] bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.06] dark:border-white/[0.08] shadow-inner flex items-center justify-center overflow-hidden">
+          
+          <!-- Loading Shimmer Placeholder -->
+          <div id="qrLoadingShimmer" class="absolute inset-0 bg-slate-200 dark:bg-slate-700 animate-pulse flex flex-col items-center justify-center gap-2 text-apple-gray text-xs font-semibold">
+            <i data-lucide="loader-2" class="w-7 h-7 animate-spin text-apple-blue"></i>
+            <span>Đang tạo VietQR...</span>
+          </div>
+
+          <img 
+            id="qrImage" 
+            src="" 
+            alt="Mã QR Chuyển Khoản ACB" 
+            onload="onQrLoaded()"
+            class="w-full h-full object-contain apple-squircle relative z-10 transition-opacity duration-300 opacity-0"
+          >
+        </div>
+
+        <!-- Amount hint under QR -->
+        <div class="text-center space-y-1">
+          <div class="text-xs text-apple-gray font-medium">Số tiền nạp hiện tại:</div>
+          <div class="text-xl sm:text-2xl font-black text-apple-blue" id="qrAmountDisplay">
+            Tự chọn khi quét
+          </div>
+        </div>
+
+        <!-- Live Scanning Radar Pill -->
+        <div id="pollingStatus" class="w-full p-3 rounded-2xl bg-apple-blue/5 dark:bg-apple-blue/10 border border-apple-blue/20 text-center transition-all">
+          <div class="flex items-center justify-center gap-2 text-apple-blue text-xs font-bold">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="radar-pulse absolute inline-flex h-full w-full rounded-full bg-apple-blue opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-apple-blue"></span>
+            </span>
+            <span>Hệ thống đang quét chuyển khoản 24/7...</span>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-apple-gray text-center leading-relaxed">
+          Mở app ngân hàng bất kỳ (Vietcombank, MB, Techcombank, ACB, MoMo...) chọn <b>Quét QR</b> để tự động điền STK & Nội dung chuẩn xác.
+        </p>
+
+      </div>
+
+      <!-- ── COLUMN 2: BANK TRANSFER DETAILS & COPY ACTIONS (7 COLS ON MD) ── -->
+      <div class="md:col-span-7 space-y-4">
+        
+        <!-- Bank Details Card -->
+        <div class="rounded-[28px] bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark p-5 sm:p-6 shadow-sm space-y-4">
+          
+          <div class="flex items-center justify-between pb-3 border-b border-apple-separatorLight dark:border-apple-separatorDark">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-[#1A5B9E] text-white flex items-center justify-center font-black text-xs shadow-sm">
+                ACB
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm sm:text-base text-black dark:text-white leading-tight">
+                  Ngân Hàng Á Châu (ACB)
+                </h3>
+                <p class="text-[10px] text-apple-gray">Chuyển khoản 24/7 liên ngân hàng Napas</p>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-apple-blue/10 text-apple-blue font-bold text-xs">
+              Chính thức
+            </span>
+          </div>
+
+          <!-- Fields -->
+          <div class="space-y-3.5">
+            
+            <!-- 1. Chủ tài khoản -->
+            <div class="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05] flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold text-apple-gray uppercase tracking-wider block">Chủ tài khoản thụ hưởng</span>
+                <span class="font-black text-sm sm:text-base text-black dark:text-white tracking-wide">
+                  TRAN NGUYEN MINH QUI
+                </span>
+              </div>
+              <span class="w-7 h-7 rounded-full bg-apple-green/10 text-apple-green flex items-center justify-center text-xs">
+                <i data-lucide="check" class="w-4 h-4"></i>
+              </span>
+            </div>
+
+            <!-- 2. Số tài khoản (With Copy) -->
+            <div class="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05] flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <span class="text-[10px] font-bold text-apple-gray uppercase tracking-wider block">Số tài khoản ACB</span>
+                <span class="font-mono font-black text-base sm:text-lg text-emerald-600 dark:text-emerald-400 tracking-wider">
+                  22703611
+                </span>
+              </div>
+              <button 
+                onclick="copyData('22703611', this)" 
+                class="px-3.5 py-1.5 rounded-full bg-apple-blue text-white font-bold text-xs hover:bg-blue-600 transition active:scale-95 flex items-center gap-1.5 shrink-0 shadow-sm"
+              >
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Sao Chép</span>
+              </button>
+            </div>
+
+            <!-- 3. Nội dung chuyển khoản (BẮT BUỘC - HIGHLIGHTED) -->
+            <div class="p-4 rounded-2xl bg-apple-blue/10 dark:bg-apple-blue/15 border-2 border-apple-blue/40 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-black uppercase tracking-wider text-apple-blue flex items-center gap-1">
+                  <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Nội dung chuyển khoản (Bắt buộc)
+                </span>
+                <span class="text-[10px] font-bold text-apple-gray">Mã đơn định danh</span>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 bg-white dark:bg-black/40 p-2.5 rounded-xl border border-apple-blue/20">
+                <span id="transferSyntax" class="font-mono font-black text-base sm:text-lg text-apple-blue tracking-widest truncate">
+                  ĐANG TẠO MÃ...
+                </span>
+                <button 
+                  onclick="copySyntax(this)" 
+                  class="px-4 py-1.5 rounded-full bg-apple-blue text-white font-black text-xs hover:bg-blue-600 transition active:scale-95 flex items-center gap-1.5 shrink-0 shadow-md shadow-apple-blue/30"
+                >
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  <span>Sao Chép</span>
+                </button>
+              </div>
+
+              <p class="text-[10px] sm:text-[11px] text-apple-gray leading-tight">
+                ⚠️ Quý khách vui lòng copy chính xác mã này và dán vào phần Lời nhắn/Nội dung để hệ thống tự động cộng tiền trong 3-5 giây.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Important Notes Callout -->
+        <div class="rounded-2xl p-4 sm:p-5 bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 space-y-2">
+          <div class="font-bold text-xs sm:text-sm flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+            <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+            <span>Lưu ý quan trọng khi nạp tiền:</span>
+          </div>
+          <ul class="text-xs space-y-1 text-slate-700 dark:text-slate-300 pl-4 list-disc leading-relaxed">
+            <li>Nạp tối thiểu từ <b>10.000đ</b>. Chuyển khoản sai cú pháp hoặc dưới 10.000đ sẽ cần liên hệ Admin hỗ trợ thủ công.</li>
+            <li>Hệ thống chạy tự động 24/7 không nghỉ lễ tết. Tiền vào ví chỉ sau <b>3 - 5 giây</b>.</li>
+            <li>Nếu sau 5 phút chưa nhận được số dư, bấm vào nút hỗ trợ ở góc dưới màn hình để gặp Admin xử lý ngay.</li>
+          </ul>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ═══ 4. APPLE WALLET TRANSACTION STATEMENT (LỊCH SỬ NẠP TIỀN) ═══ -->
+    <section class="rounded-[28px] bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark p-5 sm:p-6 shadow-sm space-y-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-apple-separatorLight dark:border-apple-separatorDark">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-full bg-apple-blue/10 text-apple-blue flex items-center justify-center">
+            <i data-lucide="receipt" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-black dark:text-white">
+            Lịch Sử Giao Dịch
+          </h3>
+        </div>
+
+        <button onclick="loadTransactionHistory()" class="text-xs font-bold text-apple-blue hover:opacity-80 transition flex items-center gap-1">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Làm mới</span>
+        </button>
+      </div>
+
+      <!-- Transaction List Container -->
+      <div id="txListContainer" class="divide-y divide-apple-separatorLight dark:divide-apple-separatorDark">
+        <div class="py-10 text-center text-apple-gray">
+          <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-apple-blue"></i>
+          <span class="text-xs font-medium">Đang tải lịch sử giao dịch...</span>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 
-  <div class="fixed bottom-0 left-0 right-0 z-40 flex justify-center w-full">
-    <nav class="bottom-nav flex w-full max-w-md shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-      <a href="index.html" class="nav-item items-center"><i data-lucide="home" class="w-5 h-5"></i><span>Trang chủ</span></a>
-      <a href="tap-hoa-mmo.html" class="nav-item items-center"><i data-lucide="store" class="w-5 h-5"></i><span>Mall</span></a>
-      <a href="ipavip.html" class="nav-item items-center"><i data-lucide="crown" class="w-5 h-5"></i><span>VIP App</span></a>
-      <a href="naptien.html" class="nav-item items-center active"><i data-lucide="credit-card" class="w-5 h-5"></i><span>Nạp Tiền</span></a>
-      <a href="account.html" class="nav-item items-center"><i data-lucide="user" class="w-5 h-5"></i><span>Tôi</span></a>
-    </nav>
-  </div>
+  <!-- ================================================================
+       APPLE IOS FROSTED GLASS TAB BAR (BOTTOM NAVIGATION)
+       ================================================================ -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 apple-glass border-t border-apple-separatorLight dark:border-apple-separatorDark px-3 py-1.5 flex items-center justify-around pb-safe shadow-lg">
+    <a href="tap-hoa-mmo.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[10px]">Khám phá</span>
+    </a>
+    <a href="tap-hoa-mmo.html?view=cats" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="layout-grid" class="w-5 h-5"></i>
+      <span class="text-[10px]">Danh mục</span>
+    </a>
+    <a href="tap-hoa-mmo.html?view=orders" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="receipt" class="w-5 h-5"></i>
+      <span class="text-[10px]">Đơn hàng</span>
+    </a>
+    <a href="naptien.html" class="flex flex-col items-center gap-1 text-apple-blue font-bold transition active:scale-95">
+      <i data-lucide="wallet" class="w-5 h-5 stroke-[2.2]"></i>
+      <span class="text-[10px]">Nạp tiền</span>
+    </a>
+    <a href="account.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="user" class="w-5 h-5"></i>
+      <span class="text-[10px]">Cá nhân</span>
+    </a>
+  </nav>
 
-  <div id="actionModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-300 ease-out" id="actionModalOverlay" onclick="closeActionModal()"></div>
-      <div id="actionModalPanel" class="bg-white/95 backdrop-blur-xl w-full max-w-[340px] rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-white/50 p-6 transition-all duration-300 ease-out transform scale-90 translate-y-8 opacity-0">
-          <div id="actionModalContent"></div>
-      </div>
-  </div>
-
+  <!-- ================================================================
+       JAVASCRIPT APPLICATION LOGIC
+       ================================================================ -->
   <script>
     const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec'; 
-    const firebaseConfig = { 
-        apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", 
-        authDomain: "ipaviet-st.firebaseapp.com", 
-        projectId: "ipaviet-st", 
-        storageBucket: "ipaviet-st.firebasestorage.app", 
-        messagingSenderId: "127619650916", 
-        appId: "1:127619650916:web:fc8904c99804eeb7539671" 
+    const FB_CFG = { 
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs", 
+      authDomain: "ipaviet-st.firebaseapp.com", 
+      projectId: "ipaviet-st", 
+      storageBucket: "ipaviet-st.firebasestorage.app", 
+      messagingSenderId: "127619650916", 
+      appId: "1:127619650916:web:fc8904c99804eeb7539671" 
     };
     
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(FB_CFG);
     const auth = firebase.auth();
     const db = firebase.firestore();
+
+    try {
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+    } catch(e) {}
 
     let currentUser = null; 
     let depositOrderId = null;
     let pollingInterval = null;
+    let currentSelectedAmount = 0;
 
+    const BANK_ID = "ACB";
+    const ACC_NO = "22703611";
+    const ACC_NAME = "TRAN NGUYEN MINH QUI";
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
+
+    /* ══════════════════════════════════════════════════════
+       AUTH & INITIALIZE
+       ══════════════════════════════════════════════════════ */
     auth.onAuthStateChanged(user => { 
-        if(user) {
-            currentUser = user; 
-            db.collection("users").doc(user.uid).onSnapshot(doc => {
-                if (doc.exists) document.getElementById('headerCoins').innerText = (doc.data().coins || 0).toLocaleString() + "đ";
-            });
-            initDeposit();
-            loadTransactionHistory();
-        } else {
-            window.location.href = 'account.html';
+      if (user) {
+        currentUser = user;
+        const name = (user.displayName || user.email || 'Tôi').split(' ').slice(-1)[0];
+        const av = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0071E3&color=fff&size=64`;
+        
+        const navName = document.getElementById('navUserName');
+        if (navName) navName.innerText = name;
+        const navAv = document.getElementById('navAvatar');
+        if (navAv) {
+          navAv.innerHTML = `<img src="${av}" class="w-full h-full rounded-full object-cover">`;
         }
+
+        const holder = document.getElementById('cardHolderName');
+        if (holder) {
+          holder.innerText = (user.displayName || user.email || 'TRAN NGUYEN MINH QUI').toUpperCase();
+        }
+
+        // Live balance subscription
+        db.collection("users").doc(user.uid).onSnapshot(doc => {
+          if (doc.exists) {
+            const coins = doc.data().coins || 0;
+            const formatted = coins.toLocaleString() + "đ";
+            const h = document.getElementById('headerCoins');
+            if (h) h.innerText = formatted;
+          }
+        });
+
+        initDeposit();
+        loadTransactionHistory();
+      } else {
+        // Redirect to account if not logged in
+        window.location.href = 'account.html?redirect=naptien.html';
+      }
     });
 
+    /* ══════════════════════════════════════════════════════
+       DEPOSIT ORDER GENERATION & VIETQR BUILDER
+       ══════════════════════════════════════════════════════ */
     function initDeposit() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const amountParam = parseInt(urlParams.get('amount')) || 0;
-        const coinsParam = parseInt(urlParams.get('coins')) || amountParam;
-        const nameParam = urlParams.get('name') || '';
+      const urlParams = new URLSearchParams(window.location.search);
+      const amountParam = parseInt(urlParams.get('amount')) || 0;
+      const coinsParam = parseInt(urlParams.get('coins')) || amountParam;
+      const nameParam = urlParams.get('name') || '';
 
-        let cachedOrderId = localStorage.getItem('activeDepositOrderId');
-        let cachedUid = localStorage.getItem('activeDepositUid');
-        let cachedTime = localStorage.getItem('activeDepositTime');
-        
-        const oneHour = 60 * 60 * 1000;
-        const isExpired = !cachedTime || (Date.now() - parseInt(cachedTime) > oneHour);
-        
-        if (amountParam > 0 || isExpired || cachedUid !== currentUser.uid) {
-            depositOrderId = "NAP" + currentUser.uid.substring(0, 6).toUpperCase() + Math.floor(Math.random()*900 + 100);
-            localStorage.setItem('activeDepositOrderId', depositOrderId);
-            localStorage.setItem('activeDepositUid', currentUser.uid);
-            localStorage.setItem('activeDepositTime', Date.now().toString());
-            
-            localStorage.setItem('activeDepositAmount', amountParam || 0);
-            localStorage.setItem('activeDepositCoins', coinsParam || 0);
-            localStorage.setItem('activeDepositName', nameParam || '');
-        } else {
-            depositOrderId = cachedOrderId;
+      if (nameParam || amountParam > 0) {
+        const alertBox = document.getElementById('productTopupAlert');
+        const titleEl = document.getElementById('topupForProductTitle');
+        if (alertBox && titleEl) {
+          alertBox.classList.remove('hidden');
+          titleEl.innerText = nameParam ? `Nạp tiền mua: ${nameParam}` : 'Nạp tiền bổ sung số dư';
         }
-        
-        const activeAmount = parseInt(localStorage.getItem('activeDepositAmount')) || 0;
-        const activeCoins = parseInt(localStorage.getItem('activeDepositCoins')) || activeAmount;
-        const activeName = localStorage.getItem('activeDepositName') || '';
+      }
 
-        document.getElementById('transferSyntax').innerText = depositOrderId;
-        
-        if (activeName) {
-            document.querySelector('header .flex-1').innerText = activeName;
-        } else {
-            document.querySelector('header .flex-1').innerText = "Nạp Tiền Tự Động";
-        }
-        
-        const bankId = "ACB";
-        const accNo = "22703611";
-        const accName = "TRAN NGUYEN MINH QUI";
-        let qrUrl = `https://img.vietqr.io/image/${bankId}-${accNo}-compact2.png?addInfo=${depositOrderId}&accountName=${encodeURIComponent(accName)}`;
-        if (activeAmount > 0) {
-            qrUrl += `&amount=${activeAmount}`;
-        }
-        document.getElementById('qrImage').src = qrUrl;
+      let cachedOrderId = localStorage.getItem('activeDepositOrderId');
+      let cachedUid = localStorage.getItem('activeDepositUid');
+      let cachedTime = localStorage.getItem('activeDepositTime');
+      
+      const oneHour = 60 * 60 * 1000;
+      const isExpired = !cachedTime || (Date.now() - parseInt(cachedTime) > oneHour);
+      
+      if (amountParam > 0 || isExpired || cachedUid !== currentUser.uid) {
+        depositOrderId = "NAP" + currentUser.uid.substring(0, 6).toUpperCase() + Math.floor(Math.random() * 900 + 100);
+        localStorage.setItem('activeDepositOrderId', depositOrderId);
+        localStorage.setItem('activeDepositUid', currentUser.uid);
+        localStorage.setItem('activeDepositTime', Date.now().toString());
+        localStorage.setItem('activeDepositAmount', amountParam || 0);
+        localStorage.setItem('activeDepositCoins', coinsParam || 0);
+      } else {
+        depositOrderId = cachedOrderId;
+      }
+      
+      const activeAmount = amountParam > 0 ? amountParam : (parseInt(localStorage.getItem('activeDepositAmount')) || 0);
+      currentSelectedAmount = activeAmount;
 
-        const orderAmount = activeAmount > 0 ? activeAmount : 1;
-        const orderCoins = activeCoins > 0 ? activeCoins : 1;
-        
-        fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${depositOrderId}&uid=${currentUser.uid}&amount=${orderAmount}&coins=${orderCoins}`);
-        
-        if(pollingInterval) clearInterval(pollingInterval);
-        pollingInterval = setInterval(() => checkBankTransfer(orderAmount), 4000);
+      const syntaxEl = document.getElementById('transferSyntax');
+      if (syntaxEl) syntaxEl.innerText = depositOrderId;
+
+      if (activeAmount > 0) {
+        highlightPresetButton(activeAmount);
+        updateQrDisplay(activeAmount);
+      } else {
+        updateQrDisplay(0);
+      }
+
+      registerOrderWithBackend(activeAmount);
     }
 
+    function registerOrderWithBackend(amount) {
+      const orderAmount = amount > 0 ? amount : 1;
+      fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${depositOrderId}&uid=${currentUser.uid}&amount=${orderAmount}&coins=${orderAmount}`).catch(() => {});
+      
+      if (pollingInterval) clearInterval(pollingInterval);
+      pollingInterval = setInterval(() => checkBankTransfer(orderAmount), 4000);
+    }
+
+    function updateQrDisplay(amount) {
+      const qrImg = document.getElementById('qrImage');
+      const shimmer = document.getElementById('qrLoadingShimmer');
+      const amountDisp = document.getElementById('qrAmountDisplay');
+
+      if (shimmer) shimmer.classList.remove('hidden');
+      if (qrImg) qrImg.classList.add('opacity-0');
+
+      let qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.png?addInfo=${depositOrderId}&accountName=${encodeURIComponent(ACC_NAME)}`;
+      if (amount > 0) {
+        qrUrl += `&amount=${amount}`;
+        if (amountDisp) amountDisp.innerText = amount.toLocaleString() + 'đ';
+      } else {
+        if (amountDisp) amountDisp.innerText = 'Tự nhập khi quét';
+      }
+
+      if (qrImg) qrImg.src = qrUrl;
+    }
+
+    function onQrLoaded() {
+      const qrImg = document.getElementById('qrImage');
+      const shimmer = document.getElementById('qrLoadingShimmer');
+      if (shimmer) shimmer.classList.add('hidden');
+      if (qrImg) qrImg.classList.remove('opacity-0');
+    }
+
+    /* ══════════════════════════════════════════════════════
+       PRESET CHIPS & CUSTOM AMOUNT
+       ══════════════════════════════════════════════════════ */
+    function selectAmount(amt) {
+      currentSelectedAmount = amt;
+      localStorage.setItem('activeDepositAmount', amt);
+      highlightPresetButton(amt);
+
+      const customInput = document.getElementById('customAmountInput');
+      if (customInput) customInput.value = '';
+
+      updateQrDisplay(amt);
+      registerOrderWithBackend(amt);
+    }
+
+    function highlightPresetButton(amt) {
+      document.querySelectorAll('.amount-preset-chip').forEach(btn => {
+        const val = parseInt(btn.dataset.amount);
+        if (val === amt) {
+          btn.classList.add('bg-apple-blue', 'text-white', 'border-apple-blue', 'shadow-md', 'shadow-apple-blue/25');
+          btn.classList.remove('bg-white', 'dark:bg-apple-cardDark', 'text-black', 'dark:text-white');
+        } else {
+          btn.classList.remove('bg-apple-blue', 'text-white', 'border-apple-blue', 'shadow-md', 'shadow-apple-blue/25');
+          btn.classList.add('bg-white', 'dark:bg-apple-cardDark', 'text-black', 'dark:text-white');
+        }
+      });
+    }
+
+    let customDebounce = null;
+    function onCustomAmountInput(raw) {
+      const clean = parseInt(raw.replace(/\D/g, '')) || 0;
+      clearTimeout(customDebounce);
+      customDebounce = setTimeout(() => {
+        if (clean >= 10000) {
+          currentSelectedAmount = clean;
+          highlightPresetButton(0); // clear presets
+          localStorage.setItem('activeDepositAmount', clean);
+          updateQrDisplay(clean);
+          registerOrderWithBackend(clean);
+        } else if (clean === 0) {
+          selectAmount(0);
+        }
+      }, 500);
+    }
+
+    function dismissProductAlert() {
+      const box = document.getElementById('productTopupAlert');
+      if (box) box.classList.add('hidden');
+    }
+
+    /* ══════════════════════════════════════════════════════
+       POLLING BANK TRANSFER
+       ══════════════════════════════════════════════════════ */
     async function checkBankTransfer(amount) {
-        try { 
-            let res = await fetch(`${GOOGLE_API_URL}?action=check_stc_payment&orderId=${depositOrderId}&amount=${amount}`); 
-            let data = await res.json();
-            
-            if(data.success && data.amount > 0) { 
-                clearInterval(pollingInterval); 
-                localStorage.removeItem('activeDepositOrderId');
-                localStorage.removeItem('activeDepositUid');
-                localStorage.removeItem('activeDepositTime');
-                localStorage.removeItem('activeDepositAmount');
-                localStorage.removeItem('activeDepositCoins');
-                localStorage.removeItem('activeDepositName');
-                
-                const st = document.getElementById('pollingStatus');
-                st.className = "bg-green-50 p-4 text-center border-t border-green-100";
-                st.innerHTML = `
-                    <div class="flex flex-col items-center justify-center gap-1 text-green-600 font-black">
-                        <i data-lucide="check-circle-2" class="w-8 h-8 mb-1"></i>
-                        <span class="text-[14px]">NẠP THÀNH CÔNG: +${data.amount.toLocaleString()}đ</span>
-                    </div>`;
-                lucide.createIcons();
-                
-                loadTransactionHistory();
-                
-                renderModal('success', 'Nạp Tiền Thành Công', `Cộng <b>+${data.coins.toLocaleString()}đ</b> vào ví. Bạn có thể sang cửa hàng để mua sắm.`, () => {
-                    closeActionModal();
-                }, 'Đã Hiểu');
+      if (!depositOrderId) return;
+      try { 
+        const res = await fetch(`${GOOGLE_API_URL}?action=check_stc_payment&orderId=${depositOrderId}&amount=${amount}`); 
+        const data = await res.json();
+        
+        if (data.success && data.amount > 0) { 
+          clearInterval(pollingInterval); 
+          localStorage.removeItem('activeDepositOrderId');
+          localStorage.removeItem('activeDepositUid');
+          localStorage.removeItem('activeDepositTime');
+          localStorage.removeItem('activeDepositAmount');
+          localStorage.removeItem('activeDepositCoins');
+          
+          const st = document.getElementById('pollingStatus');
+          if (st) {
+            st.className = "w-full p-4 rounded-2xl bg-apple-green/15 border border-apple-green text-center";
+            st.innerHTML = `
+              <div class="flex items-center justify-center gap-2 text-apple-green font-black text-sm">
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                <span>NẠP THÀNH CÔNG: +${data.amount.toLocaleString()}đ</span>
+              </div>
+            `;
+            lucide.createIcons();
+          }
+
+          // Trigger Apple celebratory confetti
+          try {
+            confetti({
+              particleCount: 80,
+              spread: 70,
+              origin: { y: 0.6 }
+            });
+          } catch(e) {}
+          
+          loadTransactionHistory();
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Nạp Tiền Thành Công!',
+            html: `Hệ thống đã tự động cộng <b class="text-apple-blue text-lg">+${data.coins.toLocaleString()}đ</b> vào ví của bạn.`,
+            confirmButtonText: 'Đến Cửa Hàng MMO',
+            showCancelButton: true,
+            cancelButtonText: 'Ở Lại Trang',
+            confirmButtonColor: '#0071E3'
+          }).then(r => {
+            if (r.isConfirmed) {
+              window.location.href = 'tap-hoa-mmo.html';
             }
-        } catch(e) {}
-    }
-
-    async function loadTransactionHistory() {
-        const tbody = document.getElementById('historyTableBody');
-        try {
-            const res = await fetch(`${GOOGLE_API_URL}?action=get_user_transactions&uid=${currentUser.uid}`);
-            const json = await res.json();
-            
-            if(json.success) {
-                if(json.data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-400"><i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>Bạn chưa có giao dịch nạp tiền nào.</td></tr>`;
-                    lucide.createIcons(); return;
-                }
-                
-                let html = '';
-                json.data.forEach(t => {
-                    let isClaimed = t.status === 'CLAIMED';
-                    let dateObj = new Date(t.time);
-                    let timeString = dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + String(dateObj.getDate()).padStart(2, '0') + ' ' + String(dateObj.getHours()).padStart(2, '0') + ':' + String(dateObj.getMinutes()).padStart(2, '0');
-                    let statusHtml = isClaimed ? '<span class="text-green-600 font-bold bg-green-50 px-2 py-1 rounded">Đã thanh toán</span>' : '<span class="text-orange-500 font-bold bg-orange-50 px-2 py-1 rounded">Chờ thanh toán</span>';
-                    let amountHtml = isClaimed ? `<span class="text-mall font-black">${parseInt(t.amount).toLocaleString()}đ</span>` : '<span class="text-gray-400">-</span>';
-
-                    html += `<tr class="hover:bg-gray-50 transition"><td class="text-[11px] text-gray-500 font-bold whitespace-nowrap">${timeString}</td><td class="font-bold">ACB</td><td class="font-mono text-[11px] font-bold text-gray-600">${t.orderId}</td><td>${amountHtml}</td><td class="text-right whitespace-nowrap">${statusHtml}</td></tr>`;
-                });
-                tbody.innerHTML = html;
-            }
-        } catch(e) { tbody.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-red-500">Lỗi tải dữ liệu.</td></tr>`; }
-    }
-
-    // --- PREMIUM MODAL LOGIC ---
-    function renderModal(type, title, desc, actionFn, btnText) {
-        let iconHtml = '';
-        let btnHtml = '';
-
-        if (type === 'success') {
-            iconHtml = `<div class="w-20 h-20 mx-auto bg-green-50 rounded-[24px] flex items-center justify-center mb-5 shadow-[inset_0_0_20px_rgba(34,197,94,0.1)] border border-green-100"><i data-lucide="check" class="w-10 h-10 text-green-500"></i></div>`;
-            btnHtml = `<button id="mBtn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-[0_8px_20px_rgba(34,197,94,0.3)] py-4 rounded-2xl font-black text-[15px] active:scale-95 transition-all">${btnText}</button>`;
-        } else if (type === 'error') {
-            iconHtml = `<div class="w-20 h-20 mx-auto bg-red-50 rounded-[24px] flex items-center justify-center mb-5 shadow-[inset_0_0_20px_rgba(239,68,68,0.1)] border border-red-100"><i data-lucide="x" class="w-10 h-10 text-red-500"></i></div>`;
-            btnHtml = `<div class="flex gap-3 mt-6"><button onclick="closeActionModal()" class="flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200 py-4 rounded-2xl font-bold text-[14px] active:scale-95 transition-all">Đóng</button><button id="mBtn" class="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-[0_8px_20px_rgba(239,68,68,0.3)] py-4 rounded-2xl font-black text-[14px] active:scale-95 transition-all">${btnText}</button></div>`;
+          });
         }
+      } catch(e) {}
+    }
 
-        document.getElementById('actionModalContent').innerHTML = `
-            <div class="text-center p-1">
-                ${iconHtml}
-                <h3 class="font-black text-[22px] text-gray-900 mb-2 tracking-tight">${title}</h3>
-                <p class="text-[14px] text-gray-500 leading-relaxed ${btnHtml ? 'mb-6' : 'mb-2'} px-2">${desc}</p>
-                ${btnHtml}
-            </div>`;
-            
+    /* ══════════════════════════════════════════════════════
+       TRANSACTION HISTORY (APPLE WALLET STATEMENT STYLE)
+       ══════════════════════════════════════════════════════ */
+    async function loadTransactionHistory() {
+      const container = document.getElementById('txListContainer');
+      if (!container || !currentUser) return;
+
+      try {
+        const res = await fetch(`${GOOGLE_API_URL}?action=get_user_transactions&uid=${currentUser.uid}`);
+        const json = await res.json();
+        
+        if (json.success) {
+          if (!json.data || json.data.length === 0) {
+            container.innerHTML = `
+              <div class="py-12 text-center text-apple-gray space-y-2">
+                <div class="w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.05] mx-auto flex items-center justify-center text-apple-gray">
+                  <i data-lucide="inbox" class="w-6 h-6"></i>
+                </div>
+                <p class="font-bold text-sm text-black dark:text-white">Chưa có giao dịch nạp tiền nào</p>
+                <p class="text-xs">Các giao dịch thành công sẽ xuất hiện tại đây.</p>
+              </div>
+            `;
+            lucide.createIcons();
+            return;
+          }
+          
+          container.innerHTML = json.data.map(t => {
+            const isDone = t.status === 'CLAIMED';
+            const dateObj = new Date(t.time);
+            const timeStr = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const amountVal = parseInt(t.amount) || 0;
+
+            return `
+              <div class="py-3.5 flex items-center justify-between gap-3 transition hover:bg-black/[0.02] dark:hover:bg-white/[0.02] px-2 rounded-xl">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-2xl ${isDone ? 'bg-apple-green/10 text-apple-green' : 'bg-apple-amber/10 text-apple-amber'} flex items-center justify-center shrink-0">
+                    <i data-lucide="${isDone ? 'arrow-down-left' : 'clock'}" class="w-5 h-5"></i>
+                  </div>
+                  <div class="min-w-0 space-y-0.5">
+                    <div class="flex items-center gap-2">
+                      <span class="font-extrabold text-xs sm:text-sm text-black dark:text-white truncate">Chuyển khoản ACB</span>
+                      <span class="font-mono text-[10px] text-apple-gray font-bold">#${t.orderId}</span>
+                    </div>
+                    <div class="text-[11px] text-apple-gray">${timeStr}</div>
+                  </div>
+                </div>
+
+                <div class="text-right shrink-0">
+                  <div class="font-black text-sm sm:text-base ${isDone ? 'text-apple-green' : 'text-apple-amber'}">
+                    ${isDone ? '+' + amountVal.toLocaleString() + 'đ' : 'Chờ quét'}
+                  </div>
+                  <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${isDone ? 'bg-apple-green/10 text-apple-green' : 'bg-apple-amber/10 text-apple-amber'}">
+                    ${isDone ? 'Thành công' : 'Chờ xử lý'}
+                  </span>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          lucide.createIcons();
+        }
+      } catch(e) {
+        container.innerHTML = `<div class="py-6 text-center text-apple-red text-xs">Không thể tải lịch sử giao dịch.</div>`;
+      }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       CLIPBOARD HELPERS WITH VISUAL HAPTIC FEEDBACK
+       ══════════════════════════════════════════════════════ */
+    function copyData(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        showButtonSuccess(btn, 'Đã Chép ✓');
+      }).catch(() => {
+        fallbackCopy(text);
+      });
+    }
+
+    function copySyntax(btn) {
+      const code = document.getElementById('transferSyntax')?.innerText || depositOrderId;
+      navigator.clipboard.writeText(code).then(() => {
+        showButtonSuccess(btn, 'Đã Chép Cú Pháp ✓');
+      }).catch(() => {
+        fallbackCopy(code);
+      });
+    }
+
+    function showButtonSuccess(btn, text) {
+      if (!btn) return;
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i><span>${text}</span>`;
+      btn.classList.add('bg-apple-green');
+      btn.classList.remove('bg-apple-blue');
+      lucide.createIcons();
+      setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.classList.remove('bg-apple-green');
+        btn.classList.add('bg-apple-blue');
         lucide.createIcons();
-        const modal = document.getElementById('actionModal');
-        const overlay = document.getElementById('actionModalOverlay');
-        const panel = document.getElementById('actionModalPanel');
-        
-        modal.classList.remove('hidden');
-        requestAnimationFrame(() => {
-            overlay.classList.add('opacity-100');
-            panel.classList.remove('scale-90', 'translate-y-8', 'opacity-0');
-        });
-        
-        if (document.getElementById('mBtn')) document.getElementById('mBtn').onclick = actionFn;
+      }, 2000);
     }
 
-    function closeActionModal() { 
-        document.getElementById('actionModalOverlay').classList.remove('opacity-100'); 
-        document.getElementById('actionModalPanel').classList.add('scale-90', 'translate-y-8', 'opacity-0'); 
-        setTimeout(() => document.getElementById('actionModal').classList.add('hidden'), 300); 
+    function fallbackCopy(text) {
+      Swal.fire({
+        title: 'Sao chép thông tin',
+        input: 'text',
+        inputValue: text,
+        confirmButtonText: 'Đóng',
+        confirmButtonColor: '#0071E3'
+      });
     }
 
-    function copyText(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            renderModal('success', 'Đã sao chép', `Nội dung: <br><b class="text-mall text-[18px] tracking-widest block mt-2">${text}</b>`, closeActionModal, 'Đóng');
-        }).catch(err => {
-            renderModal('error', 'Lỗi thiết bị', 'Không thể copy tự động. Vui lòng bôi đen thủ công.', closeActionModal, 'Đóng');
-        });
-    }
-
-    lucide.createIcons();
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
   </script>
-<!-- Floating AI Chat & Utility Widget -->
-<script src="ai-chat-widget.js?v=6" data-bottom="30px"></script>
-<script src="ipaviet-tracker.js?v=1"></script>
+
+  <!-- Floating AI Chat & Utility Widget -->
+  <script src="ai-chat-widget.js?v=6" data-bottom="85px"></script>
+  <script src="ipaviet-tracker.js?v=1"></script>
 </body>
 </html>
