@@ -668,34 +668,65 @@
         updateQrDisplay(0);
       }
 
-      registerOrderWithBackend(activeAmount);
+      ensureOrderRegistered(activeAmount);
     }
 
-    function registerOrderWithBackend(amount) {
-      const orderAmount = amount > 0 ? amount : 1;
-      fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${depositOrderId}&uid=${currentUser.uid}&amount=${orderAmount}&coins=${orderAmount}`).catch(() => {});
+    /* ══════════════════════════════════════════════════════
+       ANTI-SPAM SINGLE ORDER REGISTRATION WITH BACKEND
+       Chỉ tạo 1 lệnh duy nhất trên Google Sheet cho mỗi phiên (depositOrderId).
+       Khi người dùng bấm chọn đổi mức nạp qua lại, hệ thống CHỈ đổi mã VietQR 
+       ở Client-side (0ms) mà KHÔNG gửi lại request tạo đơn, tránh nghẽn server.
+       ══════════════════════════════════════════════════════ */
+    let registeredOrderId = null;
+
+    function ensureOrderRegistered(initialAmount) {
+      if (!depositOrderId) return;
+      const regKey = 'reg_order_' + depositOrderId;
       
-      if (pollingInterval) clearInterval(pollingInterval);
-      pollingInterval = setInterval(() => checkBankTransfer(orderAmount), 4000);
+      // Nếu orderId này đã được tạo trên Google Sheet trong phiên này, không tạo lại
+      if (registeredOrderId === depositOrderId || sessionStorage.getItem(regKey) === 'true') {
+        startPolling();
+        return;
+      }
+
+      registeredOrderId = depositOrderId;
+      sessionStorage.setItem(regKey, 'true');
+
+      const orderAmount = initialAmount > 0 ? initialAmount : 1;
+      fetch(`${GOOGLE_API_URL}?action=create_order&orderId=${depositOrderId}&uid=${currentUser.uid}&amount=${orderAmount}&coins=${orderAmount}`).catch(() => {});
+      startPolling();
     }
 
+    function startPolling() {
+      if (pollingInterval) return; // Đang chạy single runner
+      pollingInterval = setInterval(() => checkBankTransfer(), 4000);
+    }
+
+    let qrDebounce = null;
     function updateQrDisplay(amount) {
       const qrImg = document.getElementById('qrImage');
       const shimmer = document.getElementById('qrLoadingShimmer');
       const amountDisp = document.getElementById('qrAmountDisplay');
 
-      if (shimmer) shimmer.classList.remove('hidden');
-      if (qrImg) qrImg.classList.add('opacity-0');
-
-      let qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.png?addInfo=${depositOrderId}&accountName=${encodeURIComponent(ACC_NAME)}`;
+      // Cập nhật số tiền hiển thị tức thì (0ms) cho người dùng
       if (amount > 0) {
-        qrUrl += `&amount=${amount}`;
         if (amountDisp) amountDisp.innerText = amount.toLocaleString() + 'đ';
       } else {
         if (amountDisp) amountDisp.innerText = 'Tự nhập khi quét';
       }
 
-      if (qrImg) qrImg.src = qrUrl;
+      // Debounce tải ảnh QR 100ms chống chớp nháy khi bấm nhanh nhiều nút
+      clearTimeout(qrDebounce);
+      qrDebounce = setTimeout(() => {
+        if (shimmer) shimmer.classList.remove('hidden');
+        if (qrImg) qrImg.classList.add('opacity-0');
+
+        let qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.png?addInfo=${depositOrderId}&accountName=${encodeURIComponent(ACC_NAME)}`;
+        if (amount > 0) {
+          qrUrl += `&amount=${amount}`;
+        }
+        if (qrImg) qrImg.src = qrUrl;
+      }, 100);
     }
 
     function onQrLoaded() {
@@ -706,7 +737,7 @@
     }
 
     /* ══════════════════════════════════════════════════════
-       PRESET CHIPS & CUSTOM AMOUNT
+       PRESET CHIPS & CUSTOM AMOUNT (CLIENT-SIDE ONLY)
        ══════════════════════════════════════════════════════ */
     function selectAmount(amt) {
       currentSelectedAmount = amt;
@@ -716,8 +747,9 @@
       const customInput = document.getElementById('customAmountInput');
       if (customInput) customInput.value = '';
 
+      // Chỉ cập nhật VietQR phía Client - KHÔNG gửi request spam lên Google Sheet
       updateQrDisplay(amt);
-      registerOrderWithBackend(amt);
+      ensureOrderRegistered(amt);
     }
 
     function highlightPresetButton(amt) {
@@ -743,11 +775,11 @@
           highlightPresetButton(0); // clear presets
           localStorage.setItem('activeDepositAmount', clean);
           updateQrDisplay(clean);
-          registerOrderWithBackend(clean);
+          ensureOrderRegistered(clean);
         } else if (clean === 0) {
           selectAmount(0);
         }
-      }, 500);
+      }, 350);
     }
 
     function dismissProductAlert() {
@@ -758,14 +790,17 @@
     /* ══════════════════════════════════════════════════════
        POLLING BANK TRANSFER
        ══════════════════════════════════════════════════════ */
-    async function checkBankTransfer(amount) {
+    async function checkBankTransfer() {
       if (!depositOrderId) return;
       try { 
-        const res = await fetch(`${GOOGLE_API_URL}?action=check_stc_payment&orderId=${depositOrderId}&amount=${amount}`); 
+        const amountParam = currentSelectedAmount > 0 ? currentSelectedAmount : 1;
+        const res = await fetch(`${GOOGLE_API_URL}?action=check_stc_payment&orderId=${depositOrderId}&amount=${amountParam}`); 
         const data = await res.json();
         
         if (data.success && data.amount > 0) { 
           clearInterval(pollingInterval); 
+          pollingInterval = null;
+          sessionStorage.removeItem('reg_order_' + depositOrderId);
           localStorage.removeItem('activeDepositOrderId');
           localStorage.removeItem('activeDepositUid');
           localStorage.removeItem('activeDepositTime');
