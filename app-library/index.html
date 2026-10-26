@@ -511,7 +511,7 @@ let isUserVip = false;
 window.allAppsMap = {};
 const DB = { ipa: [], vip: [] };
 const STATE = { 
-  currentTab: 'home', 
+  currentTab: 'ipa', 
   currentPage: 1, 
   itemsPerPage: 24, 
   currentItem: null, 
@@ -895,14 +895,52 @@ const SOURCES_CONFIG = [
 /* ─── Smart Apple iTunes Metadata Cache ─── */
 const APPLE_META_CACHE = {};
 
-/* ─── Auto Categorizer ─── */
+/* ─── Auto Categorizer (Smart Multi-Tier Classifier) ─── */
+function smartCategorize(appOrName, optDesc) {
+  let app = (typeof appOrName === 'object' && appOrName !== null) ? appOrName : { name: appOrName, desc: optDesc };
+  const name = String(app.name || app.title || "").toLowerCase();
+  const cat = String(app.category || app.genre || "").toLowerCase();
+  const bundle = String(app.bundleId || app.bundleIdentifier || "").toLowerCase();
+  const desc = String(app.desc || app.fullDesc || app.description || "").toLowerCase();
+
+  // 1. Social (Mạng Xã Hội)
+  const socialKws = ["facebook", "fb", "zalo", "messenger", "instagram", "insta", "threads", "telegram", "tiktok", "douyin", "twitter", "x.com", "discord", "reddit", "whatsapp", "wechat", "viber", "line", "snapchat", "skype", "signal"];
+  if (cat.includes("social") || socialKws.some(k => name.includes(k) || bundle.includes(k))) {
+    return "Social";
+  }
+
+  // 2. Chỉnh sửa (Photo & Video Editor)
+  const editKws = ["capcut", "lightroom", "photoshop", "picsart", "vsco", "snapseed", "canva", "inshot", "alight motion", "vivavideo", "kinemaster", "procreate", "meitu", "b612", "soda", "snow", "camera360", "remini", "dazz cam", "facetune", "hypic", "epik", "pixelcut"];
+  if (cat.includes("photo") || cat.includes("photography") || cat.includes("edit") || editKws.some(k => name.includes(k) || bundle.includes(k))) {
+    return "Chỉnh sửa";
+  }
+
+  // 3. Giải trí (Media, Music, Video, Streaming)
+  const mediaKws = ["youtube", "uyou", "cercube", "spotify", "netflix", "zing mp3", "nhaccuatui", "soundcloud", "apple music", "deezer", "tidal", "bilibili", "iqiyi", "wetv", "vieon", "kodi", "vlc", "infuse", "iplay", "audiomack", "podcast", "twitch", "truyện", "manga", "fpt play", "tv360"];
+  if (cat.includes("music") || cat.includes("entertainment") || cat.includes("media") || cat.includes("video") || mediaKws.some(k => name.includes(k) || bundle.includes(k))) {
+    return "Giải trí";
+  }
+
+  // 4. Trò chơi (Games)
+  const gameCompanies = ["com.ea.", "com.gameloft.", "com.supercell.", "com.roblox.", "com.mojang.", "com.tencent.", "com.mihoyo.", "com.riotgames.", "com.activision.", "com.garena.", "com.epicgames.", "com.nianticlabs."];
+  const gameKws = [
+    "pubg", "liên quân", "arena of valor", "genshin", "honkai", "free fire", "roblox", "minecraft", "gta", "grand theft auto",
+    "clash of clans", "clash royale", "brawl stars", "subway surfers", "pokemon", "asphalt", "need for speed", "fifa", "fc mobile",
+    "efootball", "dream league", "call of duty", "candy crush", "angry birds", "plants vs zombies", "shadow fight", "hay day",
+    "ninja school", "hải tặc tí hon", "làng lá", "võ lâm", "ngọc rồng", "avatar", "temple run", "geometry dash", "monopoly",
+    "among us", "chess", "cờ tướng", "bầu cua", "tiến lên", "tài xỉu", "simulator", "tycoon", "rpg", "moba", "fps", "bắn súng",
+    "đua xe", "chiến thuật", "hành động", "nhập vai", "nông trại", "zombie", "survival", "battle royale", "hero", "craft"
+  ];
+  if (cat === "games" || cat === "game" || cat.includes("game") || gameCompanies.some(c => bundle.startsWith(c)) || gameKws.some(k => name.includes(k))) {
+    return "Trò chơi";
+  }
+
+  // 5. Tiện ích & Ký số
+  return "Tiện ích";
+}
+
 function categorizeApp(name, desc) {
-  const text = String((name || '') + ' ' + (desc || '')).toLowerCase();
-  if (['game','trò chơi','hack','mod','rpg','moba','fps','action','simulator','bắn súng','gta','roblox','minecraft','pokemon'].some(kw => text.includes(kw))) return 'Trò chơi';
-  if (['social','mạng xã hội','facebook','tiktok','insta','zalo','messenger','youtube','chat','nhắn tin','telegram','twitter','discord'].some(kw => text.includes(kw))) return 'Social';
-  if (['media','giải trí','phim','nhạc','music','video','netflix','spotify','mp3','player','stream','cinema'].some(kw => text.includes(kw))) return 'Giải trí';
-  if (['edit','chỉnh sửa','ảnh','video','photo','camera','capcut','picsart','lightroom','photoshop','maker','procreate'].some(kw => text.includes(kw))) return 'Chỉnh sửa';
-  return 'Tiện ích';
+  return smartCategorize({ name, desc });
 }
 
 /* ─── Smart MOD & Hack Feature Extractor ─── */
@@ -1404,13 +1442,8 @@ function switchTab(tabId) {
     }
   });
 
-  const hero = document.getElementById('heroSection');
-  if (hero) {
-    hero.style.display = tabId === 'home' ? 'block' : 'none';
-  }
-
   renderContent();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 350, behavior: 'smooth' });
 }
 
 function setFilter(filter) {
@@ -1419,7 +1452,7 @@ function setFilter(filter) {
   renderContent();
 }
 
-/* ─── Render Content ─── */
+/* ─── Render Content (Unified Catalog With Immediate Filters & Pagination) ─── */
 function renderContent() {
   const sInput = document.getElementById('searchInput');
   let rawQuery = sInput ? sInput.value.trim() : '';
@@ -1437,150 +1470,125 @@ function renderContent() {
   const container = document.getElementById('dynamicContent');
   if (!container) return;
   let html = '';
-  const tab = STATE.currentTab;
 
-  if (tab === 'home') {
-    let uniqueApps = DB.ipa;
-    if (query) {
-      uniqueApps = uniqueApps.filter(i => {
-        const text = ((i.name || i.title || "") + " " + (i.developer || "") + " " + (i.desc || "")).toLowerCase();
-        return text.includes(query);
-      });
-      html = `
-        <div class="mb-6 flex items-center justify-between">
-          <h2 class="text-xl sm:text-2xl font-black text-black dark:text-white tracking-tight">Kết quả tìm kiếm</h2>
-          <span class="text-xs font-semibold text-apple-gray">${uniqueApps.length.toLocaleString()} ứng dụng</span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">${uniqueApps.length ? uniqueApps.slice(0, 36).map((i, idx) => createEntity(i, idx)).join('') : emptyState()}</div>
-      `;
-    } else {
-      let featured = DB.vip.slice(0, 5);
-      if (featured.length === 0) featured = uniqueApps.slice(0, 5);
-      const recent = uniqueApps.slice(0, 20);
+  let items = DB.ipa || [];
 
-      html = `
-        ${featured.length ? `
-        <div class="mb-8">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg sm:text-xl font-black text-black dark:text-white tracking-tight flex items-center gap-2">
-              <i data-lucide="crown" class="w-5 h-5 text-apple-amber"></i>
-              <span>Ứng Dụng VIP Nổi Bật</span>
-            </h2>
-            <a href="../ipavip.html" class="text-xs font-bold text-apple-amber hover:text-amber-600 flex items-center gap-1 transition">
-              <span>Xem Tất Cả VIP</span> <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-            </a>
-          </div>
-          <div class="ribbon-track no-scrollbar">
-            ${featured.map((i, idx) => createRibbonItem(i, idx)).join('')}
-          </div>
-        </div>` : ''}
+  // 1. Tìm kiếm thông minh
+  if (query) {
+    items = items.filter(i => {
+      const text = ((i.name || i.title || i.filename || '') + ' ' + (i.developer || '') + ' ' + (i.bundleId || '') + ' ' + (i.desc || '')).toLowerCase();
+      return text.includes(query);
+    });
+  }
 
-        <div class="mb-8">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg sm:text-xl font-black text-black dark:text-white tracking-tight flex items-center gap-2">
-              <i data-lucide="sparkles" class="w-5 h-5 text-apple-blue"></i>
-              <span>Mới Cập Nhật</span>
-            </h2>
-            <button class="text-xs font-bold text-apple-blue hover:text-apple-darkBlue flex items-center gap-1 transition" onclick="switchTab('ipa')">
-              <span>Xem Tất Cả (${uniqueApps.length.toLocaleString()})</span> <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">${recent.map((i, idx) => createEntity(i, idx)).join('')}</div>
-        </div>
-      `;
-    }
-  } else {
-    let items = DB.ipa;
+  // 2. Lọc danh mục chuẩn xác (Smart Categorization)
+  if (STATE.currentFilter === 'mod') {
+    items = items.filter(i => i.isMod);
+  } else if (STATE.currentFilter !== 'all') {
+    items = items.filter(i => {
+      const c = i.category || smartCategorize(i);
+      if (STATE.currentFilter === 'game') return c === 'Trò chơi';
+      if (STATE.currentFilter === 'social') return c === 'Social';
+      if (STATE.currentFilter === 'media') return c === 'Giải trí';
+      if (STATE.currentFilter === 'edit') return c === 'Chỉnh sửa';
+      if (STATE.currentFilter === 'utility') return c === 'Tiện ích';
+      return true;
+    });
+  }
 
-    // 1. Tìm kiếm thông minh
-    if (query) {
-      items = items.filter(i => {
-        const text = ((i.name || i.title || i.filename || '') + ' ' + (i.developer || '') + ' ' + (i.bundleId || '') + ' ' + (i.desc || '')).toLowerCase();
-        return text.includes(query);
-      });
-    }
+  const modCount = DB.ipa.filter(x => x.isMod).length;
+  const gameCount = DB.ipa.filter(x => (x.category || smartCategorize(x)) === 'Trò chơi').length;
+  const socialCount = DB.ipa.filter(x => (x.category || smartCategorize(x)) === 'Social').length;
+  const mediaCount = DB.ipa.filter(x => (x.category || smartCategorize(x)) === 'Giải trí').length;
+  const editCount = DB.ipa.filter(x => (x.category || smartCategorize(x)) === 'Chỉnh sửa').length;
+  const utilityCount = DB.ipa.filter(x => (x.category || smartCategorize(x)) === 'Tiện ích').length;
 
-    // 2. Lọc danh mục / Tính năng MOD
-    if (STATE.currentFilter === 'mod') {
-      items = items.filter(i => i.isMod);
-    } else if (STATE.currentFilter !== 'all') {
-      items = items.filter(i => {
-        const nameDescCat = String(i.name + " " + (i.desc || "") + " " + (i.category || "")).toLowerCase();
-        if (STATE.currentFilter === 'game') return ['game','trò chơi','hack','mod','rpg','moba','fps','action','simulator','bắn súng','gta','roblox'].some(kw => nameDescCat.includes(kw));
-        if (STATE.currentFilter === 'social') return ['social','mạng xã hội','facebook','tiktok','insta','zalo','messenger','youtube','chat','nhắn tin','discord','telegram'].some(kw => nameDescCat.includes(kw));
-        if (STATE.currentFilter === 'media') return ['media','giải trí','phim','nhạc','music','video','netflix','spotify','mp3','player','stream'].some(kw => nameDescCat.includes(kw));
-        if (STATE.currentFilter === 'edit') return ['edit','chỉnh sửa','ảnh','video','photo','camera','capcut','picsart','lightroom','photoshop','maker'].some(kw => nameDescCat.includes(kw));
-        if (STATE.currentFilter === 'utility') return ['utility','tiện ích','công cụ','tool','jailbreak','quản lý','adblock','trollstore','file','manager','cleaner','vpn','altstore','sidestore'].some(kw => nameDescCat.includes(kw));
-        return true;
-      });
-    }
+  const filtersDef = [
+    { id: 'all', name: `Tất cả (${DB.ipa.length.toLocaleString()})`, icon: 'layers' },
+    { id: 'mod', name: `⚡ Tính Năng MOD (${modCount.toLocaleString()})`, icon: 'zap', isModChip: true },
+    { id: 'game', name: `Trò chơi (${gameCount.toLocaleString()})`, icon: 'gamepad-2' },
+    { id: 'social', name: `Social (${socialCount.toLocaleString()})`, icon: 'message-circle' },
+    { id: 'media', name: `Giải trí (${mediaCount.toLocaleString()})`, icon: 'play-square' },
+    { id: 'edit', name: `Chỉnh sửa (${editCount.toLocaleString()})`, icon: 'wand-2' },
+    { id: 'utility', name: `Tiện ích (${utilityCount.toLocaleString()})`, icon: 'wrench' }
+  ];
 
-    const modCount = DB.ipa.filter(x => x.isMod).length;
-
-    const filtersDef = [
-      { id: 'all', name: 'Tất cả', icon: 'layers' },
-      { id: 'mod', name: `⚡ Tính Năng MOD (${modCount.toLocaleString()})`, icon: 'zap', isModChip: true },
-      { id: 'game', name: 'Trò chơi', icon: 'gamepad-2' },
-      { id: 'social', name: 'Social', icon: 'message-circle' },
-      { id: 'media', name: 'Giải trí', icon: 'play-square' },
-      { id: 'edit', name: 'Chỉnh sửa', icon: 'wand-2' },
-      { id: 'utility', name: 'Tiện ích', icon: 'wrench' }
-    ];
-
-    let filterButtons = filtersDef.map(f => {
-      const isActive = STATE.currentFilter === f.id;
-      const baseCls = "px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0 active:scale-95";
-      if (isActive) {
-        if (f.isModChip) {
-          return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-apple-red text-white shadow-sm shadow-apple-red/30"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
-        }
-        return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-apple-blue text-white shadow-sm shadow-apple-blue/30"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
-      } else {
-        if (f.isModChip) {
-          return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-white dark:bg-[#1C1C1E] border border-apple-red/30 text-apple-red hover:bg-apple-red/10"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
-        }
-        return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-white dark:bg-[#1C1C1E] border border-apple-separatorLight dark:border-apple-separatorDark text-apple-gray hover:text-black dark:hover:text-white hover:border-apple-blue/40"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
+  let filterButtons = filtersDef.map(f => {
+    const isActive = STATE.currentFilter === f.id;
+    const baseCls = "px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer whitespace-nowrap";
+    if (isActive) {
+      if (f.isModChip) {
+        return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-apple-red text-white shadow-sm shadow-apple-red/30"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
       }
-    }).join('');
+      return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-apple-blue text-white shadow-sm shadow-apple-blue/30"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
+    } else {
+      if (f.isModChip) {
+        return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-white dark:bg-[#1C1C1E] border border-apple-red/30 text-apple-red hover:bg-apple-red/10 shadow-sm"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
+      }
+      return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-white dark:bg-[#1C1C1E] border border-apple-separatorLight dark:border-apple-separatorDark text-apple-gray hover:text-black dark:hover:text-white hover:border-apple-blue/40 shadow-sm"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
+    }
+  }).join('');
 
-    const totalPages = Math.ceil(items.length / STATE.itemsPerPage);
-    const start = (STATE.currentPage - 1) * STATE.itemsPerPage;
-    const pagedItems = items.slice(start, start + STATE.itemsPerPage);
-    const featured = items.slice(0, 5);
+  const totalPages = Math.max(1, Math.ceil(items.length / STATE.itemsPerPage));
+  if (STATE.currentPage > totalPages) STATE.currentPage = 1;
+  const start = (STATE.currentPage - 1) * STATE.itemsPerPage;
+  const pagedItems = items.slice(start, start + STATE.itemsPerPage);
+  const featured = (DB.vip && DB.vip.length > 0) ? DB.vip.slice(0, 5) : DB.ipa.slice(0, 5);
 
-    html = `
-      <div class="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+  html = `
+    <!-- Siêu phẩm nổi bật (Chỉ hiển thị trang đầu tiên khi không tìm kiếm) -->
+    ${!query && STATE.currentFilter === 'all' && STATE.currentPage === 1 && featured.length ? `
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-3 px-1">
+        <h2 class="text-base sm:text-lg font-black tracking-tight text-black dark:text-white flex items-center gap-2">
+          <i data-lucide="crown" class="w-4 h-4 text-apple-amber"></i> Siêu Phẩm VIP Nổi Bật
+        </h2>
+        <a href="../ipavip.html" class="text-xs font-bold text-apple-amber hover:text-amber-600 flex items-center gap-1 transition">
+          <span>Xem Kho VIP</span> <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </a>
+      </div>
+      <div class="ribbon-track no-scrollbar">
+        ${featured.map((i, idx) => createRibbonItem(i, idx)).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Tiêu đề danh mục & Phân loại -->
+    <div class="mb-6">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4 px-1">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-black text-black dark:text-white tracking-tight">Kho IPA Tổng Hợp</h1>
-          <p class="text-xs sm:text-sm text-apple-gray mt-1">Tổng hợp toàn diện các ứng dụng, game MOD và tiện ích iOS được ký số tối ưu</p>
+          <h2 class="text-xl sm:text-2xl font-black text-black dark:text-white tracking-tight flex items-center gap-2">
+            <i data-lucide="grid" class="w-5 h-5 text-apple-blue"></i>
+            <span>Kho Ứng Dụng IPA</span>
+          </h2>
+          <p class="text-xs text-apple-gray mt-0.5">Tổng hợp toàn diện các ứng dụng, game MOD và tiện ích iOS được ký số tối ưu</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-apple-red/10 text-apple-red text-xs font-bold border border-apple-red/20">
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-apple-red/10 text-apple-red text-xs font-bold border border-apple-red/20 shadow-sm">
             <i data-lucide="zap" class="w-3.5 h-3.5"></i> ${modCount.toLocaleString()} Bản MOD
           </span>
-          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-apple-blue/10 text-apple-blue text-xs font-bold border border-apple-blue/20">
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-apple-blue/10 text-apple-blue text-xs font-bold border border-apple-blue/20 shadow-sm">
             <i data-lucide="layers" class="w-3.5 h-3.5"></i> ${items.length.toLocaleString()} Ứng dụng
           </span>
         </div>
       </div>
 
-      ${!query && STATE.currentFilter === 'all' && featured.length ? `
-      <div class="mb-8">
-        <div class="ribbon-track no-scrollbar">
-          ${featured.map((i, idx) => createRibbonItem(i, idx)).join('')}
-        </div>
-      </div>` : ''}
-
-      <div class="mb-6">
-        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 mb-6">${filterButtons}</div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">${pagedItems.length ? pagedItems.map((i, idx) => createEntity(i, idx)).join('') : emptyState()}</div>
-        ${items.length > STATE.itemsPerPage ? createPagination(totalPages) : ''}
+      <!-- Phân loại đầy đủ ngay từ đầu -->
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 mb-6">
+        ${filterButtons}
       </div>
-    `;
-  }
+
+      <!-- Lưới ứng dụng -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
+        ${pagedItems.length ? pagedItems.map((i, idx) => createEntity(i, idx)).join('') : emptyState()}
+      </div>
+
+      <!-- Phân trang luôn luôn hiển thị khi có dữ liệu -->
+      ${createPagination(totalPages)}
+    </div>
+  `;
 
   container.innerHTML = html;
-  lucide.createIcons();
+  if (window.lucide) lucide.createIcons();
   refreshScrollReveal();
 }
 
@@ -1663,13 +1671,40 @@ function createPagination(total) {
   let btns = '';
   let start = Math.max(1, STATE.currentPage - 2);
   let end = Math.min(total, start + 4);
-  btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-9 h-9 rounded-full flex items-center justify-center border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white ${STATE.currentPage === 1 ? 'opacity-40 pointer-events-none' : ''} transition active:scale-95"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>`;
+  if (end - start < 4) {
+    start = Math.max(1, end - 4);
+  }
+
+  // Nút Previous
+  btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-9 h-9 rounded-full flex items-center justify-center border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white ${STATE.currentPage === 1 ? 'opacity-30 pointer-events-none' : ''} transition active:scale-95 shadow-sm" title="Trang trước"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>`;
+
+  // Trang đầu
+  if (start > 1) {
+    btns += `<button onclick="changePage(1)" class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition active:scale-95 border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white shadow-sm">1</button>`;
+    if (start > 2) btns += `<span class="px-1 text-apple-gray text-xs">...</span>`;
+  }
+
+  // Các trang ở giữa
   for (let p = start; p <= end; p++) {
     const isActive = p === STATE.currentPage;
-    btns += `<button onclick="changePage(${p})" class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition active:scale-95 ${isActive ? 'bg-apple-blue text-white shadow-sm shadow-apple-blue/30' : 'border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white'}">${p}</button>`;
+    btns += `<button onclick="changePage(${p})" class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition active:scale-95 shadow-sm ${isActive ? 'bg-apple-blue text-white shadow-apple-blue/30' : 'border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white'}">${p}</button>`;
   }
-  btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-9 h-9 rounded-full flex items-center justify-center border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white ${STATE.currentPage === total ? 'opacity-40 pointer-events-none' : ''} transition active:scale-95"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>`;
-  return `<div class="flex items-center justify-center gap-1.5 mt-8">${btns}</div>`;
+
+  // Trang cuối
+  if (end < total) {
+    if (end < total - 1) btns += `<span class="px-1 text-apple-gray text-xs">...</span>`;
+    btns += `<button onclick="changePage(${total})" class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition active:scale-95 border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white shadow-sm">${total}</button>`;
+  }
+
+  // Nút Next
+  btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-9 h-9 rounded-full flex items-center justify-center border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white ${STATE.currentPage === total ? 'opacity-30 pointer-events-none' : ''} transition active:scale-95 shadow-sm" title="Trang sau"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>`;
+
+  return `
+    <div class="flex flex-col items-center gap-2 mt-8 mb-4">
+      <div class="flex items-center justify-center gap-1.5 flex-wrap">${btns}</div>
+      <span class="text-[11px] text-apple-gray font-semibold">Trang ${STATE.currentPage} / ${total}</span>
+    </div>
+  `;
 }
 
 function emptyState() {

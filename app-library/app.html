@@ -1,436 +1,378 @@
 <!DOCTYPE html>
-<html lang="vi" class="antialiased">
+<html lang="vi" class="scroll-smooth antialiased">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title id="pageTitle">Chi Tiết Ứng Dụng — IPAVIET</title>
-  
+  <title id="pageTitle">Chi Tiết Ứng Dụng — IPAVIET OS</title>
   <meta name="description" content="Tải file IPA, ứng dụng Mod, Hack và Tweak iOS miễn phí chất lượng cao từ IPAVIET OS.">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#0071E3">
+
+  <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/96/apple-app-store--v2.png">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- GSAP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          colors: {
+            apple: {
+              blue: '#0071E3',
+              darkBlue: '#0A84FF',
+              green: '#34C759',
+              amber: '#FF9500',
+              red: '#FF3B30',
+              purple: '#AF52DE',
+              gray: '#86868B',
+              grayLight: '#E5E5EA',
+              grayDark: '#1C1C1E',
+              bgLight: '#F5F5F7',
+              bgDark: '#161617',
+              cardLight: '#FFFFFF',
+              cardDark: '#1C1C1E',
+              separatorLight: 'rgba(0, 0, 0, 0.08)',
+              separatorDark: 'rgba(255, 255, 255, 0.12)'
+            }
+          },
+          boxShadow: {
+            'apple': '0 4px 24px rgba(0, 0, 0, 0.06)',
+            'apple-hover': '0 16px 36px rgba(0, 113, 227, 0.12)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.08)'
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Initial Theme Check -->
+  <script>
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+
   <style>
-    :root {
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-display: 'Space Grotesk', sans-serif;
-      --void: #03040a;
-      --deep: #080a14;
-      --surface: #0d0f1a;
-      --elevated: #121420;
-      --glass: rgba(255,255,255,0.03);
-      --glass-border: rgba(255,255,255,0.06);
-      --glass-highlight: rgba(255,255,255,0.08);
-      --accent-cyan: #00f0ff;
-      --accent-violet: #8b5cf6;
-      --accent-rose: #f43f5e;
-      --accent-amber: #f59e0b;
-      --accent-emerald: #10b981;
-      --text-primary: #f0f2f8;
-      --text-secondary: rgba(240,242,248,0.55);
-      --text-tertiary: rgba(240,242,248,0.3);
-      --radius-sm: 12px;
-      --radius-md: 20px;
-      --radius-lg: 32px;
-      --radius-xl: 48px;
-      --radius-full: 9999px;
-      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-      --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-    body {
-      font-family: var(--font-sans);
-      background: var(--void);
-      color: var(--text-primary);
+    html, body {
       overflow-x: hidden;
-      min-height: 100dvh;
+      max-width: 100vw;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    * {
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", sans-serif;
+      letter-spacing: -0.015em;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Apple Squircle & Glass Tokens */
+    .apple-squircle {
+      border-radius: 22.5% !important;
+      overflow: hidden !important;
+      -webkit-corner-smoothing: antialiased;
+    }
+    .apple-glass {
+      background: rgba(245, 245, 247, 0.85);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    }
+    .dark .apple-glass {
+      background: rgba(22, 22, 23, 0.85);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
     }
 
-    /* Ambient Background */
-    .ambient-layer { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
-    .aurora-blob { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.35; animation: auroraFloat 20s ease-in-out infinite; }
-    .aurora-blob:nth-child(1) { width: 600px; height: 600px; background: radial-gradient(circle, rgba(139,92,246,0.35), transparent 70%); top: -10%; left: -10%; }
-    .aurora-blob:nth-child(2) { width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,240,255,0.25), transparent 70%); bottom: -10%; right: -5%; animation-delay: -7s; }
-    .aurora-blob:nth-child(3) { width: 400px; height: 400px; background: radial-gradient(circle, rgba(244,63,94,0.18), transparent 70%); top: 40%; left: 50%; animation-delay: -14s; }
-    @keyframes auroraFloat { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,-30px) scale(1.05); } }
-    .noise-overlay { position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px; }
-
-    /* Top Navigation */
-    .top-nav {
-      position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      width: calc(100% - 32px); max-width: 900px; padding: 8px 16px;
-      background: rgba(3,4,10,0.75); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);
-      border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full);
-      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+    /* Watermarks */
+    .ipaviet-watermark-sm, .ipaviet-watermark-lg { position: relative; overflow: hidden; }
+    .ipaviet-watermark-sm::after {
+      content: "IPAVIET.SITE"; position: absolute; top: 6px; left: -22px; width: 80px; height: 12px;
+      background: #ff3b30; color: #ffffff; font-size: 5.5px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      transform: rotate(-45deg); z-index: 50; pointer-events: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.5); letter-spacing: 0.5px;
     }
-    .btn-back {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-      color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 700;
-      padding: 8px 16px; border-radius: var(--radius-full); transition: all 0.3s var(--ease-spring);
-      cursor: pointer;
+    .ipaviet-watermark-lg::after {
+      content: "IPAVIET.SITE"; position: absolute; top: 10px; left: -35px; width: 130px; height: 18px;
+      background: #ff3b30; color: #ffffff; font-size: 8px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      transform: rotate(-45deg); z-index: 50; pointer-events: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5); letter-spacing: 0.5px;
     }
-    .btn-back:hover { background: rgba(0,240,255,0.12); border-color: rgba(0,240,255,0.3); color: var(--accent-cyan); transform: translateX(-2px); }
-    .nav-brand { font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: 2px; color: var(--text-primary); text-decoration: none; }
-    .nav-user { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
-    .coin-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.2);
-      color: var(--accent-cyan); font-family: var(--font-display); font-weight: 700; font-size: 12px;
-      padding: 6px 12px; border-radius: var(--radius-full);
-    }
-
-    /* Main Container */
-    .app-page { position: relative; z-index: 10; max-width: 860px; margin: 0 auto; padding: 100px 20px 120px; }
-
-    /* Hero Section */
-    .hero-wrap {
-      position: relative; border-radius: var(--radius-xl); overflow: hidden;
-      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
-      border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(40px);
-      padding: 48px 24px 36px; text-align: center; margin-bottom: 24px;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
-    }
-    .hero-bg-blur {
-      position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-    }
-    .hero-bg-blur img {
-      width: 100%; height: 100%; object-fit: cover; filter: blur(70px) saturate(2);
-      opacity: 0.25; transform: scale(1.3);
-    }
-    .hero-bg-blur::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to bottom, transparent 0%, rgba(3,4,10,0.85) 100%);
-    }
-
-    .hero-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
-
-    /* 3D App Icon */
-    .app-icon-wrap {
-      width: 128px; height: 128px; border-radius: 30px; overflow: hidden;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.15), 0 0 50px rgba(0,240,255,0.15);
-      animation: iconFloat 6s ease-in-out infinite;
-      margin-bottom: 20px; position: relative;
-    }
-    @keyframes iconFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-    .app-icon-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    .app-title {
-      font-family: var(--font-display); font-size: clamp(24px, 5vw, 36px);
-      font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary);
-      margin-bottom: 8px; line-height: 1.2; word-break: break-word;
-    }
-    .app-developer {
-      font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;
-      display: inline-flex; align-items: center; gap: 6px; font-weight: 500;
-    }
-
-    /* Badges */
-    .badges-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 28px; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 5px 12px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700;
-      letter-spacing: 0.05em; text-transform: uppercase;
-    }
-    .badge-ipa { background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.25); color: var(--accent-cyan); }
-    .badge-vip { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: var(--accent-amber); }
-    .badge-mod { background: linear-gradient(135deg, rgba(244,63,94,0.2), rgba(139,92,246,0.2)); border: 1px solid rgba(244,63,94,0.4); color: #fda4af; box-shadow: 0 0 16px rgba(244,63,94,0.2); }
-    .badge-verified { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); color: var(--accent-emerald); }
-
-    /* Action Buttons */
-    .hero-actions { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 12px; }
-    .btn-action {
-      width: 100%; padding: 14px 24px; border-radius: var(--radius-full);
-      font-size: 14.5px; font-weight: 800; border: none; cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-      transition: all 0.3s var(--ease-spring); text-decoration: none;
-    }
-    .btn-action-primary {
-      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
-      color: #03040a; box-shadow: 0 8px 30px rgba(0,240,255,0.3);
-    }
-    .btn-action-primary:hover { transform: scale(1.02) translateY(-2px); box-shadow: 0 12px 40px rgba(0,240,255,0.4); }
-    .btn-action-vip {
-      background: linear-gradient(135deg, var(--accent-amber), #ea580c);
-      color: #03040a; box-shadow: 0 8px 30px rgba(245,158,11,0.3);
-    }
-    .btn-action-vip:hover { transform: scale(1.02) translateY(-2px); box-shadow: 0 12px 40px rgba(245,158,11,0.4); }
-    .btn-action-secondary {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-      color: var(--text-primary);
-    }
-    .btn-action-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
-
-    /* Stats Grid */
-    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-    .stat-card {
-      background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
-      border-radius: var(--radius-md); padding: 16px 10px; text-align: center;
-    }
-    .stat-val { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--text-primary); }
-    .stat-lbl { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
-
-    /* MOD Feature Showcase Card */
-    .mod-card {
-      background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(139,92,246,0.08));
-      border: 1px solid rgba(236,72,153,0.3); border-radius: var(--radius-lg);
-      padding: 24px; margin-bottom: 24px; box-shadow: 0 16px 40px rgba(0,0,0,0.3);
-      position: relative; overflow: hidden;
-    }
-    .mod-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #ec4899, #a855f7, transparent); }
-    .mod-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
-    .mod-pill {
-      display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
-      border-radius: var(--radius-full); background: linear-gradient(135deg, #ec4899, #8b5cf6);
-      color: #fff; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-    }
-    .mod-tag { font-size: 11px; font-weight: 700; color: var(--accent-emerald); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); padding: 4px 10px; border-radius: var(--radius-full); }
-    .mod-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
-    .mod-item {
-      display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px;
-      border-radius: var(--radius-sm); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-      font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.4;
-    }
-    .mod-item-icon { width: 18px; height: 18px; border-radius: 5px; background: rgba(236,72,153,0.25); color: #f43f5e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
-
-    /* Content Cards */
-    .card-section {
-      background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
-      border-radius: var(--radius-lg); padding: 28px; margin-bottom: 24px;
-    }
-    .card-title {
-      font-family: var(--font-display); font-size: 18px; font-weight: 700;
-      color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
-    }
-
-    /* Screenshots Slider */
-    .screenshots-scroll {
-      display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px;
-      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
-    }
-    .screenshots-scroll::-webkit-scrollbar { height: 4px; }
-    .screenshots-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-    .screenshots-scroll img {
-      height: 340px; border-radius: var(--radius-md); box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-      flex-shrink: 0; transition: transform 0.3s;
-    }
-    .screenshots-scroll img:hover { transform: scale(1.02); }
-
-    /* Description */
-    .app-desc-text {
-      font-size: 14.5px; line-height: 1.75; color: var(--text-secondary);
-      white-space: pre-wrap; word-break: break-word;
-    }
-
-    /* Technical Data Table */
-    .data-table { display: flex; flex-direction: column; }
-    .data-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
-      font-size: 13.5px;
-    }
-    .data-row:last-child { border-bottom: none; }
-    .data-lbl { color: var(--text-secondary); }
-    .data-val { font-weight: 600; color: var(--text-primary); font-family: var(--font-display); text-align: right; max-width: 60%; word-break: break-all; }
-
-    /* Toast */
-    .toast {
-      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px);
-      padding: 14px 28px; border-radius: var(--radius-full);
-      background: rgba(13,15,26,0.95); backdrop-filter: blur(40px);
-      color: var(--text-primary); font-size: 14px; font-weight: 600; z-index: 1000;
-      opacity: 0; transition: all 0.4s var(--ease-spring); pointer-events: none;
-      border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 16px 48px rgba(0,0,0,0.6);
-      text-align: center; max-width: 90%;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
     /* Loading Overlay */
     .loader-overlay {
-      position: fixed; inset: 0; z-index: 500; background: var(--void);
+      position: fixed; inset: 0; z-index: 500; background: #F5F5F7;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       transition: opacity 0.5s, visibility 0.5s;
     }
+    .dark .loader-overlay { background: #161617; }
     .loader-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-    .spin-ring { width: 48px; height: 48px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.08); border-top-color: var(--accent-cyan); animation: spin 1s linear infinite; }
+    .spin-ring { width: 44px; height: 44px; border-radius: 50%; border: 3px solid rgba(0,113,227,0.15); border-top-color: #0071E3; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    @media (max-width: 640px) {
-      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      .app-page { padding-top: 84px; }
-      .screenshots-scroll img { height: 260px; }
-      .hero-wrap { padding: 36px 16px 28px; }
-      .app-icon-wrap { width: 100px; height: 100px; border-radius: 24px; }
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%) translateY(20px);
+      padding: 12px 24px; border-radius: 9999px;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
+      color: #fff; font-size: 13px; font-weight: 600; z-index: 1000;
+      opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.3); text-align: center; max-width: 90%;
     }
+    .dark .toast { background: rgba(255,255,255,0.9); color: #000; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
 </head>
-<body>
+<body class="bg-[#F5F5F7] dark:bg-[#161617] text-black dark:text-white transition-colors duration-200 min-h-screen selection:bg-apple-blue selection:text-white pb-24 sm:pb-12">
 
-  <!-- Ambient Blobs -->
-  <div class="ambient-layer">
-    <div class="aurora-blob"></div>
-    <div class="aurora-blob"></div>
-    <div class="aurora-blob"></div>
-  </div>
-  <div class="noise-overlay"></div>
+  <!-- Ambient Glow -->
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-apple-blue/5 dark:from-apple-blue/15 to-transparent blur-3xl pointer-events-none -z-10"></div>
 
   <!-- Loading State -->
   <div class="loader-overlay" id="loadingOverlay">
     <div class="spin-ring"></div>
-    <p style="font-family:var(--font-display);font-size:13px;letter-spacing:0.2em;color:var(--text-tertiary);margin-top:16px;">ĐANG TẢI ỨNG DỤNG...</p>
+    <p class="text-xs font-bold text-apple-gray tracking-wider mt-4">ĐANG TẢI ỨNG DỤNG...</p>
   </div>
 
-  <!-- Top Navigation -->
-  <nav class="top-nav">
-    <button onclick="handleGoBack()" class="btn-back" title="Quay lại kho ứng dụng">
-      <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Kho App
-    </button>
-    <a href="index.html" class="nav-brand">IPAVIET</a>
-    <div class="nav-user" id="navUserSlot">
-      <a href="../account.html" style="text-decoration:none;" class="coin-badge" id="userCoinBadge">
-        <i data-lucide="coins" style="width:14px;height:14px;color:var(--accent-amber);"></i> <span id="coinText">Đăng nhập</span>
+  <!-- ================================================================
+       APPLE FROSTED GLASS HEADER
+       ================================================================ -->
+  <header class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-colors">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <!-- Back Button -->
+      <button onclick="handleGoBack()" class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] text-inherit transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        <span>Kho App</span>
+      </button>
+
+      <!-- Brand -->
+      <a href="index.html" class="flex items-center gap-2 font-black text-sm tracking-tight text-inherit no-underline">
+        <span class="w-7 h-7 apple-squircle bg-apple-blue text-white flex items-center justify-center shadow-sm">
+          <i data-lucide="layers" class="w-4 h-4"></i>
+        </span>
+        <span>IPAVIET</span>
       </a>
-    </div>
-  </nav>
 
-  <!-- Main Content -->
-  <main class="app-page">
-    
-    <!-- Hero Box -->
-    <section class="hero-wrap">
-      <div class="hero-bg-blur">
-        <img id="heroBgImg" src="" alt="">
+      <!-- Right Actions: Theme Toggle & Coins -->
+      <div class="flex items-center gap-2">
+        <button onclick="toggleTheme()" class="w-9 h-9 rounded-full flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.08] text-apple-gray hover:text-black dark:hover:text-white transition-colors cursor-pointer" title="Đổi giao diện">
+          <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+          <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+        </button>
+        <div id="navUserSlot">
+          <a href="../account.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-sm" id="userCoinBadge">
+            <i data-lucide="coins" class="w-3.5 h-3.5 text-amber-500"></i>
+            <span id="coinText">Đăng nhập</span>
+          </a>
+        </div>
       </div>
-      <div class="hero-content">
-        <div class="app-icon-wrap">
-          <img id="appIcon" src="https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA" alt="Icon">
-        </div>
-        <h1 class="app-title" id="appName">Tên Ứng Dụng</h1>
-        <p class="app-developer" id="appDev"><i data-lucide="shield-check" style="width:14px;height:14px;color:var(--accent-cyan);"></i> IPAVIET Studio</p>
+    </div>
+  </header>
 
-        <div class="badges-row" id="appBadges">
-          <span class="badge badge-ipa"><i data-lucide="package" style="width:12px;height:12px;"></i> IPA FILE</span>
-          <span class="badge badge-verified" id="badgeType"><i data-lucide="check" style="width:12px;height:12px;"></i> MIỄN PHÍ</span>
-          <span class="badge badge-mod" id="badgeMod" style="display:none;"><i data-lucide="zap" style="width:12px;height:12px;"></i> MOD ĐẶC QUYỀN</span>
-          <span class="badge" id="badgeDownloaded" style="display:none;background:rgba(16,185,129,0.15);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);"><i data-lucide="check-circle" style="width:12px;height:12px;"></i> ĐÃ TẢI XUỐNG</span>
+  <!-- ================================================================
+       MAIN DETAIL CONTENT
+       ================================================================ -->
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-20">
+
+    <!-- Hero Card -->
+    <section class="bg-white dark:bg-[#1C1C1E] rounded-3xl p-6 sm:p-8 border border-apple-separatorLight dark:border-apple-separatorDark shadow-apple mb-6 relative overflow-hidden text-center">
+      <div class="absolute inset-0 z-0 pointer-events-none opacity-20 dark:opacity-15 blur-3xl scale-125 overflow-hidden">
+        <img id="heroBgImg" src="" alt="" class="w-full h-full object-cover">
+      </div>
+      <div class="relative z-10">
+        <!-- 3D Squircle App Icon -->
+        <div class="w-24 h-24 sm:w-28 sm:h-28 apple-squircle relative mx-auto mb-4 shadow-lg border border-black/5 dark:border-white/5 ipaviet-watermark-lg bg-black/5">
+          <img id="appIcon" src="https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA" alt="Icon" class="w-full h-full object-cover">
         </div>
 
-        <div class="hero-actions" id="actionPanel">
-          <!-- Sẽ được điền tự động bằng JavaScript dựa trên tài khoản & VIP -->
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-black dark:text-white mb-2" id="appName">Tên Ứng Dụng</h1>
+        <p class="text-xs sm:text-sm text-apple-gray font-semibold mb-4 inline-flex items-center gap-1.5" id="appDev">
+          <i data-lucide="shield-check" class="w-4 h-4 text-apple-blue"></i> IPAVIET Studio
+        </p>
+
+        <!-- Badges Row -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mb-6" id="appBadges">
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-apple-blue/10 text-apple-blue border border-apple-blue/20">
+            <i data-lucide="package" class="w-3.5 h-3.5"></i> IPA FILE
+          </span>
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-apple-green/10 text-apple-green border border-apple-green/20" id="badgeType">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i> MIỄN PHÍ
+          </span>
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-apple-red/10 text-apple-red border border-apple-red/20" id="badgeMod" style="display:none;">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i> MOD ĐẶC QUYỀN
+          </span>
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-apple-green/15 text-apple-green border border-apple-green/30" id="badgeDownloaded" style="display:none;">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> ĐÃ TẢI XUỐNG
+          </span>
         </div>
+
+        <!-- Action Panel -->
+        <div class="w-full max-w-md mx-auto" id="actionPanel"></div>
       </div>
     </section>
 
     <!-- Key Stats Grid -->
-    <section class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-val" id="statDownloads" style="color:var(--accent-emerald);">--</div>
-        <div class="stat-lbl">Lượt tải</div>
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 text-center border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm">
+        <div class="text-lg font-extrabold text-apple-green" id="statDownloads">--</div>
+        <div class="text-[11px] font-semibold text-apple-gray uppercase tracking-wider mt-1">Lượt tải</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" id="statVer">1.0</div>
-        <div class="stat-lbl">Phiên bản</div>
+      <div class="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 text-center border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm">
+        <div class="text-lg font-extrabold text-black dark:text-white" id="statVer">1.0</div>
+        <div class="text-[11px] font-semibold text-apple-gray uppercase tracking-wider mt-1">Phiên bản</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" id="statSize">-- MB</div>
-        <div class="stat-lbl">Kích thước</div>
+      <div class="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 text-center border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm">
+        <div class="text-lg font-extrabold text-black dark:text-white" id="statSize">-- MB</div>
+        <div class="text-[11px] font-semibold text-apple-gray uppercase tracking-wider mt-1">Kích thước</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" style="color:var(--accent-amber);" id="statRating">4.9 ★</div>
-        <div class="stat-lbl">Đánh giá</div>
+      <div class="bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 text-center border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm">
+        <div class="text-lg font-extrabold text-apple-amber" id="statRating">4.9 ★</div>
+        <div class="text-[11px] font-semibold text-apple-gray uppercase tracking-wider mt-1">Đánh giá</div>
       </div>
     </section>
 
     <!-- MOD Features Showcase Card (Chỉ hiện khi là app MOD/Hack) -->
-    <section class="mod-card" id="modShowcase" style="display:none;">
-      <div class="mod-header">
-        <span class="mod-pill"><i data-lucide="zap" style="width:13px;height:13px;"></i> TÍNH NĂNG MOD & HACK ĐẶC QUYỀN</span>
-        <span class="mod-tag"><i data-lucide="check-circle-2" style="width:12px;height:12px;"></i> ĐÃ KÍCH HOẠT SẴN</span>
+    <section class="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-blue-500/10 rounded-2xl p-5 sm:p-6 border border-pink-500/20 shadow-sm mb-6" id="modShowcase" style="display:none;">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-sm">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i> TÍNH NĂNG MOD & HACK ĐẶC QUYỀN
+        </span>
+        <span class="text-xs font-bold text-apple-green bg-apple-green/10 px-2.5 py-1 rounded-full border border-apple-green/20">
+          <i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> ĐÃ KÍCH HOẠT SẴN
+        </span>
       </div>
-      <div class="mod-list" id="modList"></div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="modList"></div>
     </section>
 
     <!-- Screenshots Preview -->
-    <section class="card-section" id="screenshotsSection" style="display:none;">
-      <h3 class="card-title"><i data-lucide="image" style="width:18px;height:18px;color:var(--accent-cyan);"></i> Xem Trước Giao Diện</h3>
-      <div class="screenshots-scroll" id="screenshotsList"></div>
+    <section class="bg-white dark:bg-[#1C1C1E] rounded-2xl p-5 sm:p-6 border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm mb-6" id="screenshotsSection" style="display:none;">
+      <h3 class="text-base font-bold text-black dark:text-white mb-4 flex items-center gap-2">
+        <i data-lucide="image" class="w-4 h-4 text-apple-blue"></i> Xem Trước Giao Diện
+      </h3>
+      <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2" id="screenshotsList"></div>
     </section>
 
     <!-- Description -->
-    <section class="card-section">
-      <h3 class="card-title"><i data-lucide="file-text" style="width:18px;height:18px;color:var(--accent-violet);"></i> Mô Tả & Giới Thiệu</h3>
-      <p class="app-desc-text" id="appDesc">Đang tải mô tả ứng dụng...</p>
+    <section class="bg-white dark:bg-[#1C1C1E] rounded-2xl p-5 sm:p-6 border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm mb-6">
+      <h3 class="text-base font-bold text-black dark:text-white mb-3 flex items-center gap-2">
+        <i data-lucide="file-text" class="w-4 h-4 text-apple-purple"></i> Mô Tả & Giới Thiệu
+      </h3>
+      <p class="text-xs sm:text-sm text-apple-gray leading-relaxed whitespace-pre-wrap break-words" id="appDesc">Đang tải mô tả ứng dụng...</p>
     </section>
 
     <!-- Technical Details Table -->
-    <section class="card-section">
-      <h3 class="card-title"><i data-lucide="cpu" style="width:18px;height:18px;color:var(--accent-emerald);"></i> Thông Tin Tệp IPA</h3>
-      <div class="data-table">
-        <div class="data-row">
-          <span class="data-lbl">Tên gói (Bundle ID)</span>
-          <span class="data-val" id="dBundle">--</span>
+    <section class="bg-white dark:bg-[#1C1C1E] rounded-2xl p-5 sm:p-6 border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm mb-6">
+      <h3 class="text-base font-bold text-black dark:text-white mb-3 flex items-center gap-2">
+        <i data-lucide="cpu" class="w-4 h-4 text-apple-green"></i> Thông Tin Tệp IPA
+      </h3>
+      <div class="divide-y divide-apple-separatorLight dark:divide-apple-separatorDark">
+        <div class="py-3 flex justify-between items-center text-xs sm:text-sm">
+          <span class="text-apple-gray">Tên gói (Bundle ID)</span>
+          <span class="font-semibold text-black dark:text-white font-mono" id="dBundle">--</span>
         </div>
-        <div class="data-row">
-          <span class="data-lbl">Nhà phát triển</span>
-          <span class="data-val" id="dDeveloper">--</span>
+        <div class="py-3 flex justify-between items-center text-xs sm:text-sm">
+          <span class="text-apple-gray">Nhà phát triển</span>
+          <span class="font-semibold text-black dark:text-white" id="dDeveloper">--</span>
         </div>
-        <div class="data-row">
-          <span class="data-lbl">Thể loại</span>
-          <span class="data-val" id="dCategory">Tiện ích</span>
+        <div class="py-3 flex justify-between items-center text-xs sm:text-sm">
+          <span class="text-apple-gray">Thể loại</span>
+          <span class="font-semibold text-black dark:text-white" id="dCategory">Tiện ích</span>
         </div>
-        <div class="data-row">
-          <span class="data-lbl">Ngày cập nhật</span>
-          <span class="data-val" id="dDate">Hôm nay</span>
+        <div class="py-3 flex justify-between items-center text-xs sm:text-sm">
+          <span class="text-apple-gray">Ngày cập nhật</span>
+          <span class="font-semibold text-black dark:text-white" id="dDate">Hôm nay</span>
         </div>
-        <div class="data-row">
-          <span class="data-lbl">Định dạng</span>
-          <span class="data-val" style="color:var(--accent-cyan);">Apple iOS Binary (.IPA)</span>
+        <div class="py-3 flex justify-between items-center text-xs sm:text-sm">
+          <span class="text-apple-gray">Định dạng</span>
+          <span class="font-bold text-apple-blue font-mono">Apple iOS Binary (.IPA)</span>
         </div>
-        <div class="data-row">
-          <span class="data-lbl">Mã định danh bảo mật</span>
-          <span class="data-val" id="dSlug" style="font-family:monospace;font-size:12px;color:var(--text-tertiary);">--</span>
+        <div class="py-3 flex justify-between items-center text-xs sm:text-sm">
+          <span class="text-apple-gray">Mã định danh</span>
+          <span class="font-mono text-xs text-apple-gray truncate max-w-[200px]" id="dSlug">--</span>
         </div>
-        <div class="data-row">
-          <span class="data-lbl">Tổng lượt tải</span>
-          <span class="data-val" id="dDownloads" style="color:var(--accent-emerald);font-weight:700;">--</span>
+        <div class="py-3 flex justify-between items-center text-xs sm:text-sm">
+          <span class="text-apple-gray">Tổng lượt tải</span>
+          <span class="font-bold text-apple-green" id="dDownloads">--</span>
         </div>
-        <div class="data-row" id="rowUserDownloaded" style="display:none;">
-          <span class="data-lbl">Trạng thái của bạn</span>
-          <span class="data-val" style="color:var(--accent-emerald);font-weight:700;">✅ Đã tải về thiết bị</span>
+        <div class="py-3 flex justify-between items-center text-xs sm:text-sm" id="rowUserDownloaded" style="display:none;">
+          <span class="text-apple-gray">Trạng thái của bạn</span>
+          <span class="font-bold text-apple-green">✅ Đã tải về thiết bị</span>
         </div>
       </div>
     </section>
 
-    <!-- VSign Recommend Card -->
-    <section class="card-section" style="border-color:rgba(0,240,255,0.2);background:linear-gradient(135deg,rgba(0,240,255,0.04),rgba(139,92,246,0.04));">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <img src="https://i.ibb.co/cSmzsSRv/T-n-D-n-13-Copy-Copy-Copy-Original.png" style="width:48px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);" alt="VSign">
-          <div>
-            <h4 style="font-size:15px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">Cài Đặt Trực Tiếp Qua VSign</h4>
-            <p style="font-size:12.5px;color:var(--text-secondary);margin-top:2px;">Tự động ký chứng chỉ & cài đặt trực tiếp trên iPhone không cần máy tính.</p>
-          </div>
+    <!-- VSign Card -->
+    <section class="bg-white dark:bg-[#1C1C1E] rounded-2xl p-5 border border-apple-blue/20 shadow-sm mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <img src="https://i.ibb.co/cSmzsSRv/T-n-D-n-13-Copy-Copy-Copy-Original.png" class="w-12 h-12 apple-squircle border border-black/5 dark:border-white/5" alt="VSign">
+        <div>
+          <h4 class="font-bold text-sm text-black dark:text-white">Cài Đặt Trực Tiếp Qua VSign</h4>
+          <p class="text-xs text-apple-gray mt-0.5">Tự động ký chứng chỉ & cài đặt trực tiếp trên iPhone không cần máy tính.</p>
         </div>
-        <a href="https://vsign.site" target="_blank" class="btn-action btn-action-primary" style="width:auto;padding:10px 20px;font-size:13px;">
-          <i data-lucide="sparkles" style="width:15px;height:15px;"></i> Khám Phá VSign
-        </a>
       </div>
+      <a href="https://vsign.site" target="_blank" class="w-full sm:w-auto px-5 py-2.5 rounded-full bg-apple-blue hover:bg-apple-darkBlue text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 no-underline transition active:scale-95">
+        <i data-lucide="sparkles" class="w-4 h-4"></i> Khám Phá VSign
+      </a>
     </section>
 
   </main>
 
-  <!-- Toast Element -->
+  <!-- Toast -->
   <div class="toast" id="toastMsg"></div>
 
-  <!-- JAVASCRIPT LOGIC ENGINE -->
+  <!-- ================================================================
+       APPLE FROSTED GLASS MOBILE BOTTOM TAB BAR
+       ================================================================ -->
+  <div class="sm:hidden fixed bottom-0 left-0 right-0 z-40 apple-glass border-t border-apple-separatorLight dark:border-apple-separatorDark py-2 px-3 flex justify-around items-center">
+    <a href="../index.html" class="flex flex-col items-center gap-0.5 text-apple-gray hover:text-black dark:hover:text-white text-[10px] font-semibold no-underline">
+      <i data-lucide="orbit" class="w-5 h-5"></i>
+      <span>Trang chủ</span>
+    </a>
+    <a href="index.html" class="flex flex-col items-center gap-0.5 text-apple-blue font-bold text-[10px] no-underline">
+      <i data-lucide="box" class="w-5 h-5"></i>
+      <span>Kho IPA</span>
+    </a>
+    <a href="../ipavip.html" class="flex flex-col items-center gap-0.5 text-apple-gray hover:text-black dark:hover:text-white text-[10px] font-semibold no-underline">
+      <i data-lucide="crown" class="w-5 h-5"></i>
+      <span>Kho VIP</span>
+    </a>
+    <a href="../tap-hoa-mmo.html" class="flex flex-col items-center gap-0.5 text-apple-gray hover:text-black dark:hover:text-white text-[10px] font-semibold no-underline">
+      <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+      <span>Chợ MMO</span>
+    </a>
+    <a href="../account.html" class="flex flex-col items-center gap-0.5 text-apple-gray hover:text-black dark:hover:text-white text-[10px] font-semibold no-underline">
+      <i data-lucide="user" class="w-5 h-5"></i>
+      <span>Cá nhân</span>
+    </a>
+  </div>
+
   <script>
     // ═════════════════════════════════════════════════════════════
     // 1. CẤU HÌNH HỆ THỐNG & FIREBASE
@@ -498,6 +440,12 @@
       t.textContent = msg;
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      if (window.lucide) lucide.createIcons();
     }
 
     function handleGoBack() {
@@ -1061,10 +1009,10 @@
 
       if (!currentUser && cfg.require_login !== false) {
         panel.innerHTML = `
-          <a href="../account.html" class="btn-action btn-action-primary">
-            <i data-lucide="lock" style="width:16px;height:16px;"></i> ĐĂNG NHẬP ĐỂ TẢI ỨNG DỤNG
+          <a href="../account.html" class="w-full py-3 px-6 rounded-full bg-apple-blue hover:bg-apple-darkBlue text-white font-extrabold text-sm shadow-md shadow-apple-blue/25 flex items-center justify-center gap-2 active:scale-95 transition-all no-underline">
+            <i data-lucide="lock" class="w-4 h-4"></i> ĐĂNG NHẬP ĐỂ TẢI ỨNG DỤNG
           </a>
-          <p style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">Đăng nhập hoặc đăng ký tài khoản miễn phí để nhận quyền tải.</p>
+          <p class="text-xs text-apple-gray mt-2">Đăng nhập hoặc đăng ký tài khoản miễn phí để nhận quyền tải.</p>
         `;
         lucide.createIcons();
         return;
@@ -1072,8 +1020,8 @@
 
       if (isUserVip) {
         panel.innerHTML = `
-          <button onclick="downloadVipApp(this)" class="btn-action btn-action-vip">
-            <i data-lucide="crown" style="width:18px;height:18px;"></i> TẢI XUỐNG NGAY (ĐẶC QUYỀN VIP)
+          <button onclick="downloadVipApp(this)" class="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-white font-extrabold text-sm shadow-md shadow-amber-500/25 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer">
+            <i data-lucide="crown" class="w-4 h-4"></i> TẢI XUỐNG NGAY (ĐẶC QUYỀN VIP)
           </button>
         `;
         lucide.createIcons();
@@ -1082,10 +1030,10 @@
 
       if (isAppVIP) {
         panel.innerHTML = `
-          <a href="../dichvu.html" class="btn-action btn-action-vip" style="background:linear-gradient(135deg,var(--accent-rose),#be123c);">
-            <i data-lucide="shield-alert" style="width:18px;height:18px;"></i> NÂNG CẤP VIP ĐỂ TẢI APP NÀY
+          <a href="../dichvu.html" class="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-red-500 to-rose-600 hover:brightness-110 text-white font-extrabold text-sm shadow-md shadow-red-500/25 flex items-center justify-center gap-2 active:scale-95 transition-all no-underline">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i> NÂNG CẤP VIP ĐỂ TẢI APP NÀY
           </a>
-          <p style="font-size:12px;color:var(--accent-rose);margin-top:4px;">Ứng dụng này nằm trong danh mục độc quyền chỉ dành riêng cho VIP.</p>
+          <p class="text-xs text-red-500 font-semibold mt-2">Ứng dụng này nằm trong danh mục độc quyền chỉ dành riêng cho VIP.</p>
         `;
         lucide.createIcons();
         return;
@@ -1094,24 +1042,24 @@
       // Normal App Options: Free via Site2S OR Buy with 1.000đ Coins
       panel.innerHTML = `
         ${isShortenerActive ? `
-          <button onclick="downloadFreeApp(this)" class="btn-action btn-action-primary">
-            <i data-lucide="cloud-lightning" style="width:18px;height:18px;"></i> TẢI XUỐNG NGAY (MIỄN PHÍ)
+          <button onclick="downloadFreeApp(this)" class="w-full py-3.5 px-6 rounded-full bg-apple-blue hover:bg-apple-darkBlue text-white font-extrabold text-sm shadow-md shadow-apple-blue/25 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer">
+            <i data-lucide="cloud-lightning" class="w-4 h-4"></i> TẢI XUỐNG NGAY (MIỄN PHÍ)
           </button>
         ` : `
-          <button disabled class="btn-action btn-action-secondary" style="opacity:0.6;border-color:rgba(245,158,11,0.3);color:var(--text-secondary);">
-            <i data-lucide="wrench" style="width:16px;height:16px;color:#f59e0b;"></i> TẢI MIỄN PHÍ (ĐANG BẢO TRÌ)
+          <button disabled class="w-full py-3.5 px-6 rounded-full bg-black/5 dark:bg-white/10 text-apple-gray font-bold text-sm cursor-not-allowed flex items-center justify-center gap-2">
+            <i data-lucide="wrench" class="w-4 h-4 text-apple-amber"></i> TẢI MIỄN PHÍ (ĐANG BẢO TRÌ)
           </button>
         `}
-        <div style="display:flex;gap:10px;margin-top:4px;">
-          <button onclick="buyWithCoins(this)" class="btn-action btn-action-secondary" style="flex:1;font-size:13px;padding:12px 16px;">
-            <i data-lucide="zap" style="width:15px;height:15px;color:var(--accent-cyan);"></i> Dùng Xu (1.000đ)
+        <div class="flex items-center gap-2.5 mt-2">
+          <button onclick="buyWithCoins(this)" class="flex-1 py-2.5 px-4 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] text-black dark:text-white font-bold text-xs border border-apple-separatorLight dark:border-apple-separatorDark flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer">
+            <i data-lucide="zap" class="w-3.5 h-3.5 text-apple-blue"></i> Dùng Xu (1.000đ)
           </button>
-          <a href="../dichvu.html" class="btn-action btn-action-secondary" style="flex:1;font-size:13px;padding:12px 16px;color:var(--accent-emerald);border-color:rgba(16,185,129,0.2);">
-            <i data-lucide="wallet" style="width:15px;height:15px;"></i> Nạp Thêm Xu
+          <a href="../dichvu.html" class="flex-1 py-2.5 px-4 rounded-full bg-apple-green/10 hover:bg-apple-green/20 text-apple-green font-bold text-xs border border-apple-green/20 flex items-center justify-center gap-1.5 active:scale-95 transition no-underline">
+            <i data-lucide="wallet" class="w-3.5 h-3.5"></i> Nạp Thêm Xu
           </a>
         </div>
         ${!isShortenerActive ? `
-          <p style="font-size:12px;color:var(--accent-amber);margin-top:6px;background:rgba(245,158,11,0.08);border:1px dashed rgba(245,158,11,0.3);padding:8px 12px;border-radius:12px;">
+          <p class="text-xs text-apple-amber mt-2 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl font-medium">
             Tính năng tải miễn phí đang bảo trì nâng cấp hệ thống. Bạn có thể dùng <b>Xu</b> để tải trực tiếp ngay.
           </p>
         ` : ''}
@@ -1446,5 +1394,8 @@
       setTimeout(() => { window.location.href = 'index.html'; }, 2000);
     });
   </script>
+</body>
+</html>
+
 </body>
 </html>
