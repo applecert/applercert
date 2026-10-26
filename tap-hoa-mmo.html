@@ -143,6 +143,13 @@
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
     }
+    input[type="search"]::-webkit-search-decoration,
+    input[type="search"]::-webkit-search-cancel-button,
+    input[type="search"]::-webkit-search-results-button,
+    input[type="search"]::-webkit-search-results-decoration {
+      display: none;
+      -webkit-appearance: none;
+    }
     .glass-card {
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px);
@@ -328,10 +335,17 @@
           <div class="relative w-full flex items-center">
             <i data-lucide="search" class="w-4 h-4 text-apple-gray absolute left-3.5 pointer-events-none"></i>
             <input 
-              type="text" 
+              type="search" 
+              name="search_query"
               id="srch" 
               placeholder="Tìm tài khoản AI, app, game, bản quyền..." 
               autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              data-form-type="other"
+              data-lpignore="true"
+              data-1p-ignore="true"
               oninput="onSearchInput(this.value)"
               class="w-full h-9 sm:h-10 pl-9 sm:pl-10 pr-8 rounded-full bg-black/[0.05] dark:bg-white/[0.1] text-xs sm:text-sm font-medium focus:bg-white dark:focus:bg-[#1C1C1E] border border-transparent focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 outline-none transition placeholder:text-apple-gray text-black dark:text-white"
             >
@@ -407,10 +421,17 @@
         <div class="relative flex items-center">
           <i data-lucide="search" class="w-4 h-4 text-apple-gray absolute left-3.5 pointer-events-none"></i>
           <input 
-            type="text" 
+            type="search" 
+            name="search_query_mobile"
             id="srchMobile" 
             placeholder="Tìm tài khoản AI, app, game, bản quyền..." 
             autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            data-form-type="other"
+            data-lpignore="true"
+            data-1p-ignore="true"
             oninput="onSearchInput(this.value)"
             class="w-full h-9 pl-9 pr-8 rounded-full bg-black/[0.05] dark:bg-white/[0.1] text-xs font-medium focus:bg-white dark:focus:bg-[#1C1C1E] border border-transparent focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 outline-none transition placeholder:text-apple-gray text-black dark:text-white"
           >
@@ -892,15 +913,15 @@
         <p class="text-xs text-slate-400 mt-1">Truy cập tài khoản IPAVIET để mua & quản lý đơn hàng</p>
       </div>
 
-      <div class="space-y-3">
+      <form id="authForm" onsubmit="event.preventDefault(); doAuth();" autocomplete="on" class="space-y-3">
         <div>
           <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">Email</label>
-          <input type="email" id="aEmail" placeholder="name@example.com" class="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-xs font-medium outline-none focus:border-brand">
+          <input type="email" id="aEmail" name="email" autocomplete="username email" placeholder="name@example.com" class="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-xs font-medium outline-none focus:border-brand">
         </div>
 
         <div>
           <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">Mật khẩu</label>
-          <input type="password" id="aPwd" placeholder="••••••••" class="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-xs font-medium outline-none focus:border-brand">
+          <input type="password" id="aPwd" name="password" autocomplete="current-password" placeholder="••••••••" class="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-xs font-medium outline-none focus:border-brand">
         </div>
 
         <!-- Captcha Turnstile Row -->
@@ -908,10 +929,12 @@
           <div id="turnstileWidget"></div>
         </div>
 
-        <button onclick="doAuth()" id="authSubmitBtn" class="w-full h-11 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold text-xs shadow-md shadow-brand/30 transition flex items-center justify-center gap-2 mt-2">
+        <button type="submit" id="authSubmitBtn" class="w-full h-11 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold text-xs shadow-md shadow-brand/30 transition flex items-center justify-center gap-2 mt-2">
           <span>Đăng Nhập</span>
         </button>
+      </form>
 
+      <div class="space-y-3 mt-3">
         <div class="relative flex py-2 items-center">
           <div class="flex-grow border-t border-slate-200 dark:border-white/10"></div>
           <span class="flex-shrink mx-3 text-slate-400 text-[10px] uppercase font-bold tracking-wider">Hoặc</span>
@@ -1269,6 +1292,22 @@
         applyAll(false);
         updateCartBadge();
         restoreLastScrollPosition();
+
+        // Safeguard against delayed browser password manager autofill
+        setTimeout(() => {
+          const s1 = document.getElementById('srch');
+          const s2 = document.getElementById('srchMobile');
+          if (isEmailAddress(s1?.value) || isEmailAddress(s2?.value)) {
+            clearSearch();
+          }
+        }, 300);
+        setTimeout(() => {
+          const s1 = document.getElementById('srch');
+          const s2 = document.getElementById('srchMobile');
+          if (isEmailAddress(s1?.value) || isEmailAddress(s2?.value)) {
+            clearSearch();
+          }
+        }, 800);
       } catch (err) {
         console.error('Lỗi load sản phẩm:', err);
         document.getElementById('prodGrid').innerHTML = `
@@ -1348,6 +1387,11 @@
     /* ══════════════════════════════════════════════════════
        URL STATE SYNCHRONIZATION & HISTORY ENGINE
        ══════════════════════════════════════════════════════ */
+    function isEmailAddress(str) {
+      if (!str || typeof str !== 'string') return false;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim());
+    }
+
     function readStateFromUrl() {
       try {
         const p = new URLSearchParams(window.location.search);
@@ -1364,11 +1408,35 @@
           CAT = sessionStorage.getItem('mmo_last_cat');
         }
         if (p.has('q')) {
-          SQ = p.get('q').trim();
+          const rawQ = p.get('q').trim();
+          if (isEmailAddress(rawQ)) {
+            // Contaminated with autofilled user email - strip it immediately
+            SQ = '';
+            const s1 = document.getElementById('srch');
+            const s2 = document.getElementById('srchMobile');
+            if (s1) s1.value = '';
+            if (s2) s2.value = '';
+            p.delete('q');
+            const cleanSearch = p.toString();
+            const cleanUrl = window.location.pathname + (cleanSearch ? '?' + cleanSearch : '') + window.location.hash;
+            try { window.history.replaceState({}, document.title, cleanUrl); } catch (e) {}
+          } else {
+            SQ = rawQ;
+            const s1 = document.getElementById('srch');
+            const s2 = document.getElementById('srchMobile');
+            if (s1) s1.value = SQ;
+            if (s2) s2.value = SQ;
+          }
+        } else {
+          SQ = '';
           const s1 = document.getElementById('srch');
           const s2 = document.getElementById('srchMobile');
-          if (s1) s1.value = SQ;
-          if (s2) s2.value = SQ;
+          if (s1 && s1.value) s1.value = '';
+          if (s2 && s2.value) s2.value = '';
+          const clear1 = document.getElementById('clearSearchBtn');
+          const clear2 = document.getElementById('clearSearchBtnMobile');
+          if (clear1) clear1.classList.add('hidden');
+          if (clear2) clear2.classList.add('hidden');
         }
         if (p.has('sort')) {
           SORT = p.get('sort');
@@ -1558,6 +1626,12 @@
       if (val === undefined) {
         val = document.getElementById('srch')?.value || document.getElementById('srchMobile')?.value || '';
       }
+      // If browser autofill mistakenly dumped an email into search, reject and clear it immediately
+      if (isEmailAddress(val)) {
+        clearSearch();
+        return;
+      }
+
       const s1 = document.getElementById('srch');
       const s2 = document.getElementById('srchMobile');
       if (s1 && s1.value !== val) s1.value = val;
@@ -1585,7 +1659,9 @@
       if (clear1) clear1.classList.add('hidden');
       if (clear2) clear2.classList.add('hidden');
       PAGE = 1;
-      applyAll(true);
+      SQ = '';
+      syncUrlParams(false);
+      applyAll(false);
     }
 
     function resetAll(e) {
@@ -1604,6 +1680,7 @@
       const sortSel = document.getElementById('sortSelect');
       if (sortSel) sortSel.value = 'new';
       PAGE = 1;
+      SQ = '';
       updateFilterChipVisuals();
       syncUrlParams(true);
       renderCategories();
@@ -1613,7 +1690,15 @@
     function applyAll(sync = true) {
       const s1 = document.getElementById('srch')?.value || '';
       const s2 = document.getElementById('srchMobile')?.value || '';
-      SQ = (s1 || s2).toLowerCase().trim();
+      let rawVal = (s1 || s2).trim();
+      if (isEmailAddress(rawVal)) {
+        rawVal = '';
+        const el1 = document.getElementById('srch');
+        const el2 = document.getElementById('srchMobile');
+        if (el1) el1.value = '';
+        if (el2) el2.value = '';
+      }
+      SQ = rawVal.toLowerCase();
       const clear1 = document.getElementById('clearSearchBtn');
       const clear2 = document.getElementById('clearSearchBtnMobile');
       if (clear1) clear1.classList.toggle('hidden', !SQ);
