@@ -1644,8 +1644,8 @@
 
       <!-- ================= TAB: LIVE SUPPORT CHAT ================= -->
       <div id="tab-support_chat" class="hidden space-y-4">
-        <!-- Top Action Card -->
-        <div class="glass-card p-4 sm:p-5 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <!-- Top Action Card (hidden on mobile when inside an active conversation) -->
+        <div id="chatTopBanner" class="glass-card p-4 sm:p-5 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all duration-300">
           <div>
             <div class="flex items-center gap-2">
               <h3 class="font-extrabold text-base text-gray-900 flex items-center gap-2">
@@ -1665,10 +1665,10 @@
           </div>
         </div>
 
-        <!-- Chat Workspace Layout -->
-        <div class="glass-card rounded-3xl border border-black/[0.06] shadow-apple overflow-hidden flex flex-col md:flex-row h-[680px]">
-          <!-- Left: User Conversations List -->
-          <div class="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-black/[0.06] flex flex-col h-1/2 md:h-full bg-black/[0.01]">
+        <!-- Chat Workspace Layout (Responsive Master-Detail: Mobile shows List or Chat, Desktop shows both side-by-side) -->
+        <div class="glass-card rounded-3xl border border-black/[0.06] shadow-apple overflow-hidden flex flex-col md:flex-row h-[calc(100dvh-175px)] min-h-[520px] md:h-[720px]">
+          <!-- Left: User Conversations List (Visible on mobile by default, hidden on mobile when chat is opened) -->
+          <div id="chatSidebarList" class="flex flex-col w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-black/[0.06] h-full bg-black/[0.01] shrink-0">
             <!-- Search & Filters -->
             <div class="p-3.5 border-b border-black/[0.06] bg-white/60 backdrop-blur-md">
               <div class="relative">
@@ -1678,7 +1678,7 @@
             </div>
 
             <!-- List Container -->
-            <div id="chatUsersList" class="flex-1 overflow-y-auto divide-y divide-gray-100/80">
+            <div id="chatUsersList" class="flex-1 overflow-y-auto divide-y divide-gray-100/80 scrollbar-none">
               <div class="p-8 text-center text-gray-400 text-xs">
                 <i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2 text-gray-400"></i>
                 Đang tải danh sách hội thoại...
@@ -1686,9 +1686,9 @@
             </div>
           </div>
 
-          <!-- Right: Active Conversation & Reply Area -->
-          <div id="chatConversationContainer" class="flex-1 flex flex-col h-1/2 md:h-full bg-white">
-            <!-- Empty State when nothing selected -->
+          <!-- Right: Active Conversation & Reply Area (Hidden on mobile until conversation is clicked) -->
+          <div id="chatConversationContainer" class="hidden md:flex flex-1 flex-col h-full bg-white min-w-0">
+            <!-- Empty State when nothing selected (Desktop only) -->
             <div id="chatEmptyState" class="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-400">
               <div class="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 shadow-sm">
                 <i data-lucide="messages-square" class="w-8 h-8"></i>
@@ -1697,57 +1697,62 @@
               <p class="text-xs text-gray-500 max-w-sm">Chọn một khách hàng từ danh sách bên trái để xem toàn bộ lịch sử trao đổi và phản hồi trực tiếp.</p>
             </div>
 
-            <!-- Active Conversation View (hidden by default) -->
-            <div id="chatActiveView" class="hidden flex-1 flex flex-col h-full">
+            <!-- Active Conversation View -->
+            <div id="chatActiveView" class="hidden flex-1 flex-col h-full min-h-0">
               <!-- Chat Header -->
-              <div class="px-5 py-3.5 border-b border-black/[0.06] bg-gray-50/70 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-bold flex items-center justify-center text-xs shadow-sm" id="chatActiveAvatar">
+              <div class="px-3.5 sm:px-5 py-3 border-b border-black/[0.06] bg-gray-50/70 flex items-center justify-between gap-2 shrink-0">
+                <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <!-- Back button for mobile -->
+                  <button type="button" onclick="backToChatList()" class="md:hidden w-8 h-8 rounded-xl bg-white hover:bg-gray-100 border border-black/[0.08] text-gray-700 flex items-center justify-center shrink-0 transition shadow-2xs active:scale-95" title="Quay lại danh sách hội thoại">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                  </button>
+                  <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-bold flex items-center justify-center text-xs shadow-sm shrink-0" id="chatActiveAvatar">
                     U
                   </div>
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <p class="text-xs font-bold text-gray-900" id="chatActiveEmail">email@example.com</p>
-                      <span id="chatActiveBadge" class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Khách hàng</span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <p class="text-xs font-bold text-gray-900 truncate max-w-[130px] sm:max-w-xs" id="chatActiveEmail">email@example.com</p>
+                      <span id="chatActiveBadge" class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full shrink-0">Khách hàng</span>
                     </div>
-                    <div class="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
-                      <span>UID: <code class="font-mono text-gray-600" id="chatActiveUid">uid</code></span>
-                      <button onclick="copyChatActiveUid()" class="hover:text-appleBlue text-[10px] font-semibold flex items-center gap-0.5" title="Copy UID">
+                    <div class="flex items-center gap-2 text-[10px] text-gray-400 mt-0.5">
+                      <span class="truncate">UID: <code class="font-mono text-gray-600" id="chatActiveUid">uid</code></span>
+                      <button type="button" onclick="copyChatActiveUid()" class="hover:text-appleBlue font-semibold flex items-center gap-0.5 shrink-0" title="Copy UID">
                         <i data-lucide="copy" class="w-3 h-3"></i> Copy
                       </button>
                     </div>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                  <button onclick="jumpToCustomerInUsersTab()" class="px-3 py-1.5 bg-white hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold transition flex items-center gap-1 shadow-2xs">
-                    <i data-lucide="user" class="w-3.5 h-3.5 text-appleBlue"></i> Xem Hồ Sơ
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button type="button" onclick="jumpToCustomerInUsersTab()" class="px-2.5 py-1.5 bg-white hover:bg-gray-100 text-gray-700 border border-black/[0.08] rounded-xl text-[11px] font-semibold transition flex items-center gap-1 shadow-2xs active:scale-95">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-appleBlue"></i>
+                    <span class="hidden sm:inline">Xem Hồ Sơ</span>
                   </button>
                 </div>
               </div>
 
               <!-- Message History Scroll Area -->
-              <div id="chatMessagesThread" class="flex-1 overflow-y-auto p-5 space-y-3.5 bg-gray-50/30">
+              <div id="chatMessagesThread" class="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-3 bg-gray-50/40 scrollbar-none min-h-0">
                 <!-- Rendered messages -->
               </div>
 
               <!-- Canned Responses Quick Bar -->
-              <div class="px-4 py-2 border-t border-black/[0.04] bg-white flex items-center gap-2 overflow-x-auto scrollbar-none text-[11px]">
-                <span class="text-gray-400 font-bold shrink-0">Mẫu nhanh:</span>
-                <button onclick="insertCannedResponse('👋 Xin chào bạn! Mình có thể hỗ trợ gì cho bạn ạ?')" class="shrink-0 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">👋 Chào khách</button>
-                <button onclick="insertCannedResponse('✅ Yêu cầu / Đơn hàng của bạn đã được xử lý hoàn tất nhé!')" class="shrink-0 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">✅ Đã xử lý xong</button>
-                <button onclick="insertCannedResponse('📱 Bạn vui lòng gửi mã UDID máy để mình kiểm tra nhé.')" class="shrink-0 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">📱 Xin mã UDID</button>
-                <button onclick="insertCannedResponse('⏳ Bạn vui lòng đợi 1-2 phút hệ thống đang xử lý nhé.')" class="shrink-0 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">⏳ Chờ xử lý</button>
-                <button onclick="insertCannedResponse('💬 Bạn nhắn tin thêm qua Telegram @ipaviet để được gửi link tải trực tiếp nhé!')" class="shrink-0 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition">💬 Link Telegram</button>
+              <div class="px-3 sm:px-4 py-2 border-t border-black/[0.04] bg-white flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none text-[11px] shrink-0">
+                <span class="text-gray-400 font-bold shrink-0 text-[10px]">Mẫu:</span>
+                <button type="button" onclick="insertCannedResponse('👋 Xin chào bạn! Mình có thể hỗ trợ gì cho bạn ạ?')" class="shrink-0 px-2.5 py-1 rounded-xl bg-black/[0.04] hover:bg-black/[0.08] text-gray-700 transition font-medium active:scale-95">👋 Chào khách</button>
+                <button type="button" onclick="insertCannedResponse('✅ Yêu cầu / Đơn hàng của bạn đã được xử lý hoàn tất nhé!')" class="shrink-0 px-2.5 py-1 rounded-xl bg-black/[0.04] hover:bg-black/[0.08] text-gray-700 transition font-medium active:scale-95">✅ Đã xử lý xong</button>
+                <button type="button" onclick="insertCannedResponse('📱 Bạn vui lòng gửi mã UDID máy để mình kiểm tra nhé.')" class="shrink-0 px-2.5 py-1 rounded-xl bg-black/[0.04] hover:bg-black/[0.08] text-gray-700 transition font-medium active:scale-95">📱 Xin mã UDID</button>
+                <button type="button" onclick="insertCannedResponse('⏳ Bạn vui lòng đợi 1-2 phút hệ thống đang xử lý nhé.')" class="shrink-0 px-2.5 py-1 rounded-xl bg-black/[0.04] hover:bg-black/[0.08] text-gray-700 transition font-medium active:scale-95">⏳ Chờ xử lý</button>
+                <button type="button" onclick="insertCannedResponse('💬 Bạn nhắn tin thêm qua Telegram @ipaviet để được gửi link tải trực tiếp nhé!')" class="shrink-0 px-2.5 py-1 rounded-xl bg-black/[0.04] hover:bg-black/[0.08] text-gray-700 transition font-medium active:scale-95">💬 Link Telegram</button>
               </div>
 
               <!-- Reply Input Area -->
-              <div class="p-4 border-t border-black/[0.06] bg-white">
-                <div class="flex items-end gap-2.5">
+              <div class="p-3 sm:p-4 border-t border-black/[0.06] bg-white shrink-0">
+                <div class="flex items-end gap-2">
                   <div class="flex-1 relative">
-                    <textarea id="chatAdminReplyInput" rows="2" placeholder="Nhập câu trả lời cho khách... (Nhấn Enter để gửi, Shift+Enter xuống dòng)" onkeydown="handleChatReplyKeydown(event)" class="w-full px-4 py-2.5 text-xs bg-gray-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded-2xl outline-none transition resize-none leading-relaxed"></textarea>
+                    <textarea id="chatAdminReplyInput" rows="2" placeholder="Nhập câu trả lời... (Enter gửi, Shift+Enter xuống dòng)" onkeydown="handleChatReplyKeydown(event)" class="w-full px-3.5 py-2 text-xs bg-gray-50 focus:bg-white border border-black/[0.08] focus:border-emerald-500 rounded-2xl outline-none transition resize-none leading-relaxed"></textarea>
                   </div>
-                  <button id="btnSendAdminReply" onclick="sendAdminReply()" class="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-xs font-bold transition shadow-md shadow-emerald-500/20 active:scale-95 flex items-center gap-1.5 shrink-0">
+                  <button type="button" id="btnSendAdminReply" onclick="sendAdminReply()" class="px-4 py-2.5 sm:px-5 sm:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl text-xs font-bold transition shadow-md shadow-emerald-500/20 active:scale-95 flex items-center gap-1.5 shrink-0">
                     <span>Gửi</span>
                     <i data-lucide="send" class="w-3.5 h-3.5"></i>
                   </button>
@@ -3869,6 +3874,10 @@
       }
 
       if (tabId === 'support_chat') {
+        AdminState.activeTab = 'support_chat';
+        if (window.innerWidth < 768 && !AdminState.selectedChatUid) {
+          backToChatList();
+        }
         fetchSupportChats(false);
         startAdminChatPolling();
       }
@@ -4467,19 +4476,29 @@
           renderChatUserList();
           updateChatBadges();
 
-          // Tự động mở cuộc hội thoại đầu tiên nếu chưa chọn ai hoặc nếu hội thoại đang chọn không còn tồn tại
+          // Tự động mở cuộc hội thoại đầu tiên nếu chưa chọn ai trên Desktop; trên Mobile ưu tiên hiển thị danh sách hội thoại
           const groups = groupChatMessagesByUser();
           if (groups.length > 0) {
-            if (!AdminState.selectedChatUid || !groups.some(g => String(g.uid).trim() === String(AdminState.selectedChatUid).trim())) {
-              selectChatUser(groups[0].uid);
+            const isDesktop = window.innerWidth >= 768;
+            if (isDesktop) {
+              if (!AdminState.selectedChatUid || !groups.some(g => String(g.uid).trim() === String(AdminState.selectedChatUid).trim())) {
+                selectChatUser(groups[0].uid);
+              } else {
+                renderActiveConversation();
+              }
             } else {
-              renderActiveConversation();
+              if (AdminState.selectedChatUid && groups.some(g => String(g.uid).trim() === String(AdminState.selectedChatUid).trim())) {
+                renderActiveConversation();
+              }
             }
           } else {
             const emptyState = document.getElementById('chatEmptyState');
             const activeView = document.getElementById('chatActiveView');
             if (emptyState) emptyState.classList.remove('hidden');
-            if (activeView) activeView.classList.add('hidden');
+            if (activeView) {
+              activeView.classList.add('hidden');
+              activeView.classList.remove('flex');
+            }
           }
 
           if (manual) showToast(`Đã làm mới tin nhắn hỗ trợ (${AdminState.supportChats.length} tin nhắn)!`, 'success');
@@ -4636,7 +4655,41 @@
       const emptyState = document.getElementById('chatEmptyState');
       const activeView = document.getElementById('chatActiveView');
       if (emptyState) emptyState.classList.add('hidden');
-      if (activeView) activeView.classList.remove('hidden');
+      if (activeView) {
+        activeView.classList.remove('hidden');
+        activeView.classList.add('flex');
+      }
+
+      // Responsive master-detail toggle on mobile (< 768px)
+      const sidebar = document.getElementById('chatSidebarList');
+      const container = document.getElementById('chatConversationContainer');
+      const banner = document.getElementById('chatTopBanner');
+
+      if (window.innerWidth < 768) {
+        if (sidebar) {
+          sidebar.classList.add('hidden');
+          sidebar.classList.remove('flex');
+        }
+        if (container) {
+          container.classList.remove('hidden');
+          container.classList.add('flex');
+        }
+        if (banner) {
+          banner.classList.add('hidden');
+        }
+      } else {
+        if (sidebar) {
+          sidebar.classList.remove('hidden');
+          sidebar.classList.add('flex');
+        }
+        if (container) {
+          container.classList.remove('hidden');
+          container.classList.add('flex');
+        }
+        if (banner) {
+          banner.classList.remove('hidden');
+        }
+      }
 
       const userGroups = groupChatMessagesByUser();
       const currentGroup = userGroups.find(g => String(g.uid).trim() === uid);
@@ -4647,6 +4700,9 @@
       }
 
       renderActiveConversation();
+      if (window.lucide && typeof lucide.createIcons === 'function') {
+        try { lucide.createIcons(); } catch(e) {}
+      }
 
       // Mark messages as read for this user on Google Apps Script
       if (currentGroup && currentGroup.unreadCount > 0) {
@@ -4667,6 +4723,30 @@
         } catch (e) {
           console.warn("Lỗi đánh dấu đã đọc:", e);
         }
+      }
+    }
+
+    function backToChatList() {
+      AdminState.selectedChatUid = null;
+      renderChatUserList();
+
+      const sidebar = document.getElementById('chatSidebarList');
+      const container = document.getElementById('chatConversationContainer');
+      const banner = document.getElementById('chatTopBanner');
+
+      if (sidebar) {
+        sidebar.classList.remove('hidden');
+        sidebar.classList.add('flex');
+      }
+      if (container) {
+        container.classList.add('hidden');
+        container.classList.remove('flex');
+      }
+      if (banner) {
+        banner.classList.remove('hidden');
+      }
+      if (window.lucide && typeof lucide.createIcons === 'function') {
+        try { lucide.createIcons(); } catch(e) {}
       }
     }
 
@@ -4706,7 +4786,7 @@
                 <span class="font-bold text-emerald-700">Admin</span>
                 <span>• ${timeStr}</span>
               </div>
-              <div class="max-w-[75%] px-4 py-2.5 rounded-2xl rounded-tr-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs shadow-sm leading-relaxed break-words">
+              <div class="max-w-[86%] sm:max-w-[75%] px-4 py-2.5 rounded-2xl rounded-tr-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs shadow-sm leading-relaxed break-words">
                 ${msgText}
                 ${imgHtml}
               </div>
@@ -4719,7 +4799,7 @@
                 <span class="font-bold text-gray-700">${escapeHTML(m.email || 'Khách')}</span>
                 <span>• ${timeStr}</span>
               </div>
-              <div class="max-w-[75%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-white border border-black/[0.08] text-gray-900 text-xs shadow-2xs leading-relaxed break-words">
+              <div class="max-w-[86%] sm:max-w-[75%] px-4 py-2.5 rounded-2xl rounded-tl-sm bg-white border border-black/[0.08] text-gray-900 text-xs shadow-2xs leading-relaxed break-words">
                 ${msgText}
                 ${imgHtml}
               </div>
@@ -4841,6 +4921,29 @@
         fetchSupportChats(false);
       }, 5000);
     }
+
+    window.addEventListener('resize', () => {
+      if (AdminState.activeTab === 'support_chat') {
+        const sidebar = document.getElementById('chatSidebarList');
+        const container = document.getElementById('chatConversationContainer');
+        const banner = document.getElementById('chatTopBanner');
+        if (window.innerWidth >= 768) {
+          if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('flex'); }
+          if (container) { container.classList.remove('hidden'); container.classList.add('flex'); }
+          if (banner) { banner.classList.remove('hidden'); }
+        } else {
+          if (AdminState.selectedChatUid) {
+            if (sidebar) { sidebar.classList.add('hidden'); sidebar.classList.remove('flex'); }
+            if (container) { container.classList.remove('hidden'); container.classList.add('flex'); }
+            if (banner) { banner.classList.add('hidden'); }
+          } else {
+            if (sidebar) { sidebar.classList.remove('hidden'); sidebar.classList.add('flex'); }
+            if (container) { container.classList.add('hidden'); container.classList.remove('flex'); }
+            if (banner) { banner.classList.remove('hidden'); }
+          }
+        }
+      }
+    });
 
     // ==========================================
     // 15. TOAST NOTIFICATIONS & MODALS
