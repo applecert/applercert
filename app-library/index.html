@@ -1075,6 +1075,83 @@ function getAppSlug(name, version, fileLink) {
   return `${cleanName}-${cleanVer}-${hashStr}`;
 }
 
+/* ─── Apple Standard App Fallback Icon Generator (0ms, 100% Offline) ─── */
+function getAppleAppFallbackIcon(name, category) {
+  const safeName = (name || 'App').trim();
+  const letter = (safeName.charAt(0) || 'A').toUpperCase();
+  let hash = 0;
+  for (let i = 0; i < safeName.length; i++) {
+    hash = (hash << 5) - hash + safeName.charCodeAt(i);
+    hash |= 0;
+  }
+  const gradients = [
+    ['#0071E3', '#47A3FF'], // Apple Classic Blue
+    ['#34C759', '#30D158'], // Apple Mint Green
+    ['#AF52DE', '#DA8FFF'], // Apple Purple
+    ['#FF9500', '#FFB340'], // Apple Amber
+    ['#FF2D55', '#FF6482'], // Apple Coral Pink
+    ['#5856D6', '#7D7AFF'], // Apple Indigo
+    ['#00C7BE', '#59E0D9'], // Apple Teal
+    ['#1C1C1E', '#3A3A3C']  // Apple Dark Titanium
+  ];
+  const [c1, c2] = gradients[Math.abs(hash) % gradients.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+    <defs>
+      <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${c1}"/>
+        <stop offset="100%" stop-color="${c2}"/>
+      </linearGradient>
+      <linearGradient id="s" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <rect width="120" height="120" rx="27" fill="url(#g)"/>
+    <rect width="120" height="60" rx="27" fill="url(#s)"/>
+    <text x="60" y="76" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="52" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-1">${letter}</text>
+  </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+/* ─── Robust App Icon Extractor & Relative Path Resolver ─── */
+function extractAppIcon(app, repoBaseUrl) {
+  if (!app) return '';
+  let raw = '';
+  if (typeof app.icon === 'string' && app.icon) raw = app.icon;
+  else if (typeof app.iconURL === 'string' && app.iconURL) raw = app.iconURL;
+  else if (typeof app.iconUrl === 'string' && app.iconUrl) raw = app.iconUrl;
+  else if (typeof app.icon_url === 'string' && app.icon_url) raw = app.icon_url;
+  else if (typeof app.artworkURL === 'string' && app.artworkURL) raw = app.artworkURL;
+  else if (typeof app.artworkUrl === 'string' && app.artworkUrl) raw = app.artworkUrl;
+  else if (typeof app.artwork === 'string' && app.artwork) raw = app.artwork;
+  else if (typeof app.thumbnail === 'string' && app.thumbnail) raw = app.thumbnail;
+  else if (typeof app.thumbnailURL === 'string' && app.thumbnailURL) raw = app.thumbnailURL;
+  else if (Array.isArray(app.icons) && app.icons.length > 0 && typeof app.icons[0] === 'string') raw = app.icons[0];
+  else if (app.icons && typeof app.icons === 'object') {
+    raw = app.icons['512'] || app.icons['256'] || app.icons['128'] || app.icons['60'] || Object.values(app.icons)[0] || '';
+  } else if (app.versions && app.versions[0]) {
+    const v = app.versions[0];
+    raw = v.iconURL || v.iconUrl || v.icon || '';
+  }
+
+  raw = (raw || '').trim();
+  if (raw.includes('placehold.co')) raw = '';
+
+  // If relative path, resolve against repoBaseUrl
+  if (raw && !raw.startsWith('http://') && !raw.startsWith('https://') && !raw.startsWith('data:')) {
+    if (repoBaseUrl) {
+      try {
+        raw = new URL(raw, repoBaseUrl).href;
+      } catch(e) {}
+    }
+  }
+
+  if (!raw) {
+    return getAppleAppFallbackIcon(app.name || app.title || 'App', app.category);
+  }
+  return raw;
+}
+
 /* ─── Normalizer with Smart API Metadata Detection ─── */
 function normalizeRepoApp(app, sourceMeta) {
   if (!app) return null;
@@ -1082,9 +1159,9 @@ function normalizeRepoApp(app, sourceMeta) {
                       (app.versions && app.versions[0] && (app.versions[0].downloadURL || app.versions[0].fileLink)) || '';
   if (!downloadUrl) return null;
 
-  const rawIcon = app.iconURL || app.icon || app.iconUrl || (Array.isArray(app.icons) && app.icons[0]) || '';
-  const hasNativeIcon = Boolean(rawIcon && typeof rawIcon === 'string' && rawIcon.startsWith('http') && !rawIcon.includes('placehold.co'));
-  const icon = hasNativeIcon ? rawIcon : 'https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA';
+  const repoBaseUrl = (sourceMeta && sourceMeta.url) ? sourceMeta.url : '';
+  const icon = extractAppIcon(app, repoBaseUrl);
+  const hasNativeIcon = Boolean(icon && !icon.startsWith('data:image/svg'));
 
   let screenshots = [];
   if (Array.isArray(app.screenshotURLs)) {
@@ -1749,24 +1826,25 @@ function renderContent() {
   refreshScrollReveal();
 }
 
-/* ─── Product Card Builder (Apple App Store Clean Squircle Card) ─── */
+/* ─── Product Card Builder (Apple App Store Clean Squircle Card with Spring Interactions) ─── */
 function createEntity(i, index) {
-  let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
   let safeName = i.name || i.title || 'Ứng dụng';
   let safeDesc = i.desc || i.description || 'Nhấn để xem chi tiết';
   let safeVer = i.version || '1.0';
   const isVip = i._type === 'VIP';
   const cat = i.category || smartCategorize(i);
+  let safeIcon = extractAppIcon(i, '');
   const dlCount = i.downloads ? Number(i.downloads).toLocaleString() : fakeDownloads(i._id || i.name);
+  const cleanNameForJs = safeName.replace(/['"\\\n]/g, ' ');
 
   return `
     <div onclick="openAppView('${i._id}')" 
-         class="group bg-white dark:bg-[#1C1C1E] rounded-[22px] sm:rounded-[26px] p-3 sm:p-4 border border-black/[0.04] dark:border-white/[0.06] hover:border-black/[0.12] dark:hover:border-white/[0.15] hover:shadow-lg transition-all duration-200 flex flex-col justify-between relative overflow-hidden text-inherit cursor-pointer select-none">
+         class="group bg-white dark:bg-[#1C1C1E] rounded-[22px] sm:rounded-[26px] p-3 sm:p-4 border border-black/[0.06] dark:border-white/[0.08] hover:border-apple-blue/35 dark:hover:border-apple-blue/45 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_28px_rgba(0,0,0,0.35)] -translate-y-0 hover:-translate-y-1.5 active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col justify-between relative overflow-hidden text-inherit cursor-pointer select-none">
       
       <!-- Top Image Area (True Apple Squircle) -->
       <div>
         <div class="relative w-full aspect-square apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.04] dark:border-white/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
-          <img src="${safeIcon}" alt="${safeName}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/100'">
+          <img src="${safeIcon}" alt="${safeName}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" onerror="this.onerror=null;this.src=getAppleAppFallbackIcon('${cleanNameForJs}','${cat}')">
           
           ${i.isMod ? `
             <span class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/65 backdrop-blur-md text-amber-400 text-[9px] font-black tracking-wider border border-white/10 uppercase shadow-sm">
@@ -1804,7 +1882,7 @@ function createEntity(i, index) {
           isVip 
             ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white' 
             : 'bg-[#F2F2F7] dark:bg-[#2C2C2E] text-apple-blue dark:text-apple-lightBlue hover:bg-apple-blue hover:text-white dark:hover:bg-apple-blue dark:hover:text-white'
-        } transition active:scale-95 shadow-sm text-center flex items-center justify-center gap-1" onclick="event.stopPropagation();openAppView('${i._id}')">
+        } transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 shadow-sm text-center flex items-center justify-center gap-1" onclick="event.stopPropagation();openAppView('${i._id}')">
           <span>${isVip ? 'TẢI VIP' : 'NHẬN'}</span>
         </button>
       </div>
