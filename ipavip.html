@@ -311,54 +311,24 @@
        ================================================================ -->
   <main id="spatial-stage" class="flex-1 max-w-7xl mx-auto w-full px-3.5 sm:px-6 lg:px-8 py-5 sm:py-7 pb-24 sm:pb-16 space-y-6">
 
-    <!-- ═══ 1. APPLE STORE HERO HEADLINE (VIP LUXURY) ═══ -->
-    <div class="space-y-1.5">
+    <!-- ═══ 1. APPLE VIP HERO (MINIMAL & LUXURY) ═══ -->
+    <div class="space-y-1">
       <div id="todayDateStr" class="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
         <i data-lucide="crown" class="w-3.5 h-3.5"></i>
         <span>ĐẶC QUYỀN HỘI VIÊN VIP</span>
       </div>
-      <h1 class="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-        <span class="text-black dark:text-white">Kho App VIP.</span> 
-        <span class="text-apple-gray">Ứng dụng iOS bản quyền & Game Hack mở khóa trọn đời.</span>
+      <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100">
+        Kho App VIP
       </h1>
-      
-      <!-- Apple VIP Micro Trust Ribbon -->
-      <div class="flex items-center gap-5 sm:gap-7 overflow-x-auto no-scrollbar py-2 text-xs font-semibold text-apple-gray border-b border-apple-separatorLight dark:border-apple-separatorDark">
-        <div class="flex items-center gap-1.5 shrink-0 text-black dark:text-white">
-          <i data-lucide="crown" class="w-4 h-4 text-amber-500"></i>
-          <span>Bảo hành chứng chỉ VIP 100%</span>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0 text-black dark:text-white">
-          <i data-lucide="zap" class="w-4 h-4 text-apple-amber"></i>
-          <span>Cài trực tiếp 1-click qua VSign</span>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0 text-black dark:text-white">
-          <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
-          <span>Mở khóa Premium & Full Tiền</span>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0 text-black dark:text-white">
-          <i data-lucide="shield-check" class="w-4 h-4 text-apple-green"></i>
-          <span>Tệp IPA sạch 100% đã kiểm duyệt</span>
-        </div>
-      </div>
+      <p class="text-xs sm:text-sm text-apple-gray font-normal max-w-2xl">
+        Ứng dụng iOS bản quyền & Game Hack mở khóa tính năng cao cấp không giới hạn.
+      </p>
     </div>
 
-    <!-- ═══ 2. APPLE STORE VIP CATEGORY SHELF ═══ -->
-    <section id="categoryShelf" class="space-y-3 pt-1">
-      <div class="flex items-center justify-between">
-        <h2 class="text-base sm:text-lg font-bold text-black dark:text-white flex items-center gap-2">
-          <span>Khám Phá Danh Mục VIP</span>
-        </h2>
-        <span class="text-xs text-apple-gray"><b id="totalProductCounter" class="text-black dark:text-white">0</b> ứng dụng VIP</span>
-      </div>
+    <!-- Hidden compatibility placeholders -->
+    <div id="categoryShelf" style="display:none;"><div id="categoryPillsContainer"></div><span id="totalProductCounter">0</span></div>
 
-      <!-- Categories Shelf (Rendered dynamically as Apple Product Squircles) -->
-      <div id="categoryPillsContainer" class="flex items-start gap-3 sm:gap-4 overflow-x-auto no-scrollbar py-2 -mx-1 px-1">
-        <!-- Rendered by JS -->
-      </div>
-    </section>
-
-    <!-- ═══ 3. DYNAMIC CONTENT CONTAINER ═══ -->
+    <!-- ═══ 2. DYNAMIC CONTENT CONTAINER ═══ -->
     <div id="dynamicContent" class="space-y-6"></div>
 
   </main>
@@ -717,45 +687,8 @@
   }
 
   /* ─── VIP Category Shelf ─── */
-  function renderCategoryShelf() {
-    const container = document.getElementById('categoryPillsContainer');
-    const counter = document.getElementById('totalProductCounter');
-    const allVip = window.vipApps || [];
-    if (counter) counter.innerText = allVip.length.toLocaleString();
-    if (!container) return;
-
-    const gameCount = allVip.filter(x => (x.category || smartCategorize(x)) === 'Trò chơi').length;
-    const socialCount = allVip.filter(x => (x.category || smartCategorize(x)) === 'Social').length;
-    const mediaCount = allVip.filter(x => (x.category || smartCategorize(x)) === 'Giải trí').length;
-    const editCount = allVip.filter(x => (x.category || smartCategorize(x)) === 'Chỉnh sửa').length;
-    const utilityCount = allVip.filter(x => (x.category || smartCategorize(x)) === 'Tiện ích').length;
-
-    const cats = [
-      { id: 'all', name: 'Tất Cả VIP', icon: 'crown', color: 'text-amber-500', count: allVip.length },
-      { id: 'game', name: 'Game Hack', icon: 'gamepad-2', color: 'text-purple-500', count: gameCount },
-      { id: 'social', name: 'Social Mod', icon: 'message-circle', color: 'text-emerald-500', count: socialCount },
-      { id: 'media', name: 'Media Pro', icon: 'play-square', color: 'text-indigo-500', count: mediaCount },
-      { id: 'edit', name: 'Edit Mở Khóa', icon: 'wand-2', color: 'text-amber-500', count: editCount },
-      { id: 'utility', name: 'Tiện Ích', icon: 'wrench', color: 'text-sky-500', count: utilityCount }
-    ];
-
-    container.innerHTML = cats.map(c => {
-      const isActive = STATE.currentFilter === c.id;
-      return `
-        <button onclick="setFilter('${c.id}')" class="shrink-0 flex flex-col items-center gap-1.5 group cursor-pointer transition active:scale-95 text-center">
-          <div class="w-14 h-14 sm:w-16 sm:h-16 apple-squircle ${isActive ? 'bg-gradient-to-tr from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/25 ring-2 ring-amber-400' : 'bg-white dark:bg-[#1C1C1E] border border-apple-separatorLight dark:border-apple-separatorDark text-black dark:text-white group-hover:scale-105 shadow-sm'} p-3 flex items-center justify-center transition-all duration-300">
-            <i data-lucide="${c.icon}" class="w-6 h-6 sm:w-7 sm:h-7 ${isActive ? 'text-white' : c.color}"></i>
-          </div>
-          <div class="max-w-[76px]">
-            <span class="text-[11px] font-bold block truncate ${isActive ? 'text-amber-500' : 'text-black dark:text-white'}">${c.name}</span>
-            <span class="text-[10px] text-apple-gray font-medium">${c.count.toLocaleString()}</span>
-          </div>
-        </button>
-      `;
-    }).join('');
-
-    if (window.lucide) lucide.createIcons();
-  }
+  /* ─── Apple Category Shelf Helper (No-op as integrated into renderContent) ─── */
+  function renderCategoryShelf() {}
 
   function onSortChange(sortVal) {
     STATE.sort = sortVal;
@@ -778,14 +711,12 @@
     if (c2) c2.style.display = 'none';
     const sortSel = document.getElementById('sortSelect');
     if (sortSel) sortSel.value = 'new';
-    syncStateToUrlAndStorage();
+    syncStateToUrlAndStorageVip();
     renderContent();
   }
 
   /* ─── Render Content ─── */
   function renderContent() {
-    renderCategoryShelf();
-
     const rawQuery = getSearchQuery();
     const query = rawQuery.toLowerCase();
     const container = document.getElementById('dynamicContent');
@@ -817,133 +748,63 @@
     if (STATE.currentPage > totalPages) STATE.currentPage = 1;
     const start = (STATE.currentPage - 1) * STATE.itemsPerPage;
     const pagedItems = items.slice(start, start + STATE.itemsPerPage);
-    const featured = (window.vipApps || []).slice(0, 5);
 
-    let html = '';
+    const categories = [
+      { id: 'all', name: 'Tất cả VIP' },
+      { id: 'game', name: 'Game Hack' },
+      { id: 'social', name: 'Social Mod' },
+      { id: 'media', name: 'Media Pro' },
+      { id: 'edit', name: 'Chỉnh Sửa' },
+      { id: 'utility', name: 'Tiện Ích' }
+    ];
 
-    // Featured VIP Carousel
-    if (!query && STATE.currentFilter === 'all' && STATE.currentPage === 1 && featured.length) {
-      html += `
-        <div class="mb-6">
-          <div class="flex items-center justify-between mb-3 px-1">
-            <h2 class="text-base sm:text-lg font-black tracking-tight text-black dark:text-white flex items-center gap-2">
-              <i data-lucide="flame" class="w-4 h-4 text-amber-500"></i> Siêu Phẩm VIP Đề Xuất
-            </h2>
-            <span class="text-xs text-apple-gray font-semibold">Vuốt để xem thêm</span>
-          </div>
-          <div class="ribbon-container">
-            <div class="ribbon-track no-scrollbar">
-              ${featured.map((i, idx) => createSubPageHero(i, idx)).join('')}
-            </div>
-          </div>
-        </div>`;
-    }
-
-    const filterNameMap = {
-      all: 'Tất Cả Ứng Dụng VIP',
-      game: 'Trò Chơi Hack Full Tiền / Mod Menu',
-      social: 'Mạng Xã Hội Bỏ Quảng Cáo & Fix VIP',
-      media: 'Giải Trí, Nhạc & Phim Bản Quyền',
-      edit: 'Chỉnh Sửa Mở Khóa Tính Năng Trả Phí',
-      utility: 'Tiện Ích Hệ Thống & Bypass Ký Số'
-    };
-    const activeTitle = query ? `Kết quả tìm kiếm cho: "${rawQuery}"` : (filterNameMap[STATE.currentFilter] || 'Kho App VIP');
-
-    // App List Header, Segmented Toolbar & Grid
-    html += `
-      <div class="space-y-6">
-        <!-- Segmented Filter & Sort Toolbar -->
-        <div class="p-3 sm:p-3.5 rounded-[22px] bg-white dark:bg-[#1C1C1E] border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          
-          <!-- Filter Segmented Chips -->
-          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-            <span class="text-xs font-bold text-apple-gray shrink-0 hidden sm:inline flex items-center gap-1 mr-1">
-              <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> Lọc:
-            </span>
-            
-            <button onclick="setFilter('all')" class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold ${STATE.currentFilter === 'all' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm' : 'bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white hover:bg-black/[0.08]'} transition flex items-center gap-1.5 active:scale-95 cursor-pointer">
-              <i data-lucide="crown" class="w-3.5 h-3.5 ${STATE.currentFilter === 'all' ? 'text-white' : 'text-amber-500'}"></i> Tất Cả
-            </button>
-
-            <button onclick="setFilter('game')" class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold ${STATE.currentFilter === 'game' ? 'bg-purple-600 text-white shadow-sm' : 'bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white hover:bg-black/[0.08]'} transition flex items-center gap-1.5 active:scale-95 cursor-pointer">
-              <i data-lucide="gamepad-2" class="w-3.5 h-3.5 ${STATE.currentFilter === 'game' ? 'text-white' : 'text-purple-500'}"></i> Game Hack
-            </button>
-
-            <button onclick="setFilter('social')" class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold ${STATE.currentFilter === 'social' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white hover:bg-black/[0.08]'} transition flex items-center gap-1.5 active:scale-95 cursor-pointer">
-              <i data-lucide="message-circle" class="w-3.5 h-3.5 ${STATE.currentFilter === 'social' ? 'text-white' : 'text-emerald-500'}"></i> Social
-            </button>
-
-            <button onclick="setFilter('edit')" class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold ${STATE.currentFilter === 'edit' ? 'bg-amber-600 text-white shadow-sm' : 'bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white hover:bg-black/[0.08]'} transition flex items-center gap-1.5 active:scale-95 cursor-pointer">
-              <i data-lucide="wand-2" class="w-3.5 h-3.5 ${STATE.currentFilter === 'edit' ? 'text-white' : 'text-amber-500'}"></i> Chỉnh Sửa
-            </button>
-          </div>
-
-          <!-- Sort Controls & Reset -->
-          <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-apple-separatorLight dark:border-apple-separatorDark">
-            <div class="flex items-center gap-1.5 text-xs">
-              <span class="text-apple-gray font-semibold shrink-0">Xếp theo:</span>
-              <select id="sortSelect" onchange="onSortChange(this.value)" class="bg-black/[0.05] dark:bg-white/[0.08] text-black dark:text-white font-bold rounded-full px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer">
-                <option value="new" ${sortMode === 'new' ? 'selected' : ''}>Mới nhất</option>
-                <option value="popular" ${sortMode === 'popular' ? 'selected' : ''}>Tải nhiều nhất</option>
-                <option value="name" ${sortMode === 'name' ? 'selected' : ''}>Tên A → Z</option>
-              </select>
-            </div>
-
-            <button onclick="resetAllFilters(event)" class="text-xs font-bold text-apple-gray hover:text-amber-500 transition flex items-center gap-1 px-2.5 py-1.5 rounded-full hover:bg-black/[0.05] dark:hover:bg-white/[0.08] cursor-pointer" title="Đặt lại bộ lọc">
-              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-              <span>Đặt lại</span>
-            </button>
-          </div>
-
+    const html = `
+      <!-- Apple Store Cupertino Segmented Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3.5">
+        
+        <!-- Horizontal Scrollable Pill Filter -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
+          ${categories.map(c => {
+            const isActive = STATE.currentFilter === c.id;
+            return `
+              <button onclick="setFilter('${c.id}')" class="shrink-0 px-3.5 py-1.5 rounded-full text-xs transition active:scale-95 cursor-pointer whitespace-nowrap ${
+                isActive 
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold shadow-sm shadow-amber-500/25' 
+                  : 'bg-black/[0.04] dark:bg-white/[0.06] text-neutral-600 dark:text-neutral-400 hover:bg-black/[0.08] dark:hover:bg-white/[0.1] font-semibold'
+              }">
+                ${c.name}
+              </button>
+            `;
+          }).join('')}
         </div>
 
-        <!-- Title Row & Counter -->
-        <div class="flex items-center justify-between px-1 pt-1">
-          <h3 class="text-base sm:text-lg font-bold text-black dark:text-white flex items-center gap-2">
-            <span>${activeTitle}</span>
-          </h3>
-          <span class="text-xs text-apple-gray"><b class="text-black dark:text-white">${items.length.toLocaleString()}</b> app VIP</span>
+        <!-- Controls: Sort & Counter -->
+        <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 text-xs">
+          <span class="text-apple-gray"><b class="text-amber-500 font-bold">${items.length.toLocaleString()}</b> app VIP</span>
+          <div class="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-full px-2.5 py-1">
+            <span class="text-apple-gray text-[11px] font-medium">Xếp:</span>
+            <select id="sortSelect" onchange="onSortChange(this.value)" class="bg-transparent text-neutral-900 dark:text-neutral-100 font-semibold text-xs outline-none cursor-pointer">
+              <option value="new" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'new' ? 'selected' : ''}>Mới nhất</option>
+              <option value="popular" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'popular' ? 'selected' : ''}>Tải nhiều nhất</option>
+              <option value="name" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'name' ? 'selected' : ''}>Tên A → Z</option>
+            </select>
+          </div>
         </div>
 
-        <!-- Products Grid (Apple App Store Squircle Architecture) -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4 md:gap-5 w-full">
-          ${pagedItems.length ? pagedItems.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}
-        </div>
-
-        <!-- Cupertino Pagination -->
-        ${createPagination(totalPages)}
       </div>
+
+      <!-- Products Grid (Apple App Store Squircle Architecture) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5 w-full">
+        ${pagedItems.length ? pagedItems.map((i, idx) => createGridItem(i, idx)).join('') : emptyState()}
+      </div>
+
+      <!-- Cupertino Pagination -->
+      ${createPagination(totalPages)}
     `;
 
     container.innerHTML = html;
     if (window.lucide) lucide.createIcons();
     refreshScrollReveal();
-  }
-
-  function createSubPageHero(i, index) {
-    let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/100';
-    let safeName = i.name || i.title || 'Ứng dụng VIP';
-    return `
-      <div onclick="openAppView('${i._id}')" class="flex-shrink-0 w-72 sm:w-80 h-44 rounded-[24px] relative overflow-hidden group cursor-pointer border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm hover:shadow-apple-hover hover:border-amber-500/50 transition-all duration-300">
-        <img src="${safeIcon}" onerror="this.src='https://placehold.co/400x200'" class="absolute inset-0 w-full h-full object-cover opacity-35 dark:opacity-25 blur-xl group-hover:scale-110 transition-transform duration-700">
-        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent"></div>
-        <div class="absolute inset-0 p-4 flex flex-col justify-between text-white z-10">
-          <div class="flex items-center justify-between">
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-black flex items-center gap-1 shadow-sm">
-              <i data-lucide="crown" class="w-3 h-3"></i> NỔI BẬT
-            </span>
-            <span class="text-[10px] font-mono opacity-80">${i.version || 'Mới nhất'}</span>
-          </div>
-          <div>
-            <div class="w-12 h-12 apple-squircle mb-2 border border-white/20 shadow-md overflow-hidden bg-black/20">
-              <img src="${safeIcon}" class="w-full h-full object-cover">
-            </div>
-            <h4 class="font-extrabold text-base truncate text-white">${safeName}</h4>
-            <p class="text-xs text-white/80 truncate">Đã Hack / Mod mở khóa toàn bộ tính năng</p>
-          </div>
-        </div>
-      </div>
-    `;
   }
 
   function createGridItem(i, index) {
@@ -955,54 +816,44 @@
 
     return `
       <div onclick="openAppView('${i._id}')" 
-           class="group bg-white dark:bg-[#1C1C1E] rounded-[20px] sm:rounded-[24px] p-2.5 sm:p-4 border border-apple-separatorLight dark:border-apple-separatorDark hover:border-amber-500/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden text-inherit cursor-pointer select-none">
+           class="group bg-white dark:bg-[#1C1C1E] rounded-[22px] sm:rounded-[26px] p-3 sm:p-4 border border-black/[0.04] dark:border-white/[0.06] hover:border-amber-500/40 hover:shadow-lg transition-all duration-200 flex flex-col justify-between relative overflow-hidden text-inherit cursor-pointer select-none">
         
-        <!-- Top Badges -->
-        <div class="flex items-center justify-between gap-1 mb-2 z-10">
-          <span class="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
-            <i data-lucide="crown" class="w-2.5 h-2.5 sm:w-3 sm:h-3"></i>
-            <span>VIP</span>
-          </span>
-          <span class="px-1.5 sm:px-2 py-0.5 rounded-full bg-apple-red text-white text-[9px] sm:text-[10px] font-black tracking-tight shadow-sm shrink-0 flex items-center gap-0.5">
-            <i data-lucide="zap" class="w-2.5 h-2.5"></i> MOD
-          </span>
-        </div>
-
-        <!-- Thumbnail Container (Apple Squircle with watermark) -->
-        <div class="relative w-full aspect-square apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.04] dark:border-white/[0.05] ipaviet-watermark-sm flex items-center justify-center p-2.5 sm:p-3 mb-2 group-hover:scale-105 transition-transform duration-300 shadow-sm">
-          <img src="${safeIcon}" alt="${safeName}" loading="lazy" class="w-full h-full object-cover apple-squircle" onerror="this.src='https://placehold.co/100'">
-        </div>
-
-        <!-- Info Content -->
-        <div class="space-y-1 sm:space-y-1.5 flex-1 flex flex-col justify-between">
-          <div>
-            <span class="text-[9px] sm:text-[11px] font-semibold text-amber-500/90 dark:text-amber-400 uppercase tracking-wider block truncate">${cat}</span>
-            <h4 class="font-bold text-xs sm:text-sm text-black dark:text-white line-clamp-2 leading-snug group-hover:text-amber-500 transition-colors min-h-[30px] sm:min-h-[36px]" title="${safeName}">
-              ${safeName}
-            </h4>
+        <!-- Top Image Area (True Apple Squircle) -->
+        <div>
+          <div class="relative w-full aspect-square apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.04] dark:border-white/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
+            <img src="${safeIcon}" alt="${safeName}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/100'">
+            
+            <span class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-amber-500 text-black text-[9px] font-black tracking-wider uppercase shadow-sm">
+              VIP
+            </span>
           </div>
 
-          <!-- Rating & Downloads -->
-          <div class="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-[11px] text-apple-gray pt-0.5">
-            <span class="text-amber-500 flex items-center gap-0.5 font-bold"><i data-lucide="star" class="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-amber-500 text-amber-500"></i> 5.0</span>
-            <span>•</span>
-            <span class="truncate">${dlCount} đã tải</span>
-          </div>
-
-          <!-- Price / Version & Apple "TẢI VIP" Pill Button -->
-          <div class="pt-2 border-t border-apple-separatorLight dark:border-apple-separatorDark flex items-center justify-between gap-1">
-            <div class="min-w-0 flex-1">
-              <div class="font-bold text-[11px] sm:text-xs text-apple-gray truncate">v${safeVer}</div>
-              ${i.size ? `<div class="text-[9px] sm:text-[10px] text-apple-gray truncate leading-none mt-0.5">${i.size}</div>` : ''}
+          <!-- Info Area -->
+          <div class="mt-2.5 space-y-0.5">
+            <div class="flex items-center justify-between text-[11px] text-amber-500/90 dark:text-amber-400 font-semibold uppercase tracking-wider">
+              <span class="truncate">${cat}</span>
+              <span class="truncate text-[10px] opacity-75">v${safeVer}</span>
             </div>
 
-            <!-- Apple Cupertino VIP Pill Button -->
-            <button class="px-2.5 sm:px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[10px] sm:text-xs transition active:scale-95 flex items-center gap-0.5 shrink-0 shadow-sm shadow-amber-500/20" onclick="event.stopPropagation();openAppView('${i._id}')">
-              <span>TẢI VIP</span>
-            </button>
-          </div>
+            <h4 class="font-bold text-xs sm:text-[14px] text-neutral-900 dark:text-neutral-100 line-clamp-2 leading-snug group-hover:text-amber-500 transition-colors min-h-[32px] sm:min-h-[36px]" title="${safeName}">
+              ${safeName}
+            </h4>
 
+            <div class="flex items-center gap-1 text-[11px] text-apple-gray font-medium pt-0.5">
+              <span class="text-amber-500 font-bold flex items-center gap-0.5"><i data-lucide="star" class="w-3 h-3 fill-amber-500 text-amber-500"></i> 5.0</span>
+              <span>•</span>
+              <span class="truncate">${dlCount} lượt tải</span>
+            </div>
+          </div>
         </div>
+
+        <!-- Bottom: Cupertino "TẢI VIP" Pill Button -->
+        <div class="pt-2.5">
+          <button class="w-full py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white transition active:scale-95 shadow-sm shadow-amber-500/20 text-center flex items-center justify-center gap-1" onclick="event.stopPropagation();openAppView('${i._id}')">
+            <span>TẢI VIP</span>
+          </button>
+        </div>
+
       </div>
     `;
   }
