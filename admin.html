@@ -197,6 +197,14 @@
       </div>
 
       <div>
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">VSign Ecosystem</p>
+        <button onclick="switchTab('vsign_config')" id="nav-vsign_config" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition">
+          <div class="flex items-center"><i data-lucide="radio" class="w-4 h-4 mr-3 text-indigo-600"></i> VSign Remote Config</div>
+          <span id="badgeVSignNav" class="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Online</span>
+        </button>
+      </div>
+
+      <div>
         <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">System Controls</p>
         <button onclick="switchTab('audit')" id="nav-audit" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
           <i data-lucide="shield-alert" class="w-4 h-4 mr-3"></i> Nhật Ký Audit Log
@@ -1504,6 +1512,415 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- ================= TAB: VSIGN REMOTE CONFIG & BẢO TRÌ ================= -->
+      <div id="tab-vsign_config" class="hidden max-w-6xl mx-auto space-y-6">
+        
+        <!-- Header Banner & Realtime Status Card -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl border border-white/10 shadow-xl relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span> VSign iOS Cloud Controller
+                </span>
+                <span id="vsignLiveStatusPill" class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold">
+                  🟢 Hoạt Động Bình Thường
+                </span>
+              </div>
+              <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                <i data-lucide="radio" class="w-6 h-6 text-indigo-400"></i> Cấu Hình Từ Xa VSign (Remote Config)
+              </h2>
+              <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                Điều khiển trực tiếp trạng thái <b>Khóa bảo trì toàn app</b>, <b>Ép cập nhật phiên bản (Force Update)</b> và <b>Thông báo khẩn cấp</b> cho hàng ngàn thiết bị cài app VSign không cần duyệt App Store hay cài lại app.
+              </p>
+            </div>
+            
+            <div class="flex items-center gap-2 shrink-0 flex-wrap">
+              <button onclick="loadVSignRemoteConfig(false)" id="btnRefreshVSignConfig" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-xs font-bold text-white transition flex items-center gap-1.5 border border-white/10">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Tải lại</span>
+              </button>
+              <button onclick="testVSignApiLive()" id="btnTestVSignPing" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-xs font-bold text-white transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30">
+                <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                <span>Test API Ping</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom meta info -->
+          <div class="mt-4 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
+            <div class="flex items-center gap-3">
+              <span>Đồng bộ máy chủ: <b id="vsignLastSyncedText" class="text-white">Chưa tải</b></span>
+              <span>•</span>
+              <span class="font-mono text-[10px] bg-black/30 px-2 py-0.5 rounded text-indigo-300">GAS Cloud API v2</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="copyVSignEndpoint()" class="hover:text-white transition flex items-center gap-1 underline text-[10px]">
+                <i data-lucide="copy" class="w-3 h-3"></i> Copy Endpoint API
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-COLUMN MAIN WORKSPACE -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+          <!-- ═══ LEFT: CONTROLS & FORMS (7 COLS) ═══ -->
+          <div class="lg:col-span-7 space-y-6">
+
+            <!-- 1. CARD BẢO TRÌ TOÀN APP (MAINTENANCE SWITCH) -->
+            <div class="bg-white p-5 sm:p-6 rounded-3xl border border-black/[0.06] shadow-sm space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+                      <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="font-extrabold text-base text-gray-900">Bảo Trì Hệ Thống (Maintenance Mode)</h3>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Khi bật, toàn bộ người dùng mở app VSign sẽ thấy màn hình khóa bảo trì.</p>
+                </div>
+                
+                <!-- Master Toggle Switch -->
+                <div class="flex items-center gap-2 shrink-0 self-start sm:self-center bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                  <span class="text-xs font-bold text-gray-700" id="vsignMaintToggleLabel">Trạng thái: TẮT</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="vsignMaintEnabled" onchange="onVSignMaintToggleChange(this.checked)" class="sr-only peer">
+                    <div class="w-12 h-6.5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5.5 after:w-5.5 after:transition-all peer-checked:bg-rose-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="space-y-3.5 pt-1">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Tiêu Đề Màn Hình Khóa Bảo Trì:</label>
+                  <input type="text" id="vsignMaintTitle" oninput="updateVSignPhonePreview()" placeholder="vd: Hệ Thống Đang Bảo Trì" class="w-full text-xs font-medium p-3 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-rose-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Nội Dung Thông Điệp Cho Khách Hàng:</label>
+                  <textarea id="vsignMaintMsg" rows="3" oninput="updateVSignPhonePreview()" placeholder="vd: VSign đang tiến hành nâng cấp hạ tầng và làm mới chứng chỉ. Vui lòng quay lại sau ít phút." class="w-full text-xs font-medium p-3 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-rose-500 focus:outline-none transition leading-relaxed resize-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Thời Gian Dự Kiến Hoàn Tất:</label>
+                    <div class="relative">
+                      <i data-lucide="clock" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                      <input type="text" id="vsignMaintEst" oninput="updateVSignPhonePreview()" placeholder="vd: Hoàn tất lúc 21:30 hoặc Khoảng 30 phút" class="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-rose-500 focus:outline-none transition">
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Đường Link Hỗ Trợ Khách Hàng:</label>
+                    <div class="relative">
+                      <i data-lucide="send" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                      <input type="text" id="vsignMaintContact" oninput="updateVSignPhonePreview()" placeholder="vd: https://t.me/vsign_support" class="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-rose-500 focus:outline-none transition">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between">
+                  <div class="text-[11px] text-gray-400 flex items-center gap-1">
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                    <span>Tác động tức thì tới app khi lưu</span>
+                  </div>
+                  <button type="button" onclick="saveVSignMaintenance()" id="btnSaveVSignMaint" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-600/20 transition flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    <span>Lưu Cấu Hình Bảo Trì</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. CARD QUẢN LÝ PHIÊN BẢN & ÉP CẬP NHẬT (VERSION & FORCE UPDATE) -->
+            <div class="bg-white p-5 sm:p-6 rounded-3xl border border-black/[0.06] shadow-sm space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                      <i data-lucide="arrow-up-circle" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="font-extrabold text-base text-gray-900">Quản Lý Phiên Bản & Ép Cập Nhật</h3>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Cấu hình phiên bản mới, bắt buộc cập nhật nếu phiên bản người dùng quá cũ.</p>
+                </div>
+
+                <!-- Force Update Toggle -->
+                <div class="flex items-center gap-2 shrink-0 self-start sm:self-center bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                  <span class="text-xs font-bold text-gray-700" id="vsignForceUpdateToggleLabel">Ép cập nhật: TẮT</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="vsignForceUpdate" onchange="onVSignForceUpdateToggleChange(this.checked)" class="sr-only peer">
+                    <div class="w-12 h-6.5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5.5 after:w-5.5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="space-y-3.5 pt-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Phiên Bản Mới Nhất (Latest Version):</label>
+                    <input type="text" id="vsignLatestVersion" oninput="updateVSignPhonePreview()" placeholder="vd: 1.0.1" class="w-full text-xs font-mono font-bold p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-indigo-500 focus:outline-none transition">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Phiên Bản Tối Thiểu Bắt Buộc (Min Version):</label>
+                    <input type="text" id="vsignMinVersion" oninput="updateVSignPhonePreview()" placeholder="vd: 1.0.0" class="w-full text-xs font-mono font-bold p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-indigo-500 focus:outline-none transition">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Tiêu Đề Popup Cập Nhật:</label>
+                  <input type="text" id="vsignUpdateTitle" oninput="updateVSignPhonePreview()" placeholder="vd: Đã Có Bản Cập Nhật Mới" class="w-full text-xs font-medium p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-indigo-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Đường Dẫn Tải App Cập Nhật (Download URL):</label>
+                  <div class="relative">
+                    <i data-lucide="link" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="vsignUpdateDownloadUrl" oninput="updateVSignPhonePreview()" placeholder="vd: https://ipaviet.site/vsign.html" class="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-indigo-500 focus:outline-none transition">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Mô Tả Bản Cập Nhật (Message):</label>
+                  <input type="text" id="vsignUpdateMsg" oninput="updateVSignPhonePreview()" placeholder="vd: Bản cập nhật mới tối ưu tốc độ ký và sửa các lỗi chứng chỉ." class="w-full text-xs font-medium p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-indigo-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Ghi Chú Bản Phát Hành (Release Notes - Mỗi dòng 1 mục):</label>
+                  <textarea id="vsignReleaseNotes" rows="3" oninput="updateVSignPhonePreview()" placeholder="• Thêm tính năng ký ứng dụng siêu tốc&#10;• Khắc phục lỗi chứng chỉ bị thu hồi&#10;• Cải thiện giao diện chuẩn Apple" class="w-full text-xs font-medium p-3 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-indigo-500 focus:outline-none transition leading-relaxed resize-none"></textarea>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between">
+                  <div class="text-[11px] text-gray-400 flex items-center gap-1">
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                    <span>Nếu bật ép cập nhật, người dùng không thể đóng popup</span>
+                  </div>
+                  <button type="button" onclick="saveVSignUpdate()" id="btnSaveVSignUpdate" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    <span>Lưu Cập Nhật Phiên Bản</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. CARD THÔNG BÁO IN-APP (IN-APP ANNOUNCEMENT) -->
+            <div class="bg-white p-5 sm:p-6 rounded-3xl border border-black/[0.06] shadow-sm space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                      <i data-lucide="bell" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="font-extrabold text-base text-gray-900">Thông Báo Trong Ứng Dụng (In-App Notice)</h3>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">Gửi thông báo nổi bật cho người dùng khi vào app (Tin tức, khuyến mãi, đổi P12...).</p>
+                </div>
+
+                <!-- Notice Toggle -->
+                <div class="flex items-center gap-2 shrink-0 self-start sm:self-center bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                  <span class="text-xs font-bold text-gray-700" id="vsignNoticeToggleLabel">Thông báo: TẮT</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="vsignNoticeEnabled" onchange="onVSignNoticeToggleChange(this.checked)" class="sr-only peer">
+                    <div class="w-12 h-6.5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5.5 after:w-5.5 after:transition-all peer-checked:bg-amber-500"></div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="space-y-3.5 pt-1">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div class="sm:col-span-1">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Mã Thông Báo (Notice ID):</label>
+                    <input type="text" id="vsignNoticeId" oninput="updateVSignPhonePreview()" placeholder="vd: notice_002" class="w-full text-xs font-mono font-bold p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-amber-500 focus:outline-none transition">
+                    <p class="text-[10px] text-gray-400 mt-1">Đổi ID để khách hàng thấy lại thông báo</p>
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Tiêu Đề Thông Báo:</label>
+                    <input type="text" id="vsignNoticeTitle" oninput="updateVSignPhonePreview()" placeholder="vd: Thông Báo Quan Trọng" class="w-full text-xs font-medium p-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-amber-500 focus:outline-none transition">
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Nội Dung Chi Tiết:</label>
+                  <textarea id="vsignNoticeMsg" rows="2" oninput="updateVSignPhonePreview()" placeholder="vd: Đã cập nhật kho chứng chỉ mới hoạt động ổn định." class="w-full text-xs font-medium p-3 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-amber-500 focus:outline-none transition leading-relaxed resize-none"></textarea>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 mb-1">Link Hành Động / Mở Thêm (Action URL - Tùy chọn):</label>
+                  <div class="relative">
+                    <i data-lucide="external-link" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="vsignNoticeAction" oninput="updateVSignPhonePreview()" placeholder="vd: https://t.me/vsign_group" class="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50/70 focus:bg-white focus:border-amber-500 focus:outline-none transition">
+                  </div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between">
+                  <button type="button" onclick="generateNewNoticeId()" class="text-xs text-amber-600 hover:text-amber-700 font-bold transition flex items-center gap-1">
+                    <i data-lucide="shuffle" class="w-3.5 h-3.5"></i> Tạo ID mới
+                  </button>
+                  <button type="button" onclick="saveVSignNotice()" id="btnSaveVSignNotice" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    <span>Lưu Thông Báo App</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ═══ RIGHT: IPHONE REAL-TIME SIMULATOR & API VIEWER (5 COLS) ═══ -->
+          <div class="lg:col-span-5 space-y-6">
+
+            <!-- STICKY CONTAINER FOR SIMULATOR -->
+            <div class="sticky top-20 space-y-4">
+
+              <!-- Simulator Header & Switcher Tabs -->
+              <div class="bg-white p-3 rounded-2xl border border-black/[0.06] shadow-sm flex items-center justify-between gap-2">
+                <span class="text-xs font-extrabold text-gray-800 flex items-center gap-1.5 pl-1">
+                  <i data-lucide="smartphone" class="w-4 h-4 text-indigo-600"></i> Xem Trước Live
+                </span>
+                <div class="flex bg-gray-100 p-0.5 rounded-xl text-[11px] font-bold">
+                  <button onclick="setVSignPreviewMode('maint')" id="prevTabBtn-maint" class="px-2.5 py-1 rounded-lg bg-white shadow-xs text-rose-600 transition">Bảo Trì</button>
+                  <button onclick="setVSignPreviewMode('update')" id="prevTabBtn-update" class="px-2.5 py-1 rounded-lg text-gray-500 hover:text-gray-900 transition">Update</button>
+                  <button onclick="setVSignPreviewMode('notice')" id="prevTabBtn-notice" class="px-2.5 py-1 rounded-lg text-gray-500 hover:text-gray-900 transition">Notice</button>
+                </div>
+              </div>
+
+              <!-- REALISTIC IPHONE DEVICE FRAME -->
+              <div class="w-full max-w-[340px] mx-auto bg-black rounded-[46px] p-3 shadow-2xl border-[4px] border-slate-800 relative">
+                <!-- Outer Glass Glare -->
+                <div class="w-full h-[580px] rounded-[38px] bg-slate-950 overflow-hidden relative flex flex-col border border-white/10 select-none">
+                  
+                  <!-- Dynamic Island & Status Bar -->
+                  <div class="h-10 w-full flex items-center justify-between px-6 pt-2 shrink-0 z-30 text-white text-[11px] font-semibold">
+                    <span>9:41</span>
+                    <div class="w-20 h-5 bg-black rounded-full mx-auto relative flex items-center justify-center">
+                      <span class="w-2.5 h-2.5 rounded-full bg-slate-900/80 mr-3"></span>
+                      <span class="w-2 h-2 rounded-full bg-blue-950/60"></span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[10px]">
+                      <i data-lucide="signal" class="w-3 h-3"></i>
+                      <i data-lucide="wifi" class="w-3 h-3"></i>
+                      <i data-lucide="battery" class="w-3.5 h-3.5"></i>
+                    </div>
+                  </div>
+
+                  <!-- SCREEN VIEW 1: MAINTENANCE LOCKDOWN -->
+                  <div id="simView-maint" class="flex-1 flex flex-col justify-between p-6 text-center text-white relative z-10 animate-in fade-in duration-200">
+                    <div class="my-auto space-y-4">
+                      <div class="w-18 h-18 mx-auto rounded-3xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow-xl shadow-rose-500/20">
+                        <i data-lucide="wrench" class="w-9 h-9 animate-bounce"></i>
+                      </div>
+                      <div class="space-y-1.5">
+                        <h4 id="simMaintTitle" class="text-lg font-black tracking-tight text-white">Hệ Thống Đang Bảo Trì</h4>
+                        <p id="simMaintMsg" class="text-xs text-slate-300 leading-relaxed px-2">VSign đang tiến hành nâng cấp hạ tầng và làm mới chứng chỉ. Vui lòng quay lại sau ít phút.</p>
+                      </div>
+                      <div class="pt-2">
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-amber-300 text-[11px] font-bold">
+                          <i data-lucide="clock" class="w-3 h-3"></i>
+                          <span id="simMaintEst">Khoảng 30 phút</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="pt-4 space-y-2 shrink-0">
+                      <a id="simMaintContact" href="#" target="_blank" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/30">
+                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                        <span>Liên Hệ Hỗ Trợ Kỹ Thuật</span>
+                      </a>
+                      <p class="text-[9px] text-slate-500">Mã lỗi: ERR_MAINTENANCE_LOCK</p>
+                    </div>
+                  </div>
+
+                  <!-- SCREEN VIEW 2: FORCE UPDATE / VERSION POPUP -->
+                  <div id="simView-update" class="hidden flex-1 flex flex-col justify-center items-center p-5 text-white relative z-10 animate-in fade-in duration-200 bg-slate-900/60 backdrop-blur-md">
+                    <div class="w-full bg-slate-900/95 border border-white/15 rounded-3xl p-5 shadow-2xl space-y-3.5 text-center">
+                      <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                        <i data-lucide="arrow-up-circle" class="w-8 h-8"></i>
+                      </div>
+                      <div>
+                        <span id="simUpdateBadge" class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/20">
+                          Bản v1.0.1
+                        </span>
+                        <h4 id="simUpdateTitle" class="text-base font-extrabold text-white mt-1">Đã Có Bản Cập Nhật Mới</h4>
+                        <p id="simUpdateMsg" class="text-xs text-slate-300 mt-1 leading-relaxed">Bản cập nhật mới tối ưu tốc độ ký và sửa các lỗi chứng chỉ.</p>
+                      </div>
+
+                      <!-- Release notes box -->
+                      <div class="bg-black/40 rounded-2xl p-3 text-left border border-white/10 max-h-28 overflow-y-auto">
+                        <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Có gì mới:</p>
+                        <div id="simReleaseNotes" class="text-[11px] text-slate-200 space-y-1 font-medium whitespace-pre-line leading-relaxed">
+                          • Thêm bộ chọn màu Apple chuẩn
+                          • Gom nhóm chứng chỉ P12 thông minh
+                          • Sửa lỗi giao diện
+                        </div>
+                      </div>
+
+                      <div class="pt-1 space-y-2">
+                        <a id="simUpdateDownload" href="#" target="_blank" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/30">
+                          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                          <span>Cập Nhật Ngay</span>
+                        </a>
+                        <button id="simUpdateDismissBtn" class="text-[11px] text-slate-400 hover:text-white transition">
+                          Để sau
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- SCREEN VIEW 3: IN-APP NOTICE DIALOG -->
+                  <div id="simView-notice" class="hidden flex-1 flex flex-col justify-center items-center p-5 text-white relative z-10 animate-in fade-in duration-200 bg-slate-900/60 backdrop-blur-md">
+                    <div class="w-full bg-slate-900/95 border border-white/15 rounded-3xl p-5 shadow-2xl space-y-3.5 text-center">
+                      <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                        <i data-lucide="bell" class="w-8 h-8"></i>
+                      </div>
+                      <div>
+                        <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/20">
+                          Thông Báo Hệ Thống
+                        </span>
+                        <h4 id="simNoticeTitle" class="text-base font-extrabold text-white mt-1">Thông Báo Quan Trọng</h4>
+                        <p id="simNoticeMsg" class="text-xs text-slate-300 mt-1 leading-relaxed">Đã cập nhật kho chứng chỉ mới hoạt động ổn định.</p>
+                      </div>
+
+                      <div class="pt-2 space-y-2">
+                        <a id="simNoticeAction" href="#" target="_blank" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/30">
+                          <span>Xem Chi Tiết</span>
+                          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        </a>
+                        <button class="text-[11px] text-slate-400 hover:text-white transition">
+                          Đã hiểu & Đóng
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Home Bar -->
+                  <div class="h-5 w-full flex justify-center items-center shrink-0 z-30 pb-1">
+                    <div class="w-32 h-1 bg-white/40 rounded-full"></div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- RAW JSON VIEWER COLLAPSIBLE -->
+              <div class="bg-white rounded-2xl border border-black/[0.06] p-4 shadow-sm space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-gray-700 flex items-center gap-1">
+                    <i data-lucide="code" class="w-3.5 h-3.5 text-gray-400"></i> JSON Cấu Hình Hiện Tại
+                  </span>
+                  <button onclick="copyVSignCurrentJSON()" class="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                    <i data-lucide="copy" class="w-3 h-3"></i> Copy JSON
+                  </button>
+                </div>
+                <pre id="vsignRawJsonPre" class="p-3 rounded-xl bg-slate-900 text-slate-200 font-mono text-[10px] leading-relaxed overflow-x-auto max-h-48 scrollbar-none select-all">// Đang tải dữ liệu từ Google Apps Script...</pre>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
     </div>
 
@@ -3131,7 +3548,7 @@
     // 13. COMMAND PALETTE & NAVIGATION
     // ==========================================
     function switchTab(tabId) {
-      const validTabs = ['dashboard', 'analytics', 'mmo_orders', 'mmo_products', 'mmo_categories', 'mmo_dealhot', 'users', 'transactions', 'shortcuts', 'ai_knowledge', 'audit', 'system_settings', 'support_chat'];
+      const validTabs = ['dashboard', 'analytics', 'mmo_orders', 'mmo_products', 'mmo_categories', 'mmo_dealhot', 'users', 'transactions', 'shortcuts', 'ai_knowledge', 'audit', 'system_settings', 'support_chat', 'vsign_config'];
       validTabs.forEach(t => {
         const el = document.getElementById('tab-' + t);
         if (el) el.classList.add('hidden');
@@ -3150,9 +3567,13 @@
         mmo_products: 'Kho Sản Phẩm', mmo_categories: 'Quản Lý Danh Mục', mmo_dealhot: 'Deal Hot Banner',
         users: 'Khách Hàng', transactions: 'Lịch Sử Nạp Tiền', shortcuts: 'Kho Phím Tắt',
         ai_knowledge: 'Tri Thức AI', audit: 'Nhật Ký Hoạt Động', system_settings: 'Cài Đặt Hệ Thống',
-        support_chat: 'Chat Hỗ Trợ Khách Hàng'
+        support_chat: 'Chat Hỗ Trợ Khách Hàng', vsign_config: 'VSign App — Cấu Hình Từ Xa & Bảo Trì'
       };
       document.getElementById('pageTitle').innerText = titleMap[tabId] || 'Workspace';
+
+      if (tabId === 'vsign_config') {
+        loadVSignRemoteConfig(true);
+      }
 
       if (tabId === 'support_chat') {
         fetchSupportChats(false);
@@ -3208,6 +3629,7 @@
       { label: 'Cấu Hình Deal Hot', action: () => switchTab('mmo_dealhot'), category: 'Điều Hướng' },
       { label: 'Khách Hàng & Số Dư', action: () => switchTab('users'), category: 'Điều Hướng' },
       { label: 'Trợ Lý AI & Playground', action: () => switchTab('ai_knowledge'), category: 'Điều Hướng' },
+      { label: 'Cấu Hình VSign App (Remote Config & Bảo Trì)', action: () => switchTab('vsign_config'), category: 'Điều Hướng' },
       { label: 'Nhật Ký Hoạt Động (Audit)', action: () => switchTab('audit'), category: 'Điều Hướng' },
       { label: 'Đồng Bộ Toàn Bộ Lên Máy Chủ', action: () => saveAllConfigsToServer(), category: 'Thao Tác' },
       { label: 'Đăng Xuất Khỏi Admin', action: () => logoutAdmin(), category: 'Bảo Mật' }
@@ -5611,6 +6033,489 @@
       }
     }
 
+    // ==========================================
+    // MODULE: VSIGN REMOTE CONFIG & BẢO TRÌ
+    // ==========================================
+    const VSIGN_REMOTE_CONFIG_API = "https://script.google.com/macros/s/AKfycbzgzA2WNXNOFK1O_T3odXo6-2y21Aq3Yjzs5DAGXJeYHOZgsta5r0eGrcssGYUST6yT/exec";
+    const VSIGN_REMOTE_CONFIG_SECRET = "vsign_admin_bi_mat_2026";
+    let vsignRemoteConfigCache = null;
+    let vsignPreviewMode = 'maint';
+
+    async function loadVSignRemoteConfig(silent = false) {
+      const btn = document.getElementById('btnRefreshVSignConfig');
+      const rawPre = document.getElementById('vsignRawJsonPre');
+      if (btn && !silent) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Đang tải...</span>`;
+      }
+
+      try {
+        const res = await fetch(`${VSIGN_REMOTE_CONFIG_API}?t=${Date.now()}`);
+        const json = await res.json();
+
+        if (json.success && json.data) {
+          vsignRemoteConfigCache = json.data;
+
+          // 1. Fill Maintenance fields
+          const m = json.data.maintenance || {};
+          const maintToggle = document.getElementById('vsignMaintEnabled');
+          if (maintToggle) {
+            maintToggle.checked = !!m.enabled;
+            onVSignMaintToggleChange(maintToggle.checked);
+          }
+          if (document.getElementById('vsignMaintTitle')) document.getElementById('vsignMaintTitle').value = m.title || '';
+          if (document.getElementById('vsignMaintMsg')) document.getElementById('vsignMaintMsg').value = m.message || '';
+          if (document.getElementById('vsignMaintEst')) document.getElementById('vsignMaintEst').value = m.estimatedTime || '';
+          if (document.getElementById('vsignMaintContact')) document.getElementById('vsignMaintContact').value = m.contactUrl || '';
+
+          // 2. Fill Update fields
+          const u = json.data.update || {};
+          if (document.getElementById('vsignLatestVersion')) document.getElementById('vsignLatestVersion').value = u.latestVersion || '';
+          if (document.getElementById('vsignMinVersion')) document.getElementById('vsignMinVersion').value = u.minVersion || '';
+          const forceToggle = document.getElementById('vsignForceUpdate');
+          if (forceToggle) {
+            forceToggle.checked = !!u.forceUpdate;
+            onVSignForceUpdateToggleChange(forceToggle.checked);
+          }
+          if (document.getElementById('vsignUpdateTitle')) document.getElementById('vsignUpdateTitle').value = u.title || '';
+          if (document.getElementById('vsignUpdateMsg')) document.getElementById('vsignUpdateMsg').value = u.message || '';
+          if (document.getElementById('vsignUpdateDownloadUrl')) document.getElementById('vsignUpdateDownloadUrl').value = u.downloadUrl || '';
+          if (document.getElementById('vsignReleaseNotes')) document.getElementById('vsignReleaseNotes').value = u.releaseNotes || '';
+
+          // 3. Fill Notice fields
+          const n = json.data.notice || {};
+          const noticeToggle = document.getElementById('vsignNoticeEnabled');
+          if (noticeToggle) {
+            noticeToggle.checked = !!n.enabled;
+            onVSignNoticeToggleChange(noticeToggle.checked);
+          }
+          if (document.getElementById('vsignNoticeId')) document.getElementById('vsignNoticeId').value = n.id || '';
+          if (document.getElementById('vsignNoticeTitle')) document.getElementById('vsignNoticeTitle').value = n.title || '';
+          if (document.getElementById('vsignNoticeMsg')) document.getElementById('vsignNoticeMsg').value = n.message || '';
+          if (document.getElementById('vsignNoticeAction')) document.getElementById('vsignNoticeAction').value = n.actionUrl || '';
+
+          // 4. Update Header Badges & Sidebar Badge
+          updateVSignBadges(m.enabled);
+
+          // 5. Update timestamp & Raw JSON
+          const timeStr = json.data.timestamp ? new Date(json.data.timestamp).toLocaleTimeString('vi-VN') + ' ' + new Date(json.data.timestamp).toLocaleDateString('vi-VN') : new Date().toLocaleTimeString('vi-VN');
+          if (document.getElementById('vsignLastSyncedText')) {
+            document.getElementById('vsignLastSyncedText').innerText = timeStr;
+          }
+          if (rawPre) {
+            rawPre.innerText = JSON.stringify(json.data, null, 2);
+          }
+
+          // 6. Update Phone Preview
+          updateVSignPhonePreview();
+
+          if (!silent) {
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: 'Đã đồng bộ cấu hình VSign từ máy chủ!',
+              showConfirmButton: false,
+              timer: 1800
+            });
+          }
+        } else {
+          throw new Error(json.message || 'Dữ liệu không hợp lệ');
+        }
+      } catch (err) {
+        console.error("Lỗi tải Remote Config VSign:", err);
+        if (!silent) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Lỗi Tải Cấu Hình VSign',
+            text: err.message || 'Không thể kết nối Google Apps Script. Vui lòng thử lại sau.'
+          });
+        }
+      } finally {
+        if (btn && !silent) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Tải lại</span>`;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    function updateVSignBadges(isMaint) {
+      const navBadge = document.getElementById('badgeVSignNav');
+      const pill = document.getElementById('vsignLiveStatusPill');
+
+      if (isMaint) {
+        if (navBadge) {
+          navBadge.innerText = 'Bảo Trì';
+          navBadge.className = 'bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full';
+        }
+        if (pill) {
+          pill.innerHTML = '🔴 Đang Khóa Bảo Trì';
+          pill.className = 'px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30 text-[10px] font-bold';
+        }
+      } else {
+        if (navBadge) {
+          navBadge.innerText = 'Online';
+          navBadge.className = 'bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full';
+        }
+        if (pill) {
+          pill.innerHTML = '🟢 Hoạt Động Bình Thường';
+          pill.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold';
+        }
+      }
+    }
+
+    function onVSignMaintToggleChange(checked) {
+      const label = document.getElementById('vsignMaintToggleLabel');
+      if (label) {
+        label.innerText = checked ? 'Trạng thái: ĐANG BẬT' : 'Trạng thái: TẮT';
+        label.className = checked ? 'text-xs font-bold text-rose-600' : 'text-xs font-bold text-gray-700';
+      }
+      updateVSignBadges(checked);
+      updateVSignPhonePreview();
+    }
+
+    function onVSignForceUpdateToggleChange(checked) {
+      const label = document.getElementById('vsignForceUpdateToggleLabel');
+      if (label) {
+        label.innerText = checked ? 'Ép cập nhật: BẬT' : 'Ép cập nhật: TẮT';
+        label.className = checked ? 'text-xs font-bold text-indigo-600' : 'text-xs font-bold text-gray-700';
+      }
+      updateVSignPhonePreview();
+    }
+
+    function onVSignNoticeToggleChange(checked) {
+      const label = document.getElementById('vsignNoticeToggleLabel');
+      if (label) {
+        label.innerText = checked ? 'Thông báo: BẬT' : 'Thông báo: TẮT';
+        label.className = checked ? 'text-xs font-bold text-amber-600' : 'text-xs font-bold text-gray-700';
+      }
+      updateVSignPhonePreview();
+    }
+
+    async function saveVSignMaintenance() {
+      const btn = document.getElementById('btnSaveVSignMaint');
+      const enabled = document.getElementById('vsignMaintEnabled').checked;
+      const title = document.getElementById('vsignMaintTitle').value.trim();
+      const message = document.getElementById('vsignMaintMsg').value.trim();
+      const estimatedTime = document.getElementById('vsignMaintEst').value.trim();
+      const contactUrl = document.getElementById('vsignMaintContact').value.trim();
+
+      if (!title || !message) {
+        Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập tiêu đề và nội dung bảo trì!' });
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Đang lưu...</span>`;
+      }
+
+      try {
+        const payload = {
+          secret: VSIGN_REMOTE_CONFIG_SECRET,
+          maintenance: {
+            enabled: enabled,
+            title: title,
+            message: message,
+            estimatedTime: estimatedTime,
+            contactUrl: contactUrl
+          }
+        };
+
+        const res = await fetch(VSIGN_REMOTE_CONFIG_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Lưu Bảo Trì Thành Công!',
+            text: enabled ? 'Hệ thống đã bật chế độ khóa bảo trì trên toàn bộ app VSign.' : 'Hệ thống đã mở khóa, người dùng có thể sử dụng VSign bình thường.',
+            confirmButtonColor: '#e11d48'
+          });
+          updateVSignBadges(enabled);
+          if (json.data && document.getElementById('vsignRawJsonPre')) {
+            document.getElementById('vsignRawJsonPre').innerText = JSON.stringify(json.data, null, 2);
+          }
+          if (typeof logAuditAction === 'function') {
+            logAuditAction('BẢO TRÌ VSIGN', enabled ? `Bật bảo trì: "${title}"` : 'Tắt bảo trì, mở app');
+          }
+        } else {
+          throw new Error(json.message || 'Cập nhật thất bại');
+        }
+      } catch (err) {
+        console.error("Lỗi lưu bảo trì VSign:", err);
+        Swal.fire({ icon: 'error', title: 'Lưu Thất Bại', text: err.message || 'Lỗi gửi dữ liệu lên máy chủ.' });
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i><span>Lưu Cấu Hình Bảo Trì</span>`;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    async function saveVSignUpdate() {
+      const btn = document.getElementById('btnSaveVSignUpdate');
+      const latestVersion = document.getElementById('vsignLatestVersion').value.trim();
+      const minVersion = document.getElementById('vsignMinVersion').value.trim();
+      const forceUpdate = document.getElementById('vsignForceUpdate').checked;
+      const title = document.getElementById('vsignUpdateTitle').value.trim();
+      const message = document.getElementById('vsignUpdateMsg').value.trim();
+      const downloadUrl = document.getElementById('vsignUpdateDownloadUrl').value.trim();
+      const releaseNotes = document.getElementById('vsignReleaseNotes').value.trim();
+
+      if (!latestVersion || !title) {
+        Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập phiên bản và tiêu đề cập nhật!' });
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Đang lưu...</span>`;
+      }
+
+      try {
+        const payload = {
+          secret: VSIGN_REMOTE_CONFIG_SECRET,
+          update: {
+            latestVersion: latestVersion,
+            minVersion: minVersion,
+            forceUpdate: forceUpdate,
+            title: title,
+            message: message,
+            downloadUrl: downloadUrl,
+            releaseNotes: releaseNotes
+          }
+        };
+
+        const res = await fetch(VSIGN_REMOTE_CONFIG_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Lưu Cập Nhật Thành Công!',
+            text: `Đã thiết lập phiên bản mới v${latestVersion} (Ép cập nhật: ${forceUpdate ? 'BẬT' : 'TẮT'}).`,
+            confirmButtonColor: '#4f46e5'
+          });
+          if (json.data && document.getElementById('vsignRawJsonPre')) {
+            document.getElementById('vsignRawJsonPre').innerText = JSON.stringify(json.data, null, 2);
+          }
+          if (typeof logAuditAction === 'function') {
+            logAuditAction('CẬP NHẬT PHIÊN BẢN VSIGN', `Version: v${latestVersion}, Ép: ${forceUpdate}`);
+          }
+        } else {
+          throw new Error(json.message || 'Cập nhật thất bại');
+        }
+      } catch (err) {
+        console.error("Lỗi lưu update VSign:", err);
+        Swal.fire({ icon: 'error', title: 'Lưu Thất Bại', text: err.message || 'Lỗi gửi dữ liệu lên máy chủ.' });
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i><span>Lưu Cập Nhật Phiên Bản</span>`;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    async function saveVSignNotice() {
+      const btn = document.getElementById('btnSaveVSignNotice');
+      const enabled = document.getElementById('vsignNoticeEnabled').checked;
+      const id = document.getElementById('vsignNoticeId').value.trim() || ('notice_' + Date.now());
+      const title = document.getElementById('vsignNoticeTitle').value.trim();
+      const message = document.getElementById('vsignNoticeMsg').value.trim();
+      const actionUrl = document.getElementById('vsignNoticeAction').value.trim();
+
+      if (!title || !message) {
+        Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập tiêu đề và nội dung thông báo!' });
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Đang lưu...</span>`;
+      }
+
+      try {
+        const payload = {
+          secret: VSIGN_REMOTE_CONFIG_SECRET,
+          notice: {
+            enabled: enabled,
+            id: id,
+            title: title,
+            message: message,
+            actionUrl: actionUrl
+          }
+        };
+
+        const res = await fetch(VSIGN_REMOTE_CONFIG_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Lưu Thông Báo Thành Công!',
+            text: `Đã lưu thông báo ID [${id}] (Trạng thái: ${enabled ? 'Hiển thị' : 'Tắt'}).`,
+            confirmButtonColor: '#f59e0b'
+          });
+          if (json.data && document.getElementById('vsignRawJsonPre')) {
+            document.getElementById('vsignRawJsonPre').innerText = JSON.stringify(json.data, null, 2);
+          }
+          if (typeof logAuditAction === 'function') {
+            logAuditAction('THÔNG BÁO VSIGN', `ID: ${id}, Bật: ${enabled}`);
+          }
+        } else {
+          throw new Error(json.message || 'Cập nhật thất bại');
+        }
+      } catch (err) {
+        console.error("Lỗi lưu thông báo VSign:", err);
+        Swal.fire({ icon: 'error', title: 'Lưu Thất Bại', text: err.message || 'Lỗi gửi dữ liệu lên máy chủ.' });
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i><span>Lưu Thông Báo App</span>`;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    function setVSignPreviewMode(mode) {
+      vsignPreviewMode = mode;
+      const modes = ['maint', 'update', 'notice'];
+      modes.forEach(m => {
+        const v = document.getElementById('simView-' + m);
+        const b = document.getElementById('prevTabBtn-' + m);
+        if (v) {
+          if (m === mode) v.classList.remove('hidden');
+          else v.classList.add('hidden');
+        }
+        if (b) {
+          if (m === mode) {
+            b.className = 'px-2.5 py-1 rounded-lg bg-white shadow-xs font-bold ' + (m === 'maint' ? 'text-rose-600' : (m === 'update' ? 'text-indigo-600' : 'text-amber-600')) + ' transition';
+          } else {
+            b.className = 'px-2.5 py-1 rounded-lg text-gray-500 hover:text-gray-900 transition';
+          }
+        }
+      });
+      updateVSignPhonePreview();
+    }
+
+    function updateVSignPhonePreview() {
+      // 1. Maintenance
+      const mTitle = document.getElementById('vsignMaintTitle')?.value.trim() || 'Hệ Thống Đang Bảo Trì';
+      const mMsg = document.getElementById('vsignMaintMsg')?.value.trim() || 'VSign đang tiến hành nâng cấp hạ tầng và làm mới chứng chỉ. Vui lòng quay lại sau ít phút.';
+      const mEst = document.getElementById('vsignMaintEst')?.value.trim() || 'Khoảng 30 phút';
+      const mContact = document.getElementById('vsignMaintContact')?.value.trim() || '#';
+
+      if (document.getElementById('simMaintTitle')) document.getElementById('simMaintTitle').innerText = mTitle;
+      if (document.getElementById('simMaintMsg')) document.getElementById('simMaintMsg').innerText = mMsg;
+      if (document.getElementById('simMaintEst')) document.getElementById('simMaintEst').innerText = mEst;
+      if (document.getElementById('simMaintContact')) document.getElementById('simMaintContact').href = mContact;
+
+      // 2. Update
+      const uVer = document.getElementById('vsignLatestVersion')?.value.trim() || '1.0.0';
+      const uTitle = document.getElementById('vsignUpdateTitle')?.value.trim() || 'Đã Có Bản Cập Nhật Mới';
+      const uMsg = document.getElementById('vsignUpdateMsg')?.value.trim() || 'Bản cập nhật mới tối ưu tốc độ ký và sửa các lỗi chứng chỉ.';
+      const uDl = document.getElementById('vsignUpdateDownloadUrl')?.value.trim() || '#';
+      const uNotes = document.getElementById('vsignReleaseNotes')?.value.trim() || '• Không có ghi chú';
+      const isForce = document.getElementById('vsignForceUpdate')?.checked;
+
+      if (document.getElementById('simUpdateBadge')) document.getElementById('simUpdateBadge').innerText = 'Bản v' + uVer;
+      if (document.getElementById('simUpdateTitle')) document.getElementById('simUpdateTitle').innerText = uTitle;
+      if (document.getElementById('simUpdateMsg')) document.getElementById('simUpdateMsg').innerText = uMsg;
+      if (document.getElementById('simReleaseNotes')) document.getElementById('simReleaseNotes').innerText = uNotes;
+      if (document.getElementById('simUpdateDownload')) document.getElementById('simUpdateDownload').href = uDl;
+      const dismissBtn = document.getElementById('simUpdateDismissBtn');
+      if (dismissBtn) {
+        dismissBtn.style.display = isForce ? 'none' : 'inline-block';
+      }
+
+      // 3. Notice
+      const nTitle = document.getElementById('vsignNoticeTitle')?.value.trim() || 'Thông Báo Quan Trọng';
+      const nMsg = document.getElementById('vsignNoticeMsg')?.value.trim() || 'Đã cập nhật kho chứng chỉ mới hoạt động ổn định.';
+      const nAction = document.getElementById('vsignNoticeAction')?.value.trim() || '#';
+
+      if (document.getElementById('simNoticeTitle')) document.getElementById('simNoticeTitle').innerText = nTitle;
+      if (document.getElementById('simNoticeMsg')) document.getElementById('simNoticeMsg').innerText = nMsg;
+      if (document.getElementById('simNoticeAction')) document.getElementById('simNoticeAction').href = nAction;
+    }
+
+    function generateNewNoticeId() {
+      const newId = 'notice_' + Math.random().toString(36).substring(2, 8);
+      const input = document.getElementById('vsignNoticeId');
+      if (input) input.value = newId;
+      Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: `Đã sinh ID mới: ${newId}`, timer: 1500, showConfirmButton: false });
+    }
+
+    async function testVSignApiLive() {
+      const btn = document.getElementById('btnTestVSignPing');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Ping...</span>`;
+      }
+      try {
+        const start = Date.now();
+        const res = await fetch(`${VSIGN_REMOTE_CONFIG_API}?ping=${Date.now()}`);
+        const latency = Date.now() - start;
+        const json = await res.json();
+        Swal.fire({
+          icon: 'success',
+          title: 'Kết Nối API Thành Công!',
+          html: `
+            <div class="text-left text-xs space-y-2 mt-2">
+              <div class="p-3 bg-gray-50 rounded-xl font-mono space-y-1">
+                <p>Status: <b class="text-emerald-600">200 OK</b></p>
+                <p>Roundtrip Latency: <b class="text-indigo-600">${latency} ms</b></p>
+                <p>Google Script Execution: <b class="text-blue-600">Active</b></p>
+              </div>
+              <p class="text-gray-500">API sẵn sàng phục vụ toàn bộ app VSign trên iPhone/iPad.</p>
+            </div>
+          `,
+          confirmButtonColor: '#4f46e5'
+        });
+      } catch (err) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Kết Nối API Thất Bại',
+          text: err.message || 'Không thể gửi yêu cầu tới máy chủ Google Apps Script.'
+        });
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i data-lucide="zap" class="w-3.5 h-3.5"></i><span>Test API Ping</span>`;
+          lucide.createIcons();
+        }
+      }
+    }
+
+    function copyVSignEndpoint() {
+      navigator.clipboard.writeText(VSIGN_REMOTE_CONFIG_API).then(() => {
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã copy URL Endpoint API!', timer: 1500, showConfirmButton: false });
+      });
+    }
+
+    function copyVSignCurrentJSON() {
+      const pre = document.getElementById('vsignRawJsonPre');
+      if (!pre) return;
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã copy JSON cấu hình!', timer: 1500, showConfirmButton: false });
+      });
+    }
+
     // DOM Ready Initialization
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
@@ -5630,6 +6535,9 @@
 
       // Khởi tạo cấu hình Cổng Vượt Link (YeuMoney / Link4m)
       loadShortenerSettingsAdmin();
+
+      // Nạp cấu hình từ xa VSign App (Background sync)
+      loadVSignRemoteConfig(true);
 
       // Tự động làm mới danh sách khách trực tuyến mỗi 25 giây khi admin đang xem tab Thống Kê
       setInterval(() => {
