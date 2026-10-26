@@ -3,366 +3,748 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Tài Khoản - IPAVIET</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <title>Tài Khoản & Hội Viên — IPAVIET Ecosystem</title>
+  <meta name="description" content="Quản lý tài khoản IPAVIET ID: Số dư ví, gói VIP, tủ đồ bản quyền, lịch sử tải ứng dụng IPA và lịch sử giao dịch.">
+
+  <!-- Apple Favicon & Web App Meta -->
+  <link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/fluency/96/user-male-circle.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <!-- Lucide Icons & SweetAlert2 -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Tailwind CSS CDN with Apple Design System Configuration -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="minimalist-modern.css">
-  
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { 
-            serif: ['Calistoga', 'serif'], 
-            sans: ['Inter', 'sans-serif'], 
-            mono: ['"JetBrains Mono"', 'monospace'] 
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
           },
-          colors: { 
-            brand: '#0052FF', 
-            brandDark: '#4D7CFF', 
-            bgLight: '#FAFAFA', 
-            bgDark: '#090E1A', 
-            cardLight: '#FFFFFF', 
-            cardDark: '#0F172A', 
-            iosGray: '#8E8E93' 
+          colors: {
+            apple: {
+              blue: '#0071E3',
+              darkBlue: '#0A84FF',
+              green: '#34C759',
+              amber: '#FF9500',
+              red: '#FF3B30',
+              purple: '#AF52DE',
+              gray: '#86868B',
+              grayLight: '#E5E5EA',
+              grayDark: '#1C1C1E',
+              bgLight: '#F5F5F7',
+              bgDark: '#000000',
+              cardLight: '#FFFFFF',
+              cardDark: '#1C1C1E',
+              separatorLight: 'rgba(0, 0, 0, 0.08)',
+              separatorDark: 'rgba(255, 255, 255, 0.12)'
+            },
+            brand: {
+              DEFAULT: '#0071E3',
+              dark: '#0052FF'
+            }
           },
-          animation: { 
-            'fluid-up': 'fluidUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards',
-            'fadeIn': 'fadeIn 0.4s ease forwards',
-            'shimmer': 'shimmer 2s linear infinite'
-          },
-          keyframes: { 
-            fluidUp: { '0%': { transform: 'translateY(20px) scale(0.98)', opacity: '0' }, '100%': { transform: 'translateY(0) scale(1)', opacity: '1' } },
-            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-            shimmer: { '0%': { backgroundPosition: '200% 0' }, '100%': { backgroundPosition: '-200% 0' } }
+          boxShadow: {
+            'apple': '0 4px 24px rgba(0, 0, 0, 0.06)',
+            'apple-hover': '0 16px 36px rgba(0, 113, 227, 0.14)',
+            'card': '0 8px 30px rgba(0, 0, 0, 0.08)'
           }
         }
       }
-    }
+    };
   </script>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+
   <style>
-    @import url('fonts.css');
-    :root { font-size: 16px; }
-    
-    body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; user-select: none; overflow-x: hidden; zoom: 70%; font-family: var(--font-sans), sans-serif !important; }
-    @media (max-width: 768px) {
-      body {
-        zoom: 70% !important;
-        height: auto !important;
-        min-height: 143vh !important;
-        overflow: auto !important;
-      }
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
     }
-    .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-    
-    .glass-effect { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(25px); border-color: rgba(0,0,0,0.08); }
-    .dark .glass-effect { background: rgba(28, 28, 30, 0.75); border-color: rgba(255,255,255,0.1); }
-    
-    .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.15); }
-    .dark .spatial-shadow { box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6); }
-    
-    .floating-nav { margin: 0 auto 24px auto; border-radius: 35px; width: calc(100% - 32px); max-width: 500px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-    .dark .floating-nav { box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
-    
-    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; color: #8E8E93; transition: all 0.3s; background: none; border: none; cursor: pointer; text-decoration: none;}
-    .tab-btn i { width: 22px; height: 22px; transition: all 0.4s; } 
-    .tab-btn span { font-size: 0.6rem; font-weight: 700; opacity: 0.8; }
-    .tab-btn.active { color: #2563eb; }
-    .dark .tab-btn.active { color: #1d4ed8; }
-    .tab-btn.active i { transform: translateY(-4px) scale(1.15); filter: drop-shadow(0 4px 6px rgba(37,99,235,0.4)); }
-    .tab-btn.active span { opacity: 1; font-weight: 800; transform: translateY(-2px); }
-    
-    .expand-anim { transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out; overflow: hidden; }
-    
-    .slide-page { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 60; }
-    .slide-page.open { transform: translateX(0); }
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
+      letter-spacing: -0.015em;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Apple Squircle Continuous Curve */
+    .apple-squircle {
+      border-radius: 22.5% !important;
+      overflow: hidden;
+      -webkit-corner-smoothing: antialiased;
+    }
+
+    /* Apple Frosted Glass */
+    .apple-glass {
+      background: rgba(245, 245, 247, 0.85);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    }
+    .dark .apple-glass {
+      background: rgba(22, 22, 23, 0.85);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    }
+
+    /* Apple Titanium Card Metallic Finish */
+    .apple-card-metallic {
+      background: linear-gradient(135deg, #1D1D1F 0%, #2C2C2E 45%, #182236 75%, #0071E3 120%);
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    }
+    .dark .apple-card-metallic {
+      background: linear-gradient(135deg, #111112 0%, #1C1C1E 45%, #0F1E3D 80%, #0071E3 130%);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    }
+
+    /* Subpage Slide In Animation */
+    .slide-page {
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 60;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .slide-page.open {
+      transform: translateX(0);
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .expand-anim {
+      transition: max-height 0.35s ease-in-out, opacity 0.35s ease-in-out;
+      overflow: hidden;
+    }
+
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
 
     /* Highlight Sign App Animation */
-    .sign-border-glow { position: absolute; inset: -2px; border-radius: 18px; background: linear-gradient(90deg, #ff007f, #7928ca, #2563eb, #ff007f); background-size: 200% 200%; z-index: -1; animation: shimmer 4s linear infinite; opacity: 0.8; }
+    @keyframes shimmerBorder {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .sign-border-glow {
+      position: absolute;
+      inset: -2px;
+      border-radius: 26px;
+      background: linear-gradient(90deg, #ff007f, #7928ca, #0071e3, #ff007f);
+      background-size: 200% 200%;
+      z-index: -1;
+      animation: shimmerBorder 4s linear infinite;
+      opacity: 0.85;
+    }
   </style>
-</head>
-<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-white transition-colors duration-500 font-sans h-[100dvh] flex flex-col overflow-hidden">
 
-  <header class="glass-effect fixed top-0 w-full z-40 h-[80px] border-b flex items-center px-6 transition-all duration-300">
-    <div class="flex items-center gap-4 w-full max-w-6xl mx-auto relative justify-between">
-      <div class="font-black text-[22px] tracking-tight flex items-center gap-3 cursor-pointer shrink-0" onclick="window.location.href='index.html'">
-        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-brand to-indigo-600 flex items-center justify-center text-white spatial-shadow active:scale-90 transition-transform">
-           <i data-lucide="user" class="w-5 h-5 fill-white"></i>
+  <script>
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+</head>
+<body class="bg-apple-bgLight dark:bg-apple-bgDark text-black dark:text-white min-h-screen flex flex-col transition-colors duration-200 overflow-x-hidden max-w-full">
+
+  <!-- ================================================================
+       APPLE STICKY TOP NAVIGATION BAR
+       ================================================================ -->
+  <header class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-all duration-200 pt-safe">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+      
+      <!-- Back / Home Brand Link -->
+      <a href="index.html" class="flex items-center gap-2 group">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 apple-squircle bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform shrink-0">
+          <i data-lucide="shield" class="w-4 h-4 sm:w-4.5 sm:h-4.5"></i>
         </div>
-        <span>Tài Khoản</span>
-      </div>
-      <div class="flex items-center gap-2 ml-auto shrink-0">
-        <button onclick="toggleTheme()" class="w-10 h-10 rounded-full bg-gray-200/50 dark:bg-white/10 flex items-center justify-center active:scale-75 transition-transform duration-300 backdrop-blur-md">
-          <i data-lucide="moon" class="w-5 h-5 dark:text-yellow-400 dark:fill-yellow-400"></i>
+        <div class="min-w-0">
+          <div class="font-extrabold text-xs sm:text-sm tracking-tight leading-none text-black dark:text-white">
+            IPAVIET <span class="text-apple-blue font-black">ID</span>
+          </div>
+          <div class="text-[8px] sm:text-[9px] text-apple-gray font-semibold tracking-wider uppercase mt-0.5">
+            Tài Khoản & Hội Viên
+          </div>
+        </div>
+      </a>
+
+      <!-- Right Action Items: Market, Top-up, Theme -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Quick Market Link -->
+        <a href="tap-hoa-mmo.html" class="hidden xs:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 text-xs font-bold text-black dark:text-white transition active:scale-95">
+          <i data-lucide="shopping-bag" class="w-3.5 h-3.5 text-apple-blue"></i>
+          <span>Chợ MMO</span>
+        </a>
+
+        <!-- Quick Top-up Link -->
+        <a href="naptien.html" class="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-apple-blue/10 text-apple-blue font-bold text-xs hover:bg-apple-blue/15 transition active:scale-95">
+          <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
+          <span>Nạp Ví</span>
+        </a>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button 
+          onclick="toggleTheme()" 
+          class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/5 dark:bg-white/10 text-black dark:text-white flex items-center justify-center hover:bg-black/10 transition active:scale-95" 
+          title="Đổi giao diện"
+        >
+          <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+          <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
         </button>
       </div>
+
     </div>
   </header>
 
-  <div id="loadingScreen" class="fixed inset-0 z-30 bg-bgLight dark:bg-bgDark flex flex-col items-center justify-center transition-opacity duration-300">
-      <div class="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p class="text-sm font-bold text-gray-500 animate-pulse">Đang đồng bộ hệ thống...</p>
+  <!-- ================================================================
+       LOADING SCREEN (INITIAL STATE)
+       ================================================================ -->
+  <div id="loadingScreen" class="fixed inset-0 z-50 bg-apple-bgLight dark:bg-apple-bgDark flex flex-col items-center justify-center transition-opacity duration-300">
+    <div class="w-10 h-10 border-3 border-apple-blue border-t-transparent rounded-full animate-spin mb-3"></div>
+    <p class="text-xs sm:text-sm font-bold text-apple-gray animate-pulse">Đang đồng bộ tài khoản IPAVIET...</p>
   </div>
 
-  <main class="flex-1 h-full overflow-y-auto overflow-x-hidden scrollbar-hide pt-[95px] pb-[130px] relative px-5 md:px-6 max-w-lg mx-auto w-full">
+  <!-- ================================================================
+       MAIN CONTAINER
+       ================================================================ -->
+  <main class="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6 pb-28 sm:pb-16">
+
+    <!-- ════════════════════════════════════════════════════════════════
+         STATE 1: PROFILE VIEW (WHEN USER IS LOGGED IN)
+         ════════════════════════════════════════════════════════════════ -->
+    <div id="profileView" class="hidden space-y-6">
+
+      <!-- ═══ 1. APPLE ID HERO HEADER CARD ═══ -->
+      <div class="rounded-[28px] sm:rounded-[32px] p-5 sm:p-7 bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm flex flex-col sm:flex-row items-center sm:items-start gap-5 relative overflow-hidden">
+        
+        <!-- Ambient subtle glow -->
+        <div class="absolute -right-8 -top-8 w-48 h-48 bg-apple-blue/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <!-- Avatar Squircle -->
+        <div class="relative shrink-0">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 apple-squircle bg-gradient-to-br from-apple-blue via-blue-600 to-indigo-600 p-1 shadow-lg shadow-apple-blue/20 flex items-center justify-center">
+            <div class="w-full h-full apple-squircle bg-white dark:bg-[#2C2C2E] flex items-center justify-center text-apple-blue dark:text-white font-black text-2xl sm:text-3xl" id="avatarLetter">
+              U
+            </div>
+          </div>
+          <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-apple-green text-white flex items-center justify-center shadow-md text-[11px] border-2 border-white dark:border-[#1C1C1E]">
+            <i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+          </span>
+        </div>
+
+        <!-- Info & Badges -->
+        <div class="flex-1 text-center sm:text-left min-w-0 space-y-1.5">
+          <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+            <h2 class="text-xl sm:text-2xl font-black text-black dark:text-white truncate" id="userNameShow">
+              Thành Viên
+            </h2>
+            <span class="px-2.5 py-0.5 rounded-full bg-apple-blue/10 text-apple-blue font-bold text-[10px] sm:text-xs">
+              Verified ID
+            </span>
+          </div>
+
+          <p class="text-xs sm:text-sm text-apple-gray font-medium truncate" id="userEmailShow">
+            user@email.com
+          </p>
+
+          <!-- Copyable UID Pill -->
+          <div class="pt-1 flex items-center justify-center sm:justify-start">
+            <button 
+              onclick="copyUid()" 
+              class="px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 text-[11px] font-mono text-apple-gray dark:text-slate-300 font-semibold flex items-center gap-1.5 transition active:scale-95" 
+              title="Nhấp để copy UID"
+            >
+              <i data-lucide="copy" class="w-3 h-3 text-apple-blue"></i>
+              <span>UID: <b id="userUidShow" class="text-black dark:text-white">...</b></span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ 2. WALLET & VIP STATUS METRIC RIBBONS (2 COLS) ═══ -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        
+        <!-- Metric 1: Apple Wallet Balance Card -->
+        <div class="rounded-[24px] p-5 bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm flex items-center justify-between gap-4">
+          <div class="space-y-1 min-w-0">
+            <div class="text-[11px] font-bold text-apple-gray uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="wallet" class="w-3.5 h-3.5 text-apple-blue"></i>
+              <span>Số Dư Ví IPAVIET</span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-black text-apple-blue truncate">
+              <span id="userCoinsShow">0</span>đ
+            </div>
+          </div>
+          <a href="naptien.html" class="px-4 py-2 rounded-full bg-apple-blue text-white font-bold text-xs hover:bg-blue-600 transition active:scale-95 shrink-0 shadow-md shadow-apple-blue/25 flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Nạp Thêm</span>
+          </a>
+        </div>
+
+        <!-- Metric 2: VIP Membership Status Card -->
+        <div class="rounded-[24px] p-5 bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm flex items-center justify-between gap-4">
+          <div class="space-y-1 min-w-0">
+            <div class="text-[11px] font-bold text-apple-gray uppercase tracking-wider flex items-center gap-1">
+              <i data-lucide="crown" class="w-3.5 h-3.5 text-apple-amber"></i>
+              <span>Gói Hội Viên</span>
+            </div>
+            <div id="userVipShow" class="flex items-center gap-1.5">
+              <span class="px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-apple-gray font-bold text-xs">
+                Cơ bản
+              </span>
+            </div>
+          </div>
+          <a href="ipavip.html" class="px-4 py-2 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 text-black dark:text-white font-bold text-xs transition active:scale-95 shrink-0">
+            <span>Nâng Cấp</span>
+          </a>
+        </div>
+
+      </div>
+
+      <!-- ═══ 3. FEATURED BANNER: SIGN APP ONLINE (APPLE SQUIRCLE HERO) ═══ -->
+      <a href="https://ipaviet.site/sign-app/" class="block relative rounded-[24px] group active:scale-[0.99] transition-transform duration-300">
+        <div class="sign-border-glow"></div>
+        <div class="relative bg-white dark:bg-apple-cardDark p-4 sm:p-5 rounded-[24px] flex items-center justify-between gap-4 z-10 border border-black/5 dark:border-white/5">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-12 h-12 apple-squircle bg-gradient-to-br from-purple-500 to-pink-500 p-0.5 shadow-md shadow-purple-500/25 shrink-0 flex items-center justify-center">
+              <div class="w-full h-full apple-squircle bg-white dark:bg-[#2C2C2E] flex items-center justify-center text-purple-600 dark:text-purple-400">
+                <i data-lucide="pen-tool" class="w-6 h-6"></i>
+              </div>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="font-extrabold text-sm sm:text-base text-black dark:text-white">
+                  Trình Ký App Online
+                </h3>
+                <span class="px-2 py-0.5 rounded-full bg-apple-red text-white text-[9px] font-black uppercase tracking-wider">
+                  HOT
+                </span>
+              </div>
+              <p class="text-xs text-apple-gray truncate mt-0.5">
+                Ký chứng chỉ và cài đặt file IPA trực tiếp lên iPhone/iPad không cần máy tính.
+              </p>
+            </div>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center shrink-0 group-hover:translate-x-1 transition-transform">
+            <i data-lucide="chevron-right" class="w-4 h-4 text-apple-gray"></i>
+          </div>
+        </div>
+      </a>
+
+      <!-- ═══ 4. CUPERTINO INSET GROUPED SETTINGS MENU ═══ -->
+      <div class="space-y-4">
+        
+        <!-- Group 1: Tài sản & Tiện ích cá nhân -->
+        <div class="space-y-1.5">
+          <h3 class="text-xs font-bold text-apple-gray uppercase tracking-wider px-2">
+            Tài Sản Của Bạn
+          </h3>
+          <div class="rounded-[22px] bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark divide-y divide-apple-separatorLight dark:divide-apple-separatorDark overflow-hidden shadow-sm">
+            
+            <!-- Item 1: Tủ đồ cá nhân -->
+            <button onclick="openSubPage('inventoryPage')" class="w-full p-4 flex items-center justify-between hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition active:scale-[0.99] text-left">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-apple-amber/10 text-apple-amber flex items-center justify-center shrink-0">
+                  <i data-lucide="box" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-xs sm:text-sm text-black dark:text-white">Tủ Đồ Bản Quyền</div>
+                  <div class="text-[11px] text-apple-gray">Tài khoản MMO, key bản quyền đã mua</div>
+                </div>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-apple-gray shrink-0"></i>
+            </button>
+
+            <!-- Item 2: Lịch sử giao dịch -->
+            <button onclick="openSubPage('historyPage')" class="w-full p-4 flex items-center justify-between hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition active:scale-[0.99] text-left">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-apple-green/10 text-apple-green flex items-center justify-center shrink-0">
+                  <i data-lucide="receipt" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-xs sm:text-sm text-black dark:text-white">Lịch Sử Giao Dịch</div>
+                  <div class="text-[11px] text-apple-gray">Sao kê biến động số dư và mua hàng</div>
+                </div>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-apple-gray shrink-0"></i>
+            </button>
+
+            <!-- Item 3: Ứng dụng đã tải -->
+            <button onclick="openSubPage('downloadHistoryPage')" class="w-full p-4 flex items-center justify-between hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition active:scale-[0.99] text-left">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-apple-blue/10 text-apple-blue flex items-center justify-center shrink-0">
+                  <i data-lucide="download-cloud" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-xs sm:text-sm text-black dark:text-white">Ứng Dụng Đã Tải</div>
+                  <div class="text-[11px] text-apple-gray">Kho tệp IPA đã tải về máy</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span id="userTotalDlCount" class="text-xs bg-apple-blue/10 text-apple-blue font-bold px-2.5 py-0.5 rounded-full">
+                  0 app
+                </span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-apple-gray"></i>
+              </div>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Group 2: Dịch vụ & Quản trị -->
+        <div class="space-y-1.5">
+          <h3 class="text-xs font-bold text-apple-gray uppercase tracking-wider px-2">
+            Hệ Sinh Thái Dịch Vụ
+          </h3>
+          <div class="rounded-[22px] bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark divide-y divide-apple-separatorLight dark:divide-apple-separatorDark overflow-hidden shadow-sm">
+            
+            <a href="tap-hoa-mmo.html" class="w-full p-4 flex items-center justify-between hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition active:scale-[0.99]">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-apple-blue/10 text-apple-blue flex items-center justify-center shrink-0">
+                  <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-xs sm:text-sm text-black dark:text-white">Chợ Tài Nguyên MMO</div>
+                  <div class="text-[11px] text-apple-gray">Tài khoản AI, bản quyền, dịch vụ tự động</div>
+                </div>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-apple-gray shrink-0"></i>
+            </a>
+
+            <a href="dichvu.html" class="w-full p-4 flex items-center justify-between hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition active:scale-[0.99]">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                  <i data-lucide="tag" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="font-bold text-xs sm:text-sm text-black dark:text-white">Bảng Giá Thẻ Nạp & VIP</div>
+                  <div class="text-[11px] text-apple-gray">Các gói dịch vụ chứng chỉ & ưu đãi</div>
+                </div>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-apple-gray shrink-0"></i>
+            </a>
+
+            <!-- Admin Portal (Only visible to admin email) -->
+            <button id="adminPortalBtn" onclick="window.location.href='admin.html'" class="hidden w-full p-4 flex items-center justify-between bg-apple-blue/5 dark:bg-apple-blue/10 hover:bg-apple-blue/15 transition active:scale-[0.99] text-left">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-apple-blue text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="font-black text-xs sm:text-sm text-apple-blue">Bảng Quản Trị Hệ Thống (Admin)</div>
+                  <div class="text-[11px] text-apple-gray">Truy cập độc quyền dành cho Quản trị viên</div>
+                </div>
+              </div>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-apple-blue shrink-0"></i>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Group 3: Đăng xuất (Destructive Action) -->
+        <div class="pt-2">
+          <button 
+            onclick="openLogoutModal()" 
+            class="w-full p-4 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-red/20 text-apple-red hover:bg-apple-red/5 font-bold text-xs sm:text-sm transition active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+          >
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+            <span>Đăng Xuất Tài Khoản</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         STATE 2: AUTH VIEW (WHEN USER IS LOGGED OUT)
+         ════════════════════════════════════════════════════════════════ -->
+    <div id="authView" class="hidden max-w-md mx-auto space-y-6 pt-2 pb-8">
       
-      <div id="profileView" class="hidden animate-fadeIn">
-          
-          <div class="bg-cardLight dark:bg-cardDark rounded-[32px] p-6 spatial-shadow border border-gray-100 dark:border-white/5 relative overflow-hidden mb-6">
-              <div class="absolute top-0 right-0 w-32 h-32 bg-brand/10 rounded-full blur-3xl pointer-events-none"></div>
-              
-              <div class="flex items-center gap-5 relative z-10 mb-6">
-                  <div class="w-16 h-16 rounded-full bg-gradient-to-br from-brand to-indigo-600 p-1 shadow-lg shrink-0">
-                      <div class="w-full h-full bg-white dark:bg-gray-900 rounded-full flex items-center justify-center text-brand dark:text-white font-black text-xl" id="avatarLetter">U</div>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                      <h2 class="text-xl font-black text-gray-900 dark:text-white truncate" id="userNameShow">Thành Viên</h2>
-                      <p class="text-[13px] text-gray-500 font-medium truncate mt-0.5" id="userEmailShow">user@email.com</p>
-                      <p class="text-[11px] text-gray-400 font-mono mt-1 flex items-center gap-1 cursor-pointer active:opacity-50 bg-gray-100 dark:bg-white/5 inline-flex px-2 py-0.5 rounded transition-colors" onclick="copyUid()">
-                          <i data-lucide="copy" class="w-3 h-3"></i> <span id="userUidShow" class="truncate w-24">...</span>
-                      </p>
-                  </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4 relative z-10">
-                  <div class="bg-gray-50 dark:bg-white/5 rounded-2xl p-4 border border-gray-100 dark:border-white/5">
-                      <p class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Ví tiền (VND)</p>
-                      <p class="text-2xl font-black text-brand flex items-center gap-1.5"><i data-lucide="wallet" class="w-5 h-5 text-brand"></i> <span id="userCoinsShow">0</span>đ</p>
-                  </div>
-                  <div class="bg-gray-50 dark:bg-white/5 rounded-2xl p-4 border border-gray-100 dark:border-white/5">
-                      <p class="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-1">Gói Cước</p>
-                      <div id="userVipShow" class="mt-1">
-                          <span class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold px-3 py-1 rounded-lg">Cơ bản</span>
-                      </div>
-                  </div>
-              </div>
-          </div>
-
-          <button onclick="window.location.href='https://ipaviet.site/sign-app/'" class="w-full relative mb-6 rounded-[16px] group active:scale-95 transition-transform duration-300">
-              <div class="sign-border-glow group-hover:opacity-100 transition-opacity"></div>
-              
-              <div class="relative bg-cardLight dark:bg-cardDark p-4 rounded-[16px] flex items-center justify-between z-10">
-                  <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 p-0.5 shadow-lg shadow-purple-500/30 shrink-0">
-                          <div class="w-full h-full bg-white dark:bg-gray-900 rounded-[14px] flex items-center justify-center text-purple-500 dark:text-purple-400">
-                              <i data-lucide="pen-tool" class="w-6 h-6"></i>
-                          </div>
-                      </div>
-                      <div class="text-left">
-                          <div class="flex items-center gap-2">
-                              <h3 class="font-black text-gray-900 dark:text-white text-[16px]">Trình Ký App Online</h3>
-                              <span class="bg-gradient-to-r from-red-500 to-pink-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse uppercase tracking-wider shadow-sm">HOT</span>
-                          </div>
-                          <p class="text-[12px] text-gray-500 dark:text-gray-400 font-medium mt-0.5 leading-snug">Ký và cài đặt IPA trực tiếp lên iPhone</p>
-                      </div>
-                  </div>
-                  <div class="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-1">
-                      <i data-lucide="arrow-right" class="w-4 h-4 text-purple-600 dark:text-purple-400"></i>
-                  </div>
-              </div>
-          </button>
-
-          <div class="space-y-3">
-              <button onclick="openSubPage('inventoryPage')" class="w-full bg-cardLight dark:bg-cardDark p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-white/5 active:scale-95 transition-transform spatial-shadow">
-                  <div class="flex items-center gap-4 font-bold text-gray-800 dark:text-gray-200"><div class="w-10 h-10 rounded-full bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center"><i data-lucide="box" class="w-5 h-5 text-orange-500"></i></div> Tủ đồ Cá nhân</div>
-                  <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
-              </button>
-              
-              <button onclick="openSubPage('historyPage')" class="w-full bg-cardLight dark:bg-cardDark p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-white/5 active:scale-95 transition-transform spatial-shadow">
-                  <div class="flex items-center gap-4 font-bold text-gray-800 dark:text-gray-200"><div class="w-10 h-10 rounded-full bg-green-50 dark:bg-green-500/10 flex items-center justify-center"><i data-lucide="receipt" class="w-5 h-5 text-green-500"></i></div> Lịch sử Giao dịch</div>
-                  <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
-              </button>
-              
-              <button onclick="openSubPage('downloadHistoryPage')" class="w-full bg-cardLight dark:bg-cardDark p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-white/5 active:scale-95 transition-transform spatial-shadow">
-                  <div class="flex items-center gap-4 font-bold text-gray-800 dark:text-gray-200"><div class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center"><i data-lucide="download-cloud" class="w-5 h-5 text-blue-500"></i></div> Ứng Dụng Đã Tải</div>
-                  <div class="flex items-center gap-2">
-                      <span id="userTotalDlCount" class="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full">0 app</span>
-                      <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
-                  </div>
-              </button>
-              
-              <button onclick="window.location.href='dichvu.html'" class="w-full bg-cardLight dark:bg-cardDark p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-white/5 active:scale-95 transition-transform spatial-shadow">
-                  <div class="flex items-center gap-4 font-bold text-gray-800 dark:text-gray-200"><div class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center"><i data-lucide="shopping-bag" class="w-5 h-5 text-brand"></i></div> Cửa hàng Nạp thẻ</div>
-                  <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
-              </button>
-              
-              <button id="adminPortalBtn" onclick="window.location.href='admin.html'" class="hidden w-full bg-blue-50 dark:bg-brand/10 p-4 rounded-2xl flex items-center justify-between border border-brand/30 active:scale-95 transition-transform spatial-shadow mt-4">
-                  <div class="flex items-center gap-4 font-black text-brand"><div class="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center"><i data-lucide="shield-alert" class="w-5 h-5"></i></div> Bảng Quản Trị (Admin)</div>
-                  <i data-lucide="chevron-right" class="w-5 h-5 text-brand"></i>
-              </button>
-              
-              <button onclick="openLogoutModal()" class="w-full bg-red-50 dark:bg-red-500/10 p-4 rounded-2xl flex items-center justify-center border border-red-100 dark:border-red-500/20 active:scale-95 transition-transform mt-8">
-                  <div class="flex items-center gap-2 font-bold text-red-600 dark:text-red-400"><i data-lucide="log-out" class="w-5 h-5"></i> Đăng xuất tài khoản</div>
-              </button>
-          </div>
+      <!-- Apple ID Key / Fingerprint Emblem -->
+      <div class="text-center space-y-2">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 apple-squircle bg-gradient-to-br from-apple-blue to-indigo-600 text-white mx-auto flex items-center justify-center shadow-xl shadow-apple-blue/25 mb-4">
+          <i data-lucide="fingerprint" class="w-8 h-8 sm:w-10 sm:h-10"></i>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-black dark:text-white tracking-tight" id="authTitle">
+          Đăng Nhập
+        </h1>
+        <p class="text-xs sm:text-sm text-apple-gray" id="authSubtitle">
+          Truy cập tài khoản IPAVIET để mua & quản lý đơn hàng
+        </p>
       </div>
 
-      <div id="authView" class="hidden animate-fadeIn pt-2 pb-10">
-          
-          <div class="text-center mb-8">
-              <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand to-indigo-600 mx-auto flex items-center justify-center shadow-[0_10px_25px_rgba(0,122,255,0.4)] mb-5 transform rotate-3"><i data-lucide="fingerprint" class="w-10 h-10 text-white"></i></div>
-              <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight" id="authTitle">Đăng Nhập</h1>
-              <p class="text-gray-500 font-medium mt-2" id="authSubtitle">Truy cập để trải nghiệm dịch vụ Premium.</p>
-          </div>
-
-          <div class="flex bg-gray-200/60 dark:bg-white/10 p-1.5 rounded-2xl mb-6 relative">
-              <div class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-6px)] bg-white dark:bg-gray-700 rounded-xl shadow-sm transition-transform duration-300" id="authSlider"></div>
-              <button onclick="switchAuthMode('login')" class="flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-900 dark:text-white transition-colors" id="tabLoginBtn">Đăng Nhập</button>
-              <button onclick="switchAuthMode('register')" class="flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-500 dark:text-gray-400 transition-colors" id="tabRegBtn">Đăng Ký</button>
-          </div>
-
-          <form id="authForm" onsubmit="handleAuth(event)" class="space-y-4">
-              
-              <div id="groupUsername" class="expand-anim max-h-0 opacity-0">
-                  <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Tên hiển thị</label>
-                  <div class="relative group">
-                      <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-brand transition-colors"></i>
-                      <input type="text" id="usernameInput" placeholder="VD: Tuấn Nguyễn" class="w-full h-14 pl-12 pr-4 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all font-medium text-gray-900 dark:text-white">
-                  </div>
-              </div>
-              
-              <div>
-                  <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Email</label>
-                  <div class="relative group">
-                      <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-brand transition-colors"></i>
-                      <input type="email" id="emailInput" required placeholder="nhap_email@gmail.com" class="w-full h-14 pl-12 pr-4 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all font-medium text-gray-900 dark:text-white">
-                  </div>
-              </div>
-              
-              <div>
-                  <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Mật khẩu</label>
-                  <div class="relative group">
-                      <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-brand transition-colors"></i>
-                      <input type="password" id="passInput" required placeholder="••••••••" class="w-full h-14 pl-12 pr-4 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all font-medium text-gray-900 dark:text-white">
-                  </div>
-              </div>
-              
-              <div id="groupConfirmPass" class="expand-anim max-h-0 opacity-0">
-                  <label class="block text-[12px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">Nhập lại Mật khẩu</label>
-                  <div class="relative group">
-                      <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-brand transition-colors"></i>
-                      <input type="password" id="confirmPassInput" placeholder="••••••••" class="w-full h-14 pl-12 pr-4 rounded-2xl bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 focus:ring-2 focus:ring-brand focus:border-transparent outline-none transition-all font-medium text-gray-900 dark:text-white">
-                  </div>
-              </div>
-              
-              <div id="groupCaptcha" class="expand-anim max-h-0 opacity-0 flex justify-center py-2">
-                  <div id="turnstileWidget"></div>
-              </div>
-              
-              <div id="groupTerms" class="expand-anim max-h-0 opacity-0">
-                  <label class="flex items-start gap-3 mt-2 cursor-pointer group">
-                      <div class="relative flex items-center justify-center mt-0.5">
-                          <input type="checkbox" id="termsCheckbox" class="peer appearance-none w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-cardDark checked:bg-brand checked:border-brand transition-all cursor-pointer">
-                          <i data-lucide="check" class="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"></i>
-                      </div>
-                      <span class="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">Tôi đồng ý với <a href="terms-of-service.html" class="text-brand font-bold hover:underline">Điều khoản Dịch vụ</a> và <a href="privacy-policy.html" class="text-brand font-bold hover:underline">Chính sách Bảo mật</a> của IPAVIET.</span>
-                  </label>
-              </div>
-              
-              <div id="authError" class="hidden text-red-500 text-[13px] font-bold text-center bg-red-50 dark:bg-red-500/10 p-3 rounded-xl border border-red-200 dark:border-red-500/20"></div>
-              
-              <button type="submit" id="submitBtn" class="w-full h-14 bg-brand hover:bg-brandDark text-white font-black text-[16px] rounded-2xl shadow-[0_10px_20px_-10px_rgba(0,122,255,0.6)] active:scale-95 transition-all flex items-center justify-center gap-2 mt-6">
-                  ĐĂNG NHẬP VÀO HỆ THỐNG
-              </button>
-          </form>
-
-          <div class="relative flex py-4 items-center">
-              <div class="flex-grow border-t border-gray-200 dark:border-white/10"></div>
-              <span class="flex-shrink mx-4 text-gray-400 text-xs font-bold uppercase tracking-wider">Hoặc</span>
-              <div class="flex-grow border-t border-gray-200 dark:border-white/10"></div>
-          </div>
-          
-          <button type="button" onclick="loginWithGoogle()" class="w-full h-14 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-white/10 font-bold text-[15px] rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-3">
-              <svg class="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.87-2.6-2.86-4.53-5.29-4.53z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-              </svg>
-              TIẾP TỤC VỚI GOOGLE
-          </button>
-
-          <div class="text-center mt-10 pb-4">
-             <p class="text-[11px] text-gray-400 font-medium uppercase tracking-widest">HỆ SINH THÁI IPAVIET</p>
-             <div class="flex justify-center gap-4 mt-2">
-                <a href="terms-of-service.html" class="text-xs text-gray-500 hover:text-brand transition font-bold">Điều khoản</a>
-                <span class="text-gray-300 dark:text-gray-700">•</span>
-                <a href="privacy-policy.html" class="text-xs text-gray-500 hover:text-brand transition font-bold">Bảo mật</a>
-             </div>
-          </div>
+      <!-- Cupertino Segmented Tabs -->
+      <div class="flex bg-black/[0.05] dark:bg-white/[0.1] p-1 rounded-full relative">
+        <div class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-white dark:bg-[#2C2C2E] rounded-full shadow-sm transition-transform duration-300" id="authSlider"></div>
+        <button onclick="switchAuthMode('login')" class="flex-1 py-2 text-xs sm:text-sm font-bold z-10 text-black dark:text-white transition-colors" id="tabLoginBtn">
+          Đăng Nhập
+        </button>
+        <button onclick="switchAuthMode('register')" class="flex-1 py-2 text-xs sm:text-sm font-bold z-10 text-apple-gray transition-colors" id="tabRegBtn">
+          Đăng Ký
+        </button>
       </div>
+
+      <!-- Auth Form -->
+      <form id="authForm" onsubmit="handleAuth(event)" class="rounded-[28px] bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark p-5 sm:p-7 shadow-sm space-y-4">
+        
+        <!-- Field 1: Display Name (Register only) -->
+        <div id="groupUsername" class="expand-anim max-h-0 opacity-0 space-y-1">
+          <label class="block text-xs font-bold text-apple-gray">Tên hiển thị</label>
+          <div class="relative">
+            <i data-lucide="user" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-apple-gray pointer-events-none"></i>
+            <input 
+              type="text" 
+              id="usernameInput" 
+              placeholder="VD: Tuấn Nguyễn" 
+              class="w-full h-11 pl-10 pr-4 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-transparent focus:border-apple-blue focus:bg-white dark:focus:bg-[#121214] text-xs sm:text-sm font-medium outline-none transition text-black dark:text-white"
+            >
+          </div>
+        </div>
+
+        <!-- Field 2: Email -->
+        <div class="space-y-1">
+          <label class="block text-xs font-bold text-apple-gray">Email</label>
+          <div class="relative">
+            <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-apple-gray pointer-events-none"></i>
+            <input 
+              type="email" 
+              id="emailInput" 
+              required 
+              placeholder="name@example.com" 
+              class="w-full h-11 pl-10 pr-4 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-transparent focus:border-apple-blue focus:bg-white dark:focus:bg-[#121214] text-xs sm:text-sm font-medium outline-none transition text-black dark:text-white"
+            >
+          </div>
+        </div>
+
+        <!-- Field 3: Password -->
+        <div class="space-y-1">
+          <label class="block text-xs font-bold text-apple-gray">Mật khẩu</label>
+          <div class="relative">
+            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-apple-gray pointer-events-none"></i>
+            <input 
+              type="password" 
+              id="passInput" 
+              required 
+              placeholder="••••••••" 
+              class="w-full h-11 pl-10 pr-4 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-transparent focus:border-apple-blue focus:bg-white dark:focus:bg-[#121214] text-xs sm:text-sm font-medium outline-none transition text-black dark:text-white"
+            >
+          </div>
+        </div>
+
+        <!-- Field 4: Confirm Password (Register only) -->
+        <div id="groupConfirmPass" class="expand-anim max-h-0 opacity-0 space-y-1">
+          <label class="block text-xs font-bold text-apple-gray">Nhập lại mật khẩu</label>
+          <div class="relative">
+            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-apple-gray pointer-events-none"></i>
+            <input 
+              type="password" 
+              id="confirmPassInput" 
+              placeholder="••••••••" 
+              class="w-full h-11 pl-10 pr-4 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-transparent focus:border-apple-blue focus:bg-white dark:focus:bg-[#121214] text-xs sm:text-sm font-medium outline-none transition text-black dark:text-white"
+            >
+          </div>
+        </div>
+
+        <!-- Field 5: Captcha Turnstile (Register only) -->
+        <div id="groupCaptcha" class="expand-anim max-h-0 opacity-0 flex justify-center py-2">
+          <div id="turnstileWidget"></div>
+        </div>
+
+        <!-- Field 6: Terms Agreement (Register only) -->
+        <div id="groupTerms" class="expand-anim max-h-0 opacity-0">
+          <label class="flex items-start gap-2.5 mt-2 cursor-pointer text-xs text-apple-gray leading-relaxed">
+            <input type="checkbox" id="termsCheckbox" class="mt-0.5 rounded text-apple-blue focus:ring-apple-blue cursor-pointer">
+            <span>Tôi đồng ý với <a href="terms-of-service.html" class="text-apple-blue font-bold hover:underline">Điều khoản Dịch vụ</a> và <a href="privacy-policy.html" class="text-apple-blue font-bold hover:underline">Chính sách Bảo mật</a> của IPAVIET.</span>
+          </label>
+        </div>
+
+        <!-- Error Alert -->
+        <div id="authError" class="hidden text-apple-red text-xs font-bold text-center bg-apple-red/10 p-3 rounded-xl border border-apple-red/20"></div>
+
+        <!-- Main Submit Button (Apple Blue Pill) -->
+        <button 
+          type="submit" 
+          id="submitBtn" 
+          class="w-full h-12 rounded-full bg-apple-blue hover:bg-blue-600 text-white font-extrabold text-sm shadow-md shadow-apple-blue/30 active:scale-95 transition flex items-center justify-center gap-2 mt-4"
+        >
+          ĐĂNG NHẬP VÀO HỆ THỐNG
+        </button>
+
+        <!-- Divider -->
+        <div class="relative flex py-2 items-center">
+          <div class="flex-grow border-t border-apple-separatorLight dark:border-apple-separatorDark"></div>
+          <span class="flex-shrink mx-3 text-apple-gray text-[10px] font-bold uppercase tracking-wider">Hoặc</span>
+          <div class="flex-grow border-t border-apple-separatorLight dark:border-apple-separatorDark"></div>
+        </div>
+
+        <!-- Google Login -->
+        <button 
+          type="button" 
+          onclick="loginWithGoogle()" 
+          class="w-full h-11 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] text-black dark:text-white font-bold text-xs sm:text-sm border border-apple-separatorLight dark:border-apple-separatorDark active:scale-95 transition flex items-center justify-center gap-2.5"
+        >
+          <svg class="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.87-2.6-2.86-4.53-5.29-4.53z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Tiếp tục với Google</span>
+        </button>
+
+      </form>
+
+    </div>
+
   </main>
 
-  <div class="fixed bottom-0 left-0 right-0 z-50 pointer-events-none flex justify-center items-end pb-6">
-    <nav class="glass-effect floating-nav h-[74px] flex justify-evenly items-center pointer-events-auto px-2">
-      <a href="index.html" class="tab-btn"><i data-lucide="sparkles"></i><span>Home</span></a>
-      <a href="ipavip.html" class="tab-btn"><i data-lucide="crown"></i><span>App VIP</span></a>
-      <a href="app-library/index.html" class="tab-btn"><i data-lucide="smartphone"></i><span>Kho IPA</span></a>
-      <button class="tab-btn active"><i data-lucide="user-circle"></i><span>Tài khoản</span></button>
-      <a href="dichvu.html" class="tab-btn"><i data-lucide="shopping-bag"></i><span>Cửa hàng</span></a>
-    </nav>
-  </div>
+  <!-- ================================================================
+       APPLE IOS FROSTED GLASS TAB BAR (BOTTOM NAVIGATION)
+       ================================================================ -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 apple-glass border-t border-apple-separatorLight dark:border-apple-separatorDark px-3 py-1.5 flex items-center justify-around pb-safe shadow-lg">
+    <a href="tap-hoa-mmo.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[10px]">Khám phá</span>
+    </a>
+    <a href="tap-hoa-mmo.html?view=cats" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="layout-grid" class="w-5 h-5"></i>
+      <span class="text-[10px]">Danh mục</span>
+    </a>
+    <a href="tap-hoa-mmo.html?view=orders" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="receipt" class="w-5 h-5"></i>
+      <span class="text-[10px]">Đơn hàng</span>
+    </a>
+    <a href="naptien.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="wallet" class="w-5 h-5"></i>
+      <span class="text-[10px]">Nạp tiền</span>
+    </a>
+    <a href="account.html" class="flex flex-col items-center gap-1 text-apple-blue font-bold transition active:scale-95">
+      <i data-lucide="user" class="w-5 h-5 stroke-[2.2]"></i>
+      <span class="text-[10px]">Cá nhân</span>
+    </a>
+  </nav>
 
-  <div id="inventoryPage" class="fixed inset-0 bg-bgLight dark:bg-bgDark slide-page flex flex-col overflow-hidden">
-     <div class="glass-effect h-[80px] w-full flex items-center px-4 shrink-0 border-b relative z-20"><button onclick="closeSubPage('inventoryPage')" class="flex items-center gap-1 text-brand font-bold text-[17px] active:opacity-60 transition"><i data-lucide="chevron-left" class="w-6 h-6"></i> Trở lại</button><h1 class="absolute left-1/2 -translate-x-1/2 font-black text-lg">Tủ Đồ Cá Nhân</h1></div>
-     <div class="flex-1 overflow-y-auto px-5 py-6 pb-32">
-         <p class="text-sm text-gray-500 mb-6 text-center">Các tài khoản Premium bạn mua sẽ nằm ở đây.</p>
-         <div id="inventoryList" class="space-y-4">
-             <div class="py-10 text-center text-gray-400 flex flex-col items-center"><i data-lucide="package-open" class="w-12 h-12 mb-3 opacity-30"></i><span class="text-sm">Chưa có tài khoản nào được lưu.</span></div>
-         </div>
-     </div>
-  </div>
+  <!-- ================================================================
+       SUBPAGE 1: TỦ ĐỒ CÁ NHÂN (INVENTORY PANEL)
+       ================================================================ -->
+  <div id="inventoryPage" class="fixed inset-0 bg-apple-bgLight dark:bg-apple-bgDark slide-page flex flex-col overflow-hidden">
+    <!-- Header -->
+    <div class="apple-glass w-full flex items-center px-4 shrink-0 border-b border-apple-separatorLight dark:border-apple-separatorDark relative z-20 pt-safe h-[calc(3.5rem+env(safe-area-inset-top,0px))] sm:h-16">
+      <button onclick="closeSubPage('inventoryPage')" class="flex items-center gap-1 text-apple-blue font-semibold text-sm sm:text-base active:opacity-70 transition">
+        <i data-lucide="chevron-left" class="w-6 h-6 -ml-1"></i>
+        <span>Trở lại</span>
+      </button>
+      <h1 class="absolute left-1/2 -translate-x-1/2 font-extrabold text-sm sm:text-base text-black dark:text-white">Tủ Đồ Cá Nhân</h1>
+    </div>
 
-  <div id="historyPage" class="fixed inset-0 bg-bgLight dark:bg-bgDark slide-page flex flex-col overflow-hidden">
-     <div class="glass-effect h-[80px] w-full flex items-center px-4 shrink-0 border-b relative z-20"><button onclick="closeSubPage('historyPage')" class="flex items-center gap-1 text-brand font-bold text-[17px] active:opacity-60 transition"><i data-lucide="chevron-left" class="w-6 h-6"></i> Trở lại</button><h1 class="absolute left-1/2 -translate-x-1/2 font-black text-lg">Lịch Sử Giao Dịch</h1></div>
-     <div class="flex-1 overflow-y-auto px-5 py-6 pb-32">
-         <div id="historyList" class="space-y-3">
-             <div class="py-10 text-center text-gray-400 flex flex-col items-center"><i data-lucide="scroll-text" class="w-12 h-12 mb-3 opacity-30"></i><span class="text-sm">Chưa có giao dịch nào phát sinh.</span></div>
-         </div>
-     </div>
-  </div>
-
-  <div id="downloadHistoryPage" class="fixed inset-0 bg-bgLight dark:bg-bgDark slide-page flex flex-col overflow-hidden">
-     <div class="glass-effect h-[80px] w-full flex items-center px-4 shrink-0 border-b relative z-20">
-       <button onclick="closeSubPage('downloadHistoryPage')" class="flex items-center gap-1 text-brand font-bold text-[17px] active:opacity-60 transition">
-         <i data-lucide="chevron-left" class="w-6 h-6"></i> Trở lại
-       </button>
-       <h1 class="absolute left-1/2 -translate-x-1/2 font-black text-lg">Ứng Dụng Đã Tải</h1>
-     </div>
-     <div class="flex-1 overflow-y-auto px-5 py-6 pb-32">
-         <p class="text-sm text-gray-500 mb-6 text-center">Các tệp IPA bạn đã tải về máy sẽ được lưu trữ tại đây để tải lại nhanh chóng.</p>
-         <div id="userDownloadHistoryList" class="space-y-3">
-             <div class="py-10 text-center text-gray-400 flex flex-col items-center">
-               <i data-lucide="download-cloud" class="w-12 h-12 mb-3 opacity-30"></i>
-               <span class="text-sm">Chưa có ứng dụng nào được tải về.</span>
-             </div>
-         </div>
-     </div>
-  </div>
-
-  <div id="logoutModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center px-4">
-      <div class="absolute inset-0 bg-black/40 dark:bg-black/70 backdrop-blur-sm transition-opacity duration-300 opacity-0" id="logoutOverlay" onclick="closeLogoutModal()"></div>
-      <div id="logoutPanel" class="bg-cardLight dark:bg-cardDark w-full max-w-[320px] rounded-[28px] shadow-2xl relative flex flex-col items-center p-6 transition-all duration-300 transform scale-95 opacity-0">
-         <div class="w-16 h-16 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center mb-4 text-red-500"><i data-lucide="log-out" class="w-8 h-8"></i></div>
-         <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2">Đăng xuất?</h3>
-         <p class="text-sm text-gray-500 text-center mb-6">Bạn có chắc chắn muốn thoát khỏi tài khoản này không?</p>
-         <div class="flex w-full gap-3">
-             <button onclick="closeLogoutModal()" class="flex-1 py-3.5 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-white/10 active:scale-95 transition">Hủy</button>
-             <button onclick="confirmLogout()" class="flex-1 py-3.5 rounded-xl font-bold text-white bg-red-500 active:scale-95 transition shadow-lg shadow-red-500/30">Đăng Xuất</button>
-         </div>
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 pb-32 max-w-2xl mx-auto w-full space-y-4">
+      <p class="text-xs sm:text-sm text-apple-gray text-center">Các tài khoản MMO & key bản quyền đã mua được lưu trữ bảo mật tại đây.</p>
+      <div id="inventoryList" class="space-y-3">
+        <div class="py-12 text-center text-apple-gray flex flex-col items-center">
+          <i data-lucide="package-open" class="w-10 h-10 mb-2 opacity-30"></i>
+          <span class="text-xs">Chưa có tài khoản nào được lưu.</span>
+        </div>
       </div>
+    </div>
   </div>
 
+  <!-- ================================================================
+       SUBPAGE 2: LỊCH SỬ GIAO DỊCH (HISTORY PANEL)
+       ================================================================ -->
+  <div id="historyPage" class="fixed inset-0 bg-apple-bgLight dark:bg-apple-bgDark slide-page flex flex-col overflow-hidden">
+    <!-- Header -->
+    <div class="apple-glass w-full flex items-center px-4 shrink-0 border-b border-apple-separatorLight dark:border-apple-separatorDark relative z-20 pt-safe h-[calc(3.5rem+env(safe-area-inset-top,0px))] sm:h-16">
+      <button onclick="closeSubPage('historyPage')" class="flex items-center gap-1 text-apple-blue font-semibold text-sm sm:text-base active:opacity-70 transition">
+        <i data-lucide="chevron-left" class="w-6 h-6 -ml-1"></i>
+        <span>Trở lại</span>
+      </button>
+      <h1 class="absolute left-1/2 -translate-x-1/2 font-extrabold text-sm sm:text-base text-black dark:text-white">Lịch Sử Giao Dịch</h1>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 pb-32 max-w-2xl mx-auto w-full space-y-4">
+      <div id="historyList" class="space-y-3">
+        <div class="py-12 text-center text-apple-gray flex flex-col items-center">
+          <i data-lucide="scroll-text" class="w-10 h-10 mb-2 opacity-30"></i>
+          <span class="text-xs">Chưa có giao dịch nào phát sinh.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       SUBPAGE 3: ỨNG DỤNG ĐÃ TẢI (DOWNLOADS PANEL)
+       ================================================================ -->
+  <div id="downloadHistoryPage" class="fixed inset-0 bg-apple-bgLight dark:bg-apple-bgDark slide-page flex flex-col overflow-hidden">
+    <!-- Header -->
+    <div class="apple-glass w-full flex items-center px-4 shrink-0 border-b border-apple-separatorLight dark:border-apple-separatorDark relative z-20 pt-safe h-[calc(3.5rem+env(safe-area-inset-top,0px))] sm:h-16">
+      <button onclick="closeSubPage('downloadHistoryPage')" class="flex items-center gap-1 text-apple-blue font-semibold text-sm sm:text-base active:opacity-70 transition">
+        <i data-lucide="chevron-left" class="w-6 h-6 -ml-1"></i>
+        <span>Trở lại</span>
+      </button>
+      <h1 class="absolute left-1/2 -translate-x-1/2 font-extrabold text-sm sm:text-base text-black dark:text-white">Ứng Dụng Đã Tải</h1>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 pb-32 max-w-2xl mx-auto w-full space-y-4">
+      <p class="text-xs sm:text-sm text-apple-gray text-center">Các tệp IPA bạn đã tải về máy sẽ được lưu lại để tải lại nhanh chóng.</p>
+      <div id="userDownloadHistoryList" class="space-y-3">
+        <div class="py-12 text-center text-apple-gray flex flex-col items-center">
+          <i data-lucide="download-cloud" class="w-10 h-10 mb-2 opacity-30"></i>
+          <span class="text-xs">Chưa có ứng dụng nào được tải về.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL: LOGOUT CONFIRMATION (APPLE STYLE DIALOG)
+       ================================================================ -->
+  <div id="logoutModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 opacity-0" id="logoutOverlay" onclick="closeLogoutModal()"></div>
+    <div id="logoutPanel" class="bg-white dark:bg-apple-cardDark w-full max-w-sm rounded-[28px] shadow-2xl relative flex flex-col items-center p-6 transition-all duration-300 transform scale-95 opacity-0 border border-apple-separatorLight dark:border-apple-separatorDark z-10 text-center space-y-3">
+      <div class="w-14 h-14 rounded-full bg-apple-red/10 text-apple-red flex items-center justify-center mb-1">
+        <i data-lucide="log-out" class="w-7 h-7"></i>
+      </div>
+      <h3 class="text-lg font-black text-black dark:text-white">Đăng xuất tài khoản?</h3>
+      <p class="text-xs text-apple-gray leading-relaxed">Bạn có chắc chắn muốn thoát khỏi phiên đăng nhập này trên thiết bị không?</p>
+      <div class="flex w-full gap-2.5 pt-2">
+        <button onclick="closeLogoutModal()" class="flex-1 py-3 rounded-full font-bold text-xs sm:text-sm bg-black/[0.05] dark:bg-white/[0.1] text-black dark:text-white hover:bg-black/[0.08] transition active:scale-95">
+          Hủy
+        </button>
+        <button onclick="confirmLogout()" class="flex-1 py-3 rounded-full font-bold text-xs sm:text-sm text-white bg-apple-red hover:bg-red-600 transition active:scale-95 shadow-md shadow-apple-red/30">
+          Đăng Xuất
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       JAVASCRIPT APPLICATION LOGIC
+       ================================================================ -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
@@ -377,326 +759,470 @@
     const db = firebase.firestore();
 
     db.settings({ experimentalForceLongPolling: true });
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.log(err));
+    try {
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => console.log(err));
+    } catch(e) {}
     
-    // Xử lý kết quả trả về từ Google redirect (nếu có lỗi xảy ra)
+    // Xử lý kết quả trả về từ Google redirect (nếu dùng redirect)
     auth.getRedirectResult().then((result) => {
-        if (result && result.user) {
-            console.log("Redirect success:", result.user);
-        }
+      if (result && result.user) {
+        console.log("Redirect success:", result.user);
+      }
     }).catch(err => {
-        console.error("Lỗi redirect:", err);
-        showError("Lỗi liên kết Google: " + err.message);
+      console.error("Lỗi redirect:", err);
+      showError("Lỗi liên kết Google: " + err.message);
     });
 
     let authMode = 'login'; 
-    const TURNSTILE_SITE_KEY = "0x4AAAAAADuG_qcsGlFOiiqT"; // Thay thế bằng Site Key Turnstile thật từ Cloudflare Console
+    const TURNSTILE_SITE_KEY = "0x4AAAAAADuG_qcsGlFOiiqT";
     let turnstileWidgetId = null;
 
     auth.onAuthStateChanged(async (user) => {
-        const loading = document.getElementById('loadingScreen'); 
-        const pView = document.getElementById('profileView'); 
-        const aView = document.getElementById('authView'); 
-        const adminBtn = document.getElementById('adminPortalBtn');
-        
-        if (user) {
-            aView.classList.add('hidden');
-            if (user.email && user.email.toLowerCase() === "mquitran@gmail.com") { adminBtn.classList.remove('hidden'); } else { adminBtn.classList.add('hidden'); }
-            
-            try {
-                const userRef = db.collection("users").doc(user.uid); 
-                const docSnap = await userRef.get();
-                if (!docSnap.exists) { 
-                    await userRef.set({ email: user.email, username: user.displayName || "Hội Viên Mới", coins: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); 
-                }
-                
-                userRef.onSnapshot(doc => {
-                    if (doc.exists) {
-                        const data = doc.data(); 
-                        const displayName = data.username || "Hội Viên";
-                        document.getElementById('userNameShow').innerText = displayName; 
-                        document.getElementById('userEmailShow').innerText = data.email || user.email; 
-                        document.getElementById('avatarLetter').innerText = displayName.charAt(0).toUpperCase(); 
-                        document.getElementById('userUidShow').innerText = user.uid; 
-                        document.getElementById('userCoinsShow').innerText = (data.coins || 0).toLocaleString();
-                        
-                        const vipShow = document.getElementById('userVipShow');
-                        if (data.vipExpire && data.vipExpire.toMillis() > Date.now()) { 
-                            const dateStr = new Date(data.vipExpire.toMillis()).toLocaleDateString('vi-VN'); 
-                            vipShow.innerHTML = `<span class="bg-gradient-to-r from-yellow-500 to-yellow-400 text-black px-3 py-1 rounded-lg text-[13px] font-black shadow-sm shadow-yellow-500/30 inline-flex items-center gap-1"><i data-lucide="crown" class="w-3.5 h-3.5 pb-0.5"></i> VIP Tới ${dateStr}</span>`; 
-                        } else { 
-                            vipShow.innerHTML = `<span class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[13px] font-bold px-3 py-1 rounded-lg">Cơ bản</span>`; 
-                        }
-                        
-                        loadUserPrivateData(user.uid); 
-                        lucide.createIcons();
-                    }
-                    loading.classList.add('opacity-0'); setTimeout(() => { loading.classList.add('hidden'); pView.classList.remove('hidden'); }, 300);
-                });
-            } catch (error) { 
-                loading.innerHTML = `<p class="text-red-500 font-bold">Lỗi mạng! Vui lòng làm mới trang.</p>`; 
-            }
+      const loading = document.getElementById('loadingScreen'); 
+      const pView = document.getElementById('profileView'); 
+      const aView = document.getElementById('authView'); 
+      const adminBtn = document.getElementById('adminPortalBtn');
+      
+      if (user) {
+        aView.classList.add('hidden');
+        if (user.email && user.email.toLowerCase() === "mquitran@gmail.com") {
+          adminBtn.classList.remove('hidden');
         } else {
-            adminBtn.classList.add('hidden'); 
-            pView.classList.add('hidden'); 
-            loading.classList.add('opacity-0'); 
-            setTimeout(() => { loading.classList.add('hidden'); aView.classList.remove('hidden'); }, 300);
+          adminBtn.classList.add('hidden');
         }
+        
+        try {
+          const userRef = db.collection("users").doc(user.uid); 
+          const docSnap = await userRef.get();
+          if (!docSnap.exists) { 
+            await userRef.set({ 
+              email: user.email, 
+              username: user.displayName || "Hội Viên Mới", 
+              coins: 0, 
+              createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+            }); 
+          }
+          
+          userRef.onSnapshot(doc => {
+            if (doc.exists) {
+              const data = doc.data(); 
+              const displayName = data.username || user.displayName || "Hội Viên";
+              document.getElementById('userNameShow').innerText = displayName; 
+              document.getElementById('userEmailShow').innerText = data.email || user.email; 
+              document.getElementById('avatarLetter').innerText = displayName.charAt(0).toUpperCase(); 
+              document.getElementById('userUidShow').innerText = user.uid; 
+              document.getElementById('userCoinsShow').innerText = (data.coins || 0).toLocaleString();
+              
+              const vipShow = document.getElementById('userVipShow');
+              if (data.vipExpire && data.vipExpire.toMillis() > Date.now()) { 
+                const dateStr = new Date(data.vipExpire.toMillis()).toLocaleDateString('vi-VN'); 
+                vipShow.innerHTML = `<span class="bg-gradient-to-r from-amber-500 to-amber-400 text-black px-3 py-1 rounded-full text-xs font-black shadow-sm flex items-center gap-1"><i data-lucide="crown" class="w-3.5 h-3.5"></i> VIP Tới ${dateStr}</span>`; 
+              } else { 
+                vipShow.innerHTML = `<span class="bg-black/5 dark:bg-white/10 text-apple-gray text-xs font-bold px-3 py-1 rounded-full">Cơ bản</span>`; 
+              }
+              
+              loadUserPrivateData(user.uid); 
+              lucide.createIcons();
+            }
+            loading.classList.add('opacity-0');
+            setTimeout(() => { 
+              loading.classList.add('hidden'); 
+              pView.classList.remove('hidden'); 
+            }, 300);
+          });
+        } catch (error) { 
+          loading.innerHTML = `<p class="text-apple-red font-bold text-sm">Lỗi mạng! Vui lòng làm mới trang.</p>`; 
+        }
+      } else {
+        adminBtn.classList.add('hidden'); 
+        pView.classList.add('hidden'); 
+        loading.classList.add('opacity-0'); 
+        setTimeout(() => { 
+          loading.classList.add('hidden'); 
+          aView.classList.remove('hidden'); 
+        }, 300);
+      }
     });
 
     async function loadUserPrivateData(uid) {
-        db.collection("users").doc(uid).collection("inventory").orderBy("timestamp", "desc").onSnapshot(snap => {
-            const list = document.getElementById('inventoryList');
-            if (snap.empty) { list.innerHTML = `<div class="py-10 text-center text-gray-400 flex flex-col items-center"><div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3"><i data-lucide="package-open" class="w-8 h-8 opacity-50"></i></div><span class="text-[13px] font-medium">Chưa có tài khoản nào được lưu.</span></div>`; } else {
-                let html = ''; snap.forEach(doc => { const data = doc.data(); const dateStr = data.timestamp ? new Date(data.timestamp.toMillis()).toLocaleString('vi-VN') : 'Mới đây';
-                    html += `<div class="bg-cardLight dark:bg-cardDark border border-gray-200 dark:border-white/10 rounded-3xl p-5 shadow-sm relative overflow-hidden group"><div class="flex justify-between items-center mb-4"><span class="text-[15px] font-black text-gray-900 dark:text-white flex items-center gap-2"><div class="w-6 h-6 rounded bg-brand/10 text-brand flex items-center justify-center"><i data-lucide="key" class="w-3.5 h-3.5"></i></div> ${data.type} Premium</span><span class="text-[11px] font-bold text-gray-400">${dateStr}</span></div><div class="bg-gray-100 dark:bg-gray-900/50 rounded-2xl p-4 mb-4 border border-black/5 dark:border-white/5"><textarea readonly class="w-full bg-transparent text-gray-800 dark:text-gray-200 font-mono text-[13px] outline-none resize-none h-12 leading-relaxed" id="copy_${doc.id}">${data.accountInfo}</textarea></div><button onclick="copyToClip('copy_${doc.id}', this)" class="w-full py-3 rounded-xl bg-brand hover:bg-brandDark text-white font-bold text-[13px] flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-brand/20"><i data-lucide="copy" class="w-4 h-4"></i> SAO CHÉP NGAY</button></div>`;
-                }); list.innerHTML = html; lucide.createIcons();
-            }
-        });
-        db.collection("users").doc(uid).collection("transactions").orderBy("timestamp", "desc").limit(20).onSnapshot(snap => {
-            const list = document.getElementById('historyList');
-            if (snap.empty) { list.innerHTML = `<div class="py-10 text-center text-gray-400 flex flex-col items-center"><div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3"><i data-lucide="scroll-text" class="w-8 h-8 opacity-50"></i></div><span class="text-[13px] font-medium">Chưa có giao dịch nào phát sinh.</span></div>`; } else {
-                let html = ''; snap.forEach(doc => { const data = doc.data(); const dateStr = data.timestamp ? new Date(data.timestamp.toMillis()).toLocaleString('vi-VN') : 'Mới đây'; const isPlus = data.amount > 0; const amountColor = isPlus ? 'text-green-500' : 'text-gray-900 dark:text-white'; const amountSign = isPlus ? '+' : ''; const icon = isPlus ? 'arrow-down-left' : 'shopping-cart';
-                    html += `<div class="bg-cardLight dark:bg-cardDark border border-gray-100 dark:border-white/5 rounded-2xl p-4 flex items-center gap-4 shadow-sm"><div class="w-11 h-11 rounded-full ${isPlus ? 'bg-green-50 dark:bg-green-500/10 text-green-500' : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-300'} flex items-center justify-center shrink-0"><i data-lucide="${icon}" class="w-5 h-5"></i></div><div class="flex-1 min-w-0"><p class="text-[14px] font-bold text-gray-900 dark:text-white truncate">${data.desc}</p><p class="text-[11px] text-gray-400 mt-0.5">${dateStr}</p></div><div class="shrink-0 text-right"><p class="font-black ${amountColor} text-[16px] tracking-tight">${amountSign}${data.amount.toLocaleString()}đ</p></div></div>`;
-                }); list.innerHTML = html; lucide.createIcons();
-            }
-        });
+      // 1. Tủ đồ MMO
+      db.collection("users").doc(uid).collection("inventory").orderBy("timestamp", "desc").onSnapshot(snap => {
+        const list = document.getElementById('inventoryList');
+        if (snap.empty) { 
+          list.innerHTML = `
+            <div class="py-12 text-center text-apple-gray flex flex-col items-center">
+              <div class="w-14 h-14 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-2">
+                <i data-lucide="package-open" class="w-7 h-7 opacity-40"></i>
+              </div>
+              <span class="text-xs font-medium">Chưa có tài khoản nào được lưu.</span>
+            </div>
+          `; 
+        } else {
+          let html = ''; 
+          snap.forEach(doc => { 
+            const data = doc.data(); 
+            const dateStr = data.timestamp ? new Date(data.timestamp.toMillis()).toLocaleString('vi-VN') : 'Mới đây';
+            html += `
+              <div class="bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+                <div class="flex justify-between items-center">
+                  <span class="font-extrabold text-xs sm:text-sm text-black dark:text-white flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-lg bg-apple-blue/10 text-apple-blue flex items-center justify-center">
+                      <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                    </div>
+                    ${data.type || 'Sản phẩm'} Premium
+                  </span>
+                  <span class="text-[11px] font-medium text-apple-gray">${dateStr}</span>
+                </div>
+                
+                <div class="bg-[#F5F5F7] dark:bg-[#121214] rounded-xl p-3 border border-black/5 dark:border-white/5">
+                  <textarea readonly class="w-full bg-transparent text-black dark:text-slate-200 font-mono text-xs outline-none resize-none h-14 leading-relaxed" id="copy_${doc.id}">${data.accountInfo || ''}</textarea>
+                </div>
 
-        // 3. Lịch sử tải ứng dụng IPA
-        db.collection("users").doc(uid).collection("downloads").orderBy("downloadedAt", "desc").limit(30).onSnapshot(snap => {
-            renderUserDownloadsList(snap);
-        });
+                <button onclick="copyToClip('copy_${doc.id}', this)" class="w-full py-2.5 rounded-full bg-apple-blue hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  <span>SAO CHÉP TÀI KHOẢN</span>
+                </button>
+              </div>
+            `;
+          }); 
+          list.innerHTML = html; 
+          lucide.createIcons();
+        }
+      });
+
+      // 2. Lịch sử giao dịch
+      db.collection("users").doc(uid).collection("transactions").orderBy("timestamp", "desc").limit(25).onSnapshot(snap => {
+        const list = document.getElementById('historyList');
+        if (snap.empty) { 
+          list.innerHTML = `
+            <div class="py-12 text-center text-apple-gray flex flex-col items-center">
+              <div class="w-14 h-14 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-2">
+                <i data-lucide="scroll-text" class="w-7 h-7 opacity-40"></i>
+              </div>
+              <span class="text-xs font-medium">Chưa có giao dịch nào phát sinh.</span>
+            </div>
+          `; 
+        } else {
+          let html = ''; 
+          snap.forEach(doc => { 
+            const data = doc.data(); 
+            const dateStr = data.timestamp ? new Date(data.timestamp.toMillis()).toLocaleString('vi-VN') : 'Mới đây'; 
+            const isPlus = (data.amount || 0) > 0; 
+            const amountColor = isPlus ? 'text-apple-green' : 'text-black dark:text-white'; 
+            const amountSign = isPlus ? '+' : ''; 
+            const icon = isPlus ? 'arrow-down-left' : 'shopping-cart';
+            
+            html += `
+              <div class="bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 shadow-sm">
+                <div class="w-10 h-10 rounded-xl ${isPlus ? 'bg-apple-green/10 text-apple-green' : 'bg-black/5 dark:bg-white/10 text-apple-gray'} flex items-center justify-center shrink-0">
+                  <i data-lucide="${icon}" class="w-5 h-5"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs sm:text-sm font-bold text-black dark:text-white truncate">${data.desc || 'Giao dịch'}</p>
+                  <p class="text-[11px] text-apple-gray mt-0.5">${dateStr}</p>
+                </div>
+                <div class="shrink-0 text-right">
+                  <p class="font-black ${amountColor} text-sm sm:text-base tracking-tight">${amountSign}${(data.amount || 0).toLocaleString()}đ</p>
+                </div>
+              </div>
+            `;
+          }); 
+          list.innerHTML = html; 
+          lucide.createIcons();
+        }
+      });
+
+      // 3. Lịch sử tải ứng dụng IPA
+      db.collection("users").doc(uid).collection("downloads").orderBy("downloadedAt", "desc").limit(30).onSnapshot(snap => {
+        renderUserDownloadsList(snap);
+      });
     }
 
     function renderUserDownloadsList(snap) {
-        const list = document.getElementById('userDownloadHistoryList');
-        const badge = document.getElementById('userTotalDlCount');
-        const myLocalDls = (function() {
-          try { return JSON.parse(localStorage.getItem('ipaviet_my_downloads') || '[]'); } catch(e) { return []; }
-        })();
-        const items = [];
-        if (snap && !snap.empty) {
-          snap.forEach(d => {
-            const data = d.data();
-            items.push({ id: d.id, ...data });
-          });
-        }
-        // Gộp với LocalStorage nếu có
-        myLocalDls.forEach(loc => {
-          if (!items.some(it => it.appId === loc.id || it.bundleId === loc.bundleId)) {
-            items.push(loc);
-          }
+      const list = document.getElementById('userDownloadHistoryList');
+      const badge = document.getElementById('userTotalDlCount');
+      const myLocalDls = (function() {
+        try { return JSON.parse(localStorage.getItem('ipaviet_my_downloads') || '[]'); } catch(e) { return []; }
+      })();
+      const items = [];
+      if (snap && !snap.empty) {
+        snap.forEach(d => {
+          const data = d.data();
+          items.push({ id: d.id, ...data });
         });
-
-        if (badge) badge.innerText = `${items.length} app`;
-        if (!list) return;
-
-        if (items.length === 0) {
-          list.innerHTML = `<div class="py-10 text-center text-gray-400 flex flex-col items-center"><div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3"><i data-lucide="download-cloud" class="w-8 h-8 opacity-50"></i></div><span class="text-[13px] font-medium">Bạn chưa tải ứng dụng nào từ kho.</span></div>`;
-        } else {
-          let html = '';
-          items.forEach(it => {
-            const safeName = it.appName || it.name || 'Ứng dụng';
-            const safeIcon = it.icon || 'https://placehold.co/60x60/f3f4f6/333?text=IPA';
-            const safeVer = it.version ? `v${it.version}` : '';
-            const dlUrl = `app-library/app.html?id=${encodeURIComponent(it.appId || it.id || it.bundleId || '')}`;
-            html += `
-              <div class="bg-cardLight dark:bg-cardDark border border-gray-100 dark:border-white/5 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm">
-                <div class="flex items-center gap-3 min-w-0">
-                  <img src="${safeIcon}" class="w-11 h-11 rounded-xl object-cover shrink-0 border border-black/5" onerror="this.src='https://placehold.co/60x60/f3f4f6/333?text=IPA'">
-                  <div class="min-w-0">
-                    <p class="font-bold text-[14px] text-gray-900 dark:text-white truncate">${safeName}</p>
-                    <p class="text-[11px] text-gray-400 mt-0.5">${safeVer ? safeVer + ' • ' : ''}Đã tải về máy</p>
-                  </div>
-                </div>
-                <a href="${dlUrl}" class="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-brand font-bold text-xs shrink-0 flex items-center gap-1 active:scale-95 transition">
-                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Tải lại
-                </a>
-              </div>
-            `;
-          });
-          list.innerHTML = html;
+      }
+      myLocalDls.forEach(loc => {
+        if (!items.some(it => it.appId === loc.id || it.bundleId === loc.bundleId)) {
+          items.push(loc);
         }
-        lucide.createIcons();
+      });
+
+      if (badge) badge.innerText = `${items.length} app`;
+      if (!list) return;
+
+      if (items.length === 0) {
+        list.innerHTML = `
+          <div class="py-12 text-center text-apple-gray flex flex-col items-center">
+            <div class="w-14 h-14 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center mb-2">
+              <i data-lucide="download-cloud" class="w-7 h-7 opacity-40"></i>
+            </div>
+            <span class="text-xs font-medium">Bạn chưa tải ứng dụng nào từ kho.</span>
+          </div>
+        `;
+      } else {
+        let html = '';
+        items.forEach(it => {
+          const safeName = it.appName || it.name || 'Ứng dụng';
+          const safeIcon = it.icon || 'https://img.icons8.com/fluency/96/ipa-file.png';
+          const safeVer = it.version ? `v${it.version}` : '';
+          const dlUrl = `app-library/app.html?id=${encodeURIComponent(it.appId || it.id || it.bundleId || '')}`;
+          html += `
+            <div class="bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm">
+              <div class="flex items-center gap-3 min-w-0">
+                <img src="${safeIcon}" class="w-11 h-11 apple-squircle object-contain shrink-0 border border-black/5 dark:border-white/5" onerror="this.src='https://img.icons8.com/fluency/96/ipa-file.png'">
+                <div class="min-w-0">
+                  <p class="font-bold text-xs sm:text-sm text-black dark:text-white truncate">${safeName}</p>
+                  <p class="text-[11px] text-apple-gray mt-0.5">${safeVer ? safeVer + ' • ' : ''}Đã tải về máy</p>
+                </div>
+              </div>
+              <a href="${dlUrl}" class="px-3.5 py-1.5 rounded-full bg-apple-blue/10 text-apple-blue font-bold text-xs shrink-0 flex items-center gap-1 active:scale-95 transition">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Tải lại
+              </a>
+            </div>
+          `;
+        });
+        list.innerHTML = html;
+      }
+      lucide.createIcons();
     }
 
-    function copyToClip(elementId, btn) { const text = document.getElementById(elementId).value; navigator.clipboard.writeText(text); const originalText = btn.innerHTML; btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> ĐÃ COPY`; btn.className = "w-full py-3 rounded-xl bg-green-500 text-white font-bold text-[13px] flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-green-500/20"; lucide.createIcons(); setTimeout(() => { btn.innerHTML = originalText; btn.className = "w-full py-3 rounded-xl bg-brand hover:bg-brandDark text-white font-bold text-[13px] flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-brand/20"; lucide.createIcons(); }, 2000); }
+    function copyToClip(elementId, btn) {
+      const text = document.getElementById(elementId).value;
+      navigator.clipboard.writeText(text);
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> ĐÃ COPY ✓`;
+      btn.classList.add('bg-apple-green');
+      btn.classList.remove('bg-apple-blue');
+      lucide.createIcons();
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('bg-apple-green');
+        btn.classList.add('bg-apple-blue');
+        lucide.createIcons();
+      }, 2000);
+    }
     
     function switchAuthMode(mode) { 
-        authMode = mode; 
-        const slider = document.getElementById('authSlider'); 
-        const btnLog = document.getElementById('tabLoginBtn'); 
-        const btnReg = document.getElementById('tabRegBtn'); 
-        const submitBtn = document.getElementById('submitBtn'); 
-        const title = document.getElementById('authTitle'); 
-        const sub = document.getElementById('authSubtitle');
-        const errBox = document.getElementById('authError'); 
-        const grpUser = document.getElementById('groupUsername'); 
-        const grpConfirm = document.getElementById('groupConfirmPass'); 
-        const grpTerms = document.getElementById('groupTerms'); 
-        
-        errBox.classList.add('hidden'); 
-        
-        const grpCaptcha = document.getElementById('groupCaptcha');
-        if (mode === 'login') { 
-            slider.style.transform = 'translateX(0)'; 
-            btnLog.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-900 dark:text-white transition-colors"; 
-            btnReg.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-500 dark:text-gray-400 transition-colors"; 
-            submitBtn.innerText = "ĐĂNG NHẬP VÀO HỆ THỐNG"; 
-            title.innerText = "Đăng Nhập"; 
-            sub.innerText = "Truy cập để trải nghiệm dịch vụ Premium.";
-            grpUser.style.maxHeight = '0'; grpUser.style.opacity = '0'; 
-            grpConfirm.style.maxHeight = '0'; grpConfirm.style.opacity = '0'; 
-            grpTerms.style.maxHeight = '0'; grpTerms.style.opacity = '0'; 
-            if (grpCaptcha) { grpCaptcha.style.maxHeight = '0'; grpCaptcha.style.opacity = '0'; }
-        } else { 
-            slider.style.transform = 'translateX(100%)'; 
-            btnLog.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-500 dark:text-gray-400 transition-colors"; 
-            btnReg.className = "flex-1 py-2.5 text-[14px] font-bold z-10 text-gray-900 dark:text-white transition-colors"; 
-            submitBtn.innerText = "ĐĂNG KÝ TÀI KHOẢN MỚI"; 
-            title.innerText = "Tham Gia Ngay"; 
-            sub.innerText = "Trở thành hội viên để mở khóa kho App VIP.";
-            grpUser.style.maxHeight = '100px'; grpUser.style.opacity = '1'; 
-            grpConfirm.style.maxHeight = '100px'; grpConfirm.style.opacity = '1'; 
-            grpTerms.style.maxHeight = '100px'; grpTerms.style.opacity = '1'; 
-            if (grpCaptcha) { 
-                grpCaptcha.style.maxHeight = '100px'; grpCaptcha.style.opacity = '1'; 
-                // Render Turnstile khi chuyển sang tab đăng ký
-                if (window.turnstile) {
-                    setTimeout(() => {
-                        if (turnstileWidgetId === null) {
-                            turnstileWidgetId = turnstile.render('#turnstileWidget', {
-                                sitekey: TURNSTILE_SITE_KEY,
-                                theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-                            });
-                        } else {
-                            turnstile.reset(turnstileWidgetId);
-                        }
-                    }, 100);
-                }
-            }
-        } 
+      authMode = mode; 
+      const slider = document.getElementById('authSlider'); 
+      const btnLog = document.getElementById('tabLoginBtn'); 
+      const btnReg = document.getElementById('tabRegBtn'); 
+      const submitBtn = document.getElementById('submitBtn'); 
+      const title = document.getElementById('authTitle'); 
+      const sub = document.getElementById('authSubtitle');
+      const errBox = document.getElementById('authError'); 
+      const grpUser = document.getElementById('groupUsername'); 
+      const grpConfirm = document.getElementById('groupConfirmPass'); 
+      const grpTerms = document.getElementById('groupTerms'); 
+      
+      errBox.classList.add('hidden'); 
+      
+      const grpCaptcha = document.getElementById('groupCaptcha');
+      if (mode === 'login') { 
+        slider.style.transform = 'translateX(0)'; 
+        btnLog.className = "flex-1 py-2 text-xs sm:text-sm font-bold z-10 text-black dark:text-white transition-colors"; 
+        btnReg.className = "flex-1 py-2 text-xs sm:text-sm font-bold z-10 text-apple-gray transition-colors"; 
+        submitBtn.innerText = "ĐĂNG NHẬP VÀO HỆ THỐNG"; 
+        title.innerText = "Đăng Nhập"; 
+        sub.innerText = "Truy cập tài khoản IPAVIET để mua & quản lý đơn hàng";
+        grpUser.style.maxHeight = '0'; grpUser.style.opacity = '0'; 
+        grpConfirm.style.maxHeight = '0'; grpConfirm.style.opacity = '0'; 
+        grpTerms.style.maxHeight = '0'; grpTerms.style.opacity = '0'; 
+        if (grpCaptcha) { grpCaptcha.style.maxHeight = '0'; grpCaptcha.style.opacity = '0'; }
+      } else { 
+        slider.style.transform = 'translateX(100%)'; 
+        btnLog.className = "flex-1 py-2 text-xs sm:text-sm font-bold z-10 text-apple-gray transition-colors"; 
+        btnReg.className = "flex-1 py-2 text-xs sm:text-sm font-bold z-10 text-black dark:text-white transition-colors"; 
+        submitBtn.innerText = "ĐĂNG KÝ TÀI KHOẢN MỚI"; 
+        title.innerText = "Tham Gia Ngay"; 
+        sub.innerText = "Trở thành hội viên để mở khóa kho App VIP & Chợ MMO.";
+        grpUser.style.maxHeight = '100px'; grpUser.style.opacity = '1'; 
+        grpConfirm.style.maxHeight = '100px'; grpConfirm.style.opacity = '1'; 
+        grpTerms.style.maxHeight = '100px'; grpTerms.style.opacity = '1'; 
+        if (grpCaptcha) { 
+          grpCaptcha.style.maxHeight = '100px'; grpCaptcha.style.opacity = '1'; 
+          if (window.turnstile) {
+            setTimeout(() => {
+              if (turnstileWidgetId === null) {
+                turnstileWidgetId = turnstile.render('#turnstileWidget', {
+                  sitekey: TURNSTILE_SITE_KEY,
+                  theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+                });
+              } else {
+                turnstile.reset(turnstileWidgetId);
+              }
+            }, 100);
+          }
+        }
+      } 
     }
 
     async function handleAuth(e) { 
-        e.preventDefault(); 
-        const email = document.getElementById('emailInput').value.trim(); 
-        const pass = document.getElementById('passInput').value; 
-        const btn = document.getElementById('submitBtn'); 
-        const errBox = document.getElementById('authError'); 
-        
-        let username = '';
-        let captchaToken = '';
+      e.preventDefault(); 
+      const email = document.getElementById('emailInput').value.trim(); 
+      const pass = document.getElementById('passInput').value; 
+      const btn = document.getElementById('submitBtn'); 
+      const errBox = document.getElementById('authError'); 
+      
+      let username = '';
+      let captchaToken = '';
 
-        if (authMode === 'register') { 
-            username = document.getElementById('usernameInput').value.trim(); 
-            const confirmPass = document.getElementById('confirmPassInput').value; 
-            const termsChecked = document.getElementById('termsCheckbox').checked; 
-            if(!username) { showError("Vui lòng nhập Tên hiển thị!"); return; } 
-            if(pass !== confirmPass) { showError("Mật khẩu nhập lại không khớp!"); return; } 
-            if(!termsChecked) { showError("Bạn phải đồng ý với Điều khoản để tiếp tục!"); return; } 
-            
-            if (window.turnstile) {
-                captchaToken = turnstile.getResponse(turnstileWidgetId);
-                if (!captchaToken) {
-                    showError("Vui lòng hoàn thành xác minh chống Bot!");
-                    return;
-                }
-            } else {
-                showError("Đang tải thư viện bảo mật. Vui lòng thử lại sau vài giây!");
-                return;
-            }
+      if (authMode === 'register') { 
+        username = document.getElementById('usernameInput').value.trim(); 
+        const confirmPass = document.getElementById('confirmPassInput').value; 
+        const termsChecked = document.getElementById('termsCheckbox').checked; 
+        if(!username) { showError("Vui lòng nhập Tên hiển thị!"); return; } 
+        if(pass !== confirmPass) { showError("Mật khẩu nhập lại không khớp!"); return; } 
+        if(!termsChecked) { showError("Bạn phải đồng ý với Điều khoản để tiếp tục!"); return; } 
+        
+        if (window.turnstile) {
+          captchaToken = turnstile.getResponse(turnstileWidgetId);
+          if (!captchaToken) {
+            showError("Vui lòng hoàn thành xác minh chống Bot!");
+            return;
+          }
+        } else {
+          showError("Đang tải thư viện bảo mật. Vui lòng thử lại sau vài giây!");
+          return;
+        }
+      } 
+      
+      btn.disabled = true; 
+      btn.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`; 
+      errBox.classList.add('hidden'); 
+      
+      try { 
+        if (authMode === 'login') { 
+          await auth.signInWithEmailAndPassword(email, pass); 
+        } else { 
+          const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email,
+              password: pass,
+              username: username,
+              captchaToken: captchaToken,
+              captchaType: 'turnstile'
+            })
+          });
+
+          const data = await res.json();
+          if (!data.success) {
+            throw new Error(data.message || 'Đăng ký thất bại!');
+          }
+          await auth.signInWithEmailAndPassword(email, pass); 
         } 
+      } catch (error) { 
+        console.error(error);
+        if(error.code === 'auth/email-already-in-use') showError("Email này đã được sử dụng!"); 
+        else if(error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') showError("Sai email hoặc mật khẩu!"); 
+        else if(error.code === 'auth/weak-password') showError("Mật khẩu phải từ 6 ký tự trở lên!"); 
+        else showError(error.message || "Lỗi kết nối. Vui lòng thử lại!"); 
         
-        btn.disabled = true; 
-        btn.innerHTML = `<div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`; 
-        errBox.classList.add('hidden'); 
-        
-        try { 
-            if (authMode === 'login') { 
-                await auth.signInWithEmailAndPassword(email, pass); 
-            } else { 
-                // Đăng ký thông qua API Serverless chống spam
-                const res = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        email: email,
-                        password: pass,
-                        username: username,
-                        captchaToken: captchaToken,
-                        captchaType: 'turnstile'
-                    })
-                });
-
-                const data = await res.json();
-                if (!data.success) {
-                    throw new Error(data.message || 'Đăng ký thất bại!');
-                }
-
-                // Đăng ký thành công -> tiến hành Đăng nhập client-side để đồng bộ Firebase State
-                await auth.signInWithEmailAndPassword(email, pass); 
-            } 
-        } catch (error) { 
-            console.error(error);
-            if(error.code === 'auth/email-already-in-use') showError("Email này đã được sử dụng!"); 
-            else if(error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') showError("Sai email hoặc mật khẩu!"); 
-            else if(error.code === 'auth/weak-password') showError("Mật khẩu phải từ 6 ký tự trở lên!"); 
-            else showError(error.message || "Lỗi kết nối. Vui lòng thử lại!"); 
-            
-            btn.disabled = false; 
-            btn.innerText = authMode === 'login' ? "ĐĂNG NHẬP VÀO HỆ THỐNG" : "ĐĂNG KÝ TÀI KHOẢN MỚI";
-            if (authMode === 'register' && window.turnstile && turnstileWidgetId !== null) {
-                turnstile.reset(turnstileWidgetId);
-            }
-        } 
+        btn.disabled = false; 
+        btn.innerText = authMode === 'login' ? "ĐĂNG NHẬP VÀO HỆ THỐNG" : "ĐĂNG KÝ TÀI KHOẢN MỚI";
+        if (authMode === 'register' && window.turnstile && turnstileWidgetId !== null) {
+          turnstile.reset(turnstileWidgetId);
+        }
+      } 
     }
 
     async function loginWithGoogle() {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        try {
-            // Thử đăng nhập bằng popup trước (nhanh, không cần chuyển hướng trang)
-            await auth.signInWithPopup(provider);
-        } catch (error) {
-            console.warn("Popup login failed, trying redirect:", error);
-            // Nếu bị chặn popup hoặc lỗi thiết bị di động, chuyển sang redirect
-            if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                try {
-                    await auth.signInWithRedirect(provider);
-                } catch (redirectError) {
-                    showError("Đăng nhập bằng Google thất bại: " + redirectError.message);
-                }
-            } else {
-                showError("Đăng nhập bằng Google thất bại: " + error.message);
-            }
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        await auth.signInWithPopup(provider);
+      } catch (error) {
+        console.warn("Popup login failed, trying redirect:", error);
+        if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+          try {
+            await auth.signInWithRedirect(provider);
+          } catch (redirectError) {
+            showError("Đăng nhập bằng Google thất bại: " + redirectError.message);
+          }
+        } else {
+          showError("Đăng nhập bằng Google thất bại: " + error.message);
         }
+      }
     }
 
-    function showError(msg) { const errBox = document.getElementById('authError'); errBox.innerText = msg; errBox.classList.remove('hidden'); }
+    function showError(msg) {
+      const errBox = document.getElementById('authError');
+      errBox.innerText = msg;
+      errBox.classList.remove('hidden');
+    }
     
     function openSubPage(pageId) { 
-        if (pageId === 'downloadHistoryPage') {
-            renderUserDownloadsList(null);
-        }
-        document.getElementById(pageId).classList.remove('hidden'); 
-        requestAnimationFrame(() => { document.getElementById(pageId).classList.add('open'); }); 
+      if (pageId === 'downloadHistoryPage') {
+        renderUserDownloadsList(null);
+      }
+      const el = document.getElementById(pageId);
+      if (el) el.classList.add('open'); 
     }
-    function closeSubPage(pageId) { document.getElementById(pageId).classList.remove('open'); setTimeout(() => { document.getElementById(pageId).classList.add('hidden'); }, 400); }
+
+    function closeSubPage(pageId) { 
+      const el = document.getElementById(pageId);
+      if (el) el.classList.remove('open'); 
+    }
     
-    function openLogoutModal() { const m = document.getElementById('logoutModal'); const o = document.getElementById('logoutOverlay'); const p = document.getElementById('logoutPanel'); m.classList.remove('hidden'); requestAnimationFrame(() => { o.classList.add('opacity-100'); p.classList.remove('scale-95', 'opacity-0'); }); }
-    function closeLogoutModal() { const m = document.getElementById('logoutModal'); const o = document.getElementById('logoutOverlay'); const p = document.getElementById('logoutPanel'); o.classList.remove('opacity-100'); p.classList.add('scale-95', 'opacity-0'); setTimeout(() => m.classList.add('hidden'), 300); }
-    function confirmLogout() { auth.signOut().then(() => { window.location.reload(); }); }
-    function copyUid() { const uid = document.getElementById('userUidShow').innerText; navigator.clipboard.writeText(uid); alert("Đã copy UID của bạn!"); }
+    function openLogoutModal() {
+      const m = document.getElementById('logoutModal');
+      const o = document.getElementById('logoutOverlay');
+      const p = document.getElementById('logoutPanel');
+      m.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        o.classList.add('opacity-100');
+        p.classList.remove('scale-95', 'opacity-0');
+      });
+    }
+
+    function closeLogoutModal() {
+      const m = document.getElementById('logoutModal');
+      const o = document.getElementById('logoutOverlay');
+      const p = document.getElementById('logoutPanel');
+      o.classList.remove('opacity-100');
+      p.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => m.classList.add('hidden'), 300);
+    }
+
+    function confirmLogout() {
+      auth.signOut().then(() => { window.location.reload(); });
+    }
+
+    function copyUid() {
+      const uid = document.getElementById('userUidShow').innerText;
+      navigator.clipboard.writeText(uid).then(() => {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Đã copy UID của bạn!',
+          showConfirmButton: false,
+          timer: 1500
+        });
+      });
+    }
     
-    function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
-    if(localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
-    
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    }
+
     lucide.createIcons();
   </script>
-<!-- Floating AI Chat & Utility Widget -->
-<script src="ai-chat-widget.js?v=6" data-bottom="120px"></script>
-<script src="ipaviet-tracker.js?v=1"></script>
+
+  <!-- Floating AI Chat & Tracker -->
+  <script src="ai-chat-widget.js?v=6" data-bottom="90px"></script>
+  <script src="ipaviet-tracker.js?v=1"></script>
 </body>
 </html>
