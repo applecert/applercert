@@ -1447,46 +1447,55 @@ async function loadData() {
     } catch(e) {}
   } catch(e) { console.error("Lỗi tổng loadData", e); }
 
-  // Update stats
-  const statApps = document.getElementById('statApps');
-  if (statApps) statApps.textContent = DB.ipa.length.toLocaleString();
-  const statVip = document.getElementById('statVip');
-  if (statVip) statVip.textContent = DB.vip.length.toLocaleString();
+  try {
+    // Update stats
+    const statApps = document.getElementById('statApps');
+    if (statApps) statApps.textContent = DB.ipa.length.toLocaleString();
+    const statVip = document.getElementById('statVip');
+    if (statVip) statVip.textContent = DB.vip.length.toLocaleString();
 
-  // Inject hero floating entities
-  injectHeroEntities();
+    // Inject hero floating entities
+    injectHeroEntities();
 
-  // Khôi phục page và filter đã lưu (từ URL hoặc sessionStorage khi Back lại)
-  const restored = getUrlOrSessionParams();
-  STATE.currentPage = restored.page;
-  STATE.currentFilter = restored.filter;
-  if (restored.q) {
-    const sInput = document.getElementById('searchInput');
-    if (sInput) sInput.value = restored.q;
-    const clearBtn = document.getElementById('clearSearchBtn');
-    if (clearBtn) clearBtn.style.display = 'flex';
-  }
+    // Khôi phục page và filter đã lưu (từ URL hoặc sessionStorage khi Back lại)
+    const restored = getUrlOrSessionParams();
+    STATE.currentPage = restored.page;
+    STATE.currentFilter = restored.filter;
+    if (restored.q) {
+      const sInput = document.getElementById('searchInput');
+      if (sInput) sInput.value = restored.q;
+      const sMobile = document.getElementById('searchInputMobile');
+      if (sMobile) sMobile.value = restored.q;
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (clearBtn) clearBtn.style.display = 'flex';
+      const clearBtnMobile = document.getElementById('clearSearchBtnMobile');
+      if (clearBtnMobile) clearBtnMobile.style.display = 'flex';
+    }
 
-  renderContent();
-  syncStateToUrlAndStorage();
+    renderContent();
+    syncStateToUrlAndStorage();
 
-  const savedY = sessionStorage.getItem('ipaviet_lib_scrollY');
-  if (savedY) {
+    const savedY = sessionStorage.getItem('ipaviet_lib_scrollY');
+    if (savedY) {
+      setTimeout(() => {
+        window.scrollTo({ top: parseInt(savedY, 10), behavior: 'smooth' });
+        sessionStorage.removeItem('ipaviet_lib_scrollY');
+      }, 200);
+    }
+
+    // Kiểm tra nếu người dùng vừa hoàn thành vượt link Link4m quay lại
+    checkFreePassCallback();
+
+    // Init scroll reveal
+    initScrollReveal();
+  } catch(err) {
+    console.error("Lỗi hoàn tất render dữ liệu:", err);
+  } finally {
     setTimeout(() => {
-      window.scrollTo({ top: parseInt(savedY, 10), behavior: 'smooth' });
-      sessionStorage.removeItem('ipaviet_lib_scrollY');
-    }, 200);
+      const loader = document.getElementById('loadingStage');
+      if (loader) loader.classList.add('hidden');
+    }, 400);
   }
-
-  // Kiểm tra nếu người dùng vừa hoàn thành vượt link Link4m quay lại
-  checkFreePassCallback();
-
-  // Init scroll reveal và hide loading
-  initScrollReveal();
-  setTimeout(() => {
-    const loader = document.getElementById('loadingStage');
-    if (loader) loader.classList.add('hidden');
-  }, 600);
 
   // Asynchronous background load Tier 2 (Kho mở rộng)
   setTimeout(() => {
@@ -1649,6 +1658,14 @@ function clearSearch() {
   STATE.currentPage = 1;
   syncStateToUrlAndStorage();
   renderContent();
+}
+
+function sanitizeSearchAutofill() {
+  const s1 = document.getElementById('searchInput');
+  const s2 = document.getElementById('searchInputMobile');
+  if ((s1 && isEmailAddress(s1.value)) || (s2 && isEmailAddress(s2.value))) {
+    clearSearch();
+  }
 }
 
 function isEmailAddress(str) {
@@ -3205,6 +3222,7 @@ let scrollRevealObserver = null;
 
 function initScrollReveal() {
   if (scrollRevealObserver) return; // chỉ tạo 1 lần
+  if (typeof IntersectionObserver === 'undefined') return;
   scrollRevealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -3226,6 +3244,7 @@ function refreshScrollReveal() {
 /* ─── Hero Character Animation ─── */
 function initHeroText() {
   const title = document.getElementById('heroTitle');
+  if (!title) return;
   const text = title.textContent;
   title.innerHTML = '';
   text.split('').forEach((char, i) => {
@@ -3240,6 +3259,7 @@ function initHeroText() {
 /* ─── Nav Scroll Effect ─── */
 function initNavScroll() {
   const nav = document.getElementById('spatialNav');
+  if (!nav) return;
   window.addEventListener('scroll', () => {
     if (window.scrollY > 50) nav.classList.add('scrolled');
     else nav.classList.remove('scrolled');
@@ -3248,20 +3268,38 @@ function initNavScroll() {
 
 /* ─── Initialization ─── */
 window.addEventListener('DOMContentLoaded', () => {
-  initHeroText();
-  initNavScroll();
-  initMagnetic();
+  // Fallback an toàn tuyệt đối: Luôn tắt màn hình loading sau tối đa 2s nếu mạng chập chờn
+  setTimeout(() => {
+    const loader = document.getElementById('loadingStage');
+    if (loader && !loader.classList.contains('hidden')) {
+      loader.classList.add('hidden');
+    }
+  }, 2000);
+
+  try { initHeroText(); } catch(e) {}
+  try { initNavScroll(); } catch(e) {}
+  try { initMagnetic(); } catch(e) {}
 
   // VSign popup
-  const popupUntil = localStorage.getItem('vsign_popup_until');
-  if (!popupUntil || Date.now() > parseInt(popupUntil)) {
-    setTimeout(() => {
-      document.getElementById('vsignPopup').classList.add('active');
-      lucide.createIcons();
-    }, 2000);
+  try {
+    const popupUntil = localStorage.getItem('vsign_popup_until');
+    if (!popupUntil || Date.now() > parseInt(popupUntil)) {
+      setTimeout(() => {
+        const popup = document.getElementById('vsignPopup');
+        if (popup) popup.classList.add('active');
+        if (window.lucide) lucide.createIcons();
+      }, 2000);
+    }
+  } catch(e) {}
+
+  try {
+    loadData();
+  } catch(e) {
+    console.error("Lỗi khi gọi loadData:", e);
+    const loader = document.getElementById('loadingStage');
+    if (loader) loader.classList.add('hidden');
   }
 
-  loadData();
   setTimeout(sanitizeSearchAutofill, 300);
   setTimeout(sanitizeSearchAutofill, 800);
   // Telemetry được xử lý thống nhất bởi ipaviet-tracker.js (tránh đếm trùng)

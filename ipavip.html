@@ -509,34 +509,49 @@
           });
         }
       } catch (e) {
-        document.getElementById('dynamicContent').innerHTML = `
-          <div class="text-center py-20 px-4 text-apple-gray">
-            <div class="w-16 h-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4">
-              <i data-lucide="alert-triangle" class="w-8 h-8"></i>
-            </div>
-            <h3 class="font-bold text-lg text-black dark:text-white mb-2">LỖI DỮ LIỆU JSON</h3>
-            <p class="text-sm">File vip.json đang bị sai cấu trúc hoặc không thể tải.</p>
-          </div>`;
+        const container = document.getElementById('vipGrid') || document.getElementById('dynamicContent');
+        if (container) {
+          container.innerHTML = `
+            <div class="col-span-full text-center py-20 px-4 text-apple-gray">
+              <div class="w-16 h-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+              </div>
+              <h3 class="font-bold text-lg text-black dark:text-white mb-2">LỖI DỮ LIỆU JSON</h3>
+              <p class="text-sm">File vip.json đang bị sai cấu trúc hoặc không thể tải.</p>
+            </div>`;
+        }
         if (window.lucide) lucide.createIcons();
         return;
       }
-    } catch (err) {}
-    const restored = getUrlOrSessionParamsVip();
-    STATE.currentPage = restored.page;
-    STATE.currentFilter = restored.filter;
-    if (restored.q) {
-      const sInput = document.getElementById('searchInput');
-      if (sInput) sInput.value = restored.q;
-      const clearBtn = document.getElementById('clearSearchBtn');
-      if (clearBtn) clearBtn.style.display = 'flex';
+    } catch (err) {
+      console.error("Lỗi fetch vip.json:", err);
     }
-    renderContent();
-    syncStateToUrlAndStorageVip();
-    initScrollReveal();
-    setTimeout(() => {
-      const l = document.getElementById('loadingStage');
-      if (l) l.classList.add('hidden');
-    }, 600);
+
+    try {
+      const restored = getUrlOrSessionParamsVip();
+      STATE.currentPage = restored.page;
+      STATE.currentFilter = restored.filter;
+      if (restored.q) {
+        const sInput = document.getElementById('searchInput');
+        if (sInput) sInput.value = restored.q;
+        const sMobile = document.getElementById('searchInputMobile');
+        if (sMobile) sMobile.value = restored.q;
+        const clearBtn = document.getElementById('clearSearchBtn');
+        if (clearBtn) clearBtn.style.display = 'flex';
+        const clearBtnMobile = document.getElementById('clearSearchBtnMobile');
+        if (clearBtnMobile) clearBtnMobile.style.display = 'flex';
+      }
+      renderContent();
+      syncStateToUrlAndStorageVip();
+      initScrollReveal();
+    } catch(err) {
+      console.error("Lỗi render VIP:", err);
+    } finally {
+      setTimeout(() => {
+        const l = document.getElementById('loadingStage');
+        if (l) l.classList.add('hidden');
+      }, 400);
+    }
   }
 
 
@@ -1238,6 +1253,7 @@
   let scrollRevealObserver = null;
   function initScrollReveal() {
     if (scrollRevealObserver) return;
+    if (typeof IntersectionObserver === 'undefined') return;
     scrollRevealObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) { entry.target.classList.add('visible'); scrollRevealObserver.unobserve(entry.target); }
@@ -1252,7 +1268,19 @@
 
   /* ─── Init ─── */
   window.addEventListener('DOMContentLoaded', () => {
-    loadData();
+    // Fallback an toàn: Luôn tắt loader sau tối đa 2s nếu mạng chập chờn
+    setTimeout(() => {
+      const l = document.getElementById('loadingStage');
+      if (l && !l.classList.contains('hidden')) l.classList.add('hidden');
+    }, 2000);
+
+    try {
+      loadData();
+    } catch(e) {
+      console.error("Lỗi khi gọi loadData VIP:", e);
+      const l = document.getElementById('loadingStage');
+      if (l) l.classList.add('hidden');
+    }
     setTimeout(sanitizeSearchAutofill, 300);
     setTimeout(sanitizeSearchAutofill, 800);
   });
