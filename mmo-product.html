@@ -125,10 +125,10 @@
     <div class="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
       
       <!-- Back to Market -->
-      <a href="tap-hoa-mmo.html" class="flex items-center gap-1 text-apple-blue font-semibold text-base hover:opacity-75 transition active:scale-95 shrink-0">
+      <button onclick="goBackToMarket()" class="flex items-center gap-1 text-apple-blue font-semibold text-base hover:opacity-75 transition active:scale-95 shrink-0">
         <i data-lucide="chevron-left" class="w-6 h-6 -ml-1.5 stroke-[2.5]"></i>
         <span>Chợ MMO</span>
-      </a>
+      </button>
 
       <!-- Center Mini Title (Shown on scroll) -->
       <div id="navMiniTitle" class="flex items-center gap-2 opacity-0 transition-opacity duration-200 truncate max-w-xs sm:max-w-sm">
@@ -534,6 +534,23 @@
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+    }
+
+    function goBackToMarket() {
+      const p = new URLSearchParams(window.location.search);
+      const fromPage = p.get('from_page') || sessionStorage.getItem('mmo_last_page') || '1';
+      const fromCat = p.get('from_cat') || sessionStorage.getItem('mmo_last_cat') || 'all';
+
+      if (window.history.length > 1 && document.referrer && document.referrer.includes('tap-hoa-mmo.html')) {
+        window.history.back();
+      } else {
+        let target = 'tap-hoa-mmo.html';
+        const q = [];
+        if (fromPage && fromPage !== '1') q.push(`page=${encodeURIComponent(fromPage)}`);
+        if (fromCat && fromCat !== 'all') q.push(`cat=${encodeURIComponent(fromCat)}`);
+        if (q.length > 0) target += '?' + q.join('&');
+        window.location.href = target;
+      }
     }
 
     const BRAND_ICONS = {
