@@ -49,7 +49,7 @@
               grayLight: '#E5E5EA',
               grayDark: '#1C1C1E',
               bgLight: '#F5F5F7',
-              bgDark: '#000000',
+              bgDark: '#161617',
               cardLight: '#FFFFFF',
               cardDark: '#1C1C1E',
               separatorLight: 'rgba(0, 0, 0, 0.08)',
@@ -66,7 +66,7 @@
               900: '#0B2366'
             },
             bgLight: '#F5F5F7',
-            bgDark: '#000000',
+            bgDark: '#161617',
             cardLight: '#FFFFFF',
             cardDark: '#1C1C1E',
             borderLight: 'rgba(0, 0, 0, 0.08)',
@@ -196,7 +196,7 @@
   <!-- ================================================================
        MMO MAINTENANCE MODE OVERLAY (MÀN HÌNH BẢO TRÌ CHO KHÁCH HÀNG)
        ================================================================ -->
-  <div id="mmoMaintenanceOverlay" class="fixed inset-0 z-[99999] bg-[#090E1A] text-white flex flex-col justify-between overflow-y-auto min-h-screen">
+  <div id="mmoMaintenanceOverlay" class="fixed inset-0 z-[99999] bg-[#090E1A] text-white flex flex-col justify-between overflow-y-auto min-h-screen" style="display: none;">
     <!-- Ambient Glow Backgrounds -->
     <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-brand/20 blur-[100px] pointer-events-none rounded-full"></div>
     <div class="fixed bottom-0 right-0 w-[450px] h-[450px] bg-amber-500/10 blur-[120px] pointer-events-none rounded-full"></div>
@@ -967,8 +967,7 @@
 
     function isMaintenanceModeEnabled() {
       const saved = localStorage.getItem('mmo_maintenance_mode');
-      if (saved === 'false') return false;
-      return true;
+      return saved === 'true';
     }
 
     function applyMaintenanceState() {
@@ -1069,7 +1068,8 @@
       const isDark = document.documentElement.classList.toggle('dark');
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
-    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    // Giao diện mặc định chuẩn Apple Store (Nền sáng #F5F5F7 & Thẻ trắng #FFFFFF tinh tế)
+    if (localStorage.getItem('theme') === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
@@ -1394,6 +1394,15 @@
       applyAll(false);
     });
 
+    window.addEventListener('pageshow', () => {
+      readStateFromUrl();
+      if (PRODS && PRODS.length > 0) {
+        renderCategories();
+        applyAll(false);
+        restoreLastScrollPosition();
+      }
+    });
+
     /* ══════════════════════════════════════════════════════
        CATEGORIES RENDERING (APPLE STORE SQUIRCLES)
        ══════════════════════════════════════════════════════ */
@@ -1668,8 +1677,19 @@
     }
 
     /* ══════════════════════════════════════════════════════
-       PAGINATION (APPLE CUPERTINO CAPSULES)
+       PAGINATION (APPLE CUPERTINO CAPSULES WITH REAL PAGE LINKS)
        ══════════════════════════════════════════════════════ */
+    function buildPageUrl(targetPage) {
+      const p = new URLSearchParams();
+      if (targetPage > 1) p.set('page', targetPage);
+      if (CAT && CAT !== 'all') p.set('cat', CAT);
+      if (SQ) p.set('q', SQ);
+      if (SORT && SORT !== 'new') p.set('sort', SORT);
+      if (CHIPS.size > 0) p.set('chips', Array.from(CHIPS).join(','));
+      const q = p.toString();
+      return window.location.pathname + (q ? '?' + q : '');
+    }
+
     function renderPagination(tot, pages) {
       const wrap = document.getElementById('pgnWrap');
       if (pages <= 1) {
@@ -1685,19 +1705,24 @@
 
       let h = '';
       if (PAGE > 1) {
-        h += `<button onclick="goPage(${PAGE - 1})" class="w-9 h-9 rounded-full bg-black/[0.05] dark:bg-white/[0.08] hover:bg-black/[0.1] text-black dark:text-white flex items-center justify-center transition active:scale-95" title="Trang trước"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>`;
+        const prevUrl = buildPageUrl(PAGE - 1);
+        h += `<a href="${prevUrl}" onclick="goPage(${PAGE - 1}, event)" class="w-9 h-9 rounded-full bg-black/[0.05] dark:bg-white/[0.08] hover:bg-black/[0.1] text-black dark:text-white flex items-center justify-center transition active:scale-95 no-underline" title="Trang trước"><i data-lucide="chevron-left" class="w-4 h-4"></i></a>`;
       }
       for (let i = Math.max(1, PAGE - 2); i <= Math.min(pages, PAGE + 2); i++) {
-        h += `<button onclick="goPage(${i})" class="w-9 h-9 rounded-full text-xs font-bold transition active:scale-95 ${i === PAGE ? 'bg-apple-blue text-white shadow-md shadow-apple-blue/30' : 'bg-black/[0.05] dark:bg-white/[0.08] hover:bg-black/[0.1] text-black dark:text-white'}">${i}</button>`;
+        const pageUrl = buildPageUrl(i);
+        const isCur = (i === PAGE);
+        h += `<a href="${pageUrl}" onclick="goPage(${i}, event)" class="w-9 h-9 rounded-full text-xs font-bold transition active:scale-95 flex items-center justify-center no-underline ${isCur ? 'bg-apple-blue text-white shadow-md shadow-apple-blue/30 pointer-events-none' : 'bg-black/[0.05] dark:bg-white/[0.08] hover:bg-black/[0.1] text-black dark:text-white'}">${i}</a>`;
       }
       if (PAGE < pages) {
-        h += `<button onclick="goPage(${PAGE + 1})" class="w-9 h-9 rounded-full bg-black/[0.05] dark:bg-white/[0.08] hover:bg-black/[0.1] text-black dark:text-white flex items-center justify-center transition active:scale-95" title="Trang sau"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>`;
+        const nextUrl = buildPageUrl(PAGE + 1);
+        h += `<a href="${nextUrl}" onclick="goPage(${PAGE + 1}, event)" class="w-9 h-9 rounded-full bg-black/[0.05] dark:bg-white/[0.08] hover:bg-black/[0.1] text-black dark:text-white flex items-center justify-center transition active:scale-95 no-underline" title="Trang sau"><i data-lucide="chevron-right" class="w-4 h-4"></i></a>`;
       }
       document.getElementById('pgnBtns').innerHTML = h;
       lucide.createIcons();
     }
 
-    function goPage(n) {
+    function goPage(n, event) {
+      if (event && event.preventDefault) event.preventDefault();
       PAGE = n;
       syncUrlParams(true);
       renderPage();
