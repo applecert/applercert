@@ -19,6 +19,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- MMO Smart Icon Resolver (Apple App Store iTunes API) -->
+  <script src="mmo-icon-resolver.js?v=2"></script>
+
   <!-- SweetAlert2 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -191,9 +194,11 @@
         <h1 id="pName" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-black dark:text-white leading-tight">
           Đang tải sản phẩm...
         </h1>
-        <p class="text-xs sm:text-sm text-apple-gray font-medium">
-          Cung ứng & Bảo hành bởi <b class="text-black dark:text-white">IPAVIET Studio</b>
-        </p>
+        <div class="flex items-center justify-center sm:justify-start gap-1.5 text-xs sm:text-sm font-semibold text-apple-blue">
+          <span id="pDeveloper">IPAVIET Studio</span>
+          <i data-lucide="badge-check" class="w-4 h-4 text-apple-blue shrink-0"></i>
+          <span class="text-apple-gray font-normal">• Bản Quyền Chính Hãng</span>
+        </div>
 
         <!-- Price Display -->
         <div class="flex items-baseline justify-center sm:justify-start gap-2 pt-1">
@@ -233,7 +238,7 @@
       <div class="px-1 sm:px-3">
         <div class="text-[11px] font-semibold text-apple-gray uppercase">ĐÁNH GIÁ</div>
         <div class="text-sm sm:text-base font-bold text-black dark:text-white flex items-center justify-center gap-1 mt-0.5">
-          <span>5.0</span>
+          <span id="pAppleRatingScore">5.0</span>
           <span class="text-apple-amber text-xs">★★★★★</span>
         </div>
         <div id="soldCountText" class="text-[10px] text-apple-gray mt-0.5">428 đã bán</div>
@@ -256,6 +261,30 @@
         <div class="text-sm sm:text-base font-bold text-black dark:text-white mt-0.5">Tiếng Việt</div>
         <div class="text-[10px] text-apple-gray mt-0.5">+ Telegram</div>
       </div>
+    </section>
+
+    <!-- ═══ SECTION: APPLE SCREENSHOTS PREVIEW (XEM TRƯỚC GIAO DIỆN) ═══ -->
+    <section id="screenshotsSection" class="hidden space-y-3 pb-2 border-b border-apple-separatorLight dark:border-apple-separatorDark">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base sm:text-lg font-bold text-black dark:text-white">Xem Trước Giao Diện</h2>
+        <span class="text-xs text-apple-blue font-semibold flex items-center gap-1">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> App Store Chính Hãng
+        </span>
+      </div>
+      <div id="screenshotsContainer" class="flex gap-4 overflow-x-auto no-scrollbar py-2 snap-x snap-mandatory">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- ═══ SECTION: WHAT'S NEW (CÓ GÌ MỚI) ═══ -->
+    <section id="whatsNewSection" class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark space-y-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base sm:text-lg font-bold text-black dark:text-white">Có Gì Mới</h2>
+        <span id="pVersionText" class="text-xs text-apple-gray font-semibold">Phiên bản mới nhất</span>
+      </div>
+      <p id="pReleaseNotes" class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+        Cập nhật tối ưu hóa kết nối tự động, tương thích đa nền tảng và kiểm định chất lượng tài nguyên 100%.
+      </p>
     </section>
 
     <!-- ═══ SECTION 3: SMART BALANCE ADVISOR (APPLE NOTIFICATION CARD) ═══ -->
@@ -321,8 +350,12 @@
       
       <div class="divide-y divide-apple-separatorLight dark:divide-apple-separatorDark text-xs sm:text-sm">
         <div class="py-2.5 flex items-center justify-between">
-          <span class="text-apple-gray">Nhà phân phối</span>
-          <span class="font-semibold text-black dark:text-white">IPAVIET MMO</span>
+          <span class="text-apple-gray">Nhà phát triển & Phân phối</span>
+          <span id="infoDev" class="font-semibold text-black dark:text-white">IPAVIET MMO</span>
+        </div>
+        <div class="py-2.5 flex items-center justify-between">
+          <span class="text-apple-gray">Phiên bản</span>
+          <span id="infoVersion" class="font-semibold text-black dark:text-white">Mới nhất</span>
         </div>
         <div class="py-2.5 flex items-center justify-between">
           <span class="text-apple-gray">Thể loại</span>
@@ -456,6 +489,18 @@
 
   <!-- Toast Container -->
   <div id="ntfContainer" class="fixed top-16 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- ================================================================
+       MODAL: FULLSCREEN SCREENSHOT PREVIEW
+       ================================================================ -->
+  <div id="screenshotModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4 cursor-pointer" onclick="closeScreenshotModal()">
+    <button onclick="closeScreenshotModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition active:scale-95 z-10">
+      <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
+    <div class="max-w-md w-full max-h-[90vh] flex items-center justify-center cursor-default" onclick="event.stopPropagation()">
+      <img id="screenshotModalImg" src="" alt="Screenshot Full" class="max-w-full max-h-[85vh] rounded-[26px] shadow-2xl border border-white/10 object-contain">
+    </div>
+  </div>
 
   <!-- ================================================================
        SCRIPTS LOGIC
@@ -616,12 +661,17 @@
 
     function renderProductUI() {
       const p = PRODUCT;
-      const icon = p.icon || getCatIcon(p.cat);
+      const icon = window.MmoIconResolver ? window.MmoIconResolver.getProductIconSync(p) : (p.icon || getCatIcon(p.cat));
 
       document.getElementById('pageTitle').textContent = `${p.name} — Chợ Việt MMO`;
-      document.getElementById('pIcon').src = icon;
-      document.getElementById('navMiniIcon').src = icon;
-      document.getElementById('stickyBarIcon').src = icon;
+      const pIconEl = document.getElementById('pIcon');
+      const navMiniEl = document.getElementById('navMiniIcon');
+      const stickyBarEl = document.getElementById('stickyBarIcon');
+
+      pIconEl.src = icon;
+      navMiniEl.src = icon;
+      stickyBarEl.src = icon;
+
       document.getElementById('navMiniText').textContent = p.name;
       document.getElementById('stickyBarTitle').textContent = p.name;
       document.getElementById('pName').textContent = p.name;
@@ -654,7 +704,80 @@
       }
 
       updateBalanceAdvisor();
+
+      // Kết nối với MMO Smart Icon & Details Resolver (Apple iTunes Search API)
+      if (window.MmoIconResolver) {
+        window.MmoIconResolver.resolveFullDetails(p).then(details => {
+          if (!details) return;
+          if (details.icon) {
+            pIconEl.src = details.icon;
+            navMiniEl.src = details.icon;
+            stickyBarEl.src = details.icon;
+          }
+          if (details.developer) {
+            const devEl = document.getElementById('pDeveloper');
+            if (devEl) devEl.textContent = details.developer;
+            const infoDevEl = document.getElementById('infoDev');
+            if (infoDevEl) infoDevEl.textContent = details.developer;
+          }
+          if (details.version) {
+            const verEl = document.getElementById('pVersionText');
+            if (verEl) verEl.textContent = `Phiên bản ${details.version}`;
+            const infoVerEl = document.getElementById('infoVersion');
+            if (infoVerEl) infoVerEl.textContent = details.version;
+          }
+          if (details.releaseNotes) {
+            const rnEl = document.getElementById('pReleaseNotes');
+            if (rnEl) rnEl.textContent = details.releaseNotes;
+          }
+          if (details.rating && details.rating !== '0.0') {
+            const rEl = document.getElementById('pAppleRatingScore');
+            if (rEl) rEl.textContent = details.rating;
+          }
+          if (details.genres && (!p.cat || p.cat === 'Khác')) {
+            const catEl = document.getElementById('pCategory');
+            if (catEl) catEl.textContent = details.genres;
+          }
+          if (details.screenshots && details.screenshots.length > 0) {
+            renderScreenshots(details.screenshots);
+          }
+          lucide.createIcons();
+        });
+      }
+
       lucide.createIcons();
+    }
+
+    function renderScreenshots(urls) {
+      const sec = document.getElementById('screenshotsSection');
+      const container = document.getElementById('screenshotsContainer');
+      if (!sec || !container || !urls || !urls.length) return;
+
+      container.innerHTML = urls.map((url, idx) => `
+        <div class="shrink-0 snap-center cursor-pointer group" onclick="openScreenshotModal('${url}')">
+          <div class="w-44 sm:w-52 aspect-[9/19.5] rounded-[22px] overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 shadow-md group-hover:shadow-xl group-hover:scale-[1.02] transition-all duration-300">
+            <img src="${url}" alt="Screenshot ${idx + 1}" class="w-full h-full object-cover" loading="lazy">
+          </div>
+        </div>
+      `).join('');
+
+      sec.classList.remove('hidden');
+    }
+
+    function openScreenshotModal(url) {
+      const modal = document.getElementById('screenshotModal');
+      const img = document.getElementById('screenshotModalImg');
+      if (!modal || !img) return;
+      img.src = url;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeScreenshotModal() {
+      const modal = document.getElementById('screenshotModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
     }
 
     function changeQty(delta) {

@@ -19,6 +19,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- MMO Smart Icon Resolver (Apple App Store iTunes API) -->
+  <script src="mmo-icon-resolver.js?v=2"></script>
+
   <!-- SweetAlert2 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -392,6 +395,24 @@
        MAIN BODY CONTENT
        ================================================================ -->
   <main class="flex-1 max-w-7xl mx-auto w-full px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 sm:pb-16 space-y-5 sm:space-y-6">
+
+    <!-- ═══ APPLE TODAY HEADER (HÔM NAY / KHÁM PHÁ) ═══ -->
+    <div class="pt-1 flex items-end justify-between border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
+      <div>
+        <div id="todayDateStr" class="text-[11px] sm:text-xs font-bold text-[#8E8E93] uppercase tracking-wider">HÔM NAY</div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-black dark:text-white mt-0.5">Chợ Ứng Dụng MMO</h1>
+      </div>
+      <div class="hidden sm:flex items-center gap-2">
+        <a href="naptien.html" class="px-3.5 py-1.5 rounded-full bg-[#007AFF]/10 hover:bg-[#007AFF]/20 text-[#007AFF] text-xs font-bold transition flex items-center gap-1.5">
+          <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
+          <span>Nạp Tiền</span>
+        </a>
+        <a href="app-library/index.html" class="px-3.5 py-1.5 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 text-black dark:text-white text-xs font-bold transition flex items-center gap-1.5">
+          <i data-lucide="package" class="w-3.5 h-3.5"></i>
+          <span>Kho IPA</span>
+        </a>
+      </div>
+    </div>
 
     <!-- ═══ FLASH SALE / DEAL HOT BANNER ═══ -->
     <div id="dealBanner" class="hidden relative overflow-hidden rounded-3xl p-5 sm:p-7 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white border border-white/10 shadow-2xl">
@@ -1055,6 +1076,13 @@
       document.documentElement.classList.remove('dark');
     }
 
+    try {
+      const days = ['CHỦ NHẬT', 'THỨ HAI', 'THỨ BA', 'THỨ TƯ', 'THỨ NĂM', 'THỨ SÁU', 'THỨ BẢY'];
+      const now = new Date();
+      const dateEl = document.getElementById('todayDateStr');
+      if (dateEl) dateEl.textContent = `${days[now.getDay()]}, ${now.getDate()} THÁNG ${now.getMonth() + 1}`;
+    } catch(e) {}
+
     const BRAND_ICONS = {
       telegram: 'https://www.chototmmo.com/assets/storage/images/category7NVU.png',
       tiktok: 'https://www.chototmmo.com/assets/storage/images/icon5EMZ.png',
@@ -1207,7 +1235,12 @@
       if (!c || c.isHidden || !c.stock) return;
       const banner = document.getElementById('dealBanner');
       banner.classList.remove('hidden');
-      document.getElementById('dealImg').src = c.icon || 'https://www.chototmmo.com/assets/storage/images/iconBS4R.png';
+      const dealImgEl = document.getElementById('dealImg');
+      if (window.MmoIconResolver) {
+        window.MmoIconResolver.attachSmartAppIcon(c, dealImgEl);
+      } else {
+        dealImgEl.src = c.icon || 'https://www.chototmmo.com/assets/storage/images/iconBS4R.png';
+      }
       document.getElementById('dealName').textContent = c.name || 'Deal Hot';
       const pr = parseInt(c.price) || 0;
       document.getElementById('dealPrice').textContent = pr.toLocaleString() + 'đ';
@@ -1430,7 +1463,7 @@
         const sold = fakeSold(p.id);
         const disc = (p.fakePrice && p.fakePrice > p.price) ? Math.round((1 - p.price / p.fakePrice) * 100) : 0;
         const out = p.stock <= 0;
-        const icon = p.icon || getCatIcon(p.cat);
+        const icon = window.MmoIconResolver ? window.MmoIconResolver.getProductIconSync(p) : (p.icon || getCatIcon(p.cat));
 
         return `
           <a href="mmo-product.html?id=${encodeURIComponent(p.id)}" class="group bg-white dark:bg-[#1C1C1E] rounded-[24px] p-3.5 sm:p-4 border border-black/[0.06] dark:border-white/[0.08] hover:border-[#007AFF]/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden block text-inherit no-underline">
@@ -1450,7 +1483,7 @@
 
             <!-- Thumbnail Container (Apple Squircle) -->
             <div class="relative w-full aspect-square rounded-[22.5%] bg-[#F2F2F7] dark:bg-[#2C2C2E]/50 border border-black/[0.04] dark:border-white/[0.05] flex items-center justify-center p-4 mb-3 group-hover:scale-105 transition-transform duration-300">
-              <img src="${icon}" alt="${p.name}" loading="lazy" class="w-full h-full object-contain ${out ? 'grayscale opacity-40' : ''}" onerror="this.src='https://www.chototmmo.com/assets/storage/images/iconBS4R.png'">
+              <img src="${icon}" alt="${p.name}" data-pid="${p.id}" loading="lazy" class="mmo-card-icon w-full h-full object-contain ${out ? 'grayscale opacity-40' : ''}" onerror="this.src='https://www.chototmmo.com/assets/storage/images/iconBS4R.png'">
               ${out ? `
                 <div class="absolute inset-0 bg-black/60 rounded-[22.5%] flex items-center justify-center">
                   <span class="px-2.5 py-1 rounded-full bg-black/80 text-white font-bold text-xs border border-white/20">Hết Hàng</span>
@@ -1496,6 +1529,16 @@
       }).join('');
 
       lucide.createIcons();
+
+      if (window.MmoIconResolver) {
+        document.querySelectorAll('.mmo-card-icon').forEach(img => {
+          const pid = img.dataset.pid;
+          const prod = PRODS.find(x => String(x.id) === String(pid));
+          if (prod) {
+            window.MmoIconResolver.attachSmartAppIcon(prod, img);
+          }
+        });
+      }
     }
 
     function renderPagination(tot, pages) {
