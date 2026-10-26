@@ -1,510 +1,440 @@
 <!DOCTYPE html>
-<html lang="vi" class="antialiased">
+<html lang="vi" class="scroll-smooth antialiased">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>IPAVIET OS — Kho IPA & Tweak</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>Kho Ứng Dụng IPA — IPAVIET OS</title>
+  <meta name="description" content="Kho IPA iOS chính thức của IPAVIET: Cung cấp hàng ngàn app mod, game hack, tiện ích TrollStore, ký số trực tiếp 1 click.">
+  <meta name="theme-color" content="#0071E3">
+
+  <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/96/apple-app-store--v2.png">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- GSAP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
-  <style>
-    /* ================================================================
-       IPAVIET OS — SPATIAL COMMAND CENTER
-       Design System: Liquid Glass × Spatial Computing × Cyber Luxury
-       ================================================================ */
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          colors: {
+            apple: {
+              blue: '#0071E3',
+              darkBlue: '#0A84FF',
+              green: '#34C759',
+              amber: '#FF9500',
+              red: '#FF3B30',
+              purple: '#AF52DE',
+              gray: '#86868B',
+              grayLight: '#E5E5EA',
+              grayDark: '#1C1C1E',
+              bgLight: '#F5F5F7',
+              bgDark: '#161617',
+              cardLight: '#FFFFFF',
+              cardDark: '#1C1C1E',
+              separatorLight: 'rgba(0, 0, 0, 0.08)',
+              separatorDark: 'rgba(255, 255, 255, 0.12)'
+            },
+            brand: {
+              DEFAULT: '#0071E3',
+              light: '#3B82F6',
+              dark: '#0040C7'
+            }
+          },
+          boxShadow: {
+            'apple': '0 4px 24px rgba(0, 0, 0, 0.06)',
+            'apple-hover': '0 16px 36px rgba(0, 113, 227, 0.12)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.08)'
+          }
+        }
+      }
+    };
+  </script>
 
-    :root {
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-display: 'Space Grotesk', sans-serif;
-      --void: #03040a;
-      --deep: #080a14;
-      --surface: #0d0f1a;
-      --elevated: #121420;
-      --glass: rgba(255,255,255,0.03);
-      --glass-border: rgba(255,255,255,0.06);
-      --glass-highlight: rgba(255,255,255,0.08);
-      --accent-cyan: #00f0ff;
-      --accent-violet: #8b5cf6;
-      --accent-rose: #f43f5e;
-      --accent-amber: #f59e0b;
-      --accent-emerald: #10b981;
-      --text-primary: #f0f2f8;
-      --text-secondary: rgba(240,242,248,0.55);
-      --text-tertiary: rgba(240,242,248,0.3);
-      --radius-sm: 12px;
-      --radius-md: 20px;
-      --radius-lg: 32px;
-      --radius-xl: 48px;
-      --radius-full: 9999px;
-      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-      --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
-      --ease-snap: cubic-bezier(0.87, 0, 0.13, 1);
+  <!-- Initial Theme Check -->
+  <script>
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
+  </script>
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-    body {
-      font-family: var(--font-sans);
-      background: var(--void);
-      color: var(--text-primary);
+    <style>
+    html, body {
       overflow-x: hidden;
-      min-height: 100dvh;
+      max-width: 100vw;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    * {
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", sans-serif;
+      letter-spacing: -0.015em;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .apple-squircle {
+      border-radius: 22.5% !important;
+      overflow: hidden !important;
+      -webkit-corner-smoothing: antialiased;
+    }
+    .apple-glass {
+      background: rgba(245, 245, 247, 0.85);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    }
+    .dark .apple-glass {
+      background: rgba(22, 22, 23, 0.85);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    }
+    .apple-glass-card {
+      background: #FFFFFF;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+    .dark .apple-glass-card {
+      background: #1C1C1E;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
-    /* Ambient Background */
-    .ambient-layer { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
-    .aurora-blob { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.4; animation: auroraFloat 20s ease-in-out infinite; }
-    .aurora-blob:nth-child(1) { width: 600px; height: 600px; background: radial-gradient(circle, rgba(139,92,246,0.4), transparent 70%); top: -10%; left: -10%; animation-delay: 0s; }
-    .aurora-blob:nth-child(2) { width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,240,255,0.25), transparent 70%); bottom: -10%; right: -5%; animation-delay: -7s; }
-    .aurora-blob:nth-child(3) { width: 400px; height: 400px; background: radial-gradient(circle, rgba(244,63,94,0.2), transparent 70%); top: 40%; left: 50%; animation-delay: -14s; }
-    @keyframes auroraFloat { 0%,100% { transform: translate(0,0) scale(1); } 25% { transform: translate(50px,-30px) scale(1.1); } 50% { transform: translate(-30px,40px) scale(0.95); } 75% { transform: translate(20px,20px) scale(1.05); } }
-    .noise-overlay { position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px; }
-
-    /* Glass System */
-    .glass { background: var(--glass); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 var(--glass-highlight); }
-    .glass-strong { background: rgba(255,255,255,0.05); backdrop-filter: blur(60px) saturate(200%); -webkit-backdrop-filter: blur(60px) saturate(200%); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 16px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1); }
-    .glass-crystal { background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%); backdrop-filter: blur(80px) saturate(220%); -webkit-backdrop-filter: blur(80px) saturate(220%); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 24px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.1); }
-
-    /* Spatial Navigation */
-    .spatial-nav { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--radius-full); transition: all 0.5s var(--ease-fluid); max-width: calc(100% - 32px); flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
-    .spatial-nav::-webkit-scrollbar { display: none; }
-    .spatial-nav.scrolled { background: rgba(3,4,10,0.8); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-    .nav-logo { font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: 2px; color: var(--text-primary); padding: 8px 12px; position: relative; overflow: hidden; cursor: pointer; flex-shrink: 0; }
-    .nav-logo::after { content: ''; position: absolute; bottom: 4px; left: 16px; right: 16px; height: 2px; background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent); opacity: 0; transition: opacity 0.3s; }
-    .nav-logo:hover::after { opacity: 1; }
-    .nav-pill { padding: 8px 14px; border-radius: var(--radius-full); font-size: 13px; white-space: nowrap; flex-shrink: 0; font-weight: 600; color: var(--text-secondary); background: transparent; border: none; cursor: pointer; transition: all 0.4s var(--ease-spring); position: relative; overflow: hidden; text-decoration: none; display: inline-flex; align-items: center; }
-    .nav-pill::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,240,255,0.1), rgba(139,92,246,0.1)); border-radius: inherit; opacity: 0; transition: opacity 0.3s; }
-    .nav-pill:hover { color: var(--text-primary); transform: translateY(-1px); }
-    .nav-pill:hover::before { opacity: 1; }
-    .nav-pill.active { color: var(--accent-cyan); background: rgba(0,240,255,0.08); box-shadow: 0 0 20px rgba(0,240,255,0.1); }
-    .nav-action { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); cursor: pointer; transition: all 0.3s var(--ease-spring); text-decoration: none; }
-    .nav-action:hover { background: rgba(0,240,255,0.1); border-color: rgba(0,240,255,0.3); color: var(--accent-cyan); transform: scale(1.1); }
-
-    /* Main Spatial Stage */
-    #spatial-stage { position: relative; z-index: 10; min-height: 100dvh; padding-top: 100px; padding-bottom: 120px; overflow: hidden; }
-
-    /* Hero: The Core */
-    .hero-core { position: relative; height: 85vh; min-height: 600px; display: flex; flex-direction: column; align-items: center; justify-content: center; perspective: 1200px; overflow: hidden; transition: opacity 0.5s var(--ease-fluid), transform 0.5s var(--ease-fluid); will-change: opacity, transform; }
-    .hero-orbital-ring { position: absolute; border: 1px solid rgba(255,255,255,0.04); border-radius: 50%; animation: orbitalSpin linear infinite; }
-    .hero-orbital-ring:nth-child(1) { width: 300px; height: 300px; animation-duration: 30s; }
-    .hero-orbital-ring:nth-child(2) { width: 450px; height: 450px; animation-duration: 45s; animation-direction: reverse; }
-    .hero-orbital-ring:nth-child(3) { width: 600px; height: 600px; animation-duration: 60s; }
-    .hero-orbital-ring:nth-child(4) { width: 750px; height: 750px; animation-duration: 80s; animation-direction: reverse; }
-    @keyframes orbitalSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .hero-orbital-dot { position: absolute; width: 6px; height: 6px; background: var(--accent-cyan); border-radius: 50%; box-shadow: 0 0 12px var(--accent-cyan); }
-    .hero-title { font-family: var(--font-display); font-size: clamp(48px, 10vw, 120px); font-weight: 700; letter-spacing: -0.04em; line-height: 1; text-align: center; position: relative; z-index: 10; }
-    .hero-title .char { display: inline-block; opacity: 0; transform: translateY(80px) rotateX(-40deg); animation: charReveal 1s var(--ease-fluid) forwards; }
-    @keyframes charReveal { to { opacity: 1; transform: translateY(0) rotateX(0); } }
-    .hero-subtitle { font-size: 15px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 24px; opacity: 0; animation: fadeUp 1s 0.8s var(--ease-fluid) forwards; }
-    .hero-stats { display: flex; gap: 48px; margin-top: 48px; opacity: 0; animation: fadeUp 1s 1s var(--ease-fluid) forwards; }
-    .hero-stat { text-align: center; }
-    .hero-stat-value { font-family: var(--font-display); font-size: 32px; font-weight: 700; color: var(--text-primary); line-height: 1; }
-    .hero-stat-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 6px; }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    .floating-entity { position: absolute; width: 64px; height: 64px; border-radius: var(--radius-md); overflow: hidden; animation: entityFloat 8s ease-in-out infinite; box-shadow: 0 8px 32px rgba(0,0,0,0.4); cursor: pointer; transition: transform 0.5s var(--ease-spring), box-shadow 0.5s; }
-    .floating-entity:hover { transform: scale(1.3) translateZ(50px) !important; box-shadow: 0 20px 60px rgba(0,240,255,0.2); z-index: 100; }
-    .floating-entity img { width: 100%; height: 100%; object-fit: cover; }
-    .floating-entity::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent); pointer-events: none; }
-    @keyframes entityFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 33% { transform: translateY(-20px) rotate(3deg); } 66% { transform: translateY(10px) rotate(-2deg); } }
-
-    /* Command Input */
-    .command-input-wrap { position: relative; max-width: 600px; margin: 0 auto 64px; z-index: 20; }
-    .command-input { width: 100%; height: 56px; padding: 0 48px 0 56px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); color: var(--text-primary); font-size: 15px; font-weight: 500; outline: none; transition: all 0.4s var(--ease-spring); cursor: text; }
-    .command-input::-webkit-search-cancel-button, .command-input::-webkit-search-decoration { display: none; }
-    .command-input::placeholder { color: var(--text-tertiary); }
-    .command-input:focus { background: rgba(255,255,255,0.06); border-color: rgba(0,240,255,0.3); box-shadow: 0 0 40px rgba(0,240,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1); }
-    .command-input-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); pointer-events: none; transition: color 0.3s; }
-    .command-input:focus + .command-input-icon, .command-input-wrap:focus-within .command-input-icon { color: var(--accent-cyan); }
-    .command-input-clear { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); display: none; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; padding: 0; outline: none; }
-    .command-input-clear:hover { background: rgba(255,255,255,0.18); color: #fff; transform: translateY(-50%) scale(1.08); }
-
-    /* Section Headers */
-    .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 32px; padding: 0 8px; }
-    .section-title { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.02em; position: relative; display: inline-block; }
-    .section-title::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 40px; height: 2px; background: linear-gradient(90deg, var(--accent-cyan), transparent); }
-    .section-action { font-size: 13px; font-weight: 600; color: var(--accent-cyan); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.3s; opacity: 0.7; text-decoration: none; }
-    .section-action:hover { opacity: 1; gap: 8px; }
-
-    /* App Entities */
-    .entity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 0 8px; }
-    .entity { position: relative; padding: 20px; border-radius: var(--radius-lg); background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%); border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); transition: all 0.5s var(--ease-spring); cursor: pointer; overflow: hidden; transform-style: preserve-3d; }
-    .entity::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent); transition: left 0.6s; }
-    .entity:hover::before { left: 100%; }
-    .entity:hover { transform: translateY(-4px) scale(1.01); border-color: rgba(0,240,255,0.15); box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 60px rgba(0,240,255,0.05); }
-    .entity-glow { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0,240,255,0.08), transparent 50%); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-    .entity:hover .entity-glow { opacity: 1; }
-    .entity-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-    .entity-icon { width: 56px; height: 56px; border-radius: var(--radius-md); overflow: hidden; position: relative; flex-shrink: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-    .entity-icon img { width: 100%; height: 100%; object-fit: cover; }
-    .entity-icon::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent); pointer-events: none; }
-    .entity-meta { flex: 1; min-width: 0; }
-    .entity-name { font-size: 15px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .entity-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .entity-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-    .entity-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-    .badge-vip { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); color: var(--accent-amber); border: 1px solid rgba(245,158,11,0.2); }
-    .badge-free { background: linear-gradient(135deg, rgba(0,240,255,0.1), rgba(0,240,255,0.02)); color: var(--accent-cyan); border: 1px solid rgba(0,240,255,0.15); }
-    .badge-mod { background: linear-gradient(135deg, rgba(236,72,153,0.22), rgba(139,92,246,0.18)); color: #f43f5e; border: 1px solid rgba(236,72,153,0.4); box-shadow: 0 0 14px rgba(236,72,153,0.25); font-weight: 800; }
-    .badge-native { background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.03)); color: var(--accent-emerald); border: 1px solid rgba(16,185,129,0.25); font-size: 9.5px; text-transform: none; font-weight: 600; }
-    .entity.has-mod { border-color: rgba(236,72,153,0.22); }
-    .entity.has-mod:hover { border-color: rgba(236,72,153,0.5); box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 30px rgba(236,72,153,0.15); }
-    .entity-mod-highlight { margin-top: 8px; padding: 6px 10px; border-radius: var(--radius-sm); background: linear-gradient(135deg, rgba(236,72,153,0.12), rgba(139,92,246,0.06)); border: 1px solid rgba(236,72,153,0.25); font-size: 11px; font-weight: 600; color: #fda4af; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .entity-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.04); }
-    .entity-version { font-size: 12px; font-weight: 600; color: var(--text-tertiary); font-family: var(--font-display); }
-    .entity-action { padding: 6px 16px; border-radius: var(--radius-full); font-size: 12px; font-weight: 700; border: none; cursor: pointer; transition: all 0.3s var(--ease-spring); position: relative; overflow: hidden; }
-    .entity-action-primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); color: var(--void); box-shadow: 0 4px 16px rgba(0,240,255,0.2); }
-    .entity-action-primary:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(0,240,255,0.3); }
-    .entity-action-vip { background: linear-gradient(135deg, var(--accent-amber), #d97706); color: var(--void); box-shadow: 0 4px 16px rgba(245,158,11,0.2); }
-
-    /* Featured Ribbon */
-    .ribbon-container { position: relative; overflow: visible; padding: 20px 0; margin-bottom: 64px; }
-    .ribbon-track { display: flex; gap: 20px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory; padding-bottom: 20px; }
-    .ribbon-track::-webkit-scrollbar { display: none; }
-    .ribbon-item { flex: 0 0 320px; height: 200px; border-radius: var(--radius-lg); position: relative; overflow: hidden; scroll-snap-align: start; cursor: pointer; transition: all 0.5s var(--ease-spring); transform-style: preserve-3d; }
-    .ribbon-item:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 24px 48px rgba(0,0,0,0.4); }
-    .ribbon-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: opacity 0.5s, transform 0.8s var(--ease-fluid); }
-    .ribbon-item:hover img { opacity: 0.8; transform: scale(1.1); }
-    .ribbon-item::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(3,4,10,0.95) 0%, rgba(3,4,10,0.3) 50%, transparent 100%); }
-    .ribbon-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 24px; z-index: 2; }
-    .ribbon-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
-    .ribbon-desc { font-size: 13px; color: var(--text-secondary); }
-
-    /* App Detail: Spatial Expansion */
-    #app-detail-stage { position: fixed; inset: 0; z-index: 200; pointer-events: none; opacity: 0; visibility: hidden; perspective: 1200px; transform-style: preserve-3d; }
-    #app-detail-stage.active { pointer-events: all; opacity: 1; visibility: visible; }
-    .detail-backdrop { position: fixed; inset: 0; background: rgba(3,4,10,0.95); backdrop-filter: blur(0px) saturate(100%); -webkit-backdrop-filter: blur(0px) saturate(100%); will-change: backdrop-filter; }
-    .detail-content { position: relative; height: 100dvh; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; -webkit-overflow-scrolling: touch; }
-    .detail-content::-webkit-scrollbar { width: 4px; }
-    .detail-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-    .detail-hero { position: relative; min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 120px 24px 48px; overflow: hidden; }
-    .detail-hero-bg { position: absolute; inset: 0; z-index: 0; }
-    .detail-hero-bg img { width: 100%; height: 100%; object-fit: cover; filter: blur(80px) saturate(1.8); opacity: 0; transform: scale(1.5); }
-    .detail-hero-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 0%, var(--void) 100%); }
-    .detail-icon-wrap { position: relative; width: 120px; height: 120px; border-radius: var(--radius-lg); overflow: hidden; z-index: 2; box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1), 0 0 60px rgba(0,240,255,0.1); opacity: 0; transform: scale(0.6) translateY(40px) rotateX(20deg); }
-    .detail-icon-wrap.animated { animation: iconFloat 6s ease-in-out infinite; }
-    @keyframes iconFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .detail-icon-wrap img { width: 100%; height: 100%; object-fit: cover; }
-    .detail-title { font-family: var(--font-display); font-size: 36px; font-weight: 700; text-align: center; margin-top: 24px; z-index: 2; letter-spacing: -0.02em; opacity: 0; transform: translateY(30px); }
-    .detail-dev { font-size: 14px; color: var(--text-secondary); margin-top: 8px; z-index: 2; opacity: 0; transform: translateY(20px); }
-    .detail-actions { display: flex; gap: 12px; margin-top: 32px; z-index: 2; opacity: 0; transform: translateY(20px) scale(0.95); }
-    .detail-btn { padding: 12px 32px; border-radius: var(--radius-full); font-size: 14px; font-weight: 700; border: none; cursor: pointer; transition: all 0.4s var(--ease-spring); display: flex; align-items: center; gap: 8px; }
-    .detail-btn-primary { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); color: var(--void); box-shadow: 0 8px 32px rgba(0,240,255,0.25); }
-    .detail-btn-primary:hover { transform: scale(1.05); box-shadow: 0 12px 40px rgba(0,240,255,0.35); }
-    .detail-btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); }
-    .detail-btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
-    .detail-body { max-width: 800px; margin: 0 auto; padding: 0 24px 120px; position: relative; z-index: 2; opacity: 0; transform: translateY(40px); }
-    .detail-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px; }
-    .detail-info-cell { text-align: center; padding: 20px; border-radius: var(--radius-md); background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); opacity: 0; transform: translateY(20px); }
-    .detail-info-value { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text-primary); }
-    .detail-info-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; }
-    .detail-section-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); opacity: 0; transform: translateY(20px); }
-    .detail-desc { font-size: 14.5px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 48px; opacity: 0; transform: translateY(20px); white-space: pre-wrap; word-break: break-word; }
-    .detail-screenshots { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 16px; margin-bottom: 48px; scrollbar-width: none; }
-    .detail-screenshots::-webkit-scrollbar { display: none; }
-    .detail-screenshots img { height: 400px; border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: transform 0.4s var(--ease-spring); flex-shrink: 0; }
-    .detail-screenshots img:hover { transform: scale(1.02) translateY(-4px); }
-    .detail-data-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.04); opacity: 0; transform: translateX(-10px); }
-    .detail-data-row:last-child { border-bottom: none; }
-    .detail-data-label { font-size: 14px; color: var(--text-secondary); }
-    .detail-data-value { font-size: 14px; font-weight: 600; color: var(--text-primary); font-family: var(--font-display); }
-    .detail-close { position: fixed; top: 24px; left: 24px; z-index: 210; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s var(--ease-spring); opacity: 0; transform: scale(0.5) rotate(-90deg); }
-    .detail-close:hover { background: rgba(255,255,255,0.1); transform: scale(1.1) rotate(0deg); }
-
-    /* Purchase Panel */
-    .purchase-panel { border-radius: var(--radius-lg); padding: 24px; margin-bottom: 32px; position: relative; overflow: hidden; }
-    .purchase-panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0,240,255,0.05), rgba(139,92,246,0.05)); z-index: 0; }
-    .purchase-panel > * { position: relative; z-index: 1; }
-    .purchase-panel-vip { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.02)); border: 1px solid rgba(245,158,11,0.15); }
-    .purchase-panel-locked { background: linear-gradient(135deg, rgba(244,63,94,0.08), rgba(244,63,94,0.02)); border: 1px solid rgba(244,63,94,0.1); }
-    .purchase-panel-normal { background: linear-gradient(135deg, rgba(0,240,255,0.05), rgba(139,92,246,0.05)); border: 1px solid rgba(0,240,255,0.1); }
-
-    /* Pagination */
-    .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 48px; padding: 0 8px; }
-    .pagination-btn { min-width: 40px; height: 40px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; font-family: var(--font-display); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: var(--text-secondary); cursor: pointer; transition: all 0.3s var(--ease-spring); }
-    .pagination-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); transform: translateY(-2px); }
-    .pagination-btn.active { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); color: var(--void); border-color: transparent; box-shadow: 0 4px 16px rgba(0,240,255,0.2); }
-    .pagination-btn.disabled { opacity: 0.3; pointer-events: none; }
-
-    /* Filter Chips */
-    .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding: 4px 8px 20px; scrollbar-width: none; margin-bottom: 8px; }
-    .filter-bar::-webkit-scrollbar { display: none; }
-    .filter-chip { flex-shrink: 0; padding: 8px 18px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: var(--text-secondary); cursor: pointer; transition: all 0.3s var(--ease-spring); display: flex; align-items: center; gap: 6px; }
-    .filter-chip:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); transform: translateY(-1px); }
-    .filter-chip.active { background: linear-gradient(135deg, rgba(0,240,255,0.15), rgba(139,92,246,0.1)); color: var(--accent-cyan); border-color: rgba(0,240,255,0.2); box-shadow: 0 0 20px rgba(0,240,255,0.08); }
-
-    /* MOD Filter Chip & Showcase Styling */
-    .filter-chip.chip-mod { background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(139,92,246,0.15)); color: #f43f5e; border-color: rgba(236,72,153,0.3); }
-    .filter-chip.chip-mod:hover { background: linear-gradient(135deg, rgba(236,72,153,0.25), rgba(139,92,246,0.25)); color: #ff6b81; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(236,72,153,0.25); }
-    .filter-chip.chip-mod.active { background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; border-color: transparent; box-shadow: 0 0 24px rgba(236,72,153,0.4); }
-
-    /* MOD Feature Showcase in Detail Stage */
-    .mod-feature-card { position: relative; background: linear-gradient(135deg, rgba(236,72,153,0.12), rgba(139,92,246,0.12), rgba(0,240,255,0.06)); border: 1px solid rgba(236,72,153,0.3); border-radius: var(--radius-lg); padding: 22px; overflow: hidden; box-shadow: 0 16px 40px rgba(0,0,0,0.4), inset 0 0 24px rgba(236,72,153,0.1); margin-bottom: 36px; }
-    .mod-feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #ec4899, #a855f7, #00f0ff, transparent); }
-    .mod-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-    .mod-badge-wrap { display: inline-flex; position: relative; }
-    .mod-badge-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: var(--radius-full); background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; font-family: var(--font-display); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; box-shadow: 0 4px 16px rgba(236,72,153,0.4); }
-    .mod-status-tag { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; color: var(--accent-emerald); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); padding: 4px 12px; border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 5px; }
-    .mod-feature-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
-    .mod-feature-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-md); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); transition: all 0.2s ease; }
-    .mod-feature-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(236,72,153,0.3); transform: translateY(-2px); }
-    .mod-feat-icon { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, rgba(236,72,153,0.25), rgba(139,92,246,0.25)); color: #f43f5e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
-    .mod-feat-text { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
-
-    /* Toast */
-    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px); padding: 14px 28px; border-radius: var(--radius-full); background: var(--glass-strong); color: var(--text-primary); font-size: 14px; font-weight: 600; z-index: 500; opacity: 0; transition: all 0.5s var(--ease-spring); pointer-events: none; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
-    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-    /* Loading State */
-    .loading-stage { position: fixed; inset: 0; z-index: 1000; background: var(--void); display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.8s var(--ease-fluid), visibility 0.8s; }
+    /* Loading Stage */
+    .loading-stage { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #F5F5F7; transition: opacity 0.6s, visibility 0.6s; }
+    .dark .loading-stage { background: #161617; }
     .loading-stage.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-    .loading-ring { width: 80px; height: 80px; position: relative; }
-    .loading-ring::before, .loading-ring::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent; }
-    .loading-ring::before { border-top-color: var(--accent-cyan); border-right-color: var(--accent-violet); animation: spin 1.5s linear infinite; }
-    .loading-ring::after { border-bottom-color: var(--accent-rose); border-left-color: var(--accent-amber); animation: spin 2s linear infinite reverse; inset: 8px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: 0.3em; color: var(--text-tertiary); margin-top: 24px; }
+    .loading-ring { width: 44px; height: 44px; border: 3px solid rgba(0,113,227,0.15); border-top-color: #0071E3; border-radius: 50%; animation: spinRing 0.8s linear infinite; }
+    @keyframes spinRing { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 13px; font-weight: 700; color: #86868B; margin-top: 14px; letter-spacing: 0.1em; }
+
+    /* App Detail Stage */
+    #app-detail-stage { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px; }
+    #app-detail-stage.active { display: flex; }
+    .detail-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+    .detail-close { position: absolute; top: 18px; left: 18px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.06); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; color: inherit; }
+    .dark .detail-close { background: rgba(255,255,255,0.1); color: #fff; }
+    .detail-content { position: relative; z-index: 2; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; border-radius: 28px; background: #fff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 24px 64px rgba(0,0,0,0.2); }
+    .dark .detail-content { background: #1C1C1E; border-color: rgba(255,255,255,0.08); }
+    .detail-hero { padding: 32px 24px 20px; text-align: center; position: relative; border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .dark .detail-hero { border-color: rgba(255,255,255,0.06); }
+    .detail-hero-bg { display: none; }
+    .detail-icon-wrap { width: 88px; height: 88px; margin: 0 auto 16px; }
+    .detail-icon-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 22.5%; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .detail-title { font-size: 22px; font-weight: 800; }
+    .detail-dev { font-size: 13px; color: #86868B; margin-top: 4px; }
+    .detail-actions { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 18px; }
+    .detail-btn { padding: 10px 24px; border-radius: 9999px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+    .detail-btn-primary { background: #0071E3; color: #fff; box-shadow: 0 4px 14px rgba(0,113,227,0.3); }
+    .detail-btn-primary:hover { background: #0052FF; }
+    .detail-btn-secondary { background: rgba(0,0,0,0.05); color: #86868B; }
+    .dark .detail-btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+    .detail-body { padding: 24px; }
+    .detail-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; padding: 16px; background: rgba(0,0,0,0.02); border-radius: 18px; margin-bottom: 24px; }
+    .dark .detail-info-grid { background: rgba(255,255,255,0.03); }
+    .detail-info-value { font-size: 17px; font-weight: 800; color: #0071E3; }
+    .detail-info-label { font-size: 11px; color: #86868B; font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+    .detail-section-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .detail-desc { font-size: 13px; line-height: 1.6; color: #86868B; margin-bottom: 24px; }
+    .detail-screenshots { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; }
+    .detail-screenshots img { height: 180px; border-radius: 14px; }
+    .detail-data-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 12px; }
+    .dark .detail-data-row { border-color: rgba(255,255,255,0.04); }
+    .detail-data-label { color: #86868B; }
+    .detail-data-value { font-weight: 600; }
 
     /* VSign Popup */
-    .popup-overlay { position: fixed; inset: 0; background: rgba(3,4,10,0.9); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
-    .popup-overlay.active { opacity: 1; pointer-events: all; }
-    .popup-card { background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-lg); width: 100%; max-width: 440px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 100px rgba(0,240,255,0.05); transform: scale(0.9) translateY(20px); transition: transform 0.5s var(--ease-spring); }
-    .popup-overlay.active .popup-card { transform: scale(1) translateY(0); }
-    .popup-header { background: linear-gradient(135deg, rgba(0,240,255,0.08), rgba(139,92,246,0.05)); padding: 32px 24px; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .popup-logo { width: 80px; height: 80px; border-radius: var(--radius-md); overflow: hidden; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 8px 32px rgba(0,240,255,0.2), 0 0 20px rgba(0,240,255,0.1); }
-    .popup-logo img { width: 100%; height: 100%; object-fit: cover; }
-    .popup-body { padding: 28px 24px; text-align: center; }
-    .popup-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
-    .popup-subtitle { font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px; }
-    .popup-features { display: flex; flex-direction: column; gap: 14px; text-align: left; margin-bottom: 28px; }
-    .popup-feat { display: flex; gap: 12px; align-items: flex-start; }
-    .popup-feat-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.15); color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-    .popup-feat-text strong { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-    .popup-feat-text span { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
-    .popup-actions { display: flex; flex-direction: column; gap: 10px; }
-    .popup-btn-primary { width: 100%; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet)); color: var(--void); border: none; padding: 14px; border-radius: var(--radius-md); font-size: 14.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(0,240,255,0.2); }
-    .popup-btn-primary:hover { transform: scale(1.02); box-shadow: 0 8px 30px rgba(0,240,255,0.3); }
+    .popup-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.5); backdrop-filter: blur(12px); display: none; align-items: center; justify-content: center; padding: 16px; }
+    .popup-overlay.active { display: flex; }
+    .popup-card { width: 100%; max-width: 440px; border-radius: 28px; background: #fff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 24px 64px rgba(0,0,0,0.2); overflow: hidden; padding: 24px; }
+    .dark .popup-card { background: #1C1C1E; border-color: rgba(255,255,255,0.08); }
+    .popup-logo img { width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 12px; display: block; }
+    .popup-title { font-size: 18px; font-weight: 800; text-align: center; }
+    .popup-subtitle { font-size: 12px; color: #86868B; text-align: center; margin-top: 4px; margin-bottom: 16px; }
+    .popup-feat { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: 12px; }
+    .popup-feat-icon { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,113,227,0.1); color: #0071E3; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .popup-actions { margin-top: 20px; }
+    .popup-btn-primary { width: 100%; padding: 12px; border-radius: 9999px; background: #0071E3; color: #fff; font-weight: 700; font-size: 13px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .popup-btn-group { display: flex; gap: 8px; margin-top: 8px; }
-    .popup-btn-secondary { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); padding: 10px 4px; border-radius: var(--radius-md); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .popup-btn-secondary:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-    .popup-btn-ghost { flex: 1; background: transparent; color: var(--text-tertiary); border: none; padding: 10px 4px; font-size: 12px; font-weight: 500; cursor: pointer; transition: color 0.2s; }
-    .popup-btn-ghost:hover { color: var(--text-primary); }
+    .popup-btn-secondary, .popup-btn-ghost { flex: 1; padding: 8px; border-radius: 9999px; background: rgba(0,0,0,0.05); border: none; font-size: 11px; font-weight: 600; color: #86868B; cursor: pointer; }
+    .dark .popup-btn-secondary, .dark .popup-btn-ghost { background: rgba(255,255,255,0.08); }
 
-    /* Floating Dock */
-    .spatial-dock { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; align-items: center; gap: 4px; padding: 8px; background: rgba(3,4,10,0.7); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-full); box-shadow: 0 16px 48px rgba(0,0,0,0.4); transition: all 0.5s var(--ease-fluid); }
-    .dock-item { width: 48px; height: 48px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); background: transparent; border: none; cursor: pointer; transition: all 0.4s var(--ease-spring); position: relative; text-decoration: none; }
-    .dock-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); transform: translateY(-4px) scale(1.1); }
-    .dock-item.active { color: var(--accent-cyan); background: rgba(0,240,255,0.08); box-shadow: 0 0 20px rgba(0,240,255,0.1); }
-    .dock-item.active::after { content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 8px var(--accent-cyan); }
-    .dock-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.06); margin: 0 4px; }
+    /* Toast */
+    .toast { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0; background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 9999px; font-size: 13px; font-weight: 600; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 9999; backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+    .dark .toast { background: rgba(255,255,255,0.9); color: #000; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+    /* Ribbon Track */
+    .ribbon-track { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 14px; }
+    .ribbon-container { overflow: visible; margin-bottom: 32px; }
 
-    /* Responsive */
-    @media (max-width: 768px) { .hero-title { font-size: 48px; } .hero-stats { gap: 24px; } .entity-grid { grid-template-columns: 1fr; } .detail-info-grid { grid-template-columns: 1fr; } .ribbon-item { flex: 0 0 280px; height: 180px; } .spatial-nav { top: 12px; padding: 4px 6px; gap: 2px; max-width: calc(100% - 16px); } .nav-logo { font-size: 13px; padding: 6px 8px; letter-spacing: 1px; } .nav-pill { padding: 6px 10px; font-size: 11px; } .nav-action { width: 32px; height: 32px; } .spatial-dock { bottom: 12px; padding: 6px; } .dock-item { width: 44px; height: 44px; } }
-
-    /* Animations */
-    .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s var(--ease-fluid); }
+    /* Scroll reveal transitions */
+    .reveal { opacity: 0; transform: translateY(20px); transition: all 0.5s ease-out; }
     .reveal.visible { opacity: 1; transform: translateY(0); }
-    .stagger-1 { transition-delay: 0.1s; }
-    .stagger-2 { transition-delay: 0.2s; }
-    .stagger-3 { transition-delay: 0.3s; }
-    .stagger-4 { transition-delay: 0.4s; }
-    .magnetic { transition: transform 0.3s var(--ease-spring); }
   </style>
 </head>
-<body>
+<body class="bg-[#F5F5F7] dark:bg-[#161617] text-black dark:text-white transition-colors duration-200 min-h-screen selection:bg-apple-blue selection:text-white pb-24 sm:pb-12">
 
-<!-- Ambient Background -->
-<div class="ambient-layer">
-  <div class="aurora-blob"></div>
-  <div class="aurora-blob"></div>
-  <div class="aurora-blob"></div>
-</div>
-<div class="noise-overlay"></div>
+  <!-- Ambient Background Glow -->
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-apple-blue/5 dark:from-apple-blue/15 to-transparent blur-3xl pointer-events-none -z-10"></div>
 
-<!-- Loading Stage -->
-<div class="loading-stage" id="loadingStage">
-  <div class="loading-ring"></div>
-  <div class="loading-text">IPAVIET OS</div>
-</div>
-
-<!-- Spatial Navigation -->
-<nav class="spatial-nav glass" id="spatialNav">
-  <div class="nav-logo magnetic" onclick="switchTab('home')">IPAVIET</div>
-  <div style="width:1px;height:20px;background:rgba(255,255,255,0.06);margin:0 4px;"></div>
-  <button class="nav-pill active magnetic" data-tab="home" onclick="switchTab('home')">Khám phá</button>
-  <button class="nav-pill magnetic" data-tab="ipa" onclick="switchTab('ipa')">Kho IPA</button>
-  <a href="../ipavip.html" target="_self" class="nav-pill magnetic" style="text-decoration:none;">VIP</a>
-  <a href="../tap-hoa-mmo.html" target="_self" class="nav-pill magnetic" style="text-decoration:none;">Chợ MMO</a>
-  <div style="width:1px;height:20px;background:rgba(255,255,255,0.06);margin:0 4px;"></div>
-  <button class="nav-action magnetic" onclick="toggleTheme()" title="Theme"><i data-lucide="sun-moon" style="width:16px;height:16px;"></i></button>
-  <a href="../account.html" target="_self" id="headerProfileBtn" class="nav-action magnetic" title="Tài khoản"><i data-lucide="user" style="width:16px;height:16px;"></i></a>
-</nav>
-
-<!-- Main Spatial Stage -->
-<main id="spatial-stage">
-
-  <!-- HERO: The Core -->
-  <section id="heroSection" class="hero-core">
-    <div class="hero-orbital-ring"><div class="hero-orbital-dot" style="top:0;left:50%;transform:translate(-50%,-50%);"></div></div>
-    <div class="hero-orbital-ring"><div class="hero-orbital-dot" style="top:50%;right:0;transform:translate(50%,-50%);"></div></div>
-    <div class="hero-orbital-ring"><div class="hero-orbital-dot" style="bottom:0;left:50%;transform:translate(-50%,50%);"></div></div>
-    <div class="hero-orbital-ring"><div class="hero-orbital-dot" style="top:50%;left:0;transform:translate(-50%,-50%);"></div></div>
-
-    <h1 class="hero-title" id="heroTitle">IPAVIET</h1>
-    <p class="hero-subtitle">Hệ điều hành phân phối IPA</p>
-
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <div class="hero-stat-value" id="statApps">0</div>
-        <div class="hero-stat-label">Ứng dụng</div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value" id="statVip">0</div>
-        <div class="hero-stat-label">VIP</div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value" id="statUsers">∞</div>
-        <div class="hero-stat-label">Người dùng</div>
-      </div>
-    </div>
-
-    <div id="heroEntities"></div>
-  </section>
-
-  <!-- Command Input -->
-  <div class="command-input-wrap reveal">
-    <input 
-      type="search" 
-      id="searchInput" 
-      name="search_query"
-      class="command-input" 
-      placeholder="Tìm kiếm ứng dụng, tweak, game..." 
-      autocomplete="off"
-      autocapitalize="none"
-      spellcheck="false"
-      data-lpignore="true"
-      data-1p-ignore="true"
-      data-form-type="other"
-    >
-    <i data-lucide="search" class="command-input-icon" style="width:18px;height:18px;"></i>
-    <button type="button" id="clearSearchBtn" class="command-input-clear" onclick="clearSearch()" title="Xóa tìm kiếm">
-      <i data-lucide="x" style="width:14px;height:14px;"></i>
-    </button>
+  <!-- Loading Stage -->
+  <div class="loading-stage" id="loadingStage">
+    <div class="loading-ring"></div>
+    <div class="loading-text">IPAVIET OS</div>
   </div>
 
-  <!-- Dynamic Content -->
-  <div id="dynamicContent" style="max-width:1200px;margin:0 auto;padding:0 24px;"></div>
+  <!-- ================================================================
+       APPLE FROSTED GLASS HEADER (STICKY NAVIGATION)
+       ================================================================ -->
+  <header class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <!-- Left: Brand Logo -->
+      <a href="../index.html" class="flex items-center gap-2.5 text-inherit no-underline group">
+        <div class="w-10 h-10 apple-squircle bg-apple-blue flex items-center justify-center text-white shadow-md shadow-apple-blue/20 group-hover:scale-105 transition-transform">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="font-black text-base tracking-tight text-black dark:text-white flex items-center gap-1.5">
+            <span>IPAVIET</span>
+            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-apple-blue/10 dark:bg-apple-blue/20 text-apple-blue">IPA OS</span>
+          </div>
+          <p class="text-[10px] text-apple-gray -mt-0.5 font-medium">Kho Ứng Dụng & Ký Số</p>
+        </div>
+      </a>
 
-</main>
+      <!-- Center: Desktop Nav Tabs -->
+      <nav class="hidden md:flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] p-1 rounded-full border border-black/[0.04] dark:border-white/[0.06]">
+        <button class="desktop-tab-btn active px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 bg-white dark:bg-[#2C2C2E] text-apple-blue shadow-sm" onclick="switchTab('home')" data-tab="home">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Khám phá
+        </button>
+        <button class="desktop-tab-btn px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 text-apple-gray hover:text-black dark:hover:text-white" onclick="switchTab('ipa')" data-tab="ipa">
+          <i data-lucide="box" class="w-3.5 h-3.5"></i> Tất cả IPA
+        </button>
+        <a href="../ipavip.html" class="px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 text-apple-amber hover:text-apple-amber/80">
+          <i data-lucide="crown" class="w-3.5 h-3.5"></i> Kho VIP
+        </a>
+        <a href="../tap-hoa-mmo.html" class="px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 text-apple-gray hover:text-black dark:hover:text-white">
+          <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i> Chợ MMO
+        </a>
+      </nav>
 
-<!-- App Detail Stage -->
-<div id="app-detail-stage">
-  <div class="detail-backdrop" onclick="closeAppView()"></div>
-  <button class="detail-close magnetic" onclick="closeAppView()"><i data-lucide="arrow-left" style="width:20px;height:20px;"></i></button>
-  <div class="detail-content">
-    <div class="detail-hero">
-      <div class="detail-hero-bg"><img id="detailHeroBg" src="" alt="" onerror="this.src='https://placehold.co/400x400/0d0f1a/00f0ff?text=IPAVIET'"></div>
-      <div class="detail-icon-wrap"><img id="detailIcon" src="" alt="" onerror="this.src='https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA'"></div>
-      <h1 class="detail-title" id="detailTitle">App Name</h1>
-      <p class="detail-dev" id="detailDev">Developer</p>
-      <div class="detail-actions">
-        <button class="detail-btn detail-btn-primary magnetic" id="detailInstallBtn" onclick="showDownloadAction()"><i data-lucide="download" style="width:16px;height:16px;"></i> CÀI ĐẶT</button>
-        <button class="detail-btn detail-btn-secondary magnetic" onclick="shareApp()"><i data-lucide="share-2" style="width:16px;height:16px;"></i></button>
+      <!-- Right: Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="toggleTheme()" class="w-9 h-9 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.14] text-apple-gray hover:text-black dark:hover:text-white flex items-center justify-center transition active:scale-95" title="Đổi giao diện">
+          <i data-lucide="sun-moon" class="w-4 h-4"></i>
+        </button>
+        <a href="../account.html" id="headerProfileBtn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-apple-blue hover:bg-apple-darkBlue text-white font-bold text-xs shadow-sm shadow-apple-blue/20 transition active:scale-95">
+          <i data-lucide="user" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Tài khoản</span>
+        </a>
       </div>
     </div>
-    <div class="detail-body">
-      <div class="detail-info-grid">
-        <div class="detail-info-cell"><div class="detail-info-value" id="detailRating">4.8</div><div class="detail-info-label">Đánh giá</div></div>
-        <div class="detail-info-cell"><div class="detail-info-value" id="detailAward">Top</div><div class="detail-info-label">Xếp hạng</div></div>
-        <div class="detail-info-cell"><div class="detail-info-value" id="detailAge">4+</div><div class="detail-info-label">Độ tuổi</div></div>
+  </header>
+
+  <!-- ================================================================
+       MAIN SPATIAL STAGE (CONTENT WRAPPER)
+       ================================================================ -->
+  <main id="spatial-stage" class="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10">
+
+    <!-- HERO SECTION (CLEAN APPLE CUPERTINO) -->
+    <section id="heroSection" class="text-center mb-8 sm:mb-12">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-apple-blue/10 dark:bg-apple-blue/20 text-apple-blue text-xs font-bold uppercase tracking-wider mb-3">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Hệ Thống Kho IPA Ký Số Độc Quyền
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-black dark:text-white mb-3" id="heroTitle">
+        Kho Ứng Dụng <span class="bg-gradient-to-r from-apple-blue via-blue-500 to-indigo-500 bg-clip-text text-transparent">IPAVIET</span>
+      </h1>
+      <p class="text-xs sm:text-sm text-apple-gray max-w-xl mx-auto leading-relaxed" id="heroSubtitle">
+        Cài đặt game/app MOD, tiện ích TrollStore, bypass chứng chỉ, cập nhật liên tục 24/7 trực tiếp trên iOS.
+      </p>
+
+      <!-- Live Statistics Pills -->
+      <div class="flex items-center justify-center gap-2.5 sm:gap-4 mt-6 flex-wrap">
+        <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#1C1C1E] border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-apple-green animate-pulse"></span>
+          <span class="text-xs font-bold text-black dark:text-white" id="statApps">0</span>
+          <span class="text-[11px] text-apple-gray">Ứng dụng</span>
+        </div>
+        <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#1C1C1E] border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-apple-amber"></span>
+          <span class="text-xs font-bold text-black dark:text-white" id="statVip">0</span>
+          <span class="text-[11px] text-apple-gray">Bản VIP</span>
+        </div>
+        <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#1C1C1E] border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-apple-blue"></span>
+          <span class="text-xs font-bold text-black dark:text-white" id="statUsers">∞</span>
+          <span class="text-[11px] text-apple-gray">Người dùng</span>
+        </div>
       </div>
 
-      <div id="detailPurchasePanel"></div>
+      <!-- Hero Entities placeholder -->
+      <div id="heroEntities" style="display:none;"></div>
+    </section>
 
-      <!-- Dedicated MOD Features Showcase Panel -->
-      <div id="detailModPanel" style="display:none;margin-bottom:36px;"></div>
-
-      <div id="detailScreenshotsWrap">
-        <h3 class="detail-section-title">Xem trước</h3>
-        <div class="detail-screenshots" id="detailScreenshots"></div>
+    <!-- SEARCH BAR (APPLE FROSTED SQUIRCLE) -->
+    <div class="max-w-2xl mx-auto mb-8">
+      <div class="relative flex items-center">
+        <i data-lucide="search" class="absolute left-4 w-5 h-5 text-apple-gray pointer-events-none"></i>
+        <input 
+          type="search" 
+          id="searchInput" 
+          name="search_query"
+          class="w-full h-12 sm:h-13 pl-12 pr-12 rounded-full bg-white dark:bg-[#1C1C1E] border border-apple-separatorLight dark:border-apple-separatorDark focus:border-apple-blue focus:ring-4 focus:ring-apple-blue/15 text-sm font-medium outline-none transition text-black dark:text-white placeholder:text-apple-gray shadow-apple" 
+          placeholder="Tìm kiếm ứng dụng, tweak, game, bundle ID..." 
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+          data-lpignore="true"
+          data-1p-ignore="true"
+          data-form-type="other"
+        >
+        <button type="button" id="clearSearchBtn" class="absolute right-3.5 w-7 h-7 rounded-full bg-black/[0.05] dark:bg-white/[0.1] hover:bg-black/[0.1] text-apple-gray hover:text-black dark:hover:text-white flex items-center justify-center transition" onclick="clearSearch()" style="display:none;" title="Xóa tìm kiếm">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
       </div>
+    </div>
 
-      <h3 class="detail-section-title">Thông tin</h3>
-      <p class="detail-desc" id="detailDesc">Mô tả ứng dụng...</p>
+    <!-- DYNAMIC CONTENT (APP GRID & FILTERS) -->
+    <div id="dynamicContent" class="mb-12"></div>
 
-      <h3 class="detail-section-title">Dữ liệu tệp</h3>
-      <div style="margin-bottom:48px;">
-        <div class="detail-data-row"><span class="detail-data-label">Nhà phát triển</span><span class="detail-data-value" id="dInfoDev">IPAVIET</span></div>
-        <div class="detail-data-row"><span class="detail-data-label">Thể loại</span><span class="detail-data-value" id="dInfoCat">Tiện ích</span></div>
-        <div class="detail-data-row"><span class="detail-data-label">Phiên bản</span><span class="detail-data-value" id="dInfoVer">1.0</span></div>
-        <div class="detail-data-row"><span class="detail-data-label">Kích thước</span><span class="detail-data-value" id="dInfoSize">--</span></div>
-        <div class="detail-data-row"><span class="detail-data-label">Bundle ID</span><span class="detail-data-value" id="dInfoBundle">com.ipaviet.app</span></div>
+  </main>
+
+  <!-- ================================================================
+       MODAL: APP DETAIL STAGE
+       ================================================================ -->
+  <div id="app-detail-stage">
+    <div class="detail-backdrop" onclick="closeAppView()"></div>
+    <div class="detail-content">
+      <button class="detail-close" onclick="closeAppView()"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <div class="detail-hero">
+        <div class="detail-hero-bg"><img id="detailHeroBg" src="" alt="" onerror="this.src='https://placehold.co/400x400/0d0f1a/00f0ff?text=IPAVIET'"></div>
+        <div class="detail-icon-wrap"><img id="detailIcon" src="" alt="" onerror="this.src='https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA'"></div>
+        <h1 class="detail-title text-black dark:text-white" id="detailTitle">App Name</h1>
+        <p class="detail-dev" id="detailDev">Developer</p>
+        <div class="detail-actions">
+          <button class="detail-btn detail-btn-primary" id="detailInstallBtn" onclick="showDownloadAction()"><i data-lucide="download" class="w-4 h-4"></i> CÀI ĐẶT</button>
+          <button class="detail-btn detail-btn-secondary" onclick="shareApp()"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+      <div class="detail-body">
+        <div class="detail-info-grid">
+          <div class="detail-info-cell"><div class="detail-info-value" id="detailRating">4.8</div><div class="detail-info-label">Đánh giá</div></div>
+          <div class="detail-info-cell"><div class="detail-info-value" id="detailAward">Top</div><div class="detail-info-label">Xếp hạng</div></div>
+          <div class="detail-info-cell"><div class="detail-info-value" id="detailAge">4+</div><div class="detail-info-label">Độ tuổi</div></div>
+        </div>
+
+        <div id="detailPurchasePanel"></div>
+        <div id="detailModPanel" style="display:none;margin-bottom:24px;"></div>
+
+        <div id="detailScreenshotsWrap">
+          <h3 class="detail-section-title text-black dark:text-white">Xem trước</h3>
+          <div class="detail-screenshots no-scrollbar" id="detailScreenshots"></div>
+        </div>
+
+        <h3 class="detail-section-title text-black dark:text-white">Thông tin</h3>
+        <p class="detail-desc" id="detailDesc">Mô tả ứng dụng...</p>
+
+        <h3 class="detail-section-title text-black dark:text-white">Dữ liệu tệp</h3>
+        <div style="margin-bottom:24px;">
+          <div class="detail-data-row"><span class="detail-data-label">Nhà phát triển</span><span class="detail-data-value text-black dark:text-white" id="dInfoDev">IPAVIET</span></div>
+          <div class="detail-data-row"><span class="detail-data-label">Thể loại</span><span class="detail-data-value text-black dark:text-white" id="dInfoCat">Tiện ích</span></div>
+          <div class="detail-data-row"><span class="detail-data-label">Phiên bản</span><span class="detail-data-value text-black dark:text-white" id="dInfoVer">1.0</span></div>
+          <div class="detail-data-row"><span class="detail-data-label">Kích thước</span><span class="detail-data-value text-black dark:text-white" id="dInfoSize">--</span></div>
+          <div class="detail-data-row"><span class="detail-data-label">Bundle ID</span><span class="detail-data-value text-black dark:text-white" id="dInfoBundle">com.ipaviet.app</span></div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- VSign Popup -->
-<div id="vsignPopup" class="popup-overlay" onclick="if(event.target===this)closeVsignPopup()">
-  <div class="popup-card">
-    <div class="popup-header">
-      <div class="popup-logo"><img src="https://i.ibb.co/cSmzsSRv/T-n-D-n-13-Copy-Copy-Copy-Original.png" alt="VSign"></div>
-    </div>
-    <div class="popup-body">
-      <h3 class="popup-title">Ra Mắt App VSign Chính Thức!</h3>
-      <p class="popup-subtitle">Trải nghiệm cài đặt & ký app iOS trực tiếp trên thiết bị, tối ưu và mượt mà hơn trên Web.</p>
-      <div class="popup-features">
-        <div class="popup-feat">
-          <div class="popup-feat-icon"><i data-lucide="layers" style="width:16px;height:16px;"></i></div>
-          <div class="popup-feat-text"><strong>Kho 10,000+ Ứng Dụng</strong><span>Tải game/app MOD, Hack, Premium hoàn toàn miễn phí.</span></div>
-        </div>
-        <div class="popup-feat">
-          <div class="popup-feat-icon"><i data-lucide="zap" style="width:16px;height:16px;"></i></div>
-          <div class="popup-feat-text"><strong>Tự Động Cài Đặt (OTA)</strong><span>Ký xong tự động cài đặt trực tiếp cực kỳ tiện lợi, chỉ 1 click.</span></div>
-        </div>
-        <div class="popup-feat">
-          <div class="popup-feat-icon"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></div>
-          <div class="popup-feat-text"><strong>Tính Năng ESign Cao Cấp</strong><span>Tích hợp tất cả các tùy chọn đổi tên, chèn dylib, fix thông báo...</span></div>
-        </div>
+  <!-- ================================================================
+       MODAL: VSIGN POPUP
+       ================================================================ -->
+  <div id="vsignPopup" class="popup-overlay" onclick="if(event.target===this)closeVsignPopup()">
+    <div class="popup-card">
+      <div class="popup-header">
+        <div class="popup-logo"><img src="https://i.ibb.co/cSmzsSRv/T-n-D-n-13-Copy-Copy-Copy-Original.png" alt="VSign" class="apple-squircle"></div>
       </div>
-      <div class="popup-actions">
-        <button class="popup-btn-primary magnetic" onclick="downloadVsignApp()"><i data-lucide="download" style="width:16px;height:16px;"></i> Cài Đặt App VSign Ngay</button>
-        <div class="popup-btn-group">
-          <button class="popup-btn-secondary magnetic" onclick="dismissVsignPopup(5)">Tắt 5 phút</button>
-          <button class="popup-btn-secondary magnetic" onclick="dismissVsignPopup(60)">Tắt 1 giờ</button>
-          <button class="popup-btn-ghost magnetic" onclick="closeVsignPopup()">Để sau</button>
+      <div class="popup-body">
+        <h3 class="popup-title text-black dark:text-white">Ra Mắt App VSign Chính Thức!</h3>
+        <p class="popup-subtitle">Trải nghiệm cài đặt & ký app iOS trực tiếp trên thiết bị, tối ưu và mượt mà hơn trên Web.</p>
+        <div class="popup-features">
+          <div class="popup-feat">
+            <div class="popup-feat-icon apple-squircle"><i data-lucide="layers" class="w-4 h-4"></i></div>
+            <div class="popup-feat-text"><strong>Kho 10,000+ Ứng Dụng</strong><br><span class="text-apple-gray text-[11px]">Tải game/app MOD, Hack, Premium hoàn toàn miễn phí.</span></div>
+          </div>
+          <div class="popup-feat">
+            <div class="popup-feat-icon apple-squircle"><i data-lucide="zap" class="w-4 h-4"></i></div>
+            <div class="popup-feat-text"><strong>Tự Động Cài Đặt (OTA)</strong><br><span class="text-apple-gray text-[11px]">Ký xong tự động cài đặt trực tiếp cực kỳ tiện lợi, chỉ 1 click.</span></div>
+          </div>
+          <div class="popup-feat">
+            <div class="popup-feat-icon apple-squircle"><i data-lucide="sparkles" class="w-4 h-4"></i></div>
+            <div class="popup-feat-text"><strong>Tính Năng ESign Cao Cấp</strong><br><span class="text-apple-gray text-[11px]">Tích hợp tất cả các tùy chọn đổi tên, chèn dylib, fix thông báo...</span></div>
+          </div>
+        </div>
+        <div class="popup-actions">
+          <button class="popup-btn-primary" onclick="downloadVsignApp()"><i data-lucide="download" class="w-4 h-4"></i> Cài Đặt App VSign Ngay</button>
+          <div class="popup-btn-group">
+            <button class="popup-btn-secondary" onclick="dismissVsignPopup(5)">Tắt 5 phút</button>
+            <button class="popup-btn-secondary" onclick="dismissVsignPopup(60)">Tắt 1 giờ</button>
+            <button class="popup-btn-ghost" onclick="closeVsignPopup()">Để sau</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Toast -->
-<div class="toast" id="toast"></div>
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
 
-<!-- Floating Dock -->
-<div class="spatial-dock" id="spatialDock">
-  <button class="dock-item active magnetic" data-tab="home" onclick="switchTab('home')" title="Khám phá"><i data-lucide="orbit" style="width:20px;height:20px;"></i></button>
-  <button class="dock-item magnetic" data-tab="ipa" onclick="switchTab('ipa')" title="Kho IPA"><i data-lucide="box" style="width:20px;height:20px;"></i></button>
-  <div class="dock-divider"></div>
-  <a href="../ipavip.html" class="dock-item magnetic" title="VIP"><i data-lucide="crown" style="width:20px;height:20px;"></i></a>
-  <a href="../account.html" class="dock-item magnetic" title="Tài khoản"><i data-lucide="user-circle" style="width:20px;height:20px;"></i></a>
-  <a href="../tap-hoa-mmo.html" class="dock-item magnetic" title="Chợ MMO"><i data-lucide="shopping-bag" style="width:20px;height:20px;"></i></a>
-  <div class="dock-divider"></div>
-  <a href="../support.html" class="dock-item magnetic" title="Hỗ trợ"><i data-lucide="message-circle" style="width:20px;height:20px;"></i></a>
-</div>
+  <!-- ================================================================
+       APPLE IOS FROSTED GLASS TAB BAR (BOTTOM NAVIGATION CHO MOBILE)
+       ================================================================ -->
+  <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 apple-glass border-t border-apple-separatorLight dark:border-apple-separatorDark px-3 py-1.5 flex items-center justify-around pb-safe shadow-lg">
+    <a href="../index.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[10px]">Trang chủ</span>
+    </a>
+    <a href="index.html" class="flex flex-col items-center gap-1 text-apple-blue font-bold transition active:scale-95">
+      <i data-lucide="layout-grid" class="w-5 h-5 stroke-[2.2]"></i>
+      <span class="text-[10px]">Kho IPA</span>
+    </a>
+    <a href="../ipavip.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-amber font-medium transition active:scale-95">
+      <i data-lucide="crown" class="w-5 h-5"></i>
+      <span class="text-[10px]">Kho VIP</span>
+    </a>
+    <a href="../tap-hoa-mmo.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+      <span class="text-[10px]">Chợ MMO</span>
+    </a>
+    <a href="../account.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
+      <i data-lucide="user" class="w-5 h-5"></i>
+      <span class="text-[10px]">Cá nhân</span>
+    </a>
+  </nav>
 
 <script>
 
@@ -1463,30 +1393,20 @@ function switchTab(tabId) {
   STATE.currentPage = 1;
   STATE.currentFilter = 'all';
 
-  // Update nav + dock
-  document.querySelectorAll('.nav-pill').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
-  document.querySelectorAll('.dock-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+  // Update desktop header tabs
+  document.querySelectorAll('.desktop-tab-btn').forEach(b => {
+    const isAct = b.dataset.tab === tabId;
+    b.classList.toggle('active', isAct);
+    if (isAct) {
+      b.className = 'desktop-tab-btn active px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 bg-white dark:bg-[#2C2C2E] text-apple-blue shadow-sm';
+    } else {
+      b.className = 'desktop-tab-btn px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 text-apple-gray hover:text-black dark:hover:text-white';
+    }
+  });
 
-  // Hero show/hide with proper transition
   const hero = document.getElementById('heroSection');
   if (hero) {
-    if (tabId === 'home') {
-      hero.style.display = 'flex';
-      void hero.offsetHeight;
-      requestAnimationFrame(() => {
-        hero.style.opacity = '1';
-        hero.style.transform = 'translateY(0)';
-      });
-    } else {
-      hero.style.opacity = '0';
-      hero.style.transform = 'translateY(-40px)';
-      hero.addEventListener('transitionend', function handler(e) {
-        if (e.propertyName === 'opacity' && STATE.currentTab !== 'home') {
-          hero.style.display = 'none';
-          hero.removeEventListener('transitionend', handler);
-        }
-      });
-    }
+    hero.style.display = tabId === 'home' ? 'block' : 'none';
   }
 
   renderContent();
@@ -1527,34 +1447,45 @@ function renderContent() {
         return text.includes(query);
       });
       html = `
-        <div class="section-header reveal">
-          <h2 class="section-title">Kết quả tìm kiếm</h2>
-          <span style="color:var(--text-tertiary);font-size:13px;">${uniqueApps.length.toLocaleString()} ứng dụng</span>
+        <div class="mb-6 flex items-center justify-between">
+          <h2 class="text-xl sm:text-2xl font-black text-black dark:text-white tracking-tight">Kết quả tìm kiếm</h2>
+          <span class="text-xs font-semibold text-apple-gray">${uniqueApps.length.toLocaleString()} ứng dụng</span>
         </div>
-        <div class="entity-grid">${uniqueApps.length ? uniqueApps.slice(0, 36).map((i, idx) => createEntity(i, idx)).join('') : emptyState()}</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">${uniqueApps.length ? uniqueApps.slice(0, 36).map((i, idx) => createEntity(i, idx)).join('') : emptyState()}</div>
       `;
     } else {
       let featured = DB.vip.slice(0, 5);
       if (featured.length === 0) featured = uniqueApps.slice(0, 5);
-      const recent = uniqueApps.slice(0, 16);
+      const recent = uniqueApps.slice(0, 20);
 
       html = `
         ${featured.length ? `
-        <div class="reveal">
-          <div class="section-header"><h2 class="section-title">Nổi Bật</h2><a href="../ipavip.html" class="section-action">VIP <i data-lucide="arrow-right" style="width:14px;height:14px;"></i></a></div>
-          <div class="ribbon-container">
-            <div class="ribbon-track">
-              ${featured.map((i, idx) => createRibbonItem(i, idx)).join('')}
-            </div>
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg sm:text-xl font-black text-black dark:text-white tracking-tight flex items-center gap-2">
+              <i data-lucide="crown" class="w-5 h-5 text-apple-amber"></i>
+              <span>Ứng Dụng VIP Nổi Bật</span>
+            </h2>
+            <a href="../ipavip.html" class="text-xs font-bold text-apple-amber hover:text-amber-600 flex items-center gap-1 transition">
+              <span>Xem Tất Cả VIP</span> <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+          <div class="ribbon-track no-scrollbar">
+            ${featured.map((i, idx) => createRibbonItem(i, idx)).join('')}
           </div>
         </div>` : ''}
 
-        <div class="reveal stagger-1">
-          <div class="section-header">
-            <h2 class="section-title">Mới Cập Nhật</h2>
-            <button class="section-action" onclick="switchTab('ipa')">Xem tất cả IPA <i data-lucide="arrow-right" style="width:14px;height:14px;"></i></button>
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg sm:text-xl font-black text-black dark:text-white tracking-tight flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-5 h-5 text-apple-blue"></i>
+              <span>Mới Cập Nhật</span>
+            </h2>
+            <button class="text-xs font-bold text-apple-blue hover:text-apple-darkBlue flex items-center gap-1 transition" onclick="switchTab('ipa')">
+              <span>Xem Tất Cả (${uniqueApps.length.toLocaleString()})</span> <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
           </div>
-          <div class="entity-grid">${recent.map((i, idx) => createEntity(i, idx)).join('')}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">${recent.map((i, idx) => createEntity(i, idx)).join('')}</div>
         </div>
       `;
     }
@@ -1598,8 +1529,18 @@ function renderContent() {
 
     let filterButtons = filtersDef.map(f => {
       const isActive = STATE.currentFilter === f.id;
-      const modClass = f.isModChip ? 'chip-mod' : '';
-      return `<button onclick="setFilter('${f.id}')" class="filter-chip ${modClass} ${isActive ? 'active' : ''} magnetic"><i data-lucide="${f.icon}" style="width:14px;height:14px;"></i>${f.name}</button>`;
+      const baseCls = "px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0 active:scale-95";
+      if (isActive) {
+        if (f.isModChip) {
+          return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-apple-red text-white shadow-sm shadow-apple-red/30"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
+        }
+        return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-apple-blue text-white shadow-sm shadow-apple-blue/30"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
+      } else {
+        if (f.isModChip) {
+          return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-white dark:bg-[#1C1C1E] border border-apple-red/30 text-apple-red hover:bg-apple-red/10"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
+        }
+        return `<button onclick="setFilter('${f.id}')" class="${baseCls} bg-white dark:bg-[#1C1C1E] border border-apple-separatorLight dark:border-apple-separatorDark text-apple-gray hover:text-black dark:hover:text-white hover:border-apple-blue/40"><i data-lucide="${f.icon}" class="w-3.5 h-3.5"></i>${f.name}</button>`;
+      }
     }).join('');
 
     const totalPages = Math.ceil(items.length / STATE.itemsPerPage);
@@ -1608,33 +1549,31 @@ function renderContent() {
     const featured = items.slice(0, 5);
 
     html = `
-      <div class="reveal">
-        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px;">
-          <div>
-            <h1 style="font-family:var(--font-display);font-size:clamp(30px,4.5vw,44px);font-weight:700;letter-spacing:-0.02em;">Kho IPA Tổng Hợp</h1>
-            <p style="font-size:13.5px;color:var(--text-secondary);margin-top:4px;">Tổng hợp toàn diện các ứng dụng, game MOD và tiện ích iOS được ký số tối ưu</p>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <span style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:var(--radius-full);background:rgba(236,72,153,0.12);color:#f43f5e;border:1px solid rgba(236,72,153,0.3);box-shadow:0 0 16px rgba(236,72,153,0.15);">
-              <i data-lucide="zap" style="width:12px;height:12px;display:inline-block;vertical-align:-1px;margin-right:4px;"></i>${modCount.toLocaleString()} Bản MOD
-            </span>
-            <span style="font-size:12px;font-weight:600;padding:6px 14px;border-radius:var(--radius-full);background:rgba(0,240,255,0.08);color:var(--accent-cyan);border:1px solid rgba(0,240,255,0.15);">
-              <i data-lucide="layers" style="width:12px;height:12px;display:inline-block;vertical-align:-1px;margin-right:4px;"></i>${items.length.toLocaleString()} ứng dụng
-            </span>
-          </div>
+      <div class="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-black text-black dark:text-white tracking-tight">Kho IPA Tổng Hợp</h1>
+          <p class="text-xs sm:text-sm text-apple-gray mt-1">Tổng hợp toàn diện các ứng dụng, game MOD và tiện ích iOS được ký số tối ưu</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-apple-red/10 text-apple-red text-xs font-bold border border-apple-red/20">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i> ${modCount.toLocaleString()} Bản MOD
+          </span>
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-apple-blue/10 text-apple-blue text-xs font-bold border border-apple-blue/20">
+            <i data-lucide="layers" class="w-3.5 h-3.5"></i> ${items.length.toLocaleString()} Ứng dụng
+          </span>
         </div>
       </div>
 
       ${!query && STATE.currentFilter === 'all' && featured.length ? `
-      <div class="reveal stagger-1">
-        <div class="ribbon-container">
-          <div class="ribbon-track">${featured.map((i, idx) => createRibbonItem(i, idx)).join('')}</div>
+      <div class="mb-8">
+        <div class="ribbon-track no-scrollbar">
+          ${featured.map((i, idx) => createRibbonItem(i, idx)).join('')}
         </div>
       </div>` : ''}
 
-      <div class="reveal stagger-2">
-        <div class="filter-bar">${filterButtons}</div>
-        <div class="entity-grid">${pagedItems.length ? pagedItems.map((i, idx) => createEntity(i, idx)).join('') : emptyState()}</div>
+      <div class="mb-6">
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 mb-6">${filterButtons}</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">${pagedItems.length ? pagedItems.map((i, idx) => createEntity(i, idx)).join('') : emptyState()}</div>
         ${items.length > STATE.itemsPerPage ? createPagination(totalPages) : ''}
       </div>
     `;
@@ -1642,8 +1581,6 @@ function renderContent() {
 
   container.innerHTML = html;
   lucide.createIcons();
-  initMagnetic();
-  initEntityGlow();
   refreshScrollReveal();
 }
 
@@ -1655,13 +1592,23 @@ function createRibbonItem(i, index) {
   const isVip = i._type === 'VIP';
 
   return `
-    <div onclick="${isVip ? "location.href='../ipavip.html'" : `openAppView('${i._id}')`}" class="ribbon-item" style="animation-delay:${index*50}ms">
-      <img src="${safeIcon}" onerror="this.src='https://placehold.co/100'" alt="">
-      <div class="ribbon-content">
-        ${isVip ? `<span class="entity-badge badge-vip" style="margin-bottom:8px;display:inline-flex;"><i data-lucide="crown" style="width:10px;height:10px;"></i> VIP</span>` : ''}
-        ${i.isMod ? `<span class="entity-badge badge-mod" style="margin-bottom:8px;display:inline-flex;"><i data-lucide="zap" style="width:10px;height:10px;"></i> MOD PRO</span>` : ''}
-        <div class="ribbon-title">${safeName}</div>
-        <div class="ribbon-desc">${safeDesc}</div>
+    <div onclick="${isVip ? "location.href='../ipavip.html'" : `openAppView('${i._id}')`}" class="flex-shrink-0 w-72 sm:w-80 group bg-white dark:bg-[#1C1C1E] rounded-3xl p-4 border border-apple-separatorLight dark:border-apple-separatorDark hover:border-apple-blue/50 hover:shadow-apple-hover transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between">
+      <div class="flex items-center gap-3.5">
+        <div class="w-16 h-16 apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/[0.04] dark:border-white/[0.05] p-1 flex-shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-sm">
+          <img src="${safeIcon}" onerror="this.src='https://placehold.co/100'" alt="${safeName}" class="w-full h-full object-cover apple-squircle">
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 mb-1">
+            ${isVip ? `<span class="px-2 py-0.5 rounded-full bg-apple-amber/15 text-apple-amber border border-apple-amber/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5"><i data-lucide="crown" class="w-2.5 h-2.5"></i> VIP</span>` : `<span class="px-2 py-0.5 rounded-full bg-apple-blue/10 text-apple-blue text-[9px] font-bold uppercase tracking-wider">Free</span>`}
+            ${i.isMod ? `<span class="px-2 py-0.5 rounded-full bg-apple-red/15 text-apple-red border border-apple-red/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5"><i data-lucide="zap" class="w-2.5 h-2.5"></i> MOD PRO</span>` : ''}
+          </div>
+          <h4 class="font-bold text-sm text-black dark:text-white truncate group-hover:text-apple-blue transition-colors">${safeName}</h4>
+          <p class="text-[11px] text-apple-gray line-clamp-1 mt-0.5">${safeDesc}</p>
+        </div>
+      </div>
+      <div class="mt-3 pt-2.5 border-t border-apple-separatorLight dark:border-apple-separatorDark flex items-center justify-between">
+        <span class="text-[10px] font-semibold text-apple-gray uppercase tracking-wider">Nổi bật</span>
+        <span class="text-xs font-bold text-apple-blue flex items-center gap-1">Khám phá <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></span>
       </div>
     </div>
   `;
@@ -1677,32 +1624,34 @@ function createEntity(i, index) {
   const isDownloaded = myDls.some(d => (i._id && d.id === i._id) || (i.bundleId && d.bundleId === i.bundleId));
 
   return `
-    <div onclick="openAppView('${i._id}')" class="entity reveal ${i.isMod ? 'has-mod' : ''}" style="transition-delay:${Math.min(index * 35, 400)}ms">
-      <div class="entity-glow"></div>
-      <div class="entity-header">
-        <div class="entity-icon">
-          <img src="${safeIcon}" onerror="this.src='https://placehold.co/100'" alt="">
+    <div onclick="openAppView('${i._id}')" class="group bg-white dark:bg-[#1C1C1E] rounded-[22px] p-3.5 sm:p-4 border border-apple-separatorLight dark:border-apple-separatorDark hover:border-apple-blue/50 hover:shadow-apple-hover transition-all duration-300 flex flex-col justify-between cursor-pointer relative overflow-hidden text-inherit">
+      <div class="flex items-start gap-3.5">
+        <div class="w-14 h-14 sm:w-16 sm:h-16 apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/[0.04] dark:border-white/[0.05] p-1 flex-shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-sm">
+          <img src="${safeIcon}" onerror="this.src='https://placehold.co/100'" alt="${safeName}" loading="lazy" class="w-full h-full object-cover apple-squircle">
         </div>
-        <div class="entity-meta">
-          <div class="entity-name" title="${safeName}">${safeName}</div>
-          <div class="entity-desc">${safeDesc}</div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+            ${isVip ? `<span class="px-2 py-0.5 rounded-full bg-apple-amber/15 text-apple-amber border border-apple-amber/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5"><i data-lucide="crown" class="w-2.5 h-2.5"></i> VIP</span>` : `<span class="px-2 py-0.5 rounded-full bg-apple-blue/10 text-apple-blue text-[9px] font-bold uppercase tracking-wider">Free</span>`}
+            ${i.isMod ? `<span class="px-2 py-0.5 rounded-full bg-apple-red/15 text-apple-red border border-apple-red/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5"><i data-lucide="zap" class="w-2.5 h-2.5"></i> MOD PRO</span>` : ''}
+            ${isDownloaded ? `<span class="px-2 py-0.5 rounded-full bg-apple-green/15 text-apple-green text-[9px] font-bold flex items-center gap-0.5"><i data-lucide="check-circle" class="w-2.5 h-2.5"></i> Đã tải</span>` : ''}
+          </div>
+          <h3 class="font-bold text-sm sm:text-base text-black dark:text-white truncate group-hover:text-apple-blue transition-colors" title="${safeName}">${safeName}</h3>
+          <p class="text-[11px] sm:text-xs text-apple-gray line-clamp-1 mt-0.5">${safeDesc}</p>
         </div>
       </div>
-      <div class="entity-badges">
-        ${isVip ? `<span class="entity-badge badge-vip"><i data-lucide="crown" style="width:10px;height:10px;"></i> VIP</span>` : `<span class="entity-badge badge-free"><i data-lucide="sparkles" style="width:10px;height:10px;"></i> Free</span>`}
-        ${i.isMod ? `<span class="entity-badge badge-mod"><i data-lucide="zap" style="width:9px;height:9px;"></i> MOD PRO</span>` : ''}
-        ${isDownloaded ? `<span class="entity-badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);"><i data-lucide="check-circle" style="width:9px;height:9px;"></i> Đã tải</span>` : ''}
-      </div>
+
       ${i.isMod && i.modSummary ? `
-        <div class="entity-mod-highlight" title="${i.modSummary}">
-          <i data-lucide="zap" style="width:12px;height:12px;flex-shrink:0;color:#f43f5e;"></i>
-          <span style="overflow:hidden;text-overflow:ellipsis;">${i.modSummary}</span>
+        <div class="mt-2.5 px-2.5 py-1.5 rounded-xl bg-apple-red/[0.06] dark:bg-apple-red/[0.1] border border-apple-red/20 text-[11px] text-apple-red flex items-center gap-1.5 font-medium">
+          <i data-lucide="zap" class="w-3 h-3 flex-shrink-0 text-apple-red"></i>
+          <span class="truncate">${i.modSummary}</span>
         </div>
       ` : ''}
-      <div class="entity-footer">
-        <span class="entity-version">v${safeVer}</span>
-        <button class="entity-action ${isVip ? 'entity-action-vip' : 'entity-action-primary'} magnetic" onclick="event.stopPropagation();openAppView('${i._id}')">
-          ${isVip ? '<i data-lucide="crown" style="width:12px;height:12px;"></i> VIP' : '<i data-lucide="download" style="width:12px;height:12px;"></i> CÀI'}
+
+      <div class="mt-3 pt-2.5 border-t border-apple-separatorLight dark:border-apple-separatorDark flex items-center justify-between gap-2">
+        <span class="text-[11px] font-semibold text-apple-gray">v${safeVer}</span>
+        <button class="px-3 sm:px-4 py-1.5 rounded-full ${isVip ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white' : 'bg-apple-blue hover:bg-apple-darkBlue text-white'} font-bold text-xs shadow-sm transition active:scale-95 flex items-center gap-1" onclick="event.stopPropagation();openAppView('${i._id}')">
+          <i data-lucide="${isVip ? 'crown' : 'download'}" class="w-3 h-3"></i>
+          <span>${isVip ? 'TẢI VIP' : 'CÀI ĐẶT'}</span>
         </button>
       </div>
     </div>
@@ -1714,19 +1663,28 @@ function createPagination(total) {
   let btns = '';
   let start = Math.max(1, STATE.currentPage - 2);
   let end = Math.min(total, start + 4);
-  btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="pagination-btn ${STATE.currentPage === 1 ? 'disabled' : ''} magnetic"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i></button>`;
+  btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-9 h-9 rounded-full flex items-center justify-center border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white ${STATE.currentPage === 1 ? 'opacity-40 pointer-events-none' : ''} transition active:scale-95"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>`;
   for (let p = start; p <= end; p++) {
-    btns += `<button onclick="changePage(${p})" class="pagination-btn ${p === STATE.currentPage ? 'active' : ''} magnetic">${p}</button>`;
+    const isActive = p === STATE.currentPage;
+    btns += `<button onclick="changePage(${p})" class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition active:scale-95 ${isActive ? 'bg-apple-blue text-white shadow-sm shadow-apple-blue/30' : 'border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white'}">${p}</button>`;
   }
-  btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="pagination-btn ${STATE.currentPage === total ? 'disabled' : ''} magnetic"><i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>`;
-  return `<div class="pagination">${btns}</div>`;
+  btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-9 h-9 rounded-full flex items-center justify-center border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white ${STATE.currentPage === total ? 'opacity-40 pointer-events-none' : ''} transition active:scale-95"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>`;
+  return `<div class="flex items-center justify-center gap-1.5 mt-8">${btns}</div>`;
 }
 
 function emptyState() {
   if (DB.ipa.length === 0 && DB.vip.length === 0) {
-    return `<div style="grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--text-tertiary);"><div style="width:40px;height:40px;border:2px solid var(--accent-cyan);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;"></div><p style="font-size:15px;font-weight:500;">Đang kết nối và tổng hợp kho ứng dụng...</p></div>`;
+    return `<div class="col-span-full py-16 text-center text-apple-gray"><div class="w-8 h-8 border-2 border-apple-blue border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="font-bold text-sm text-black dark:text-white">Đang kết nối và tổng hợp kho ứng dụng...</p></div>`;
   }
-  return `<div style="grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--text-tertiary);"><i data-lucide="orbit" style="width:48px;height:48px;margin-bottom:16px;opacity:0.3;"></i><p style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Không tìm thấy ứng dụng phù hợp</p><p style="font-size:13px;color:var(--text-secondary);">Thử chuyển danh mục hoặc tìm kiếm với từ khóa khác</p></div>`;
+  return `
+    <div class="col-span-full py-16 text-center text-apple-gray">
+      <div class="w-16 h-16 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-3 text-apple-gray">
+        <i data-lucide="search-x" class="w-8 h-8"></i>
+      </div>
+      <p class="font-bold text-sm text-black dark:text-white">Không tìm thấy ứng dụng phù hợp</p>
+      <p class="text-xs text-apple-gray mt-1">Thử chuyển danh mục hoặc tìm kiếm với từ khóa khác</p>
+    </div>
+  `;
 }
 
 function changePage(p) {
@@ -2951,8 +2909,8 @@ function downloadVsignApp() {
 
 /* ─── Theme ─── */
 function toggleTheme() {
-  // IPAVIET OS is always dark — this is a spatial dark mode OS
-  showToast('IPAVIET OS — Dark Mode Only');
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
 }
 
 /* ─── Toast ─── */
