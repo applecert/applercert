@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title id="pageTitle">Chi Tiết Sản Phẩm — Chợ Việt MMO</title>
+  <meta name="description" content="Chi tiết sản phẩm, dịch vụ và tài nguyên MMO chính hãng từ hệ sinh thái IPAVIET.">
+  <meta name="theme-color" content="#007AFF">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/96/shop.png">
+
+  <!-- Apple San Francisco Typography & Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          colors: {
+            apple: {
+              blue: '#007AFF',
+              darkBlue: '#0A84FF',
+              green: '#34C759',
+              amber: '#FF9500',
+              red: '#FF3B30',
+              purple: '#AF52DE',
+              gray: '#8E8E93',
+              grayLight: '#E5E5EA',
+              grayDark: '#1C1C1E',
+              bgLight: '#F2F2F7',
+              bgDark: '#000000',
+              cardLight: '#FFFFFF',
+              cardDark: '#1C1C1E',
+              separatorLight: 'rgba(60, 60, 67, 0.15)',
+              separatorDark: 'rgba(84, 84, 88, 0.4)'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+      letter-spacing: -0.015em;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Apple Squircle Continuous Curve */
+    .apple-squircle {
+      border-radius: 22.5%;
+      overflow: hidden;
+    }
+
+    /* Apple Frosted Glass */
+    .apple-glass {
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    }
+    .dark .apple-glass {
+      background: rgba(28, 28, 30, 0.82);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+    }
+
+    /* Rich product content formatting */
+    .apple-desc-box {
+      font-size: 13.5px;
+      line-height: 1.65;
+    }
+    .apple-desc-box img {
+      max-width: 100%;
+      border-radius: 14px;
+      margin: 10px 0;
+    }
+    .apple-desc-box a {
+      color: #007AFF;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+  </style>
+</head>
+<body class="bg-apple-bgLight dark:bg-apple-bgDark text-black dark:text-white min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- ================================================================
+       APPLE IOS STICKY TOP NAVIGATION BAR
+       ================================================================ -->
+  <header class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-all duration-200">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+      
+      <!-- Back to Market -->
+      <a href="tap-hoa-mmo.html" class="flex items-center gap-1 text-apple-blue font-semibold text-base hover:opacity-75 transition active:scale-95 shrink-0">
+        <i data-lucide="chevron-left" class="w-6 h-6 -ml-1.5 stroke-[2.5]"></i>
+        <span>Chợ MMO</span>
+      </a>
+
+      <!-- Center Mini Title (Shown on scroll) -->
+      <div id="navMiniTitle" class="flex items-center gap-2 opacity-0 transition-opacity duration-200 truncate max-w-xs sm:max-w-sm">
+        <img id="navMiniIcon" src="" class="w-6 h-6 apple-squircle object-contain border border-black/10 shrink-0" alt="">
+        <span id="navMiniText" class="font-bold text-xs sm:text-sm truncate">Sản Phẩm</span>
+      </div>
+
+      <!-- Right Actions: Cart, Wallet, Theme -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Balance Chip -->
+        <a href="naptien.html" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-xs font-bold text-apple-blue hover:bg-black/10 transition" title="Bấm để nạp thêm">
+          <span>Ví:</span>
+          <span id="userBalNav">0đ</span>
+        </a>
+
+        <!-- Cart Icon -->
+        <button onclick="openCartSidebar()" class="relative w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 text-black dark:text-white flex items-center justify-center hover:bg-black/10 transition active:scale-95" title="Giỏ hàng">
+          <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+          <span id="cartCountBadge" class="absolute -top-1 -right-1 bg-apple-red text-white text-[9px] font-black rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center hidden">
+            0
+          </span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button onclick="toggleTheme()" class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 text-black dark:text-white flex items-center justify-center hover:bg-black/10 transition active:scale-95">
+          <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+          <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ================================================================
+       MAIN CONTAINER (APPLE STORE / APP STORE PAGE STYLE)
+       ================================================================ -->
+  <main class="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6 pb-28 sm:pb-16">
+
+    <!-- ═══ SECTION 1: HERO HEADER (ICON + TITLE + PRICE + CTA) ═══ -->
+    <section class="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-7 pb-6 border-b border-apple-separatorLight dark:border-apple-separatorDark">
+      
+      <!-- Large Apple Squircle Icon -->
+      <div class="relative shrink-0 mx-auto sm:mx-0">
+        <div class="w-28 h-28 sm:w-36 sm:h-36 apple-squircle bg-white dark:bg-apple-cardDark p-2.5 shadow-xl border border-black/[0.08] dark:border-white/[0.12] flex items-center justify-center">
+          <img id="pIcon" src="" alt="App Icon" class="w-full h-full object-contain" onerror="this.src='https://www.chototmmo.com/assets/storage/images/iconBS4R.png'">
+        </div>
+        <span id="pBadgeDelivery" class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-apple-green text-white shadow-sm flex items-center gap-1 whitespace-nowrap">
+          <i data-lucide="zap" class="w-3 h-3"></i> Tự Động 24/7
+        </span>
+      </div>
+
+      <!-- Info & Title & Action -->
+      <div class="flex-1 text-center sm:text-left min-w-0 space-y-2">
+        <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+          <span id="pCategory" class="text-xs font-bold uppercase tracking-wider text-apple-blue px-2.5 py-0.5 rounded-full bg-apple-blue/10">
+            DANH MỤC
+          </span>
+          <span id="pDiscountPill" class="hidden text-xs font-black px-2 py-0.5 rounded-full bg-apple-red text-white">
+            -25%
+          </span>
+        </div>
+
+        <h1 id="pName" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-black dark:text-white leading-tight">
+          Đang tải sản phẩm...
+        </h1>
+        <p class="text-xs sm:text-sm text-apple-gray font-medium">
+          Cung ứng & Bảo hành bởi <b class="text-black dark:text-white">IPAVIET Studio</b>
+        </p>
+
+        <!-- Price Display -->
+        <div class="flex items-baseline justify-center sm:justify-start gap-2 pt-1">
+          <span id="pPrice" class="text-2xl sm:text-3xl font-black text-apple-blue">0đ</span>
+          <span id="pFakePrice" class="text-sm text-apple-gray line-through"></span>
+        </div>
+
+        <!-- Buttons Row (Apple App Store Style) -->
+        <div class="flex items-center justify-center sm:justify-start gap-3 pt-3 flex-wrap">
+          
+          <!-- Stepper Quantity -->
+          <div class="flex items-center bg-black/5 dark:bg-white/10 rounded-full p-1 border border-black/5 dark:border-white/5">
+            <button onclick="changeQty(-1)" class="w-8 h-8 rounded-full bg-white dark:bg-[#2C2C2E] shadow-sm flex items-center justify-center text-sm font-bold active:scale-90 transition">−</button>
+            <input type="number" id="pQty" value="1" min="1" readonly class="w-10 text-center font-bold text-sm bg-transparent border-none outline-none">
+            <button onclick="changeQty(1)" class="w-8 h-8 rounded-full bg-white dark:bg-[#2C2C2E] shadow-sm flex items-center justify-center text-sm font-bold active:scale-90 transition">+</button>
+          </div>
+
+          <!-- Add to Cart Pill -->
+          <button onclick="addToCartCurrent()" class="px-5 py-2.5 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 text-apple-blue font-bold text-sm transition active:scale-95 flex items-center gap-1.5">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Thêm Vào Giỏ</span>
+          </button>
+
+          <!-- Main Buy Button (Apple Blue Pill) -->
+          <button id="mainBuyBtn" onclick="buyNowCurrent()" class="px-7 py-2.5 rounded-full bg-apple-blue hover:bg-blue-600 text-white font-extrabold text-sm shadow-md shadow-apple-blue/30 transition active:scale-95 flex items-center gap-1.5">
+            <span>MUA NGAY</span>
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ═══ SECTION 2: APPLE METRICS RIBBON (RATING, RANK, DELIVERY, LANG) ═══ -->
+    <section class="grid grid-cols-4 divide-x divide-apple-separatorLight dark:divide-apple-separatorDark py-3 px-1 text-center border-b border-apple-separatorLight dark:border-apple-separatorDark">
+      <div class="px-1 sm:px-3">
+        <div class="text-[11px] font-semibold text-apple-gray uppercase">ĐÁNH GIÁ</div>
+        <div class="text-sm sm:text-base font-bold text-black dark:text-white flex items-center justify-center gap-1 mt-0.5">
+          <span>5.0</span>
+          <span class="text-apple-amber text-xs">★★★★★</span>
+        </div>
+        <div id="soldCountText" class="text-[10px] text-apple-gray mt-0.5">428 đã bán</div>
+      </div>
+
+      <div class="px-1 sm:px-3">
+        <div class="text-[11px] font-semibold text-apple-gray uppercase">XẾP HẠNG</div>
+        <div class="text-sm sm:text-base font-bold text-black dark:text-white mt-0.5">#1</div>
+        <div class="text-[10px] text-apple-gray mt-0.5">Thịnh hành</div>
+      </div>
+
+      <div class="px-1 sm:px-3">
+        <div class="text-[11px] font-semibold text-apple-gray uppercase">BÀN GIAO</div>
+        <div id="deliverySpeedText" class="text-sm sm:text-base font-bold text-apple-green mt-0.5">Giao Ngay</div>
+        <div class="text-[10px] text-apple-gray mt-0.5">Hệ thống 24/7</div>
+      </div>
+
+      <div class="px-1 sm:px-3">
+        <div class="text-[11px] font-semibold text-apple-gray uppercase">HỖ TRỢ</div>
+        <div class="text-sm sm:text-base font-bold text-black dark:text-white mt-0.5">Tiếng Việt</div>
+        <div class="text-[10px] text-apple-gray mt-0.5">+ Telegram</div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 3: SMART BALANCE ADVISOR (APPLE NOTIFICATION CARD) ═══ -->
+    <section id="balanceAdvisorCard" class="p-4 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark shadow-sm flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-full bg-apple-blue/10 text-apple-blue flex items-center justify-center shrink-0">
+          <i data-lucide="wallet" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="text-xs text-apple-gray font-semibold">Tình Trạng Ví Tài Khoản</div>
+          <div id="advisorBalanceStatus" class="font-bold text-sm text-black dark:text-white truncate">Đang kiểm tra số dư...</div>
+        </div>
+      </div>
+      <a id="advisorTopupBtn" href="naptien.html" class="hidden shrink-0 px-4 py-2 rounded-full bg-apple-blue text-white text-xs font-bold hover:bg-blue-600 transition">
+        Nạp Thêm
+      </a>
+    </section>
+
+    <!-- ═══ SECTION 4: APPLE FEATURE PREVIEW CARDS (HORIZONTAL SCROLL) ═══ -->
+    <section class="space-y-3">
+      <h2 class="text-base sm:text-lg font-bold text-black dark:text-white">Cam Kết Dịch Vụ</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="p-3.5 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark">
+          <i data-lucide="shield-check" class="w-6 h-6 text-apple-green mb-2"></i>
+          <h4 class="font-bold text-xs sm:text-sm">Bảo Hành 1 Đổi 1</h4>
+          <p class="text-[11px] text-apple-gray mt-1 leading-snug">Đổi mới tức thì nếu tài khoản gặp lỗi trong thời hạn cam kết.</p>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark">
+          <i data-lucide="zap" class="w-6 h-6 text-apple-amber mb-2"></i>
+          <h4 class="font-bold text-xs sm:text-sm">Giao Tự Động</h4>
+          <p class="text-[11px] text-apple-gray mt-1 leading-snug">Hệ thống bàn giao tài khoản vào đơn hàng ngay sau khi thanh toán.</p>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark">
+          <i data-lucide="check-circle" class="w-6 h-6 text-apple-blue mb-2"></i>
+          <h4 class="font-bold text-xs sm:text-sm">Tài Khoản Sạch</h4>
+          <p class="text-[11px] text-apple-gray mt-1 leading-snug">Cam kết nguồn tài khoản sạch 100%, không dính phạt hay cấm vận.</p>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark">
+          <i data-lucide="headset" class="w-6 h-6 text-apple-purple mb-2"></i>
+          <h4 class="font-bold text-xs sm:text-sm">Admin Hỗ Trợ</h4>
+          <p class="text-[11px] text-apple-gray mt-1 leading-snug">Túc trực Telegram giải quyết nhanh chóng mọi vướng mắc 24/7.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 5: WHAT'S NEW & DESCRIPTION (MÔ TẢ CHI TIẾT) ═══ -->
+    <section class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark space-y-3">
+      <h2 class="text-base sm:text-lg font-bold text-black dark:text-white flex items-center gap-2">
+        <i data-lucide="file-text" class="w-5 h-5 text-apple-blue"></i>
+        <span>Mô Tả Sản Phẩm & Hướng Dẫn</span>
+      </h2>
+      <div id="pDescription" class="apple-desc-box text-slate-700 dark:text-slate-300 leading-relaxed overflow-hidden">
+        Đang tải mô tả chi tiết...
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 6: APPLE INFORMATION TABLE (BẢNG THÔNG TIN) ═══ -->
+    <section class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark space-y-4">
+      <h2 class="text-base sm:text-lg font-bold text-black dark:text-white">Thông Tin Chi Tiết</h2>
+      
+      <div class="divide-y divide-apple-separatorLight dark:divide-apple-separatorDark text-xs sm:text-sm">
+        <div class="py-2.5 flex items-center justify-between">
+          <span class="text-apple-gray">Nhà phân phối</span>
+          <span class="font-semibold text-black dark:text-white">IPAVIET MMO</span>
+        </div>
+        <div class="py-2.5 flex items-center justify-between">
+          <span class="text-apple-gray">Thể loại</span>
+          <span id="infoCat" class="font-semibold text-black dark:text-white">Dịch vụ số</span>
+        </div>
+        <div class="py-2.5 flex items-center justify-between">
+          <span class="text-apple-gray">Khả dụng trong kho</span>
+          <span id="infoStock" class="font-semibold text-apple-green">Có sẵn</span>
+        </div>
+        <div class="py-2.5 flex items-center justify-between">
+          <span class="text-apple-gray">Phương thức bàn giao</span>
+          <span class="font-semibold text-black dark:text-white">Tự động 24/7 (Tại mục Đơn Hàng)</span>
+        </div>
+        <div class="py-2.5 flex items-center justify-between">
+          <span class="text-apple-gray">Tương thích</span>
+          <span class="font-semibold text-black dark:text-white">iOS, iPadOS, macOS, Android, Windows</span>
+        </div>
+        <div class="py-2.5 flex items-center justify-between">
+          <span class="text-apple-gray">Bảo mật & Quyền riêng tư</span>
+          <span class="font-semibold text-black dark:text-white">Mã hóa kết nối SSL 256-bit</span>
+        </div>
+        <div class="py-2.5 flex items-center justify-between">
+          <span class="text-apple-gray">Bản quyền & Chính sách</span>
+          <span class="font-semibold text-black dark:text-white">Cam kết 1 đổi 1 trong 3 ngày</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SECTION 7: RATINGS & REVIEWS (APPLE STYLE) ═══ -->
+    <section class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base sm:text-lg font-bold text-black dark:text-white">Đánh Giá & Nhận Xét</h2>
+        <span class="text-xs text-apple-blue font-bold">5.0 trên 5</span>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <div class="text-center shrink-0">
+          <div class="text-4xl sm:text-5xl font-black text-black dark:text-white">5.0</div>
+          <div class="text-apple-amber text-xs mt-1">★★★★★</div>
+          <div class="text-[10px] text-apple-gray mt-0.5">Xác thực bởi người mua</div>
+        </div>
+
+        <!-- Rating Bars -->
+        <div class="flex-1 space-y-1.5 text-xs text-apple-gray font-semibold">
+          <div class="flex items-center gap-2">
+            <span class="w-3">5★</span>
+            <div class="flex-1 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+              <div class="h-full bg-apple-amber rounded-full w-full"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3">4★</span>
+            <div class="flex-1 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+              <div class="h-full bg-apple-amber rounded-full w-[0%]"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3">3★</span>
+            <div class="flex-1 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+              <div class="h-full bg-apple-amber rounded-full w-[0%]"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sample Verified Review -->
+      <div class="p-3.5 rounded-xl bg-apple-bgLight dark:bg-[#121214] text-xs space-y-1 mt-3">
+        <div class="flex items-center justify-between font-bold">
+          <span class="text-black dark:text-white">Khách hàng xác thực</span>
+          <span class="text-apple-amber">★★★★★</span>
+        </div>
+        <p class="text-slate-600 dark:text-slate-300">Tài khoản chuẩn sạch, đăng nhập được ngay, giao tự động chỉ mất 3 giây. Rất hài lòng!</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================================================================
+       APPLE STICKY BOTTOM BAR (CHO ĐIỆN THOẠI KHI CUỘN)
+       ================================================================ -->
+  <div id="appleStickyBar" class="sm:hidden fixed bottom-0 left-0 right-0 z-40 apple-glass border-t border-apple-separatorLight dark:border-apple-separatorDark p-3 px-4 flex items-center justify-between gap-3 pb-safe shadow-lg">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <img id="stickyBarIcon" src="" class="w-10 h-10 apple-squircle object-contain border border-black/10 shrink-0" alt="">
+      <div class="min-w-0">
+        <h4 id="stickyBarTitle" class="font-bold text-xs text-black dark:text-white truncate">Tên Sản Phẩm</h4>
+        <div id="stickyBarPrice" class="font-black text-sm text-apple-blue">0đ</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button onclick="addToCartCurrent()" class="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10 text-apple-blue flex items-center justify-center font-bold">
+        <i data-lucide="plus" class="w-4 h-4"></i>
+      </button>
+      <button onclick="buyNowCurrent()" class="px-5 py-2 rounded-full bg-apple-blue text-white font-black text-xs shadow-md shadow-apple-blue/30 active:scale-95">
+        MUA
+      </button>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       SLIDE-OVER: GIỎ HÀNG (CART DRAWER)
+       ================================================================ -->
+  <aside id="cartDrawer" class="fixed top-0 bottom-0 right-0 z-50 w-full max-w-md bg-white dark:bg-apple-cardDark border-l border-apple-separatorLight dark:border-apple-separatorDark shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300">
+    <div class="p-4 sm:p-5 border-b border-apple-separatorLight dark:border-apple-separatorDark flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-2 font-bold text-base sm:text-lg">
+        <i data-lucide="shopping-cart" class="w-5 h-5 text-apple-blue"></i>
+        <span>Giỏ Hàng Của Bạn</span>
+      </div>
+      <button onclick="closeCartSidebar()" class="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 text-apple-gray hover:text-black dark:hover:text-white flex items-center justify-center transition">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Cart Items List -->
+    <div id="cartItemsList" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+
+    <!-- Cart Footer -->
+    <div class="p-4 sm:p-5 border-t border-apple-separatorLight dark:border-apple-separatorDark bg-apple-bgLight dark:bg-[#121214] shrink-0 space-y-3 pb-safe">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold text-apple-gray">Tổng cộng:</span>
+        <span id="cartTotalPrice" class="text-xl sm:text-2xl font-black text-apple-red">0đ</span>
+      </div>
+      <button onclick="checkoutCart()" class="w-full py-3.5 rounded-full bg-apple-blue hover:bg-blue-600 text-white font-extrabold text-sm shadow-md shadow-apple-blue/30 transition flex items-center justify-center gap-2 active:scale-95">
+        <i data-lucide="credit-card" class="w-4 h-4"></i>
+        <span>THANH TOÁN GIỎ HÀNG</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Drawer Backdrop -->
+  <div id="drawerBackdrop" onclick="closeCartSidebar()" class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm hidden transition-opacity"></div>
+
+  <!-- Toast Container -->
+  <div id="ntfContainer" class="fixed top-16 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- ================================================================
+       SCRIPTS LOGIC
+       ================================================================ -->
+  <script>
+    const GS = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec';
+    const FB_CFG = {
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+      authDomain: "ipaviet-st.firebaseapp.com",
+      projectId: "ipaviet-st",
+      storageBucket: "ipaviet-st.firebasestorage.app",
+      messagingSenderId: "127619650916",
+      appId: "1:127619650916:web:fc8904c99804eeb7539671"
+    };
+    firebase.initializeApp(FB_CFG);
+    const auth = firebase.auth(), db = firebase.firestore();
+
+    let U = null, BAL = 0;
+    let PRODUCT_ID = new URLSearchParams(window.location.search).get('id');
+    let PRODUCT = null;
+    let QTY = 1;
+    let CART = (function(){
+      try { return JSON.parse(localStorage.getItem('mmo_cart') || '[]'); } catch(e){ return []; }
+    })();
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    const BRAND_ICONS = {
+      telegram: 'https://www.chototmmo.com/assets/storage/images/category7NVU.png',
+      tiktok: 'https://www.chototmmo.com/assets/storage/images/icon5EMZ.png',
+      twitter: 'https://www.chototmmo.com/assets/storage/images/iconE9V7.png',
+      x: 'https://www.chototmmo.com/assets/storage/images/iconE9V7.png',
+      instagram: 'https://www.chototmmo.com/assets/storage/images/iconDYXU.png',
+      facebook: 'https://www.chototmmo.com/assets/storage/images/icon03HJ.png',
+      discord: 'https://www.chototmmo.com/assets/storage/images/categoryU4LP.png',
+      gmail: 'https://www.chototmmo.com/assets/storage/images/iconDBVW.png',
+      email: 'https://www.chototmmo.com/assets/storage/images/iconDBVW.png',
+      outlook: 'https://www.chototmmo.com/assets/storage/images/iconDBVW.png',
+      ai: 'https://www.chototmmo.com/assets/storage/images/iconO43A.png',
+      chatgpt: 'https://www.chototmmo.com/assets/storage/images/iconO43A.png',
+      vpn: 'https://www.chototmmo.com/assets/storage/images/iconDGHB.png',
+      proxy: 'https://www.chototmmo.com/assets/storage/images/iconH91D.png',
+      'phần mềm': 'https://www.chototmmo.com/assets/storage/images/categoryP43H.png',
+      game: 'https://img.icons8.com/fluency/96/controller.png',
+      steam: 'https://img.icons8.com/fluency/96/steam.png'
+    };
+
+    function getCatIcon(name) {
+      if (!name) return 'https://www.chototmmo.com/assets/storage/images/iconBS4R.png';
+      const c = name.toLowerCase();
+      for (const k in BRAND_ICONS) {
+        if (c.includes(k)) return BRAND_ICONS[k];
+      }
+      return 'https://www.chototmmo.com/assets/storage/images/iconBS4R.png';
+    }
+
+    function fakeSold(id) {
+      let s = 0;
+      for (const c of String(id)) s += c.charCodeAt(0);
+      return (s % 750) + 48;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       LOAD PRODUCT DETAIL
+       ══════════════════════════════════════════════════════ */
+    async function fetchProductDetails() {
+      if (!PRODUCT_ID) {
+        showToast('Không tìm thấy mã sản phẩm!', 'error');
+        setTimeout(() => window.location.href = 'tap-hoa-mmo.html', 1500);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${GS}?action=get_kingmmo_products`);
+        const json = await res.json();
+        if (!json.success) throw new Error('API Fail');
+
+        const cfg = json.configs || {};
+        const allProds = [];
+
+        // 1. KingMMO
+        if (json.kingmmoProducts) {
+          json.kingmmoProducts.forEach(p => {
+            const c = cfg[p.id];
+            if (c) {
+              p.price = c.price !== undefined && c.price !== '' ? parseInt(c.price) : (parseInt(p.price) || 0);
+              p.fakePrice = c.fakePrice !== undefined && c.fakePrice !== '' ? parseInt(c.fakePrice) : Math.floor((parseInt(p.price) || 0) * 1.3);
+              if (c.icon && c.icon.trim()) p.icon = c.icon.trim();
+              if (c.cat && c.cat.trim()) p.cat = c.cat.trim();
+              if (c.desc && c.desc.trim()) p.desc = c.desc;
+              p.stock = (c.stock !== undefined && c.stock !== '' && c.stock !== 'Auto') ? parseInt(c.stock) : (p.stock || 9999);
+              p.instant = c.instant !== false;
+            } else {
+              p.fakePrice = Math.floor((parseInt(p.price) || 0) * 1.3);
+              p.instant = true;
+            }
+            allProds.push(p);
+          });
+        }
+
+        // 2. Custom
+        if (json.customProducts) {
+          json.customProducts.forEach(cp => {
+            allProds.push({
+              id: cp.id,
+              name: cp.name,
+              cat: cp.cat || 'Khác',
+              price: parseInt(cp.price) || 0,
+              fakePrice: parseInt(cp.fakePrice) || 0,
+              icon: (cp.icon && cp.icon.trim()) ? cp.icon.trim() : getCatIcon(cp.cat),
+              stock: parseInt(cp.stock) || 9999,
+              desc: cp.desc || 'Sản phẩm chính hãng chất lượng cao.',
+              instant: cp.instant !== false
+            });
+          });
+        }
+
+        // 3. Config Keys
+        Object.keys(cfg).forEach(k => {
+          if (k.startsWith('CAT___') || k === 'DEAL___HOT') return;
+          const conf = cfg[k];
+          if (conf && conf.name) {
+            allProds.push({
+              id: k,
+              name: conf.name,
+              cat: conf.cat || 'Khác',
+              price: parseInt(conf.price) || 0,
+              fakePrice: parseInt(conf.fakePrice) || 0,
+              icon: (conf.icon && conf.icon.trim()) ? conf.icon.trim() : getCatIcon(conf.cat),
+              stock: parseInt(conf.stock) || 9999,
+              desc: conf.desc || 'Sản phẩm chính hãng chất lượng cao.',
+              instant: true
+            });
+          }
+        });
+
+        PRODUCT = allProds.find(p => String(p.id) === String(PRODUCT_ID));
+        if (!PRODUCT) {
+          showToast('Sản phẩm không tồn tại hoặc đã ngừng kinh doanh', 'error');
+          setTimeout(() => window.location.href = 'tap-hoa-mmo.html', 1500);
+          return;
+        }
+
+        renderProductUI();
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi khi tải dữ liệu sản phẩm!', 'error');
+      }
+    }
+
+    function renderProductUI() {
+      const p = PRODUCT;
+      const icon = p.icon || getCatIcon(p.cat);
+
+      document.getElementById('pageTitle').textContent = `${p.name} — Chợ Việt MMO`;
+      document.getElementById('pIcon').src = icon;
+      document.getElementById('navMiniIcon').src = icon;
+      document.getElementById('stickyBarIcon').src = icon;
+      document.getElementById('navMiniText').textContent = p.name;
+      document.getElementById('stickyBarTitle').textContent = p.name;
+      document.getElementById('pName').textContent = p.name;
+      document.getElementById('pCategory').textContent = p.cat || 'Khác';
+      document.getElementById('infoCat').textContent = p.cat || 'Khác';
+      document.getElementById('pPrice').textContent = p.price.toLocaleString() + 'đ';
+      document.getElementById('stickyBarPrice').textContent = p.price.toLocaleString() + 'đ';
+
+      if (p.fakePrice > p.price) {
+        document.getElementById('pFakePrice').textContent = p.fakePrice.toLocaleString() + 'đ';
+        const disc = Math.round((1 - p.price / p.fakePrice) * 100);
+        const pill = document.getElementById('pDiscountPill');
+        pill.textContent = `-${disc}%`;
+        pill.classList.remove('hidden');
+      }
+
+      const sold = fakeSold(p.id);
+      document.getElementById('soldCountText').textContent = `${sold} đã bán`;
+      document.getElementById('pDescription').innerHTML = p.desc || '<p>Sản phẩm phân phối tự động chính hãng từ hệ thống IPAVIET.</p>';
+
+      const isOutOfStock = p.stock <= 0;
+      const stockEl = document.getElementById('infoStock');
+      if (isOutOfStock) {
+        stockEl.textContent = 'Tạm hết hàng';
+        stockEl.className = 'font-semibold text-apple-red';
+        document.getElementById('mainBuyBtn').disabled = true;
+        document.getElementById('mainBuyBtn').className = 'px-7 py-2.5 rounded-full bg-apple-gray text-white font-extrabold text-sm opacity-50 cursor-not-allowed';
+      } else {
+        stockEl.textContent = p.stock >= 9999 ? 'Có sẵn (Vô tận)' : `Còn ${p.stock} tài khoản`;
+      }
+
+      updateBalanceAdvisor();
+      lucide.createIcons();
+    }
+
+    function changeQty(delta) {
+      QTY = Math.max(1, QTY + delta);
+      document.getElementById('pQty').value = QTY;
+      updateBalanceAdvisor();
+    }
+
+    function updateBalanceAdvisor() {
+      if (!PRODUCT) return;
+      const total = PRODUCT.price * QTY;
+      const statusEl = document.getElementById('advisorBalanceStatus');
+      const topupBtn = document.getElementById('advisorTopupBtn');
+
+      if (!U) {
+        statusEl.innerHTML = `Vui lòng <a href="account.html" class="text-apple-blue font-bold underline">đăng nhập</a> để mua đơn <b>${total.toLocaleString()}đ</b>`;
+        topupBtn.classList.add('hidden');
+      } else if (BAL >= total) {
+        statusEl.innerHTML = `Số dư khả dụng: <b class="text-apple-green">${BAL.toLocaleString()}đ</b> (Đủ thanh toán đơn <b>${total.toLocaleString()}đ</b>)`;
+        topupBtn.classList.add('hidden');
+      } else {
+        const diff = total - BAL;
+        statusEl.innerHTML = `Số dư: <b>${BAL.toLocaleString()}đ</b> — <span class="text-apple-red font-bold">Còn thiếu ${diff.toLocaleString()}đ</span>`;
+        topupBtn.classList.remove('hidden');
+        topupBtn.href = `naptien.html?amount=${diff}`;
+      }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       BUY & CART ACTIONS
+       ══════════════════════════════════════════════════════ */
+    async function buyNowCurrent() {
+      if (!U) {
+        window.location.href = 'account.html';
+        return;
+      }
+      if (!PRODUCT) return;
+      const total = PRODUCT.price * QTY;
+
+      if (BAL < total) {
+        const diff = total - BAL;
+        Swal.fire({
+          icon: 'warning',
+          title: 'Số dư không đủ',
+          html: `Bạn đang có <b>${BAL.toLocaleString()}đ</b>, cần thêm <b>${diff.toLocaleString()}đ</b> để thanh toán.`,
+          showCancelButton: true,
+          confirmButtonText: 'Nạp Tiền Ngay',
+          cancelButtonText: 'Hủy',
+          confirmButtonColor: '#007AFF'
+        }).then(r => {
+          if (r.isConfirmed) window.location.href = `naptien.html?amount=${diff}`;
+        });
+        return;
+      }
+
+      const conf = await Swal.fire({
+        title: 'Xác nhận mua hàng',
+        html: `
+          <div class="text-left text-sm space-y-1">
+            <p>Sản phẩm: <b>${PRODUCT.name}</b></p>
+            <p>Số lượng: <b>${QTY}</b></p>
+            <p class="text-base text-apple-red font-black pt-2">Tổng thanh toán: ${total.toLocaleString()}đ</p>
+          </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Mua Ngay',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#007AFF'
+      });
+      if (!conf.isConfirmed) return;
+
+      Swal.fire({ title: 'Đang xử lý đơn hàng...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      try {
+        await db.collection('users').doc(U.uid).set({
+          coins: firebase.firestore.FieldValue.increment(-total)
+        }, { merge: true });
+
+        const oid = 'M' + Date.now();
+        await fetch(`${GS}?action=buy_mmo_pending&orderId=${oid}&uid=${U.uid}&productId=${PRODUCT.id}&productName=${encodeURIComponent(PRODUCT.name)}&price=${total}&amount=${QTY}`);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Đặt hàng thành công!',
+          text: 'Đơn hàng của bạn đang được bàn giao tự động.',
+          confirmButtonText: 'Xem Đơn Hàng',
+          confirmButtonColor: '#007AFF'
+        }).then(() => {
+          window.location.href = 'tap-hoa-mmo.html?view=orders';
+        });
+      } catch (err) {
+        Swal.fire('Lỗi', err.message, 'error');
+      }
+    }
+
+    function addToCartCurrent() {
+      if (!PRODUCT) return;
+      const ex = CART.find(i => String(i.id) === String(PRODUCT.id));
+      if (ex) ex.qty += QTY;
+      else CART.push({ ...PRODUCT, qty: QTY });
+      localStorage.setItem('mmo_cart', JSON.stringify(CART));
+      updateCartBadge();
+      showToast(`Đã thêm ${QTY}× ${PRODUCT.name} vào giỏ hàng!`, 'success');
+    }
+
+    function updateCartBadge() {
+      const totalQty = CART.reduce((sum, item) => sum + item.qty, 0);
+      const badge = document.getElementById('cartCountBadge');
+      if (totalQty > 0) {
+        badge.textContent = totalQty;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       CART DRAWER
+       ══════════════════════════════════════════════════════ */
+    function openCartSidebar() {
+      renderCartDrawer();
+      document.getElementById('cartDrawer').classList.remove('translate-x-full');
+      document.getElementById('drawerBackdrop').classList.remove('hidden');
+    }
+
+    function closeCartSidebar() {
+      document.getElementById('cartDrawer').classList.add('translate-x-full');
+      document.getElementById('drawerBackdrop').classList.add('hidden');
+    }
+
+    function renderCartDrawer() {
+      const list = document.getElementById('cartItemsList');
+      const totalEl = document.getElementById('cartTotalPrice');
+
+      if (!CART.length) {
+        list.innerHTML = `
+          <div class="py-16 text-center text-apple-gray">
+            <i data-lucide="shopping-bag" class="w-12 h-12 mx-auto mb-2 opacity-30"></i>
+            <p class="font-bold text-sm">Giỏ hàng trống</p>
+          </div>
+        `;
+        totalEl.innerText = '0đ';
+        lucide.createIcons();
+        return;
+      }
+
+      let total = 0;
+      list.innerHTML = CART.map((it, idx) => {
+        total += it.price * it.qty;
+        const icon = it.icon || getCatIcon(it.cat);
+        return `
+          <div class="p-3 rounded-2xl bg-black/5 dark:bg-white/5 flex items-center gap-3">
+            <img src="${icon}" class="w-10 h-10 apple-squircle object-contain bg-white dark:bg-black p-1 shrink-0" onerror="this.src='https://www.chototmmo.com/assets/storage/images/iconBS4R.png'">
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-xs truncate">${it.name}</div>
+              <div class="text-xs font-black text-apple-blue">${it.price.toLocaleString()}đ</div>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button onclick="cartAdj(${idx}, -1)" class="w-6 h-6 rounded-full bg-black/10 dark:bg-white/10 font-bold flex items-center justify-center text-xs">−</button>
+              <span class="text-xs font-bold w-5 text-center">${it.qty}</span>
+              <button onclick="cartAdj(${idx}, 1)" class="w-6 h-6 rounded-full bg-black/10 dark:bg-white/10 font-bold flex items-center justify-center text-xs">+</button>
+              <button onclick="cartDel(${idx})" class="w-6 h-6 text-apple-red ml-1 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      totalEl.innerText = total.toLocaleString() + 'đ';
+      lucide.createIcons();
+    }
+
+    function cartAdj(idx, delta) {
+      CART[idx].qty += delta;
+      if (CART[idx].qty <= 0) CART.splice(idx, 1);
+      localStorage.setItem('mmo_cart', JSON.stringify(CART));
+      updateCartBadge();
+      renderCartDrawer();
+    }
+
+    function cartDel(idx) {
+      CART.splice(idx, 1);
+      localStorage.setItem('mmo_cart', JSON.stringify(CART));
+      updateCartBadge();
+      renderCartDrawer();
+    }
+
+    async function checkoutCart() {
+      if (!U) {
+        window.location.href = 'account.html';
+        return;
+      }
+      if (!CART.length) return;
+      const total = CART.reduce((s, i) => s + i.price * i.qty, 0);
+
+      if (BAL < total) {
+        const diff = total - BAL;
+        Swal.fire({
+          icon: 'warning',
+          title: 'Số dư không đủ',
+          html: `Cần thanh toán: <b>${total.toLocaleString()}đ</b><br>Số dư ví: <b>${BAL.toLocaleString()}đ</b> (Thiếu <b>${diff.toLocaleString()}đ</b>)`,
+          confirmButtonText: 'Nạp Thêm Tiền',
+          showCancelButton: true,
+          confirmButtonColor: '#007AFF'
+        }).then(r => {
+          if (r.isConfirmed) window.location.href = `naptien.html?amount=${diff}`;
+        });
+        return;
+      }
+
+      const conf = await Swal.fire({
+        title: 'Thanh toán giỏ hàng',
+        html: `Thanh toán <b>${CART.length}</b> sản phẩm với tổng tiền <b class="text-apple-red">${total.toLocaleString()}đ</b>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Thanh Toán Ngay',
+        confirmButtonColor: '#007AFF'
+      });
+      if (!conf.isConfirmed) return;
+
+      Swal.fire({ title: 'Đang xử lý đơn hàng...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      try {
+        await db.collection('users').doc(U.uid).set({
+          coins: firebase.firestore.FieldValue.increment(-total)
+        }, { merge: true });
+
+        for (const it of CART) {
+          const oid = 'M' + Date.now();
+          await fetch(`${GS}?action=buy_mmo_pending&orderId=${oid}&uid=${U.uid}&productId=${it.id}&productName=${encodeURIComponent(it.name)}&price=${it.price * it.qty}&amount=${it.qty}`);
+        }
+
+        CART = [];
+        localStorage.removeItem('mmo_cart');
+        updateCartBadge();
+        closeCartSidebar();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Thanh toán thành công!',
+          text: 'Các đơn hàng đang được xử lý tự động.',
+          confirmButtonColor: '#007AFF'
+        }).then(() => {
+          window.location.href = 'tap-hoa-mmo.html?view=orders';
+        });
+      } catch (err) {
+        Swal.fire('Lỗi', err.message, 'error');
+      }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       SCROLL LISTENER (FADE IN MINI TITLE & STICKY BAR)
+       ══════════════════════════════════════════════════════ */
+    window.addEventListener('scroll', () => {
+      const top = window.scrollY;
+      const miniTitle = document.getElementById('navMiniTitle');
+      if (top > 140) {
+        miniTitle.classList.remove('opacity-0');
+        miniTitle.classList.add('opacity-100');
+      } else {
+        miniTitle.classList.add('opacity-0');
+        miniTitle.classList.remove('opacity-100');
+      }
+    });
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('ntfContainer');
+      const toast = document.createElement('div');
+      const bg = type === 'success' ? 'bg-apple-green text-white' : type === 'error' ? 'bg-apple-red text-white' : 'bg-black text-white dark:bg-white dark:text-black';
+      toast.className = `${bg} px-4 py-2.5 rounded-2xl shadow-xl text-xs font-bold flex items-center gap-2 transform translate-y-2 opacity-0 transition-all duration-200 pointer-events-auto`;
+      toast.innerHTML = `<span>${msg}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    /* ══════════════════════════════════════════════════════
+       AUTH & INITIALIZE
+       ══════════════════════════════════════════════════════ */
+    auth.onAuthStateChanged(user => {
+      U = user;
+      if (user) {
+        db.collection('users').doc(user.uid).onSnapshot(d => {
+          if (d.exists) {
+            BAL = d.data().coins || 0;
+            document.getElementById('userBalNav').innerText = BAL.toLocaleString() + 'đ';
+            updateBalanceAdvisor();
+          }
+        });
+      } else {
+        BAL = 0;
+        document.getElementById('userBalNav').innerText = '0đ';
+        updateBalanceAdvisor();
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchProductDetails();
+      updateCartBadge();
+      lucide.createIcons();
+    });
+  </script>
+
+  <!-- Floating AI Chat & Tracker -->
+  <script src="ai-chat-widget.js?v=6" data-bottom="100px"></script>
+  <script src="ipaviet-tracker.js?v=1"></script>
+</body>
+</html>
