@@ -114,8 +114,14 @@
       scrollbar-width: none;
     }
     .apple-squircle {
-      border-radius: 22.5%;
+      border-radius: 22.5% !important;
       overflow: hidden;
+      -webkit-corner-smoothing: antialiased;
+    }
+    .mmo-card-icon, img.apple-squircle {
+      border-radius: 22.5% !important;
+      overflow: hidden !important;
+      box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
     }
     .apple-glass {
       background: rgba(245, 245, 247, 0.85);
@@ -479,7 +485,7 @@
         <div class="flex items-center gap-4 sm:gap-5 min-w-0">
           <div class="relative shrink-0">
             <div class="w-16 h-16 sm:w-20 sm:h-20 apple-squircle bg-white/10 p-2.5 border border-white/15 flex items-center justify-center shadow-lg">
-              <img id="dealImg" src="" alt="Deal Hot" class="w-full h-full object-contain">
+              <img id="dealImg" src="" alt="Deal Hot" class="w-full h-full object-contain apple-squircle">
             </div>
             <span class="absolute -top-2 -left-2 px-2 py-0.5 rounded-full bg-apple-red text-white text-[9px] font-black tracking-wider uppercase shadow-md flex items-center gap-1">
               <i data-lucide="flame" class="w-3 h-3 text-amber-300"></i> FLASH DEAL
@@ -704,7 +710,7 @@
       <!-- Modal Header -->
       <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-white/5 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
-          <img id="dImg" src="" alt="" class="w-12 h-12 rounded-2xl object-cover p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-white/10 shrink-0">
+          <img id="dImg" src="" alt="" class="w-14 h-14 apple-squircle object-contain p-1 bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-black/[0.06] dark:border-white/[0.08] shadow-sm shrink-0">
           <div class="min-w-0">
             <span id="dCat" class="text-[10px] font-bold uppercase tracking-wider text-brand px-2 py-0.5 rounded-md bg-blue-50 dark:bg-brand/10">DANH MỤC</span>
             <h3 id="dName" class="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate max-w-sm mt-0.5">Tên sản phẩm</h3>
@@ -954,6 +960,16 @@
     };
     firebase.initializeApp(FB_CFG);
     const auth = firebase.auth(), db = firebase.firestore();
+    try {
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+    } catch (e) {}
+
+    let authReady = false;
+    let authResolvers = [];
+    function whenAuthReady() {
+      if (authReady) return Promise.resolve(U);
+      return new Promise(resolve => authResolvers.push(resolve));
+    }
 
     const SECRET_ADMIN_PASS = "200912aB";
     const TURNSTILE_SITE_KEY = "0x4AAAAAADuG_qcsGlFOiiqT";
@@ -1685,8 +1701,8 @@
             </div>
 
             <!-- Thumbnail Container (Apple Squircle) -->
-            <div class="relative w-full aspect-square apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.04] dark:border-white/[0.05] flex items-center justify-center p-2.5 sm:p-4 mb-2 group-hover:scale-105 transition-transform duration-300">
-              <img src="${icon}" alt="${p.name}" data-pid="${p.id}" loading="lazy" class="mmo-card-icon w-full h-full object-contain ${out ? 'grayscale opacity-40' : ''}" onerror="this.src='https://www.chototmmo.com/assets/storage/images/iconBS4R.png'">
+            <div class="relative w-full aspect-square apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.04] dark:border-white/[0.05] flex items-center justify-center p-2 sm:p-2.5 mb-2 group-hover:scale-105 transition-transform duration-300 shadow-sm">
+              <img src="${icon}" alt="${p.name}" data-pid="${p.id}" loading="lazy" class="mmo-card-icon w-full h-full object-contain apple-squircle ${out ? 'grayscale opacity-40' : ''}" onerror="this.src='https://www.chototmmo.com/assets/storage/images/iconBS4R.png'">
               ${out ? `
                 <div class="absolute inset-0 bg-black/60 apple-squircle flex items-center justify-center">
                   <span class="px-2 py-0.5 rounded-full bg-black/80 text-white font-bold text-[10px] sm:text-xs border border-white/20">Hết Hàng</span>
@@ -1872,7 +1888,8 @@
        PURCHASE ACTIONS (MUA NGAY & GIỎ HÀNG)
        ══════════════════════════════════════════════════════ */
     async function buyNowFromModal() {
-      if (!U) {
+      const user = await whenAuthReady();
+      if (!user) {
         closeDetailModal();
         openLoginModal();
         return;
@@ -2065,7 +2082,8 @@
     }
 
     async function checkoutCart() {
-      if (!U) {
+      const user = await whenAuthReady();
+      if (!user) {
         closeCartSidebar();
         openLoginModal();
         return;
@@ -2132,8 +2150,9 @@
     /* ══════════════════════════════════════════════════════
        ORDERS & HISTORY PANEL
        ══════════════════════════════════════════════════════ */
-    function openOrdersPanel() {
-      if (!U) {
+    async function openOrdersPanel() {
+      const user = await whenAuthReady();
+      if (!user) {
         openLoginModal();
         return;
       }
@@ -2238,6 +2257,14 @@
        ══════════════════════════════════════════════════════ */
     auth.onAuthStateChanged(user => {
       U = user;
+      authReady = true;
+      if (user) {
+        closeLoginModal();
+      }
+      while (authResolvers.length) {
+        const resolve = authResolvers.shift();
+        resolve(user);
+      }
       applyMaintenanceState();
       const authArea = document.getElementById('authHeaderBtn');
       const walletArea = document.getElementById('authWalletArea');
@@ -2415,9 +2442,19 @@
       }
       const viewParam = urlParams.get('view');
       if (viewParam === 'orders') {
-        setTimeout(() => openOrdersPanel(), 300);
+        const cleanUrl = new URL(window.location);
+        cleanUrl.searchParams.delete('view');
+        window.history.replaceState({}, '', cleanUrl.pathname + cleanUrl.search);
+
+        whenAuthReady().then(user => {
+          if (user) openOrdersPanel();
+        });
       } else if (viewParam === 'cart') {
-        setTimeout(() => openCartSidebar(), 300);
+        const cleanUrl = new URL(window.location);
+        cleanUrl.searchParams.delete('view');
+        window.history.replaceState({}, '', cleanUrl.pathname + cleanUrl.search);
+
+        setTimeout(() => openCartSidebar(), 200);
       }
 
       applyMaintenanceState();
