@@ -100,11 +100,14 @@
 
     /* Search */
     .command-input-wrap { position: relative; max-width: 600px; margin: 0 auto 48px; z-index: 20; }
-    .command-input { width: 100%; height: 56px; padding: 0 24px 0 56px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); color: var(--text-primary); font-size: 15px; font-weight: 500; outline: none; transition: all 0.4s var(--ease-spring); cursor: none; }
+    .command-input { width: 100%; height: 56px; padding: 0 48px 0 56px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-full); color: var(--text-primary); font-size: 15px; font-weight: 500; outline: none; transition: all 0.4s var(--ease-spring); cursor: text; }
+    .command-input::-webkit-search-cancel-button, .command-input::-webkit-search-decoration { display: none; }
     .command-input::placeholder { color: var(--text-tertiary); }
     .command-input:focus { background: rgba(255,255,255,0.06); border-color: rgba(245,158,11,0.3); box-shadow: 0 0 40px rgba(245,158,11,0.08), inset 0 1px 0 rgba(255,255,255,0.1); }
     .command-input-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); pointer-events: none; transition: color 0.3s; }
     .command-input:focus + .command-input-icon, .command-input-wrap:focus-within .command-input-icon { color: var(--accent-amber); }
+    .command-input-clear { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); display: none; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; padding: 0; outline: none; }
+    .command-input-clear:hover { background: rgba(255,255,255,0.18); color: #fff; transform: translateY(-50%) scale(1.08); }
 
     /* Section */
     .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 32px; padding: 0 8px; }
@@ -283,9 +286,9 @@
 <nav class="spatial-nav glass" id="spatialNav">
   <div class="nav-logo magnetic" onclick="location.href='index.html'">IPAVIET</div>
   <div style="width:1px;height:20px;background:rgba(255,255,255,0.06);margin:0 4px;"></div>
-  <a href="app-library/index.html" target="_self" class="nav-pill magnetic" style="text-decoration:none;">Khám phá</a>
   <a href="app-library/index.html" target="_self" class="nav-pill magnetic" style="text-decoration:none;">Kho IPA</a>
   <button class="nav-pill active magnetic">VIP</button>
+  <a href="tap-hoa-mmo.html" target="_self" class="nav-pill magnetic" style="text-decoration:none;">Chợ MMO</a>
   <div style="width:1px;height:20px;background:rgba(255,255,255,0.06);margin:0 4px;"></div>
   <a href="vsign.html" target="_self" class="nav-action magnetic" style="text-decoration:none;">VSign</a>
   <a href="account.html" target="_self" id="headerProfileBtn" class="nav-action magnetic" style="text-decoration:none;">Đăng nhập</a>
@@ -303,8 +306,23 @@
 
   <!-- Search -->
   <div class="command-input-wrap reveal">
-    <input type="text" id="searchInput" class="command-input" placeholder="Tìm tên App Hack/Mod..." autocomplete="off">
+    <input 
+      type="search" 
+      id="searchInput" 
+      name="search_query"
+      class="command-input" 
+      placeholder="Tìm tên App Hack/Mod..." 
+      autocomplete="off"
+      autocapitalize="none"
+      spellcheck="false"
+      data-lpignore="true"
+      data-1p-ignore="true"
+      data-form-type="other"
+    >
     <i data-lucide="search" class="command-input-icon" style="width:18px;height:18px;"></i>
+    <button type="button" id="clearSearchBtn" class="command-input-clear" onclick="clearSearch()" title="Xóa tìm kiếm">
+      <i data-lucide="x" style="width:14px;height:14px;"></i>
+    </button>
   </div>
 
   <!-- Dynamic Content -->
@@ -361,12 +379,12 @@
 
 <!-- Floating Dock -->
 <div class="spatial-dock" id="spatialDock">
-  <a href="index.html" class="dock-item magnetic" title="Khám phá"><i data-lucide="orbit" style="width:20px;height:20px;"></i></a>
+  <a href="index.html" class="dock-item magnetic" title="Trang chủ"><i data-lucide="orbit" style="width:20px;height:20px;"></i></a>
   <a href="app-library/index.html" class="dock-item magnetic" title="Kho IPA"><i data-lucide="box" style="width:20px;height:20px;"></i></a>
   <button class="dock-item active magnetic" title="VIP"><i data-lucide="crown" style="width:20px;height:20px;"></i></button>
   <div class="dock-divider"></div>
   <a href="account.html" class="dock-item magnetic" title="Tài khoản"><i data-lucide="user-circle" style="width:20px;height:20px;"></i></a>
-  <a href="dichvu.html" class="dock-item magnetic" title="Cửa hàng"><i data-lucide="shopping-bag" style="width:20px;height:20px;"></i></a>
+  <a href="tap-hoa-mmo.html" class="dock-item magnetic" title="Chợ MMO"><i data-lucide="shopping-bag" style="width:20px;height:20px;"></i></a>
   <a href="vsign.html" class="dock-item magnetic" title="VSign"><i data-lucide="smartphone" style="width:20px;height:20px;"></i></a>
 </div>
 
@@ -468,7 +486,19 @@ function setFilter(filter) {
 
 /* ─── Render Content ─── */
 function renderContent() {
-  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const sInput = document.getElementById('searchInput');
+  let rawQuery = sInput ? sInput.value.trim() : '';
+  if (typeof isEmailAddress === 'function' && isEmailAddress(rawQuery)) {
+    if (sInput) sInput.value = '';
+    rawQuery = '';
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+  }
+  const query = rawQuery.toLowerCase();
+  const clearBtn = document.getElementById('clearSearchBtn');
+  if (clearBtn) {
+    clearBtn.style.display = rawQuery.length > 0 ? 'flex' : 'none';
+  }
   const container = document.getElementById('dynamicContent');
 
   let items = window.vipApps;
@@ -597,10 +627,50 @@ function changePage(p) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-document.getElementById('searchInput').addEventListener('input', () => {
+function isEmailAddress(str) {
+  if (!str || typeof str !== 'string') return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim());
+}
+
+function clearSearch() {
+  const s = document.getElementById('searchInput');
+  if (s) {
+    s.value = '';
+    s.focus();
+  }
+  const clearBtn = document.getElementById('clearSearchBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
   STATE.currentPage = 1;
   renderContent();
-});
+}
+
+function sanitizeSearchAutofill() {
+  const s = document.getElementById('searchInput');
+  if (s && isEmailAddress(s.value)) {
+    s.value = '';
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+    STATE.currentPage = 1;
+    renderContent();
+  }
+}
+
+const searchInputEl = document.getElementById('searchInput');
+const clearSearchBtnEl = document.getElementById('clearSearchBtn');
+if (searchInputEl) {
+  searchInputEl.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (isEmailAddress(val)) {
+      clearSearch();
+      return;
+    }
+    if (clearSearchBtnEl) {
+      clearSearchBtnEl.style.display = val.trim().length > 0 ? 'flex' : 'none';
+    }
+    STATE.currentPage = 1;
+    renderContent();
+  });
+}
 
 /* ─── App Detail View ─── */
 function openAppView(appId) {
@@ -848,10 +918,23 @@ window.addEventListener('DOMContentLoaded', () => {
   initNavScroll();
   initMagnetic();
   loadData();
+  setTimeout(sanitizeSearchAutofill, 300);
+  setTimeout(sanitizeSearchAutofill, 800);
+});
+
+// Khôi phục và xóa sạch autofill email khi back trang (Bfcache)
+window.addEventListener('pageshow', () => {
+  sanitizeSearchAutofill();
+  setTimeout(sanitizeSearchAutofill, 300);
+  setTimeout(sanitizeSearchAutofill, 800);
 });
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeAppView();
+  if (e.key === '/' && document.activeElement !== document.getElementById('searchInput')) {
+    e.preventDefault();
+    document.getElementById('searchInput')?.focus();
+  }
 });
 </script>
 <script src="ipaviet-tracker.js?v=1"></script>
