@@ -19,13 +19,41 @@
 
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace']
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
           },
           colors: {
+            apple: {
+              blue: '#0071E3',
+              darkBlue: '#0A84FF',
+              green: '#34C759',
+              amber: '#FF9500',
+              red: '#FF3B30',
+              purple: '#AF52DE',
+              gray: '#86868B',
+              grayLight: '#E5E5EA',
+              grayDark: '#1C1C1E',
+              bgLight: '#F5F5F7',
+              bgDark: '#161617',
+              cardLight: '#FFFFFF',
+              cardDark: '#1C1C1E',
+              separatorLight: 'rgba(0, 0, 0, 0.08)',
+              separatorDark: 'rgba(255, 255, 255, 0.12)'
+            },
+            brand: {
+              DEFAULT: '#0071E3',
+              light: '#3B82F6',
+              dark: '#0040C7',
+              50: '#EFF6FF',
+              100: '#DBEAFE',
+              500: '#0071E3',
+              600: '#0052FF',
+              900: '#0B2366'
+            },
             appleBlue: '#0071e3',
             appleBlueDark: '#0077ed',
             surface: '#ffffff',
@@ -35,18 +63,37 @@
             borderSubtle: 'rgba(0, 0, 0, 0.08)'
           },
           boxShadow: {
-            apple: '0 4px 24px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
-            modal: '0 24px 60px -12px rgba(0, 0, 0, 0.25), 0 8px 16px -4px rgba(0, 0, 0, 0.08)'
+            'apple': '0 4px 24px rgba(0, 0, 0, 0.06)',
+            'apple-hover': '0 16px 36px rgba(0, 113, 227, 0.12)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.08)',
+            'card': '0 8px 30px rgba(0, 0, 0, 0.06)',
+            'modal': '0 24px 60px -12px rgba(0, 0, 0, 0.25), 0 8px 16px -4px rgba(0, 0, 0, 0.08)'
           }
         }
       }
-    }
+    };
   </script>
 
   <style>
     /* Reset & Apple Native OS Standards */
     * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; box-sizing: border-box; }
-    body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", sans-serif;
+      letter-spacing: -0.015em;
+    }
+    
+    .apple-squircle {
+      border-radius: 22.5% !important;
+      overflow: hidden !important;
+      -webkit-corner-smoothing: antialiased;
+    }
+
+    .apple-glass {
+      background: rgba(245, 245, 247, 0.85);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
     
     .glass-nav {
       background: rgba(255, 255, 255, 0.82);
@@ -55,10 +102,27 @@
       border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     }
     
+    .glass-sidebar {
+      background: rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-right: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
     .glass-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(16px);
+      background: rgba(255, 255, 255, 0.90);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
       border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+    }
+
+    .glass-card-elevated {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
     }
 
     .scrollbar-none::-webkit-scrollbar { display: none; }
@@ -121,20 +185,20 @@
   <div id="mobileOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-[60] opacity-0 pointer-events-none transition-opacity duration-300 md:hidden backdrop-blur-sm"></div>
 
   <!-- 3. SIDEBAR NAVIGATION -->
-  <aside id="sidebar" class="w-[270px] bg-white border-r border-black/[0.06] flex flex-col z-[70] shrink-0 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300">
-    <div class="h-16 flex items-center justify-between px-6 border-b border-black/[0.04]">
+  <aside id="sidebar" class="w-[280px] glass-sidebar flex flex-col z-[70] shrink-0 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300">
+    <div class="h-16 flex items-center justify-between px-5 border-b border-black/[0.05] bg-white/40">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 bg-appleBlue rounded-xl flex items-center justify-center shadow-sm">
-          <i data-lucide="command" class="w-4 h-4 text-white"></i>
+        <div class="w-9 h-9 rounded-[22.5%] bg-gradient-to-tr from-[#0071E3] to-[#0052FF] flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
+          <i data-lucide="command" class="w-4.5 h-4.5 text-white"></i>
         </div>
         <div>
-          <span class="font-extrabold text-[15px] tracking-tight">ADMIN.OS</span>
-          <span class="block text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> VSign Active
+          <span class="font-black text-[15px] tracking-tight bg-gradient-to-r from-gray-950 via-gray-800 to-gray-950 bg-clip-text text-transparent">ADMIN.OS</span>
+          <span class="block text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Chợ MMO × VSign
           </span>
         </div>
       </div>
-      <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-gray-700 p-2 rounded-lg">
+      <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-gray-700 p-2 rounded-xl hover:bg-black/[0.04] transition">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
     </div>
@@ -142,93 +206,160 @@
     <!-- Navigation Groups -->
     <nav class="flex-1 py-4 px-3 space-y-6 overflow-y-auto scrollbar-none text-[13px]">
       <div>
-        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Overview</p>
-        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
-          <i data-lucide="layout-dashboard" class="w-4 h-4 mr-3"></i> Tổng Quan
-        </button>
-        <button onclick="switchTab('analytics')" id="nav-analytics" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
-          <i data-lucide="bar-chart-3" class="w-4 h-4 mr-3"></i> Thống Kê & Hành Vi
-        </button>
+        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3 mb-2">Overview</p>
+        <div class="space-y-1">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center px-3 py-2 rounded-2xl font-bold bg-blue-600/10 text-appleBlue border border-blue-500/20 shadow-xs transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-blue-50 text-appleBlue flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            </div>
+            <span>Tổng Quan</span>
+          </button>
+          <button onclick="switchTab('analytics')" id="nav-analytics" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+            </div>
+            <span>Thống Kê & Hành Vi</span>
+          </button>
+        </div>
       </div>
 
       <div>
-        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Commerce</p>
-        <button onclick="switchTab('mmo_orders')" id="nav-mmo_orders" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-rose-50 hover:text-mall transition">
-          <div class="flex items-center"><i data-lucide="shopping-bag" class="w-4 h-4 mr-3"></i> Đơn Hàng Mall</div>
-          <span id="badgeMMO" class="bg-mall text-white text-[11px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
-        </button>
-        <button onclick="switchTab('mmo_products')" id="nav-mmo_products" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
-          <i data-lucide="boxes" class="w-4 h-4 mr-3"></i> Kho Sản Phẩm
-        </button>
-        <button onclick="switchTab('mmo_categories')" id="nav-mmo_categories" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
-          <i data-lucide="folder-tree" class="w-4 h-4 mr-3"></i> Quản Lý Danh Mục
-        </button>
-        <button onclick="switchTab('mmo_dealhot')" id="nav-mmo_dealhot" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition">
-          <i data-lucide="flame" class="w-4 h-4 mr-3"></i> Cấu Hình Deal Hot
-        </button>
-        <a href="tap-hoa-mmo.html?admin_key=200912aB" target="_blank" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-blue-600 hover:bg-blue-50 transition">
-          <div class="flex items-center"><i data-lucide="external-link" class="w-4 h-4 mr-3"></i> Vào Xem Trang MMO</div>
-          <span class="text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded">Bảo trì</span>
-        </a>
+        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3 mb-2">Chợ MMO Commerce</p>
+        <div class="space-y-1">
+          <button onclick="switchTab('mmo_orders')" id="nav-mmo_orders" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-rose-50/70 hover:text-rose-700 transition-all duration-200">
+            <div class="flex items-center">
+              <div class="w-7 h-7 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+                <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+              </div>
+              <span>Đơn Hàng Mall</span>
+            </div>
+            <span id="badgeMMO" class="bg-rose-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs hidden">0</span>
+          </button>
+          <button onclick="switchTab('mmo_products')" id="nav-mmo_products" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="boxes" class="w-4 h-4"></i>
+            </div>
+            <span>Kho Sản Phẩm</span>
+          </button>
+          <button onclick="switchTab('mmo_categories')" id="nav-mmo_categories" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="folder-tree" class="w-4 h-4"></i>
+            </div>
+            <span>Quản Lý Danh Mục</span>
+          </button>
+          <button onclick="switchTab('mmo_dealhot')" id="nav-mmo_dealhot" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-orange-50/70 hover:text-orange-600 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="flame" class="w-4 h-4"></i>
+            </div>
+            <span>Cấu Hình Deal Hot</span>
+          </button>
+          <a href="tap-hoa-mmo.html?admin_key=200912aB" target="_blank" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl font-semibold text-blue-600 hover:bg-blue-50/80 transition-all duration-200">
+            <div class="flex items-center">
+              <div class="w-7 h-7 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+                <i data-lucide="external-link" class="w-4 h-4"></i>
+              </div>
+              <span>Xem Trang Chợ MMO</span>
+            </div>
+            <span class="text-[10px] bg-amber-100/80 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200/60 shadow-2xs">Live</span>
+          </a>
+        </div>
       </div>
 
       <div>
-        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Customers</p>
-        <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
-          <i data-lucide="users" class="w-4 h-4 mr-3"></i> Khách Hàng
-        </button>
-        <button onclick="switchTab('transactions')" id="nav-transactions" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
-          <i data-lucide="receipt" class="w-4 h-4 mr-3"></i> Lịch Sử Nạp Tiền
-        </button>
-        <button onclick="switchTab('support_chat')" id="nav-support_chat" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition">
-          <div class="flex items-center"><i data-lucide="message-square" class="w-4 h-4 mr-3"></i> Chat Hỗ Trợ</div>
-          <span id="badgeChat" class="bg-emerald-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
-        </button>
+        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3 mb-2">Customers & Finance</p>
+        <div class="space-y-1">
+          <button onclick="switchTab('users')" id="nav-users" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="users" class="w-4 h-4"></i>
+            </div>
+            <span>Khách Hàng</span>
+          </button>
+          <button onclick="switchTab('transactions')" id="nav-transactions" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="receipt" class="w-4 h-4"></i>
+            </div>
+            <span>Lịch Sử Nạp Tiền</span>
+          </button>
+          <button onclick="switchTab('support_chat')" id="nav-support_chat" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-emerald-50/70 hover:text-emerald-700 transition-all duration-200">
+            <div class="flex items-center">
+              <div class="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+                <i data-lucide="message-square" class="w-4 h-4"></i>
+              </div>
+              <span>Chat Hỗ Trợ</span>
+            </div>
+            <span id="badgeChat" class="bg-emerald-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs hidden">0</span>
+          </button>
+        </div>
       </div>
 
       <div>
-        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">Content & AI</p>
-        <button onclick="switchTab('shortcuts')" id="nav-shortcuts" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-purple-50 hover:text-purple-700 transition">
-          <i data-lucide="sparkles" class="w-4 h-4 mr-3"></i> Kho Phím Tắt
-        </button>
-        <button onclick="switchTab('ai_knowledge')" id="nav-ai_knowledge" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition">
-          <i data-lucide="bot" class="w-4 h-4 mr-3"></i> Tri Thức & Playground AI
-        </button>
+        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3 mb-2">Content & AI</p>
+        <div class="space-y-1">
+          <button onclick="switchTab('shortcuts')" id="nav-shortcuts" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-purple-50/70 hover:text-purple-700 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+            </div>
+            <span>Kho Phím Tắt</span>
+          </button>
+          <button onclick="switchTab('ai_knowledge')" id="nav-ai_knowledge" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-blue-50/70 hover:text-blue-700 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="bot" class="w-4 h-4"></i>
+            </div>
+            <span>Tri Thức AI</span>
+          </button>
+        </div>
       </div>
 
       <div>
-        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">VSign Ecosystem</p>
-        <button onclick="switchTab('vsign_config')" id="nav-vsign_config" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition">
-          <div class="flex items-center"><i data-lucide="radio" class="w-4 h-4 mr-3 text-indigo-600"></i> VSign Remote Config</div>
-          <span id="badgeVSignNav" class="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Online</span>
-        </button>
+        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3 mb-2">VSign Ecosystem</p>
+        <div class="space-y-1">
+          <button onclick="switchTab('vsign_config')" id="nav-vsign_config" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-indigo-50/70 hover:text-indigo-700 transition-all duration-200">
+            <div class="flex items-center">
+              <div class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+                <i data-lucide="radio" class="w-4 h-4"></i>
+              </div>
+              <span>VSign Remote Config</span>
+            </div>
+            <span id="badgeVSignNav" class="bg-emerald-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs">Online</span>
+          </button>
+        </div>
       </div>
 
       <div>
-        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-3 mb-1.5">System Controls</p>
-        <button onclick="switchTab('audit')" id="nav-audit" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
-          <i data-lucide="shield-alert" class="w-4 h-4 mr-3"></i> Nhật Ký Audit Log
-        </button>
-        <button onclick="switchTab('system_settings')" id="nav-system_settings" class="w-full flex items-center px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition">
-          <i data-lucide="sliders" class="w-4 h-4 mr-3"></i> Health & Feature Flags
-        </button>
+        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3 mb-2">System Controls</p>
+        <div class="space-y-1">
+          <button onclick="switchTab('audit')" id="nav-audit" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i>
+            </div>
+            <span>Nhật Ký Audit Log</span>
+          </button>
+          <button onclick="switchTab('system_settings')" id="nav-system_settings" class="w-full flex items-center px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 transition-all duration-200">
+            <div class="w-7 h-7 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+              <i data-lucide="sliders" class="w-4 h-4"></i>
+            </div>
+            <span>Health & Feature Flags</span>
+          </button>
+        </div>
       </div>
     </nav>
     
     <!-- User Profile & Sign Out Footer -->
-    <div class="p-3 border-t border-black/[0.06] bg-gray-50/70 flex items-center justify-between">
-      <div class="flex items-center gap-2.5 overflow-hidden">
-        <div class="w-8 h-8 rounded-full bg-appleBlue/10 text-appleBlue font-bold flex items-center justify-center text-xs shrink-0" id="adminAvatar">
-          A
+    <div class="p-3 border-t border-black/[0.05] bg-white/50 backdrop-blur-md">
+      <div class="flex items-center justify-between p-2 rounded-2xl bg-white/70 border border-black/[0.04] shadow-2xs">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs" id="adminAvatar">
+            A
+          </div>
+          <div class="truncate">
+            <p class="text-xs font-bold text-gray-900 truncate" id="adminEmail">Admin</p>
+            <p class="text-[10px] text-gray-400 font-mono font-medium" id="adminRole">SUPER_ADMIN</p>
+          </div>
         </div>
-        <div class="truncate">
-          <p class="text-xs font-bold text-gray-800 truncate" id="adminEmail">Admin</p>
-          <p class="text-[10px] text-gray-400 font-mono" id="adminRole">SUPER_ADMIN</p>
-        </div>
+        <button onclick="logoutAdmin()" class="text-gray-400 hover:text-rose-600 p-2 rounded-xl hover:bg-rose-50 transition" title="Đăng xuất">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
       </div>
-      <button onclick="logoutAdmin()" class="text-gray-400 hover:text-rose-600 p-2 rounded-lg transition" title="Đăng xuất">
-        <i data-lucide="log-out" class="w-4 h-4"></i>
-      </button>
     </div>
   </aside>
 
@@ -236,46 +367,47 @@
   <main class="flex-1 flex flex-col h-full overflow-hidden relative bg-[#f5f5f7]">
     
     <!-- App Header -->
-    <header class="h-16 glass-nav flex items-center px-4 md:px-8 justify-between shrink-0 z-30 sticky top-0">
+    <header class="h-16 glass-nav flex items-center px-4 md:px-8 justify-between shrink-0 z-30 sticky top-0 border-b border-black/[0.06]">
       <div class="flex items-center gap-3">
-        <button onclick="toggleSidebar()" class="md:hidden w-9 h-9 bg-white border border-black/[0.08] rounded-xl flex items-center justify-center text-gray-600">
+        <button onclick="toggleSidebar()" class="md:hidden w-9 h-9 bg-white/80 hover:bg-white border border-black/[0.08] rounded-xl flex items-center justify-center text-gray-600 shadow-2xs transition">
           <i data-lucide="menu" class="w-4 h-4"></i>
         </button>
-        <div>
-          <h1 class="text-base md:text-lg font-bold tracking-tight text-gray-900" id="pageTitle">Tổng Quan</h1>
+        <div class="flex items-center gap-2.5">
+          <div class="w-2.5 h-2.5 rounded-full bg-appleBlue animate-pulse shadow-sm shadow-blue-500/50"></div>
+          <h1 class="text-base md:text-lg font-black tracking-tight text-gray-900" id="pageTitle">Tổng Quan</h1>
         </div>
       </div>
 
       <!-- Quick Actions, Command Palette, Notification & Sync -->
       <div class="flex items-center gap-2 md:gap-3">
         <!-- Command Palette Trigger Button -->
-        <button onclick="openCommandPalette()" class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-black/[0.04] hover:bg-black/[0.07] rounded-xl text-xs font-medium text-gray-500 transition">
-          <i data-lucide="search" class="w-3.5 h-3.5"></i>
+        <button onclick="openCommandPalette()" class="hidden sm:flex items-center gap-2 px-3.5 py-1.5 bg-black/[0.04] hover:bg-black/[0.07] border border-black/[0.05] rounded-xl text-xs font-semibold text-gray-600 transition shadow-2xs">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-gray-400"></i>
           <span>Tìm nhanh...</span>
-          <kbd class="px-1.5 py-0.5 bg-white rounded border border-black/[0.1] text-[10px] font-mono text-gray-400">⌘K</kbd>
+          <kbd class="px-1.5 py-0.5 bg-white/90 rounded border border-black/[0.1] text-[10px] font-mono text-gray-500 shadow-2xs">⌘K</kbd>
         </button>
 
         <!-- Notification Bell Dropdown -->
         <div class="relative">
-          <button onclick="toggleNotifications()" class="relative w-9 h-9 bg-white hover:bg-gray-100 border border-black/[0.08] rounded-xl flex items-center justify-center text-gray-600 transition">
+          <button onclick="toggleNotifications()" class="relative w-9 h-9 bg-white/80 hover:bg-white border border-black/[0.08] rounded-xl flex items-center justify-center text-gray-600 transition shadow-2xs">
             <i data-lucide="bell" class="w-4 h-4"></i>
-            <span id="notifBadge" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[10px] font-black flex items-center justify-center hidden">0</span>
+            <span id="notifBadge" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[10px] font-black flex items-center justify-center hidden shadow-xs">0</span>
           </button>
           
-          <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white/95 backdrop-blur-xl border border-black/[0.08] rounded-2xl shadow-xl z-50 p-4 transition-all">
+          <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white/95 backdrop-blur-2xl border border-black/[0.08] rounded-3xl shadow-xl z-50 p-4 transition-all">
             <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-2">
               <span class="text-xs font-bold text-gray-800 uppercase tracking-wider">Thông Báo Hệ Thống</span>
-              <button onclick="dismissNotifications()" class="text-[11px] text-appleBlue hover:underline">Đã đọc</button>
+              <button onclick="dismissNotifications()" class="text-[11px] text-appleBlue hover:underline font-bold">Đã đọc</button>
             </div>
-            <div id="notifList" class="space-y-2 max-h-64 overflow-y-auto text-xs text-gray-600">
+            <div id="notifList" class="space-y-2 max-h-64 overflow-y-auto text-xs text-gray-600 scrollbar-none">
               <p class="text-gray-400 text-center py-4">Không có thông báo mới.</p>
             </div>
           </div>
         </div>
 
         <!-- Reload Data Button -->
-        <button onclick="loadAllData()" class="px-3.5 py-2 bg-white hover:bg-gray-50 border border-black/[0.08] rounded-xl text-xs font-semibold text-gray-700 flex items-center gap-2 transition active:scale-95 shadow-sm">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refreshIcon"></i>
+        <button onclick="loadAllData()" class="px-3.5 py-2 bg-white/90 hover:bg-white border border-black/[0.08] rounded-xl text-xs font-bold text-gray-800 flex items-center gap-2 transition active:scale-95 shadow-2xs">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-appleBlue" id="refreshIcon"></i>
           <span class="hidden sm:inline">Đồng Bộ</span>
         </button>
       </div>
@@ -286,80 +418,132 @@
 
       <!-- ================= TAB: DASHBOARD ================= -->
       <div id="tab-dashboard" class="max-w-6xl mx-auto space-y-6">
-        <!-- Greetings Banner -->
-        <div class="bg-gradient-to-r from-gray-900 to-[#1a1b1e] rounded-3xl p-6 md:p-8 text-white shadow-apple flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span class="text-xs font-bold text-white/70 uppercase tracking-widest">Hệ thống đang hoạt động bình thường</span>
+        <!-- Greetings Luxury Banner -->
+        <div class="relative overflow-hidden rounded-[32px] p-7 md:p-9 text-white shadow-card-elevated border border-white/10 bg-gradient-to-br from-[#0c1017] via-[#151b26] to-[#0c1017] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div class="absolute -right-12 -bottom-12 w-72 h-72 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -left-12 -top-12 w-60 h-60 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div class="relative z-10 space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold tracking-wide backdrop-blur-md">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50"></span>
+              <span>HỆ THỐNG ĐANG HOẠT ĐỘNG BÌNH THƯỜNG</span>
             </div>
-            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Xin chào, <span id="dashAdminName">Quí</span> 👋</h2>
-            <p class="text-white/60 text-xs md:text-sm mt-1" id="dashDateStr">Hôm nay: Thứ Bảy, 26 tháng 9, 2026</p>
+            <h2 class="text-2xl md:text-3xl font-black tracking-tight text-white">Xin chào, <span id="dashAdminName">Quí</span> 👋</h2>
+            <p class="text-white/60 text-xs md:text-sm font-medium" id="dashDateStr">Hôm nay: Thứ Bảy, 26 tháng 9, 2026</p>
           </div>
-          <div class="flex gap-2 flex-wrap items-center">
-            <a href="tap-hoa-mmo.html?admin_key=200912aB" target="_blank" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 shadow-sm">
-              <i data-lucide="store" class="w-3.5 h-3.5"></i> Xem Trang MMO
+          
+          <div class="relative z-10 flex gap-2.5 flex-wrap items-center">
+            <a href="tap-hoa-mmo.html?admin_key=200912aB" target="_blank" class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-md shadow-blue-500/30 active:scale-95 flex items-center gap-2 border border-white/10">
+              <i data-lucide="store" class="w-4 h-4"></i> Xem Trang MMO
             </a>
-            <button onclick="switchTab('mmo_orders')" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5">
-              <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> Duyệt Đơn
+            <button onclick="switchTab('mmo_orders')" class="px-4 py-2.5 bg-rose-600/90 hover:bg-rose-600 text-white rounded-2xl text-xs font-bold transition-all shadow-md shadow-rose-600/25 active:scale-95 flex items-center gap-2 border border-white/10">
+              <i data-lucide="shopping-cart" class="w-4 h-4"></i> Duyệt Đơn
             </button>
-            <button onclick="openAddProductDrawer()" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm Hàng
+            <button onclick="openAddProductDrawer()" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all backdrop-blur-md active:scale-95 flex items-center gap-2 border border-white/10">
+              <i data-lucide="plus" class="w-4 h-4"></i> Thêm Hàng
             </button>
           </div>
         </div>
 
-        <!-- Metric Stat Cards -->
+        <!-- Metric Stat Cards (Apple Squircle & Glass Cards) -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tổng Nạp Thực Tế</p>
-            <h3 class="text-2xl font-extrabold text-emerald-600" id="statRevenue">0đ</h3>
-            <span class="text-[11px] text-gray-400 mt-1 block">Tích lũy từ Thu Ngân</span>
+          <!-- Card 1: Revenue -->
+          <div class="glass-card rounded-3xl p-5 md:p-6 hover:-translate-y-1 transition-all duration-300 hover:shadow-apple-hover border border-black/[0.06] relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Tổng Nạp Thực Tế</span>
+              <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                <i data-lucide="wallet" class="w-5 h-5"></i>
+              </div>
+            </div>
+            <h3 class="text-2xl lg:text-3xl font-black text-emerald-600 tracking-tight" id="statRevenue">0đ</h3>
+            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Tích lũy từ Thu Ngân</span>
+            </div>
           </div>
 
-          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Khách Hàng</p>
-            <h3 class="text-2xl font-extrabold text-appleBlue" id="statUsers">0</h3>
-            <span class="text-[11px] text-gray-400 mt-1 block" id="statVipCount">0 thành viên VIP</span>
+          <!-- Card 2: Users -->
+          <div class="glass-card rounded-3xl p-5 md:p-6 hover:-translate-y-1 transition-all duration-300 hover:shadow-apple-hover border border-black/[0.06] relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Khách Hàng</span>
+              <div class="w-10 h-10 rounded-2xl bg-blue-50 text-appleBlue border border-blue-100 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                <i data-lucide="users" class="w-5 h-5"></i>
+              </div>
+            </div>
+            <h3 class="text-2xl lg:text-3xl font-black text-appleBlue tracking-tight" id="statUsers">0</h3>
+            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-appleBlue"></span>
+              <span id="statVipCount">0 thành viên VIP</span>
+            </div>
           </div>
 
-          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Đơn Chờ Xử Lý</p>
-            <h3 class="text-2xl font-extrabold text-rose-600" id="statPendingMMO">0</h3>
-            <span class="text-[11px] text-rose-500 font-medium mt-1 block">Cần duyệt gửi Account</span>
+          <!-- Card 3: Pending MMO Orders -->
+          <div class="glass-card rounded-3xl p-5 md:p-6 hover:-translate-y-1 transition-all duration-300 hover:shadow-apple-hover border border-black/[0.06] relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Đơn Chờ Xử Lý</span>
+              <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+              </div>
+            </div>
+            <h3 class="text-2xl lg:text-3xl font-black text-rose-600 tracking-tight" id="statPendingMMO">0</h3>
+            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-rose-600 font-bold">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+              <span>Cần duyệt gửi Account</span>
+            </div>
           </div>
 
-          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Kho Sắp Hết</p>
-            <h3 class="text-2xl font-extrabold text-amber-500" id="statLowStock">0</h3>
-            <span class="text-[11px] text-amber-600 font-medium mt-1 block">Tồn kho &lt; 10</span>
+          <!-- Card 4: Low Stock -->
+          <div class="glass-card rounded-3xl p-5 md:p-6 hover:-translate-y-1 transition-all duration-300 hover:shadow-apple-hover border border-black/[0.06] relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Kho Sắp Hết</span>
+              <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+              </div>
+            </div>
+            <h3 class="text-2xl lg:text-3xl font-black text-amber-500 tracking-tight" id="statLowStock">0</h3>
+            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-amber-600 font-bold">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              <span>Tồn kho &lt; 10</span>
+            </div>
           </div>
         </div>
 
         <!-- Quick 2-Column Overview -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Pending Orders Queue Preview -->
-          <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm">
-            <div class="flex items-center justify-between pb-4 border-b border-gray-100">
-              <h3 class="font-bold text-sm text-gray-900 flex items-center gap-2">
-                <i data-lucide="clock" class="w-4 h-4 text-rose-500"></i> Đơn Cần Xử Lý Gấp
-              </h3>
-              <button onclick="switchTab('mmo_orders')" class="text-xs text-appleBlue font-semibold hover:underline">Xem tất cả</button>
+          <div class="glass-card rounded-3xl p-6 border border-black/[0.06] shadow-apple space-y-4">
+            <div class="flex items-center justify-between pb-4 border-b border-black/[0.05]">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shadow-2xs">
+                  <i data-lucide="clock" class="w-4 h-4"></i>
+                </div>
+                <h3 class="font-extrabold text-sm md:text-base text-gray-900">Đơn Cần Xử Lý Gấp</h3>
+              </div>
+              <button onclick="switchTab('mmo_orders')" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-appleBlue font-bold text-xs transition active:scale-95 flex items-center gap-1">
+                <span>Xem tất cả</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </button>
             </div>
-            <div id="dashPendingList" class="divide-y divide-gray-50 mt-2">
+            <div id="dashPendingList" class="divide-y divide-black/[0.04]">
               <p class="text-center py-8 text-xs text-gray-400">Không có đơn hàng tồn đọng.</p>
             </div>
           </div>
 
           <!-- Recent Audit Logs Preview -->
-          <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm">
-            <div class="flex items-center justify-between pb-4 border-b border-gray-100">
-              <h3 class="font-bold text-sm text-gray-900 flex items-center gap-2">
-                <i data-lucide="shield" class="w-4 h-4 text-appleBlue"></i> Hoạt Động Quản Trị Gần Đây
-              </h3>
-              <button onclick="switchTab('audit')" class="text-xs text-appleBlue font-semibold hover:underline">Xem logs</button>
+          <div class="glass-card rounded-3xl p-6 border border-black/[0.06] shadow-apple space-y-4">
+            <div class="flex items-center justify-between pb-4 border-b border-black/[0.05]">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-blue-50 text-appleBlue flex items-center justify-center shadow-2xs">
+                  <i data-lucide="shield" class="w-4 h-4"></i>
+                </div>
+                <h3 class="font-extrabold text-sm md:text-base text-gray-900">Hoạt Động Quản Trị Gần Đây</h3>
+              </div>
+              <button onclick="switchTab('audit')" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-appleBlue font-bold text-xs transition active:scale-95 flex items-center gap-1">
+                <span>Xem logs</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </button>
             </div>
-            <div id="dashAuditList" class="divide-y divide-gray-50 mt-2">
+            <div id="dashAuditList" class="divide-y divide-black/[0.04]">
               <p class="text-center py-8 text-xs text-gray-400">Chưa có nhật ký hoạt động mới.</p>
             </div>
           </div>
@@ -368,99 +552,119 @@
 
       <!-- ================= TAB: ANALYTICS & USER HABITS ================= -->
       <div id="tab-analytics" class="hidden max-w-6xl mx-auto space-y-6">
-        <!-- Header Banner -->
-        <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-[#0f172a] rounded-3xl p-6 md:p-8 text-white shadow-apple flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-              <span class="text-xs font-bold text-cyan-300 uppercase tracking-widest">Real-time Analytics & User Habits</span>
+        <!-- Analytics Luxury Header Banner -->
+        <div class="relative overflow-hidden rounded-[32px] p-7 md:p-9 text-white shadow-card-elevated border border-white/10 bg-gradient-to-br from-[#071328] via-[#0d1d3a] to-[#0a1224] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div class="absolute -right-12 -bottom-12 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -left-12 -top-12 w-72 h-72 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div class="relative z-10 space-y-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-[11px] font-bold tracking-wide backdrop-blur-md">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400/50"></span>
+              <span>REAL-TIME ANALYTICS & USER HABITS</span>
             </div>
-            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">Thống Kê Kho IPA & Hành Vi Người Dùng</h2>
-            <p class="text-white/70 text-xs md:text-sm mt-1">Theo dõi lượt xem, tải ứng dụng nhiều nhất và xu hướng tìm kiếm thực tế của khách hàng.</p>
+            <h2 class="text-2xl md:text-3xl font-black tracking-tight text-white">Thống Kê Kho IPA & Hành Vi Người Dùng</h2>
+            <p class="text-white/60 text-xs md:text-sm font-medium max-w-xl">Theo dõi lượt xem, tải ứng dụng nhiều nhất và xu hướng tìm kiếm thực tế của khách hàng.</p>
           </div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <button onclick="openAnalyticsSettingsModal()" class="px-3.5 py-2.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 backdrop-blur-md border border-indigo-400/30" title="Cài đặt kết nối Google Sheet Thống Kê Độc Lập (Phương Án 2)">
-              <i data-lucide="sheet" class="w-3.5 h-3.5"></i> Cài Sheet Riêng
+          
+          <div class="relative z-10 flex items-center gap-2.5 flex-wrap">
+            <button onclick="openAnalyticsSettingsModal()" class="px-4 py-2.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 rounded-2xl text-xs font-bold transition-all active:scale-95 flex items-center gap-2 backdrop-blur-md border border-indigo-400/30 shadow-xs" title="Cài đặt kết nối Google Sheet Thống Kê Độc Lập">
+              <i data-lucide="sheet" class="w-4 h-4"></i> Cài Sheet Riêng
             </button>
-            <button onclick="injectSampleDownloadTest()" class="px-3.5 py-2.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 backdrop-blur-md border border-cyan-400/30" title="Bấm để mô phỏng 1 lượt tải test kiểm tra hệ thống">
-              <i data-lucide="play-circle" class="w-3.5 h-3.5"></i> Test 1 Lượt Tải
+            <button onclick="injectSampleDownloadTest()" class="px-4 py-2.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 rounded-2xl text-xs font-bold transition-all active:scale-95 flex items-center gap-2 backdrop-blur-md border border-cyan-400/30 shadow-xs" title="Bấm để mô phỏng 1 lượt tải test kiểm tra hệ thống">
+              <i data-lucide="play-circle" class="w-4 h-4"></i> Test 1 Lượt Tải
             </button>
-            <button onclick="loadAppAnalytics(true)" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 backdrop-blur-md border border-white/10">
-              <i data-lucide="refresh-cw" id="analyticsRefreshIcon" class="w-3.5 h-3.5"></i> Làm Mới Dữ Liệu
+            <button onclick="loadAppAnalytics(true)" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 flex items-center gap-2 backdrop-blur-md border border-white/15 shadow-xs">
+              <i data-lucide="refresh-cw" id="analyticsRefreshIcon" class="w-4 h-4"></i> Làm Mới Dữ Liệu
             </button>
           </div>
         </div>
 
-        <!-- Metric Stat Cards -->
+        <!-- Metric Stat Cards (Apple Glass & Squircle) -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Lượt Xem Hôm Nay</span>
-              <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                <i data-lucide="eye" class="w-4 h-4"></i>
+          <!-- Views Today -->
+          <div class="glass-card rounded-3xl p-5 md:p-6 hover:-translate-y-1 transition-all duration-300 hover:shadow-apple-hover border border-black/[0.06] relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Lượt Xem Hôm Nay</span>
+              <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                <i data-lucide="eye" class="w-5 h-5"></i>
               </div>
             </div>
-            <h3 class="text-2xl font-extrabold text-gray-900" id="statTodayViews">0</h3>
-            <span class="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1" id="statTodayUniques">
-              <i data-lucide="user-check" class="w-3 h-3"></i> 0 khách riêng biệt
-            </span>
+            <h3 class="text-2xl lg:text-3xl font-black text-gray-900 tracking-tight" id="statTodayViews">0</h3>
+            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-600 font-bold" id="statTodayUniques">
+              <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+              <span>0 khách riêng biệt</span>
+            </div>
           </div>
 
-          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Lượt Tải Hôm Nay</span>
-              <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <i data-lucide="download-cloud" class="w-4 h-4"></i>
+          <!-- Downloads Today -->
+          <div class="glass-card rounded-3xl p-5 md:p-6 hover:-translate-y-1 transition-all duration-300 hover:shadow-apple-hover border border-black/[0.06] relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Lượt Tải Hôm Nay</span>
+              <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                <i data-lucide="download-cloud" class="w-5 h-5"></i>
               </div>
             </div>
-            <h3 class="text-2xl font-extrabold text-emerald-600" id="statTodayDownloads">0</h3>
-            <span class="text-[11px] text-gray-400 mt-1 block">Tải IPA trong ngày</span>
+            <h3 class="text-2xl lg:text-3xl font-black text-emerald-600 tracking-tight" id="statTodayDownloads">0</h3>
+            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Tải IPA trong ngày</span>
+            </div>
           </div>
 
-          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tổng Tải Toàn Sàn</span>
-              <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <i data-lucide="hard-drive" class="w-4 h-4"></i>
+          <!-- Total Downloads -->
+          <div class="glass-card rounded-3xl p-5 md:p-6 hover:-translate-y-1 transition-all duration-300 hover:shadow-apple-hover border border-black/[0.06] relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Tổng Tải Toàn Sàn</span>
+              <div class="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                <i data-lucide="hard-drive" class="w-5 h-5"></i>
               </div>
             </div>
-            <h3 class="text-2xl font-extrabold text-purple-600" id="statTotalDownloads">0</h3>
-            <span class="text-[11px] text-gray-400 mt-1 block" id="statTotalTrackedApps">0 app đã ghi nhận</span>
+            <h3 class="text-2xl lg:text-3xl font-black text-purple-600 tracking-tight" id="statTotalDownloads">0</h3>
+            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-gray-500 font-medium" id="statTotalTrackedApps">
+              <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+              <span>0 app đã ghi nhận</span>
+            </div>
           </div>
 
-          <div class="bg-white rounded-2xl p-5 border border-black/[0.06] shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Top #1 Vua Tải</span>
-              <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <i data-lucide="trophy" class="w-4 h-4"></i>
+          <!-- Top #1 App -->
+          <div class="glass-card rounded-3xl p-5 md:p-6 hover:-translate-y-1 transition-all duration-300 hover:shadow-apple-hover border border-black/[0.06] relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[11px] font-extrabold text-gray-400 uppercase tracking-wider">Top #1 Vua Tải</span>
+              <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                <i data-lucide="trophy" class="w-5 h-5"></i>
               </div>
             </div>
-            <h3 class="text-base font-extrabold text-gray-900 truncate" id="statTopAppName">Đang tải...</h3>
-            <span class="text-[11px] text-amber-600 font-bold mt-1 block" id="statTopAppCount">0 lượt tải</span>
+            <h3 class="text-lg lg:text-xl font-black text-gray-900 tracking-tight truncate" id="statTopAppName">Đang tải...</h3>
+            <div class="mt-2 flex items-center gap-1.5 text-[11px] text-amber-600 font-bold" id="statTopAppCount">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+              <span>0 lượt tải</span>
+            </div>
           </div>
         </div>
 
         <!-- Device & Platform Breakdown Bar -->
-        <div class="bg-white rounded-2xl p-4 border border-black/[0.06] shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex items-center gap-2 font-bold text-gray-700">
-            <i data-lucide="smartphone" class="w-4 h-4 text-appleBlue"></i>
+        <div class="glass-card rounded-2xl p-4 border border-black/[0.06] shadow-apple flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2 font-bold text-gray-800">
+            <div class="w-7 h-7 rounded-xl bg-blue-50 text-appleBlue flex items-center justify-center shadow-2xs">
+              <i data-lucide="smartphone" class="w-4 h-4"></i>
+            </div>
             <span>Thiết Bị Truy Cập Hôm Nay:</span>
           </div>
-          <div class="flex flex-wrap items-center gap-3" id="deviceStatsContainer">
-            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
-              <i data-lucide="apple" class="w-3.5 h-3.5 text-gray-900"></i> iOS: <b id="statDevIos">0</b>
+          <div class="flex flex-wrap items-center gap-2.5" id="deviceStatsContainer">
+            <span class="px-3 py-1.5 bg-black/[0.03] text-gray-700 rounded-xl font-semibold flex items-center gap-1.5 border border-black/[0.04]">
+              <i data-lucide="apple" class="w-3.5 h-3.5 text-gray-900"></i> iOS: <b id="statDevIos" class="font-black text-gray-900">0</b>
             </span>
-            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
-              <i data-lucide="bot" class="w-3.5 h-3.5 text-emerald-600"></i> Android: <b id="statDevAndroid">0</b>
+            <span class="px-3 py-1.5 bg-black/[0.03] text-gray-700 rounded-xl font-semibold flex items-center gap-1.5 border border-black/[0.04]">
+              <i data-lucide="bot" class="w-3.5 h-3.5 text-emerald-600"></i> Android: <b id="statDevAndroid" class="font-black text-emerald-600">0</b>
             </span>
-            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
-              <i data-lucide="laptop" class="w-3.5 h-3.5 text-gray-700"></i> Mac: <b id="statDevMac">0</b>
+            <span class="px-3 py-1.5 bg-black/[0.03] text-gray-700 rounded-xl font-semibold flex items-center gap-1.5 border border-black/[0.04]">
+              <i data-lucide="laptop" class="w-3.5 h-3.5 text-gray-700"></i> Mac: <b id="statDevMac" class="font-black text-gray-900">0</b>
             </span>
-            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
-              <i data-lucide="monitor" class="w-3.5 h-3.5 text-blue-600"></i> Windows: <b id="statDevWindows">0</b>
+            <span class="px-3 py-1.5 bg-black/[0.03] text-gray-700 rounded-xl font-semibold flex items-center gap-1.5 border border-black/[0.04]">
+              <i data-lucide="monitor" class="w-3.5 h-3.5 text-blue-600"></i> Windows: <b id="statDevWindows" class="font-black text-blue-600">0</b>
             </span>
-            <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium flex items-center gap-1.5">
-              Khác: <b id="statDevOther">0</b>
+            <span class="px-3 py-1.5 bg-black/[0.03] text-gray-700 rounded-xl font-semibold flex items-center gap-1.5 border border-black/[0.04]">
+              Khác: <b id="statDevOther" class="font-black text-gray-800">0</b>
             </span>
           </div>
         </div>
@@ -470,33 +674,36 @@
           
           <!-- Column Left: Top Downloaded Apps Leaderboard (7 cols) -->
           <div class="lg:col-span-7 space-y-4">
-            <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-3">
-                <div>
-                  <h3 class="font-extrabold text-sm md:text-base text-gray-900 flex items-center gap-2">
-                    <i data-lucide="flame" class="w-5 h-5 text-rose-500"></i> Bảng Xếp Hạng App Tải Nhiều Nhất
-                  </h3>
-                  <p class="text-xs text-gray-400 mt-0.5">Xếp hạng theo số lần người dùng nhấn tải trực tiếp</p>
+            <div class="glass-card rounded-3xl p-6 border border-black/[0.06] shadow-apple space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-black/[0.05] gap-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shadow-2xs">
+                    <i data-lucide="flame" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-sm md:text-base text-gray-900">Bảng Xếp Hạng App Tải Nhiều Nhất</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Xếp hạng theo số lần người dùng nhấn tải trực tiếp</p>
+                  </div>
                 </div>
-                <div class="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl text-xs font-semibold">
-                  <button id="btnSortDownloads" onclick="setAppSort('downloads')" class="px-3 py-1 bg-white text-gray-800 rounded-lg shadow-sm">Tải Nhiều Nhất</button>
-                  <button id="btnSortViews" onclick="setAppSort('views')" class="px-3 py-1 text-gray-500 hover:text-gray-800 rounded-lg transition">Xem Nhiều Nhất</button>
+                <div class="flex items-center gap-1 bg-black/[0.04] p-1 rounded-2xl text-xs font-bold">
+                  <button id="btnSortDownloads" onclick="setAppSort('downloads')" class="px-3 py-1.5 bg-white text-gray-900 rounded-xl shadow-2xs transition">Tải Nhiều Nhất</button>
+                  <button id="btnSortViews" onclick="setAppSort('views')" class="px-3 py-1.5 text-gray-500 hover:text-gray-900 rounded-xl transition">Xem Nhiều Nhất</button>
                 </div>
               </div>
 
               <!-- Top Apps Table -->
-              <div class="overflow-x-auto mt-3">
+              <div class="overflow-x-auto rounded-2xl border border-black/[0.04]">
                 <table class="w-full text-left text-xs text-gray-600">
                   <thead>
-                    <tr class="text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                      <th class="py-3 px-2 w-12 text-center">Hạng</th>
+                    <tr class="bg-black/[0.02] text-[11px] font-black text-gray-400 uppercase tracking-wider border-b border-black/[0.04]">
+                      <th class="py-3 px-3 w-14 text-center">Hạng</th>
                       <th class="py-3 px-3">Ứng Dụng</th>
                       <th class="py-3 px-3 text-right">Lượt Tải</th>
                       <th class="py-3 px-3 text-right">Lượt Xem</th>
                       <th class="py-3 px-3 text-right">Tỷ Lệ Tải</th>
                     </tr>
                   </thead>
-                  <tbody id="analyticsAppTableBody" class="divide-y divide-gray-50">
+                  <tbody id="analyticsAppTableBody" class="divide-y divide-black/[0.03]">
                     <tr>
                       <td colspan="5" class="text-center py-8 text-gray-400">
                         <div class="flex flex-col items-center justify-center gap-2">
@@ -515,31 +722,37 @@
           <div class="lg:col-span-5 space-y-6">
             
             <!-- Top Searches Card -->
-            <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm">
-              <div class="flex items-center justify-between pb-4 border-b border-gray-100">
-                <div>
-                  <h3 class="font-extrabold text-sm md:text-base text-gray-900 flex items-center gap-2">
-                    <i data-lucide="search" class="w-4 h-4 text-appleBlue"></i> Từ Khóa Tìm Kiếm Hot
-                  </h3>
-                  <p class="text-xs text-gray-400 mt-0.5">Nhu cầu thực tế khách tìm trên thanh Search</p>
+            <div class="glass-card rounded-3xl p-6 border border-black/[0.06] shadow-apple space-y-4">
+              <div class="flex items-center justify-between pb-4 border-b border-black/[0.05]">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-blue-50 text-appleBlue flex items-center justify-center shadow-2xs">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="font-extrabold text-sm md:text-base text-gray-900">Từ Khóa Tìm Kiếm Hot</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Nhu cầu thực tế khách tìm trên Store</p>
+                  </div>
                 </div>
-                <span class="text-[11px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full" id="searchKeywordsTotal">0 từ</span>
+                <span class="text-[11px] font-bold text-gray-500 bg-black/[0.04] px-2.5 py-1 rounded-full border border-black/[0.04]" id="searchKeywordsTotal">0 từ</span>
               </div>
-              <div id="analyticsSearchList" class="space-y-3 mt-4">
+              <div id="analyticsSearchList" class="space-y-2 mt-2">
                 <p class="text-center py-6 text-xs text-gray-400">Chưa có dữ liệu tìm kiếm.</p>
               </div>
             </div>
 
             <!-- Recent Downloads Stream -->
-            <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm">
-              <div class="flex items-center justify-between pb-4 border-b border-gray-100">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            <div class="glass-card rounded-3xl p-6 border border-black/[0.06] shadow-apple space-y-4">
+              <div class="flex items-center justify-between pb-4 border-b border-black/[0.05]">
+                <div class="flex items-center gap-2.5">
+                  <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </span>
                   <h3 class="font-extrabold text-sm md:text-base text-gray-900">Hoạt Động Tải Gần Đây</h3>
                 </div>
-                <span class="text-[11px] text-gray-400 font-medium">Real-time</span>
+                <span class="text-[11px] text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200/50">Real-time</span>
               </div>
-              <div id="analyticsRecentDownloadsList" class="space-y-3 mt-4 max-h-[380px] overflow-y-auto pr-1">
+              <div id="analyticsRecentDownloadsList" class="space-y-2.5 mt-2 max-h-[380px] overflow-y-auto pr-1 scrollbar-none">
                 <p class="text-center py-6 text-xs text-gray-400">Chưa có lượt tải nào gần đây.</p>
               </div>
             </div>
@@ -549,9 +762,9 @@
         </div>
 
         <!-- ================= LIVE VISITOR & IP TRACKING SECTION ================= -->
-        <div class="bg-white rounded-3xl p-6 border border-black/[0.06] shadow-sm space-y-4">
+        <div class="glass-card rounded-3xl p-6 border border-black/[0.06] shadow-apple space-y-4">
           <!-- Header & Top Stats -->
-          <div class="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-gray-100 gap-4">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-black/[0.05] gap-4">
             <div>
               <div class="flex items-center gap-2.5">
                 <span class="relative flex h-3 w-3">
@@ -568,18 +781,18 @@
               <p class="text-xs text-gray-400 mt-1">Theo dõi chi tiết IP, Vị trí (Tỉnh/Thành), Nhà mạng (ISP), Thiết bị, Trình duyệt và Trang khách đang xem trên toàn hệ thống.</p>
             </div>
 
-            <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-2.5 flex-wrap">
               <!-- Real-time Active Pulse Counter -->
-              <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200/60 font-bold text-xs shadow-sm">
+              <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200/60 font-bold text-xs shadow-2xs">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span id="liveOnlineVisitors">1 khách đang online</span>
               </div>
               <!-- CSV Export -->
-              <button onclick="exportVisitorsCSV()" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+              <button onclick="exportVisitorsCSV()" class="px-3.5 py-2 bg-black/[0.04] hover:bg-black/[0.07] text-gray-700 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 border border-black/[0.05]">
                 <i data-lucide="download" class="w-3.5 h-3.5"></i> Xuất CSV
               </button>
               <!-- Refresh Data -->
-              <button onclick="loadVisitorLogs(true)" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+              <button onclick="loadVisitorLogs(true)" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-appleBlue rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 border border-blue-200/50">
                 <i data-lucide="rotate-cw" id="visRefreshIcon" class="w-3.5 h-3.5"></i> Tải Lại
               </button>
             </div>
@@ -587,39 +800,39 @@
 
           <!-- Micro Analytics Quick Bar: Geo & ISP Breakdown -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-              <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Khu Vực Hàng Đầu</span>
-              <span class="text-xs font-extrabold text-gray-800 mt-0.5 truncate block" id="statTopCity">Đang phân tích...</span>
+            <div class="p-3.5 rounded-2xl bg-black/[0.02] border border-black/[0.04]">
+              <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Khu Vực Hàng Đầu</span>
+              <span class="text-xs font-black text-gray-900 mt-1 truncate block" id="statTopCity">Đang phân tích...</span>
             </div>
-            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-              <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Nhà Mạng / ISP Phổ Biến</span>
-              <span class="text-xs font-extrabold text-gray-800 mt-0.5 truncate block" id="statTopISP">Đang phân tích...</span>
+            <div class="p-3.5 rounded-2xl bg-black/[0.02] border border-black/[0.04]">
+              <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Nhà Mạng / ISP Phổ Biến</span>
+              <span class="text-xs font-black text-gray-900 mt-1 truncate block" id="statTopISP">Đang phân tích...</span>
             </div>
-            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-              <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Trang Được Xem Nhiều</span>
-              <span class="text-xs font-extrabold text-gray-800 mt-0.5 truncate block" id="statTopVisitedPage">Kho IPA</span>
+            <div class="p-3.5 rounded-2xl bg-black/[0.02] border border-black/[0.04]">
+              <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Trang Được Xem Nhiều</span>
+              <span class="text-xs font-black text-appleBlue mt-1 truncate block" id="statTopVisitedPage">Kho IPA</span>
             </div>
-            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-              <span class="text-[10.5px] font-bold text-gray-400 uppercase tracking-wider block">Thành Viên Đã Đăng Nhập</span>
-              <span class="text-xs font-extrabold text-amber-600 mt-0.5 truncate block" id="statMembersCount">0 thành viên</span>
+            <div class="p-3.5 rounded-2xl bg-black/[0.02] border border-black/[0.04]">
+              <span class="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Thành Viên Đã Đăng Nhập</span>
+              <span class="text-xs font-black text-amber-600 mt-1 truncate block" id="statMembersCount">0 thành viên</span>
             </div>
           </div>
 
           <!-- Filter & Search Controls -->
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
             <div class="relative flex-1 max-w-md">
-              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-              <input type="text" id="visitorSearchInput" oninput="renderVisitorTable()" placeholder="Tìm theo IP, Email, Tên, Tỉnh/Thành, Nhà mạng, Thiết bị, Trang..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-appleBlue transition">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              <input type="text" id="visitorSearchInput" oninput="renderVisitorTable()" placeholder="Tìm theo IP, Email, Tên, Tỉnh/Thành, Nhà mạng, Thiết bị, Trang..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-appleBlue focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-xs outline-none transition shadow-2xs">
             </div>
             <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-              <select id="visitorDeviceFilter" onchange="renderVisitorTable()" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:border-appleBlue">
+              <select id="visitorDeviceFilter" onchange="renderVisitorTable()" class="px-3.5 py-2 bg-white/80 border border-black/[0.08] rounded-2xl text-xs font-bold text-gray-700 outline-none focus:border-appleBlue shadow-2xs">
                 <option value="ALL">Mọi Thiết Bị</option>
                 <option value="ios">Chỉ iOS (iPhone/iPad)</option>
                 <option value="android">Chỉ Android</option>
                 <option value="mac">Chỉ Mac</option>
                 <option value="windows">Chỉ Windows</option>
               </select>
-              <select id="visitorStatusFilter" onchange="renderVisitorTable()" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 outline-none focus:border-appleBlue">
+              <select id="visitorStatusFilter" onchange="renderVisitorTable()" class="px-3.5 py-2 bg-white/80 border border-black/[0.08] rounded-2xl text-xs font-bold text-gray-700 outline-none focus:border-appleBlue shadow-2xs">
                 <option value="ALL">Tất Cả Khách (Mọi IP)</option>
                 <option value="ONLINE">🟢 Đang Online</option>
                 <option value="MEMBERS">⭐ Thành Viên Đã Đăng Nhập</option>
@@ -630,10 +843,10 @@
           </div>
 
           <!-- Visitor Table -->
-          <div class="overflow-x-auto rounded-2xl border border-gray-100">
+          <div class="overflow-x-auto rounded-2xl border border-black/[0.04]">
             <table class="w-full text-left text-xs text-gray-600">
               <thead>
-                <tr class="bg-gray-50/80 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                <tr class="bg-black/[0.02] text-[11px] font-black text-gray-400 uppercase tracking-wider border-b border-black/[0.04]">
                   <th class="py-3 px-3 w-32">Trạng Thái & Giờ</th>
                   <th class="py-3 px-3 w-40">Địa Chỉ IP & Lượt</th>
                   <th class="py-3 px-3">Tài Khoản / Người Xem</th>
@@ -643,7 +856,7 @@
                   <th class="py-3 px-3 text-center w-16">Chi Tiết</th>
                 </tr>
               </thead>
-              <tbody id="visitorTableBody" class="divide-y divide-gray-100">
+              <tbody id="visitorTableBody" class="divide-y divide-black/[0.03]">
                 <tr>
                   <td colspan="7" class="text-center py-10 text-gray-400">
                     <div class="flex flex-col items-center justify-center gap-2">
@@ -669,30 +882,30 @@
 
       <!-- ================= TAB: USERS ================= -->
       <div id="tab-users" class="hidden max-w-6xl mx-auto space-y-4">
-        <div class="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="glass-card p-4 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col sm:flex-row justify-between items-center gap-3">
           <div class="relative w-full sm:w-80">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="searchUserInput" oninput="renderUserTable()" placeholder="Tìm theo Email hoặc UID..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-appleBlue transition">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="searchUserInput" oninput="renderUserTable()" placeholder="Tìm theo Email hoặc UID..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-appleBlue focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-xs outline-none transition shadow-2xs">
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto">
-            <button onclick="exportUsersCSV()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+            <button onclick="exportUsersCSV()" class="px-4 py-2 bg-black/[0.04] hover:bg-black/[0.07] text-gray-700 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 border border-black/[0.05]">
               <i data-lucide="download" class="w-3.5 h-3.5"></i> Xuất CSV
             </button>
           </div>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border border-black/[0.06] overflow-hidden">
+        <div class="glass-card rounded-3xl shadow-apple border border-black/[0.06] overflow-hidden">
           <div class="overflow-x-auto w-full">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
-                <tr class="bg-gray-50 text-gray-500 font-bold uppercase tracking-wider border-b border-gray-100">
+                <tr class="bg-black/[0.02] text-gray-400 font-black text-[11px] uppercase tracking-wider border-b border-black/[0.04]">
                   <th class="p-4">Khách Hàng / UID</th>
                   <th class="p-4">Trạng Thái VIP</th>
                   <th class="p-4">Số Dư Hiện Tại</th>
                   <th class="p-4 text-right">Điều Chỉnh Số Dư & VIP</th>
                 </tr>
               </thead>
-              <tbody id="userTableBody" class="divide-y divide-gray-100">
+              <tbody id="userTableBody" class="divide-y divide-black/[0.03]">
                 <tr><td colspan="4" class="p-10 text-center text-gray-400">Đang tải danh sách người dùng...</td></tr>
               </tbody>
             </table>
@@ -702,33 +915,33 @@
 
       <!-- ================= TAB: TRANSACTIONS ================= -->
       <div id="tab-transactions" class="hidden max-w-6xl mx-auto space-y-4">
-        <div class="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-sm flex flex-col md:flex-row justify-between items-center gap-3">
+        <div class="glass-card p-4 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col md:flex-row justify-between items-center gap-3">
           <div class="relative w-full md:w-80">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="searchTxInput" oninput="renderTransactions()" placeholder="Tìm mã giao dịch, UID..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-appleBlue transition">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="searchTxInput" oninput="renderTransactions()" placeholder="Tìm mã giao dịch, UID..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-appleBlue focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-xs outline-none transition shadow-2xs">
           </div>
-          <div class="flex gap-2 overflow-x-auto w-full md:w-auto">
-            <button onclick="filterTransactions('ALL')" id="filterTx_ALL" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-900 text-white">Tất Cả</button>
-            <button onclick="filterTransactions('CLAIMED')" id="filterTx_CLAIMED" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600">Thành Công</button>
-            <button onclick="filterTransactions('PENDING')" id="filterTx_PENDING" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600">Chờ Duyệt</button>
-            <button onclick="exportTransactionsCSV()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 flex items-center gap-1">
-              <i data-lucide="file-spreadsheet" class="w-3 h-3"></i> CSV
+          <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto">
+            <button onclick="filterTransactions('ALL')" id="filterTx_ALL" class="px-4 py-1.5 rounded-full text-xs font-bold bg-gray-900 text-white shadow-2xs">Tất Cả</button>
+            <button onclick="filterTransactions('CLAIMED')" id="filterTx_CLAIMED" class="px-4 py-1.5 rounded-full text-xs font-bold bg-black/[0.04] text-gray-600 hover:text-gray-900 border border-black/[0.05] transition">Thành Công</button>
+            <button onclick="filterTransactions('PENDING')" id="filterTx_PENDING" class="px-4 py-1.5 rounded-full text-xs font-bold bg-black/[0.04] text-gray-600 hover:text-gray-900 border border-black/[0.05] transition">Chờ Duyệt</button>
+            <button onclick="exportTransactionsCSV()" class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-black/[0.04] hover:bg-black/[0.07] text-gray-700 border border-black/[0.05] flex items-center gap-1 transition">
+              <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> CSV
             </button>
           </div>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border border-black/[0.06] overflow-hidden">
+        <div class="glass-card rounded-3xl shadow-apple border border-black/[0.06] overflow-hidden">
           <div class="overflow-x-auto w-full">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
-                <tr class="bg-gray-50 text-gray-500 font-bold uppercase tracking-wider border-b border-gray-100">
+                <tr class="bg-black/[0.02] text-gray-400 font-black text-[11px] uppercase tracking-wider border-b border-black/[0.04]">
                   <th class="p-4">Thời Gian</th>
                   <th class="p-4">Mã Đơn / Khách Hàng</th>
                   <th class="p-4">Số Tiền (VNĐ)</th>
                   <th class="p-4 text-right">Trạng Thái</th>
                 </tr>
               </thead>
-              <tbody id="txTableBody" class="divide-y divide-gray-100">
+              <tbody id="txTableBody" class="divide-y divide-black/[0.03]">
                 <tr><td colspan="4" class="p-10 text-center text-gray-400">Đang đồng bộ giao dịch...</td></tr>
               </tbody>
             </table>
@@ -739,41 +952,41 @@
       <!-- ================= TAB: MMO ORDERS (STATE MACHINE + IDEMPOTENCY) ================= -->
       <div id="tab-mmo_orders" class="hidden max-w-6xl mx-auto space-y-4">
         <!-- Progress Bar for Batch Fulfillment -->
-        <div id="bulkProgressContainer" class="hidden bg-white p-4 rounded-2xl border border-rose-200 shadow-sm space-y-2">
+        <div id="bulkProgressContainer" class="hidden glass-card p-4 rounded-2xl border border-rose-200/80 shadow-apple space-y-2">
           <div class="flex justify-between text-xs font-bold text-gray-800">
             <span id="bulkProgressStatus">Đang duyệt hàng loạt...</span>
             <span id="bulkProgressPercent">0%</span>
           </div>
           <div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-            <div id="bulkProgressBar" class="h-full bg-rose-600 transition-all duration-300 w-0"></div>
+            <div id="bulkProgressBar" class="h-full bg-gradient-to-r from-rose-500 to-pink-500 transition-all duration-300 w-0"></div>
           </div>
         </div>
 
-        <div class="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-sm flex flex-col md:flex-row justify-between items-center gap-3">
+        <div class="glass-card p-4 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col md:flex-row justify-between items-center gap-3">
           <div class="relative w-full md:w-80">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="searchMmoInput" oninput="renderMMOOrders()" placeholder="Tìm Mã Đơn, UID, Tên SP..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-mall transition">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="searchMmoInput" oninput="renderMMOOrders()" placeholder="Tìm Mã Đơn, UID, Tên SP..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 rounded-2xl text-xs outline-none transition shadow-2xs">
           </div>
           <div class="flex items-center gap-2 w-full md:w-auto">
-            <button onclick="bulkFulfillOrders()" id="btnBulkFulfill" class="w-full md:w-auto bg-mall hover:bg-mallDark text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition active:scale-95 flex items-center justify-center gap-1.5">
+            <button onclick="bulkFulfillOrders()" id="btnBulkFulfill" class="w-full md:w-auto bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-md shadow-rose-600/20 transition active:scale-95 flex items-center justify-center gap-1.5 border border-white/10">
               <i data-lucide="check-check" class="w-4 h-4"></i> Duyệt Tự Động Các Đơn Đã Chọn
             </button>
           </div>
         </div>
 
         <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <button onclick="filterAdminMmoOrders('PENDING_PAID')" id="filter_PENDING_PAID" class="px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-sm whitespace-nowrap">Chờ Duyệt (Đã trả tiền)</button>
-          <button onclick="filterAdminMmoOrders('COMPLETED')" id="filter_COMPLETED" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-gray-600 border border-gray-200 whitespace-nowrap">Đã Hoàn Thành</button>
-          <button onclick="filterAdminMmoOrders('ALL')" id="filter_ALL" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-gray-600 border border-gray-200 whitespace-nowrap">Tất Cả Đơn</button>
+          <button onclick="filterAdminMmoOrders('PENDING_PAID')" id="filter_PENDING_PAID" class="px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-sm shadow-emerald-500/30 whitespace-nowrap transition">Chờ Duyệt (Đã trả tiền)</button>
+          <button onclick="filterAdminMmoOrders('COMPLETED')" id="filter_COMPLETED" class="px-4 py-1.5 rounded-full text-xs font-bold bg-white/80 hover:bg-white text-gray-600 border border-black/[0.06] shadow-2xs whitespace-nowrap transition">Đã Hoàn Thành</button>
+          <button onclick="filterAdminMmoOrders('ALL')" id="filter_ALL" class="px-4 py-1.5 rounded-full text-xs font-bold bg-white/80 hover:bg-white text-gray-600 border border-black/[0.06] shadow-2xs whitespace-nowrap transition">Tất Cả Đơn</button>
         </div>
 
         <!-- Desktop Table View -->
-        <div class="hidden md:block bg-white rounded-3xl shadow-sm border border-black/[0.06] overflow-hidden">
+        <div class="hidden md:block glass-card rounded-3xl shadow-apple border border-black/[0.06] overflow-hidden">
           <div class="overflow-x-auto w-full">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
-                <tr class="bg-rose-50/50 text-mall font-bold uppercase tracking-wider border-b border-rose-100">
-                  <th class="p-4 w-10 text-center"><input type="checkbox" id="selectAllMmo" onclick="toggleSelectAllMmo(this)" class="w-4 h-4 accent-mall rounded cursor-pointer"></th>
+                <tr class="bg-rose-50/40 text-rose-700 font-black text-[11px] uppercase tracking-wider border-b border-rose-100/60">
+                  <th class="p-4 w-10 text-center"><input type="checkbox" id="selectAllMmo" onclick="toggleSelectAllMmo(this)" class="w-4 h-4 accent-rose-600 rounded cursor-pointer"></th>
                   <th class="p-4">Mã Đơn / Khách Hàng</th>
                   <th class="p-4">Trạng Thái</th>
                   <th class="p-4">Sản Phẩm & Giá</th>
@@ -781,7 +994,7 @@
                   <th class="p-4 text-right w-64">Thao Tác Duyệt</th>
                 </tr>
               </thead>
-              <tbody id="mmoOrdersBody" class="divide-y divide-gray-100">
+              <tbody id="mmoOrdersBody" class="divide-y divide-black/[0.03]">
                 <tr><td colspan="6" class="p-10 text-center text-gray-400">Đang tải kho đơn hàng...</td></tr>
               </tbody>
             </table>
@@ -798,34 +1011,34 @@
       <div id="tab-mmo_products" class="hidden max-w-6xl mx-auto space-y-4">
         <!-- Search & Bulk Pricing Controls -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div class="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-sm flex flex-col sm:flex-row gap-2">
+          <div class="glass-card p-4 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col sm:flex-row gap-2">
             <div class="relative flex-1">
-              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-              <input type="text" id="searchConfigInput" oninput="renderConfigTable()" placeholder="Tìm SP, ID hoặc Danh Mục..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-appleBlue transition">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              <input type="text" id="searchConfigInput" oninput="renderConfigTable()" placeholder="Tìm SP, ID hoặc Danh Mục..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-appleBlue focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-xs outline-none transition shadow-2xs">
             </div>
-            <select id="configCatFilter" onchange="renderConfigTable()" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 outline-none">
+            <select id="configCatFilter" onchange="renderConfigTable()" class="px-3.5 py-2 bg-white/80 border border-black/[0.08] rounded-2xl text-xs font-bold text-gray-700 outline-none focus:border-appleBlue shadow-2xs">
               <option value="all">Tất cả danh mục</option>
             </select>
-            <button onclick="openAddProductDrawer()" class="px-3.5 py-2 bg-appleBlue text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shrink-0 active:scale-95 transition">
+            <button onclick="openAddProductDrawer()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-1.5 shrink-0 active:scale-95 transition shadow-sm shadow-blue-500/20 border border-white/10">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm SP
             </button>
           </div>
 
           <!-- Bulk Percentage Pricing with Preview Protection -->
-          <div class="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-sm flex items-center justify-between gap-3">
+          <div class="glass-card p-4 rounded-2xl border border-black/[0.06] shadow-apple flex items-center justify-between gap-3">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-gray-500 whitespace-nowrap">Đổi Giá Hàng Loạt:</span>
-              <input type="number" id="bulkPercent" placeholder="%" class="w-14 px-2 py-1.5 border border-gray-200 rounded-lg text-xs font-bold text-center bg-gray-50">
-              <select id="bulkPriceTarget" class="px-2 py-1.5 border border-gray-200 rounded-lg text-xs font-medium bg-gray-50">
+              <span class="text-xs font-extrabold text-gray-500 whitespace-nowrap">Đổi Giá Hàng Loạt:</span>
+              <input type="number" id="bulkPercent" placeholder="%" class="w-14 px-2 py-1.5 border border-black/[0.08] rounded-xl text-xs font-bold text-center bg-white/80 shadow-2xs">
+              <select id="bulkPriceTarget" class="px-2.5 py-1.5 border border-black/[0.08] rounded-xl text-xs font-bold bg-white/80 shadow-2xs text-gray-700">
                 <option value="price">Giá Bán</option>
                 <option value="fakePrice">Giá Gạch</option>
               </select>
             </div>
-            <div class="flex gap-1.5">
-              <button onclick="previewBulkPriceChange('up')" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">
+            <div class="flex gap-2">
+              <button onclick="previewBulkPriceChange('up')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs active:scale-95">
                 <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Tăng
               </button>
-              <button onclick="previewBulkPriceChange('down')" class="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">
+              <button onclick="previewBulkPriceChange('down')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-xs active:scale-95">
                 <i data-lucide="trending-down" class="w-3.5 h-3.5"></i> Giảm
               </button>
             </div>
@@ -833,10 +1046,10 @@
         </div>
 
         <!-- Products Table -->
-        <div class="bg-white rounded-3xl shadow-sm border border-black/[0.06] overflow-hidden">
+        <div class="glass-card rounded-3xl shadow-apple border border-black/[0.06] overflow-hidden">
           <div class="overflow-x-auto w-full max-h-[620px]">
             <table class="w-full text-left border-collapse text-xs">
-              <thead class="sticky top-0 bg-gray-100 z-10 text-gray-600 font-bold uppercase tracking-wider border-b border-gray-200">
+              <thead class="sticky top-0 bg-white/95 backdrop-blur-md z-10 text-gray-500 font-black text-[11px] uppercase tracking-wider border-b border-black/[0.06]">
                 <tr>
                   <th class="p-3 w-8 text-center"><input type="checkbox" id="selectAllCfg" onclick="toggleSelectAllCfg(this)" class="w-4 h-4 accent-appleBlue rounded cursor-pointer"></th>
                   <th class="p-3 w-16">ID</th>
@@ -850,7 +1063,7 @@
                   <th class="p-3 text-right w-24">Thao Tác</th>
                 </tr>
               </thead>
-              <tbody id="mmoConfigBody" class="divide-y divide-gray-100 font-medium">
+              <tbody id="mmoConfigBody" class="divide-y divide-black/[0.03] font-medium">
                 <tr><td colspan="10" class="p-10 text-center text-gray-400">Đang kéo kho sản phẩm...</td></tr>
               </tbody>
             </table>
@@ -860,19 +1073,24 @@
 
       <!-- ================= TAB: CATEGORIES ================= -->
       <div id="tab-mmo_categories" class="hidden max-w-6xl mx-auto space-y-4">
-        <div class="bg-white p-6 rounded-3xl border border-black/[0.06] shadow-sm">
-          <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-6">
-            <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
-              <i data-lucide="layers" class="w-5 h-5 text-appleBlue"></i> Quản Lý Danh Mục Chuyên Sâu
-            </h3>
-            <button onclick="renderCategoryManager()" class="text-xs text-appleBlue font-semibold hover:underline">Làm mới</button>
+        <div class="glass-card p-6 md:p-8 rounded-3xl border border-black/[0.06] shadow-apple space-y-6">
+          <div class="flex items-center justify-between pb-4 border-b border-black/[0.05]">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-2xs">
+                <i data-lucide="folder-tree" class="w-4 h-4"></i>
+              </div>
+              <h3 class="font-extrabold text-base text-gray-900">Quản Lý Danh Mục Chuyên Sâu</h3>
+            </div>
+            <button onclick="renderCategoryManager()" class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-appleBlue font-bold text-xs transition active:scale-95 flex items-center gap-1.5">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Làm mới
+            </button>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Left List -->
-            <div class="border border-gray-200 rounded-2xl p-3 bg-gray-50/50 max-h-[460px] overflow-y-auto space-y-1.5" id="catManagerList"></div>
+            <div class="border border-black/[0.06] rounded-2xl p-3.5 bg-black/[0.02] max-h-[460px] overflow-y-auto space-y-2 scrollbar-none" id="catManagerList"></div>
             <!-- Right Detail Editor -->
-            <div class="md:col-span-2 border border-gray-200 rounded-2xl p-5 bg-white" id="catManagerEditor">
+            <div class="md:col-span-2 border border-black/[0.06] rounded-2xl p-6 bg-white/70 backdrop-blur-md shadow-2xs" id="catManagerEditor">
               <div class="flex items-center justify-center h-full text-gray-400 text-xs">
                 Chọn một danh mục bên trái để cấu hình chi tiết
               </div>
@@ -885,117 +1103,123 @@
       <div id="tab-mmo_dealhot" class="hidden max-w-5xl mx-auto space-y-6">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Configuration Form -->
-          <div class="bg-white p-6 md:p-8 rounded-3xl border border-black/[0.06] shadow-sm space-y-4">
-            <div class="border-b border-gray-100 pb-3">
-              <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <i data-lucide="flame" class="w-5 h-5 text-orange-500"></i> Cấu Hình Deal Hot Trang Chủ
-              </h3>
-              <p class="text-xs text-gray-500 mt-1">Sản phẩm này sẽ hiện nổi bật ở đầu trang Store của khách hàng kèm đồng hồ đếm ngược.</p>
+          <div class="glass-card p-6 md:p-8 rounded-3xl border border-black/[0.06] shadow-apple space-y-4">
+            <div class="border-b border-black/[0.05] pb-3 flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center shadow-2xs">
+                <i data-lucide="flame" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-black text-gray-900">Cấu Hình Deal Hot Trang Chủ</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Sản phẩm này sẽ hiện nổi bật ở đầu trang Store của khách hàng kèm đồng hồ đếm ngược.</p>
+              </div>
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-gray-600 uppercase mb-1">ID Sản Phẩm *</label>
-              <input type="text" id="dealTargetId" oninput="updateDealLivePreview()" placeholder="VD: 9518" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:border-orange-500">
+              <label class="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1.5">ID Sản Phẩm *</label>
+              <input type="text" id="dealTargetId" oninput="updateDealLivePreview()" placeholder="VD: 9518" class="w-full px-4 py-2.5 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 rounded-2xl text-xs font-bold outline-none transition shadow-2xs">
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Tên Hiển Thị Deal *</label>
-              <input type="text" id="dealName" oninput="updateDealLivePreview()" placeholder="Netflix Premium - Sale Hủy Diệt 24H" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:border-orange-500">
+              <label class="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Tên Hiển Thị Deal *</label>
+              <input type="text" id="dealName" oninput="updateDealLivePreview()" placeholder="Netflix Premium - Sale Hủy Diệt 24H" class="w-full px-4 py-2.5 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 rounded-2xl text-xs font-bold outline-none transition shadow-2xs">
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Giá Deal (VNĐ) *</label>
-                <input type="number" id="dealPrice" oninput="updateDealLivePreview()" placeholder="29000" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-rose-600 outline-none focus:border-orange-500">
+                <label class="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Giá Deal (VNĐ) *</label>
+                <input type="number" id="dealPrice" oninput="updateDealLivePreview()" placeholder="29000" class="w-full px-4 py-2.5 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 rounded-2xl text-xs font-black text-rose-600 outline-none transition shadow-2xs">
               </div>
               <div>
-                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Thời Gian Kết Thúc *</label>
-                <input type="datetime-local" id="dealEndTime" oninput="updateDealLivePreview()" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:border-orange-500 text-gray-700">
+                <label class="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Thời Gian Kết Thúc *</label>
+                <input type="datetime-local" id="dealEndTime" oninput="updateDealLivePreview()" class="w-full px-4 py-2.5 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 rounded-2xl text-xs font-semibold outline-none transition shadow-2xs text-gray-700">
               </div>
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Link Ảnh Bìa (Icon)</label>
-              <input type="text" id="dealIcon" oninput="updateDealLivePreview()" placeholder="https://..." class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium outline-none focus:border-orange-500">
+              <label class="block text-[11px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Link Ảnh Bìa (Icon)</label>
+              <input type="text" id="dealIcon" oninput="updateDealLivePreview()" placeholder="https://..." class="w-full px-4 py-2.5 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 rounded-2xl text-xs font-medium outline-none transition shadow-2xs">
             </div>
 
             <div class="pt-2 flex gap-3">
-              <button onclick="clearDealHot()" class="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs transition">
+              <button onclick="clearDealHot()" class="px-5 py-3 bg-black/[0.04] hover:bg-black/[0.07] text-gray-700 font-bold rounded-2xl text-xs transition border border-black/[0.05]">
                 Tắt Deal
               </button>
-              <button onclick="submitDealHot()" class="flex-1 py-3 bg-gradient-to-r from-orange-500 to-rose-600 hover:from-orange-600 hover:to-rose-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-orange-500/20 active:scale-95 transition">
+              <button onclick="submitDealHot()" class="flex-1 py-3 bg-gradient-to-r from-orange-500 via-rose-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-bold rounded-2xl text-xs shadow-md shadow-orange-500/20 active:scale-95 transition border border-white/10">
                 CẬP NHẬT DEAL HOT
               </button>
             </div>
           </div>
 
           <!-- Live Customer Preview Box -->
-          <div class="bg-gray-900 text-white p-6 md:p-8 rounded-3xl shadow-xl flex flex-col justify-between relative overflow-hidden">
-            <div>
-              <span class="text-[11px] font-bold text-orange-400 uppercase tracking-widest flex items-center gap-1.5 mb-4">
+          <div class="relative overflow-hidden rounded-[32px] p-7 md:p-8 text-white shadow-card-elevated border border-white/10 bg-gradient-to-br from-[#13111c] via-[#1c1829] to-[#0f0d17] flex flex-col justify-between">
+            <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-orange-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-10 -top-10 w-60 h-60 bg-rose-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10">
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/15 border border-orange-400/30 text-orange-300 text-[10px] font-black uppercase tracking-wider mb-5">
                 <i data-lucide="eye" class="w-3.5 h-3.5"></i> LIVE STORE PREVIEW
-              </span>
+              </div>
               
-              <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-5 mt-4">
+              <div class="bg-white/10 backdrop-blur-xl border border-white/10 rounded-3xl p-6 mt-2 shadow-card">
                 <div class="flex items-center gap-4">
-                  <img id="prevDealIcon" src="https://upload.wikimedia.org/wikipedia/commons/0/0c/Netflix_2015_N_logo.svg" class="w-14 h-14 object-contain rounded-xl bg-white/5 p-1 border border-white/10">
+                  <img id="prevDealIcon" src="https://upload.wikimedia.org/wikipedia/commons/0/0c/Netflix_2015_N_logo.svg" class="w-16 h-16 object-contain rounded-2xl bg-white/10 p-1.5 border border-white/15 shadow-2xs">
                   <div>
-                    <span class="bg-rose-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">🔥 HOT DEAL 24H</span>
-                    <h4 class="text-base font-bold text-white mt-1 leading-snug" id="prevDealName">Netflix Premium 4K</h4>
-                    <p class="text-xs text-white/50" id="prevDealTarget">Sản phẩm liên kết: #9518</p>
+                    <span class="bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">🔥 HOT DEAL 24H</span>
+                    <h4 class="text-base font-extrabold text-white mt-1.5 leading-snug" id="prevDealName">Netflix Premium 4K</h4>
+                    <p class="text-xs text-white/50 mt-0.5" id="prevDealTarget">Sản phẩm liên kết: #9518</p>
                   </div>
                 </div>
 
-                <div class="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+                <div class="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
                   <div>
-                    <span class="text-[10px] text-white/60 block">Giá khuyến mãi</span>
-                    <span class="text-lg font-black text-rose-400" id="prevDealPrice">29.000đ</span>
+                    <span class="text-[10px] text-white/60 block font-medium">Giá khuyến mãi</span>
+                    <span class="text-xl font-black text-rose-400" id="prevDealPrice">29.000đ</span>
                   </div>
                   <div class="text-right">
-                    <span class="text-[10px] text-white/60 block">Thời gian còn lại</span>
-                    <span class="font-mono text-xs font-bold text-amber-300" id="prevDealCountdown">02:14:32</span>
+                    <span class="text-[10px] text-white/60 block font-medium">Thời gian còn lại</span>
+                    <span class="font-mono text-xs font-black text-amber-300" id="prevDealCountdown">02:14:32</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <p class="text-[11px] text-white/40 mt-6 text-center">Giao diện này phản ánh chính xác 100% những gì khách hàng nhìn thấy trên ứng dụng VSign.</p>
+            <p class="relative z-10 text-[11px] text-white/40 mt-6 text-center">Giao diện này phản ánh chính xác 100% những gì khách hàng nhìn thấy trên ứng dụng VSign.</p>
           </div>
         </div>
       </div>
 
       <!-- ================= TAB: SHORTCUTS ================= -->
       <div id="tab-shortcuts" class="hidden max-w-6xl mx-auto space-y-4">
-        <div class="bg-white p-4 rounded-2xl border border-black/[0.06] shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="glass-card p-4 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col sm:flex-row justify-between items-center gap-3">
           <div class="relative w-full sm:w-80">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="searchShortcutsInput" oninput="renderShortcutsTable()" placeholder="Tìm kiếm phím tắt..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-purple-600 transition">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="searchShortcutsInput" oninput="renderShortcutsTable()" placeholder="Tìm kiếm phím tắt..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-purple-600 focus:ring-4 focus:ring-purple-500/10 rounded-2xl text-xs outline-none transition shadow-2xs">
           </div>
-          <div class="flex gap-2">
-            <button onclick="exportShortcutsJSON()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition flex items-center gap-1">
+          <div class="flex items-center gap-2">
+            <button onclick="exportShortcutsJSON()" class="px-3.5 py-2 bg-black/[0.04] hover:bg-black/[0.07] text-gray-700 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 border border-black/[0.05]">
               <i data-lucide="download" class="w-3.5 h-3.5"></i> Export JSON
             </button>
-            <button onclick="openShortcutModal()" class="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95">
+            <button onclick="openShortcutModal()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm shadow-purple-500/20 border border-white/10">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm Phím Tắt Mới
             </button>
           </div>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border border-black/[0.06] overflow-hidden">
+        <div class="glass-card rounded-3xl shadow-apple border border-black/[0.06] overflow-hidden">
           <div class="overflow-x-auto w-full">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
-                <tr class="bg-purple-50/50 text-purple-900 font-bold uppercase tracking-wider border-b border-purple-100">
-                  <th class="p-3 w-14 text-center">Icon</th>
-                  <th class="p-3">Tên Phím Tắt</th>
-                  <th class="p-3">Danh Mục</th>
-                  <th class="p-3 text-center">Yêu Cầu iOS</th>
-                  <th class="p-3 text-center">Lượt Tải</th>
-                  <th class="p-3 text-center">Đánh Giá</th>
-                  <th class="p-3 text-right w-28">Thao Tác</th>
+                <tr class="bg-purple-50/40 text-purple-800 font-black text-[11px] uppercase tracking-wider border-b border-purple-100/60">
+                  <th class="p-4 w-14 text-center">Icon</th>
+                  <th class="p-4">Tên Phím Tắt</th>
+                  <th class="p-4">Danh Mục</th>
+                  <th class="p-4 text-center">Yêu Cầu iOS</th>
+                  <th class="p-4 text-center">Lượt Tải</th>
+                  <th class="p-4 text-center">Đánh Giá</th>
+                  <th class="p-4 text-right w-28">Thao Tác</th>
                 </tr>
               </thead>
-              <tbody id="shortcutsTableBody" class="divide-y divide-gray-100">
+              <tbody id="shortcutsTableBody" class="divide-y divide-black/[0.03]">
                 <tr><td colspan="7" class="p-10 text-center text-gray-400">Đang tải kho phím tắt...</td></tr>
               </tbody>
             </table>
@@ -1006,48 +1230,53 @@
       <!-- ================= TAB: AI KNOWLEDGE & PLAYGROUND ================= -->
       <div id="tab-ai_knowledge" class="hidden max-w-6xl mx-auto space-y-6">
         <!-- AI Test Playground Widget -->
-        <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-6 md:p-8 rounded-3xl shadow-apple">
-          <div class="flex items-center justify-between mb-4">
-            <span class="text-xs font-bold text-blue-300 uppercase tracking-widest flex items-center gap-1.5">
-              <i data-lucide="terminal" class="w-4 h-4"></i> AI SIMULATOR PLAYGROUND
-            </span>
-            <span class="text-[11px] text-blue-200">Kiểm tra phản hồi trước khi phát hành</span>
-          </div>
+        <div class="relative overflow-hidden rounded-[32px] p-7 md:p-8 text-white shadow-card-elevated border border-white/10 bg-gradient-to-br from-[#0c162d] via-[#142345] to-[#0a1224]">
+          <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-blue-500/15 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -left-10 -top-10 w-60 h-60 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
-          <div class="flex flex-col sm:flex-row gap-3">
-            <input type="text" id="aiTestInput" placeholder="Nhập câu hỏi thử nghiệm của khách (VD: nạp tiền không vào)..." class="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-xs font-medium outline-none focus:bg-white focus:text-gray-900 transition">
-            <button onclick="testAiResponse()" class="px-5 py-3 bg-blue-500 hover:bg-blue-400 text-white font-bold rounded-xl text-xs shrink-0 transition active:scale-95 flex items-center justify-center gap-1.5">
-              <i data-lucide="play" class="w-3.5 h-3.5"></i> Chạy Thử
-            </button>
-          </div>
+          <div class="relative z-10 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-300 text-[10px] font-black uppercase tracking-wider">
+                <i data-lucide="terminal" class="w-3.5 h-3.5"></i> AI SIMULATOR PLAYGROUND
+              </span>
+              <span class="text-[11px] text-blue-200/70 font-medium">Kiểm tra phản hồi trước khi phát hành</span>
+            </div>
 
-          <div id="aiTestResult" class="hidden mt-4 p-4 rounded-xl bg-white/10 border border-white/10 text-xs space-y-2">
-            <!-- Simulated response and confidence displayed dynamically -->
+            <div class="flex flex-col sm:flex-row gap-3">
+              <input type="text" id="aiTestInput" placeholder="Nhập câu hỏi thử nghiệm của khách (VD: nạp tiền không vào)..." class="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-xs font-medium text-white placeholder:text-white/40 focus:bg-white focus:text-gray-900 transition shadow-2xs outline-none">
+              <button onclick="testAiResponse()" class="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl text-xs shrink-0 transition active:scale-95 flex items-center justify-center gap-1.5 border border-white/10 shadow-sm shadow-blue-500/20">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i> Chạy Thử
+              </button>
+            </div>
+
+            <div id="aiTestResult" class="hidden mt-4 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-xs space-y-2">
+              <!-- Simulated response and confidence displayed dynamically -->
+            </div>
           </div>
         </div>
 
         <!-- Knowledge Base Management Table -->
-        <div class="bg-white p-6 rounded-3xl border border-black/[0.06] shadow-sm space-y-4">
+        <div class="glass-card p-6 md:p-8 rounded-3xl border border-black/[0.06] shadow-apple space-y-4">
           <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
             <div class="relative w-full sm:w-80">
-              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-              <input type="text" id="searchAIInput" oninput="renderAITable()" placeholder="Tìm từ khóa hoặc câu trả lời..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-appleBlue transition">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              <input type="text" id="searchAIInput" oninput="renderAITable()" placeholder="Tìm từ khóa hoặc câu trả lời..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-appleBlue focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-xs outline-none transition shadow-2xs">
             </div>
-            <button onclick="openAIModal()" class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95">
+            <button onclick="openAIModal()" class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 border border-white/10 shadow-sm shadow-blue-500/20">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm Quy Tắc Trợ Lý AI
             </button>
           </div>
 
-          <div class="overflow-x-auto w-full">
+          <div class="overflow-x-auto w-full rounded-2xl border border-black/[0.04]">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
-                <tr class="bg-blue-50/50 text-blue-900 font-bold uppercase tracking-wider border-b border-blue-100">
-                  <th class="p-3 w-1/3">Từ Khóa / Câu Hỏi Học</th>
-                  <th class="p-3">Câu Trả Lời Của AI</th>
-                  <th class="p-3 text-right w-24">Thao Tác</th>
+                <tr class="bg-blue-50/40 text-blue-900 font-black text-[11px] uppercase tracking-wider border-b border-blue-100/60">
+                  <th class="p-3.5 w-1/3">Từ Khóa / Câu Hỏi Học</th>
+                  <th class="p-3.5">Câu Trả Lời Của AI</th>
+                  <th class="p-3.5 text-right w-24">Thao Tác</th>
                 </tr>
               </thead>
-              <tbody id="aiTableBody" class="divide-y divide-gray-100">
+              <tbody id="aiTableBody" class="divide-y divide-black/[0.03]">
                 <tr><td colspan="3" class="p-10 text-center text-gray-400">Đang tải tri thức AI...</td></tr>
               </tbody>
             </table>
@@ -1057,28 +1286,33 @@
 
       <!-- ================= TAB: AUDIT LOG (READ ONLY) ================= -->
       <div id="tab-audit" class="hidden max-w-6xl mx-auto space-y-4">
-        <div class="bg-white p-6 rounded-3xl border border-black/[0.06] shadow-sm">
-          <div class="flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
-            <div>
-              <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
-                <i data-lucide="shield-check" class="w-5 h-5 text-emerald-600"></i> Nhật Ký Hoạt Động Quản Trị (Audit Trails)
-              </h3>
-              <p class="text-xs text-gray-500 mt-1">Dữ liệu ghi lại mọi hành động điều chỉnh số dư, duyệt đơn, sửa giá. Bất biến và chỉ đọc (Read-only).</p>
+        <div class="glass-card p-6 md:p-8 rounded-3xl border border-black/[0.06] shadow-apple space-y-4">
+          <div class="flex items-center justify-between pb-4 border-b border-black/[0.05]">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-2xs">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-base text-gray-900">Nhật Ký Hoạt Động Quản Trị (Audit Trails)</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Dữ liệu ghi lại mọi hành động điều chỉnh số dư, duyệt đơn, sửa giá. Bất biến và chỉ đọc (Read-only).</p>
+              </div>
             </div>
-            <button onclick="renderAuditTable()" class="text-xs text-appleBlue font-semibold hover:underline">Làm mới</button>
+            <button onclick="renderAuditTable()" class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-appleBlue font-bold text-xs transition active:scale-95 flex items-center gap-1">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Làm mới
+            </button>
           </div>
 
-          <div class="overflow-x-auto w-full">
+          <div class="overflow-x-auto w-full rounded-2xl border border-black/[0.04]">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
-                <tr class="bg-gray-50 text-gray-600 font-bold uppercase tracking-wider border-b border-gray-200">
-                  <th class="p-3 w-40">Thời Gian</th>
-                  <th class="p-3 w-36">Quản Trị Viên</th>
-                  <th class="p-3 w-44">Hành Động</th>
-                  <th class="p-3">Chi Tiết Thay Đổi</th>
+                <tr class="bg-black/[0.02] text-gray-500 font-black text-[11px] uppercase tracking-wider border-b border-black/[0.04]">
+                  <th class="p-3.5 w-40">Thời Gian</th>
+                  <th class="p-3.5 w-36">Quản Trị Viên</th>
+                  <th class="p-3.5 w-44">Hành Động</th>
+                  <th class="p-3.5">Chi Tiết Thay Đổi</th>
                 </tr>
               </thead>
-              <tbody id="auditTableBody" class="divide-y divide-gray-100 font-mono">
+              <tbody id="auditTableBody" class="divide-y divide-black/[0.03] font-mono">
                 <tr><td colspan="4" class="p-10 text-center text-gray-400">Đang tải nhật ký kiểm toán...</td></tr>
               </tbody>
             </table>
@@ -1089,43 +1323,46 @@
       <!-- ================= TAB: SYSTEM HEALTH & FEATURE FLAGS ================= -->
       <div id="tab-system_settings" class="hidden max-w-4xl mx-auto space-y-6">
         <!-- System Health Check -->
-        <div class="bg-white p-6 rounded-3xl border border-black/[0.06] shadow-sm space-y-4">
-          <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
-            <i data-lucide="activity" class="w-5 h-5 text-appleBlue"></i> Tình Trạng Hạ Tầng (System Health)
-          </h3>
+        <div class="glass-card p-6 md:p-8 rounded-3xl border border-black/[0.06] shadow-apple space-y-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-blue-50 text-appleBlue flex items-center justify-center shadow-2xs">
+              <i data-lucide="activity" class="w-4 h-4"></i>
+            </div>
+            <h3 class="font-extrabold text-base text-gray-900">Tình Trạng Hạ Tầng (System Health)</h3>
+          </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="healthGrid">
-            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+            <div class="p-4 rounded-2xl bg-black/[0.02] border border-black/[0.04]">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-bold text-gray-700">Firebase Firestore</span>
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
               </div>
-              <p class="text-xs text-emerald-600 font-semibold">Operational</p>
+              <p class="text-xs text-emerald-600 font-bold">Operational</p>
               <span class="text-[10px] text-gray-400">Response &lt; 85ms</span>
             </div>
 
-            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+            <div class="p-4 rounded-2xl bg-black/[0.02] border border-black/[0.04]">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-bold text-gray-700">Google Apps Script</span>
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
               </div>
-              <p class="text-xs text-emerald-600 font-semibold">Operational</p>
+              <p class="text-xs text-emerald-600 font-bold">Operational</p>
               <span class="text-[10px] text-gray-400">Connected</span>
             </div>
 
-            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-200">
+            <div class="p-4 rounded-2xl bg-black/[0.02] border border-black/[0.04]">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs font-bold text-gray-700">KingMMO Provider</span>
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
               </div>
-              <p class="text-xs text-emerald-600 font-semibold">Operational</p>
+              <p class="text-xs text-emerald-600 font-bold">Operational</p>
               <span class="text-[10px] text-gray-400">Ready</span>
             </div>
           </div>
         </div>
 
         <!-- CẤU HÌNH CỔNG VƯỢT LINK KIẾM TIỀN (YEUMONEY / LINK4M / TÙY CHỈNH) -->
-        <div class="bg-white p-6 rounded-3xl border border-black/[0.06] shadow-sm space-y-5">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+        <div class="glass-card p-6 md:p-8 rounded-3xl border border-black/[0.06] shadow-apple space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-black/[0.05]">
             <div>
               <div class="flex items-center gap-2">
                 <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
@@ -1265,6 +1502,7 @@
                 <input type="text" id="shortenerCustomToken" placeholder="Nhập token..." class="w-full text-xs font-mono p-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-purple-500 focus:outline-none transition">
               </div>
             </div>
+          </div>
           <!-- Cấu Hình Bot Telegram Thông Báo Vượt Link (Bot Riêng Biệt) -->
           <div class="p-4 rounded-2xl border border-sky-200 bg-sky-50/50 space-y-3">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-sky-100">
@@ -1356,30 +1594,35 @@
         </div>
 
         <!-- Feature Flags -->
-        <div class="bg-white p-6 rounded-3xl border border-black/[0.06] shadow-sm space-y-4">
-          <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
-            <i data-lucide="toggle-right" class="w-5 h-5 text-purple-600"></i> Quản Lý Feature Flags
-          </h3>
-          <p class="text-xs text-gray-500">Bật tắt tính năng tức thì trên client mà không cần sửa mã nguồn.</p>
+        <div class="glass-card p-6 md:p-8 rounded-3xl border border-black/[0.06] shadow-apple space-y-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-2xs">
+              <i data-lucide="toggle-right" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-base text-gray-900">Quản Lý Feature Flags</h3>
+              <p class="text-xs text-gray-400 mt-0.5">Bật tắt tính năng tức thì trên client mà không cần sửa mã nguồn.</p>
+            </div>
+          </div>
           
-          <div class="divide-y divide-gray-100 text-xs">
-            <div class="py-3 flex items-center justify-between">
+          <div class="divide-y divide-black/[0.04] text-xs">
+            <div class="py-3.5 flex items-center justify-between">
               <div>
                 <p class="font-bold text-gray-800">Cửa hàng Mall Tự Động</p>
-                <p class="text-gray-400">Cho phép đặt hàng và thanh toán trực tiếp</p>
+                <p class="text-gray-400 text-[11px] mt-0.5">Cho phép đặt hàng và thanh toán trực tiếp</p>
               </div>
               <input type="checkbox" checked class="w-5 h-5 accent-appleBlue rounded cursor-pointer">
             </div>
 
-            <div class="py-3 flex items-center justify-between">
+            <div class="py-3.5 flex items-center justify-between">
               <div>
                 <p class="font-bold text-gray-800">Trợ Lý AI Tự Học</p>
-                <p class="text-gray-400">Bật hộp thoại hỗ trợ khách hàng thông minh</p>
+                <p class="text-gray-400 text-[11px] mt-0.5">Bật hộp thoại hỗ trợ khách hàng thông minh</p>
               </div>
               <input type="checkbox" checked class="w-5 h-5 accent-appleBlue rounded cursor-pointer">
             </div>
 
-            <div class="py-3 flex items-center justify-between">
+            <div class="py-3.5 flex items-center justify-between">
               <div>
                 <div class="flex items-center gap-2">
                   <p class="font-bold text-gray-800">Chế Độ Bảo Trì Chợ MMO</p>
@@ -1397,41 +1640,40 @@
           </div>
         </div>
       </div>
-      </div>
       <!-- END TAB: SYSTEM HEALTH & FEATURE FLAGS -->
 
       <!-- ================= TAB: LIVE SUPPORT CHAT ================= -->
       <div id="tab-support_chat" class="hidden space-y-4">
         <!-- Top Action Card -->
-        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-black/[0.06] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="glass-card p-4 sm:p-5 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div class="flex items-center gap-2">
-              <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
-                <i data-lucide="message-square" class="w-5 h-5 text-emerald-600"></i> Hỗ Trợ Trực Tuyến & Live Chat
+              <h3 class="font-extrabold text-base text-gray-900 flex items-center gap-2">
+                <i data-lucide="message-square" class="w-5 h-5 text-emerald-600"></i> Hỗ Trực Tuyến & Live Chat
               </h3>
               <span id="chatTotalCountBadge" class="text-xs bg-emerald-100 text-emerald-700 font-bold px-2.5 py-0.5 rounded-full">0 hội thoại</span>
             </div>
-            <p class="text-xs text-gray-500 mt-0.5">Tiếp nhận và phản hồi tin nhắn khách hàng gửi từ Web theo thời gian thực (Lưu Google Sheets & Báo Telegram).</p>
+            <p class="text-xs text-gray-400 mt-0.5">Tiếp nhận và phản hồi tin nhắn khách hàng gửi từ Web theo thời gian thực (Lưu Google Sheets & Báo Telegram).</p>
           </div>
           <div class="flex items-center gap-2">
             <span class="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-semibold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/50">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Đồng bộ tự động
             </span>
-            <button onclick="fetchSupportChats(false)" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+            <button onclick="fetchSupportChats(false)" class="px-3.5 py-2 bg-black/[0.04] hover:bg-black/[0.07] text-gray-700 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 border border-black/[0.05]">
               <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Làm Mới
             </button>
           </div>
         </div>
 
         <!-- Chat Workspace Layout -->
-        <div class="bg-white rounded-3xl border border-black/[0.06] shadow-sm overflow-hidden flex flex-col md:flex-row h-[680px]">
+        <div class="glass-card rounded-3xl border border-black/[0.06] shadow-apple overflow-hidden flex flex-col md:flex-row h-[680px]">
           <!-- Left: User Conversations List -->
-          <div class="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-black/[0.06] flex flex-col h-1/2 md:h-full bg-gray-50/40">
+          <div class="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-black/[0.06] flex flex-col h-1/2 md:h-full bg-black/[0.01]">
             <!-- Search & Filters -->
-            <div class="p-3 border-b border-black/[0.06] bg-white">
+            <div class="p-3.5 border-b border-black/[0.06] bg-white/60 backdrop-blur-md">
               <div class="relative">
                 <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
-                <input type="text" id="chatSearchInput" oninput="filterChatUsers(this.value)" placeholder="Tìm Email, UID..." class="w-full pl-9 pr-3 py-2 bg-gray-100 focus:bg-white text-xs rounded-xl border border-transparent focus:border-appleBlue outline-none transition font-medium">
+                <input type="text" id="chatSearchInput" oninput="filterChatUsers(this.value)" placeholder="Tìm Email, UID..." class="w-full pl-9 pr-3 py-2 bg-white border border-black/[0.06] focus:border-appleBlue text-xs rounded-xl outline-none transition font-medium shadow-2xs">
               </div>
             </div>
 
@@ -1960,48 +2202,53 @@
 
   <!-- MODAL: LEDGER BALANCE ADJUSTMENT (REPLACING DANGEROUS OVERWRITE) -->
   <div id="ledgerModal" class="fixed inset-0 z-[140] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeLedgerModal()"></div>
-    <div class="bg-white rounded-3xl shadow-modal w-full max-w-sm p-6 relative z-10 transition-all space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-        <h3 class="font-bold text-base text-gray-900">Điều Chỉnh Số Dư Khách</h3>
-        <button onclick="closeLedgerModal()" class="text-gray-400 hover:text-gray-600 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeLedgerModal()"></div>
+    <div class="glass-card rounded-[32px] shadow-2xl border border-black/[0.08] w-full max-w-sm p-6 relative z-10 transition-all space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-appleBlue flex items-center justify-center">
+            <i data-lucide="scale" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-bold text-base text-gray-900 tracking-tight">Điều Chỉnh Số Dư Khách</h3>
+        </div>
+        <button onclick="closeLedgerModal()" class="w-8 h-8 rounded-xl bg-black/[0.03] hover:bg-black/[0.06] text-gray-500 flex items-center justify-center transition"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
       <input type="hidden" id="ledgerUid">
-      <div>
-        <span class="text-[11px] font-bold text-gray-400 uppercase">Khách Hàng</span>
+      <div class="p-3.5 bg-black/[0.02] border border-black/[0.05] rounded-2xl">
+        <span class="text-[10px] font-black tracking-wider text-gray-400 uppercase">Khách Hàng</span>
         <p class="text-xs font-bold text-gray-800 truncate" id="ledgerEmail">-</p>
         <span class="text-[11px] text-gray-500 font-mono" id="ledgerCurrentBalance">Hiện tại: 0đ</span>
       </div>
 
       <div class="space-y-2">
-        <span class="text-[11px] font-bold text-gray-500 uppercase">Loại Điều Chỉnh</span>
+        <span class="text-[10px] font-black tracking-wider text-gray-400 uppercase">Loại Điều Chỉnh</span>
         <div class="grid grid-cols-2 gap-2">
-          <label class="flex items-center justify-center gap-1.5 p-2.5 border rounded-xl cursor-pointer text-xs font-bold text-emerald-700 bg-emerald-50 border-emerald-200">
+          <label class="flex items-center justify-center gap-1.5 p-2.5 border rounded-2xl cursor-pointer text-xs font-bold text-emerald-700 bg-emerald-500/10 border-emerald-500/20 transition hover:bg-emerald-500/15">
             <input type="radio" name="ledgerType" value="ADD" checked class="accent-emerald-600"> + Cộng Tiền
           </label>
-          <label class="flex items-center justify-center gap-1.5 p-2.5 border rounded-xl cursor-pointer text-xs font-bold text-rose-700 bg-rose-50 border-rose-200">
+          <label class="flex items-center justify-center gap-1.5 p-2.5 border rounded-2xl cursor-pointer text-xs font-bold text-rose-700 bg-rose-500/10 border-rose-500/20 transition hover:bg-rose-500/15">
             <input type="radio" name="ledgerType" value="SUBTRACT" class="accent-rose-600"> - Trừ Tiền
           </label>
         </div>
       </div>
 
       <div>
-        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Số Tiền (VNĐ) *</label>
-        <input type="number" id="ledgerAmount" placeholder="VD: 50000" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 outline-none focus:border-appleBlue">
+        <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Số Tiền (VNĐ) *</label>
+        <input type="number" id="ledgerAmount" placeholder="VD: 50000" class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl text-sm font-bold text-gray-900 outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
       </div>
 
       <div>
-        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Lý Do Điều Chỉnh (Bắt buộc) *</label>
-        <input type="text" id="ledgerReason" placeholder="VD: Hoàn tiền đơn lỗi #1029..." class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-appleBlue">
+        <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Lý Do Điều Chỉnh (Bắt buộc) *</label>
+        <input type="text" id="ledgerReason" placeholder="VD: Hoàn tiền đơn lỗi #1029..." class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl text-xs outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
       </div>
 
       <div>
-        <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1">Ngày Hết Hạn VIP (Tùy chọn)</label>
-        <input type="date" id="ledgerVipDate" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 outline-none focus:border-appleBlue">
+        <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Ngày Hết Hạn VIP (Tùy chọn)</label>
+        <input type="date" id="ledgerVipDate" class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl text-xs font-bold text-gray-800 outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
       </div>
 
-      <button onclick="submitLedgerAdjustment()" id="btnSubmitLedger" class="w-full py-3 bg-appleBlue hover:bg-appleBlueDark text-white font-bold rounded-xl text-xs transition shadow-md active:scale-95">
+      <button onclick="submitLedgerAdjustment()" id="btnSubmitLedger" class="w-full py-3 bg-gradient-to-r from-appleBlue to-darkBlue hover:brightness-105 text-white font-bold rounded-2xl text-xs transition shadow-apple active:scale-95">
         XÁC NHẬN GHI SỔ CÁI
       </button>
     </div>
@@ -2009,21 +2256,24 @@
 
   <!-- MODAL: MANUAL FULFILLMENT -->
   <div id="manualModal" class="fixed inset-0 z-[140] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeManualModal()"></div>
-    <div class="bg-white rounded-3xl shadow-modal w-full max-w-md p-6 relative z-10 space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-        <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
-          <i data-lucide="send" class="w-4 h-4 text-appleBlue"></i> Xuất Trả Account Thủ Công
-        </h3>
-        <button onclick="closeManualModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeManualModal()"></div>
+    <div class="glass-card rounded-[32px] shadow-2xl border border-black/[0.08] w-full max-w-md p-6 relative z-10 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-appleBlue flex items-center justify-center">
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-bold text-base text-gray-900 tracking-tight">Xuất Trả Account Thủ Công</h3>
+        </div>
+        <button onclick="closeManualModal()" class="w-8 h-8 rounded-xl bg-black/[0.03] hover:bg-black/[0.06] text-gray-500 flex items-center justify-center transition"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
       <input type="hidden" id="manualRow">
       <p class="text-xs text-gray-500">Dán thông tin tài khoản (UID, Password, Token, 2FA) để gửi cho khách hàng.</p>
 
-      <textarea id="manualAccountData" rows="5" placeholder="username|password|2fa_code..." class="w-full p-3 font-mono text-xs bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-appleBlue leading-relaxed"></textarea>
+      <textarea id="manualAccountData" rows="5" placeholder="username|password|2fa_code..." class="w-full p-3 font-mono text-xs bg-white/80 border border-black/[0.08] rounded-2xl outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 leading-relaxed"></textarea>
 
-      <button onclick="submitManualFulfill()" id="btnSubmitManual" class="w-full py-3 bg-appleBlue hover:bg-appleBlueDark text-white font-bold rounded-xl text-xs transition active:scale-95">
+      <button onclick="submitManualFulfill()" id="btnSubmitManual" class="w-full py-3 bg-gradient-to-r from-appleBlue to-darkBlue hover:brightness-105 text-white font-bold rounded-2xl text-xs transition shadow-apple active:scale-95">
         GỬI ACCOUNT CHO KHÁCH
       </button>
     </div>
@@ -2031,18 +2281,23 @@
 
   <!-- DRAWER / MODAL: SHORTCUT EDITOR (TABBED VIEW) -->
   <div id="shortcutModal" class="fixed inset-0 z-[130] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeShortcutModal()"></div>
-    <div class="bg-white rounded-3xl shadow-modal w-full max-w-2xl p-6 relative z-10 flex flex-col max-h-[90vh]">
-      <div class="flex items-center justify-between pb-3 border-b border-gray-100 shrink-0">
-        <h3 class="font-bold text-base text-gray-900" id="shortcutModalTitle">Thêm Phím Tắt</h3>
-        <button onclick="closeShortcutModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeShortcutModal()"></div>
+    <div class="glass-card rounded-[32px] shadow-2xl border border-black/[0.08] w-full max-w-2xl p-6 relative z-10 flex flex-col max-h-[90vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-black/[0.06] shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-bold text-base text-gray-900 tracking-tight" id="shortcutModalTitle">Thêm Phím Tắt</h3>
+        </div>
+        <button onclick="closeShortcutModal()" class="w-8 h-8 rounded-xl bg-black/[0.03] hover:bg-black/[0.06] text-gray-500 flex items-center justify-center transition"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
       <!-- Tabbed Shortcut Form Navigation -->
-      <div class="flex gap-2 border-b border-gray-100 py-2 shrink-0">
-        <button onclick="switchShortcutTab('general')" id="shTab_general" class="px-3 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-700">Thông Tin Chung</button>
-        <button onclick="switchShortcutTab('media')" id="shTab_media" class="px-3 py-1 rounded-lg text-xs font-medium text-gray-500">Icon & Liên Kết</button>
-        <button onclick="switchShortcutTab('guides')" id="shTab_guides" class="px-3 py-1 rounded-lg text-xs font-medium text-gray-500">Hướng Dẫn & Lỗi</button>
+      <div class="flex gap-2 border-b border-black/[0.06] py-2.5 shrink-0">
+        <button onclick="switchShortcutTab('general')" id="shTab_general" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-500/10 text-purple-700 border border-purple-500/20 transition">Thông Tin Chung</button>
+        <button onclick="switchShortcutTab('media')" id="shTab_media" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-900 border border-transparent transition">Icon & Liên Kết</button>
+        <button onclick="switchShortcutTab('guides')" id="shTab_guides" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-900 border border-transparent transition">Hướng Dẫn & Lỗi</button>
       </div>
 
       <div class="flex-1 overflow-y-auto py-4 space-y-4 text-xs scrollbar-none">
@@ -2051,13 +2306,13 @@
         <!-- Tab 1: General -->
         <div id="shPane_general" class="space-y-3">
           <div>
-            <label class="block font-bold text-gray-500 mb-1">Tên Phím Tắt *</label>
-            <input type="text" id="shName" placeholder="Snap Video Pro..." class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold">
+            <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Tên Phím Tắt *</label>
+            <input type="text" id="shName" placeholder="Snap Video Pro..." class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl font-bold outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-bold text-gray-500 mb-1">Danh Mục</label>
-              <select id="shCategory" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-medium">
+              <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Danh Mục</label>
+              <select id="shCategory" class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl font-semibold outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
                 <option value="utility">Tiện ích</option>
                 <option value="social">Mạng xã hội</option>
                 <option value="entertainment">Giải trí</option>
@@ -2065,25 +2320,25 @@
               </select>
             </div>
             <div>
-              <label class="block font-bold text-gray-500 mb-1">Yêu Cầu iOS</label>
-              <input type="text" id="shIosVersion" placeholder="15.0+" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold">
+              <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Yêu Cầu iOS</label>
+              <input type="text" id="shIosVersion" placeholder="15.0+" class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl font-bold outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
             </div>
           </div>
           <div>
-            <label class="block font-bold text-gray-500 mb-1">Mô Tả Ngắn</label>
-            <textarea id="shDescription" rows="3" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl resize-none"></textarea>
+            <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Mô Tả Ngắn</label>
+            <textarea id="shDescription" rows="3" class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl resize-none outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition"></textarea>
           </div>
         </div>
 
         <!-- Tab 2: Media & URLs -->
         <div id="shPane_media" class="hidden space-y-3">
           <div>
-            <label class="block font-bold text-gray-500 mb-1">Đường Dẫn Cài Đặt (iCloud) *</label>
-            <input type="text" id="shShortcutUrl" placeholder="https://www.icloud.com/shortcuts/..." class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+            <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Đường Dẫn Cài Đặt (iCloud) *</label>
+            <input type="text" id="shShortcutUrl" placeholder="https://www.icloud.com/shortcuts/..." class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
           </div>
           <div>
-            <label class="block font-bold text-gray-500 mb-1">Icon URL (Ảnh)</label>
-            <input type="text" id="shIconUrl" placeholder="https://..." class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+            <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Icon URL (Ảnh)</label>
+            <input type="text" id="shIconUrl" placeholder="https://..." class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
           </div>
         </div>
 
@@ -2091,48 +2346,53 @@
         <div id="shPane_guides" class="hidden space-y-3">
           <p class="text-gray-400">Các bước hướng dẫn cài đặt và khắc phục lỗi thường gặp.</p>
           <div id="instructionsContainer" class="space-y-2"></div>
-          <button type="button" onclick="addInstructionRow()" class="text-purple-600 font-bold hover:underline">+ Thêm bước hướng dẫn</button>
+          <button type="button" onclick="addInstructionRow()" class="text-purple-600 font-bold hover:underline inline-flex items-center gap-1">+ Thêm bước hướng dẫn</button>
         </div>
       </div>
 
-      <div class="pt-3 border-t border-gray-100 flex gap-2 shrink-0">
-        <button onclick="closeShortcutModal()" class="w-1/3 py-2.5 bg-gray-100 font-bold text-gray-600 rounded-xl text-xs">Hủy</button>
-        <button onclick="submitShortcutForm()" class="flex-1 py-2.5 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl text-xs">XÁC NHẬN LƯU</button>
+      <div class="pt-3 border-t border-black/[0.06] flex gap-2 shrink-0">
+        <button onclick="closeShortcutModal()" class="w-1/3 py-2.5 bg-black/[0.04] hover:bg-black/[0.08] font-bold text-gray-600 rounded-2xl text-xs transition">Hủy</button>
+        <button onclick="submitShortcutForm()" class="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-105 text-white font-bold rounded-2xl text-xs transition shadow-apple">XÁC NHẬN LƯU</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL: AI KNOWLEDGE RULE -->
   <div id="aiModal" class="fixed inset-0 z-[130] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAIModal()"></div>
-    <div class="bg-white rounded-3xl shadow-modal w-full max-w-lg p-6 relative z-10 space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-        <h3 class="font-bold text-base text-gray-900" id="aiModalTitle">Thêm Tri Thức AI</h3>
-        <button onclick="closeAIModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeAIModal()"></div>
+    <div class="glass-card rounded-[32px] shadow-2xl border border-black/[0.08] w-full max-w-lg p-6 relative z-10 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-appleBlue flex items-center justify-center">
+            <i data-lucide="bot" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-bold text-base text-gray-900 tracking-tight" id="aiModalTitle">Thêm Tri Thức AI</h3>
+        </div>
+        <button onclick="closeAIModal()" class="w-8 h-8 rounded-xl bg-black/[0.03] hover:bg-black/[0.06] text-gray-500 flex items-center justify-center transition"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <input type="hidden" id="aiIndex">
       <div>
-        <label class="block text-xs font-bold text-gray-500 mb-1">Từ Khóa / Câu Hỏi (Học)</label>
-        <input type="text" id="aiQuestion" placeholder="nap tien, quen mat khau, loi ipa..." class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold">
+        <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Từ Khóa / Câu Hỏi (Học)</label>
+        <input type="text" id="aiQuestion" placeholder="nap tien, quen mat khau, loi ipa..." class="w-full px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-2xl text-xs font-bold outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
       </div>
       <div>
-        <label class="block text-xs font-bold text-gray-500 mb-1">Nội Dung Phản Hồi Tự Động Của AI</label>
-        <textarea id="aiAnswer" rows="5" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs leading-relaxed"></textarea>
+        <label class="block text-[10px] font-black tracking-wider text-gray-400 uppercase mb-1">Nội Dung Phản Hồi Tự Động Của AI</label>
+        <textarea id="aiAnswer" rows="5" class="w-full p-3 bg-white/80 border border-black/[0.08] rounded-2xl text-xs leading-relaxed outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition"></textarea>
       </div>
-      <button onclick="saveAIChanges()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs">LƯU TRI THỨC VÀO STATE</button>
+      <button onclick="saveAIChanges()" class="w-full py-3 bg-gradient-to-r from-appleBlue to-darkBlue hover:brightness-105 text-white font-bold rounded-2xl text-xs transition shadow-apple active:scale-95">LƯU TRI THỨC VÀO STATE</button>
     </div>
   </div>
 
   <!-- COMMAND PALETTE (CMD+K / CTRL+K) -->
   <div id="commandPalette" class="fixed inset-0 z-[250] hidden flex items-start justify-center pt-20 p-4">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeCommandPalette()"></div>
-    <div class="bg-white/90 backdrop-blur-2xl rounded-2xl shadow-2xl border border-black/[0.08] w-full max-w-lg overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-150">
-      <div class="flex items-center px-4 border-b border-gray-100">
+    <div class="glass-card rounded-[28px] shadow-2xl border border-black/[0.08] w-full max-w-lg overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center px-4 border-b border-black/[0.06] bg-white/40">
         <i data-lucide="search" class="w-4 h-4 text-gray-400 mr-3"></i>
-        <input type="text" id="cmdInput" oninput="filterCommandPalette()" placeholder="Gõ hành động hoặc nhảy tới tab..." class="w-full py-4 text-xs font-medium bg-transparent outline-none text-gray-900">
-        <kbd class="text-[10px] font-mono text-gray-400 px-1.5 py-0.5 rounded border border-gray-200">ESC</kbd>
+        <input type="text" id="cmdInput" oninput="filterCommandPalette()" placeholder="Gõ hành động hoặc nhảy tới tab..." class="w-full py-4 text-xs font-semibold bg-transparent outline-none text-gray-900 placeholder:text-gray-400">
+        <kbd class="text-[10px] font-mono text-gray-400 px-2 py-0.5 rounded-lg border border-black/[0.08] bg-black/[0.02]">ESC</kbd>
       </div>
-      <div id="cmdResults" class="p-2 max-h-80 overflow-y-auto space-y-1 text-xs">
+      <div id="cmdResults" class="p-2 max-h-80 overflow-y-auto space-y-1 text-xs scrollbar-none">
         <!-- Results populated dynamically -->
       </div>
     </div>
@@ -2143,19 +2403,19 @@
 
   <!-- MODAL: VISITOR TELEMETRY DETAIL -->
   <div id="modalVisitorDetail" class="fixed inset-0 z-[230] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeVisitorDetailModal()"></div>
-    <div class="bg-white rounded-3xl shadow-modal w-full max-w-xl p-6 relative z-10 space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeVisitorDetailModal()"></div>
+    <div class="glass-card rounded-[32px] shadow-2xl border border-black/[0.08] w-full max-w-xl p-6 relative z-10 space-y-4 max-h-[90vh] overflow-y-auto scrollbar-none">
+      <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
         <div class="flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-appleBlue to-darkBlue text-white flex items-center justify-center shadow-apple shrink-0">
             <i data-lucide="shield-check" class="w-5 h-5"></i>
           </div>
           <div>
-            <h3 class="font-black text-base text-gray-900">Hồ Sơ Toàn Diện Khách & Thông Số IP</h3>
+            <h3 class="font-bold text-base text-gray-900 tracking-tight">Hồ Sơ Toàn Diện Khách & Thông Số IP</h3>
             <div class="text-[11px] text-gray-500 font-mono mt-0.5" id="mvisId">Đang nạp hồ sơ...</div>
           </div>
         </div>
-        <button onclick="closeVisitorDetailModal()" class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition">
+        <button onclick="closeVisitorDetailModal()" class="w-8 h-8 rounded-xl bg-black/[0.03] hover:bg-black/[0.06] text-gray-500 flex items-center justify-center transition">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
@@ -2164,16 +2424,16 @@
         <!-- Content dynamically injected -->
       </div>
 
-      <div class="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+      <div class="pt-3 border-t border-black/[0.06] flex items-center justify-between gap-2 flex-wrap">
         <div class="flex items-center gap-2">
-          <button id="btnCopyVisIp" onclick="copyCurrentVisitorIP()" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition">
+          <button id="btnCopyVisIp" onclick="copyCurrentVisitorIP()" class="px-3.5 py-2 bg-black/[0.04] hover:bg-black/[0.08] text-gray-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i> Sao Chép IP
           </button>
-          <button onclick="filterTableByCurrentVisitorIP()" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition">
+          <button onclick="filterTableByCurrentVisitorIP()" class="px-3 py-2 bg-blue-500/10 hover:bg-blue-500/15 text-appleBlue border border-blue-500/20 rounded-xl font-bold text-xs flex items-center gap-1.5 transition">
             <i data-lucide="filter" class="w-3.5 h-3.5"></i> Lọc Trên Bảng
           </button>
         </div>
-        <button onclick="closeVisitorDetailModal()" class="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-bold text-xs transition">
+        <button onclick="closeVisitorDetailModal()" class="px-5 py-2 bg-gray-900 hover:bg-black text-white rounded-xl font-bold text-xs transition shadow-apple">
           Đóng
         </button>
       </div>
@@ -3366,10 +3626,10 @@
     function switchShortcutTab(tab) {
       ['general', 'media', 'guides'].forEach(t => {
         document.getElementById(`shPane_${t}`).classList.add('hidden');
-        document.getElementById(`shTab_${t}`).className = "px-3 py-1 rounded-lg text-xs font-medium text-gray-500";
+        document.getElementById(`shTab_${t}`).className = "px-3.5 py-1.5 rounded-xl text-xs font-semibold text-gray-500 hover:text-gray-900 border border-transparent transition";
       });
       document.getElementById(`shPane_${tab}`).classList.remove('hidden');
-      document.getElementById(`shTab_${tab}`).className = "px-3 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-700";
+      document.getElementById(`shTab_${tab}`).className = "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-500/10 text-purple-700 border border-purple-500/20 shadow-2xs transition";
     }
 
     function addInstructionRow(val = '') {
@@ -3377,8 +3637,8 @@
       const div = document.createElement('div');
       div.className = "flex items-center gap-2";
       div.innerHTML = `
-        <input type="text" value="${escapeHTML(val)}" placeholder="Nhập bước hướng dẫn..." class="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs">
-        <button type="button" onclick="this.parentElement.remove()" class="text-rose-500 p-1"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+        <input type="text" value="${escapeHTML(val)}" placeholder="Nhập bước hướng dẫn..." class="flex-1 px-3.5 py-2.5 bg-white/80 border border-black/[0.08] rounded-xl text-xs outline-none focus:border-appleBlue focus:ring-2 focus:ring-blue-500/10 transition">
+        <button type="button" onclick="this.parentElement.remove()" class="w-8 h-8 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 flex items-center justify-center transition"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
       `;
       container.appendChild(div);
       lucide.createIcons();
@@ -3580,8 +3840,8 @@
         if (el) el.classList.add('hidden');
         const nav = document.getElementById('nav-' + t);
         if (nav) {
-          const hasBadge = (t === 'vsign_config' || t === 'mmo_orders');
-          nav.className = `w-full flex items-center ${hasBadge ? 'justify-between' : ''} px-3.5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-black/[0.03] transition`;
+          const hasBadge = (t === 'vsign_config' || t === 'mmo_orders' || t === 'support_chat');
+          nav.className = `w-full flex items-center ${hasBadge ? 'justify-between' : ''} px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 border border-transparent transition-all duration-200`;
         }
       });
 
@@ -3590,8 +3850,8 @@
 
       const currentNav = document.getElementById('nav-' + tabId);
       if (currentNav) {
-        const hasBadge = (tabId === 'vsign_config' || tabId === 'mmo_orders');
-        currentNav.className = `w-full flex items-center ${hasBadge ? 'justify-between' : ''} px-3.5 py-2.5 rounded-xl font-bold bg-appleBlue/10 text-appleBlue transition`;
+        const hasBadge = (tabId === 'vsign_config' || tabId === 'mmo_orders' || tabId === 'support_chat');
+        currentNav.className = `w-full flex items-center ${hasBadge ? 'justify-between' : ''} px-3 py-2 rounded-2xl font-bold bg-blue-600/10 text-appleBlue border border-blue-500/20 shadow-xs transition-all duration-200`;
       }
 
       const titleMap = {
