@@ -740,6 +740,25 @@ async function recordAppDownload(app, downloadType) {
   const nowIso = new Date().toISOString();
   const userEmail = (currentUser && currentUser.email) ? currentUser.email : 'Khách vãng lai';
 
+  // 1. Lưu vào Lịch sử tải của người dùng (ĐÃ TẢI)
+  try {
+    const myDls = getLocalAnalytics('ipaviet_my_downloads', []);
+    const existingIdx = myDls.findIndex(d => d.id === (app._id || docId) || (bundleId && d.bundleId === bundleId));
+    const dlRecord = {
+      id: app._id || docId,
+      name,
+      bundleId,
+      icon,
+      version: app.version || '1.0',
+      fileLink: app.fileLink || app.downloadUrl || '',
+      downloadedAt: nowIso
+    };
+    if (existingIdx >= 0) myDls[existingIdx] = dlRecord;
+    else myDls.unshift(dlRecord);
+    if (myDls.length > 50) myDls.length = 50;
+    setLocalAnalytics('ipaviet_my_downloads', myDls);
+  } catch(e) {}
+
   // 1a. LocalStorage Apps
   try {
     const appsMap = getLocalAnalytics('ipaviet_analytics_apps', {});
@@ -826,6 +845,25 @@ async function recordAppDownload(app, downloadType) {
         userEmail,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       }).catch(() => {});
+
+      // Lưu vào hồ sơ người dùng nếu đã đăng nhập
+      if (currentUser && currentUser.uid) {
+        db.collection('users').doc(currentUser.uid).collection('downloads').doc(docId).set({
+          appId: app._id || docId,
+          appName: name,
+          bundleId,
+          icon,
+          version: app.version || '1.0',
+          fileLink: app.fileLink || app.downloadUrl || '',
+          method: downloadType || 'Free',
+          downloadedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(() => {});
+
+        db.collection('users').doc(currentUser.uid).update({
+          totalDownloads: firebase.firestore.FieldValue.increment(1),
+          lastDownloadAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(() => {});
+      }
     }
   } catch (e) {}
 }
@@ -1603,6 +1641,8 @@ function createEntity(i, index) {
   let safeDesc = i.desc || i.description || 'Nhấn để xem chi tiết';
   let safeVer = i.version || '1.0';
   const isVip = i._type === 'VIP';
+  const myDls = getLocalAnalytics('ipaviet_my_downloads', []);
+  const isDownloaded = myDls.some(d => (i._id && d.id === i._id) || (i.bundleId && d.bundleId === i.bundleId));
 
   return `
     <div onclick="openAppView('${i._id}')" class="entity reveal ${i.isMod ? 'has-mod' : ''}" style="transition-delay:${Math.min(index * 35, 400)}ms">
@@ -1619,6 +1659,7 @@ function createEntity(i, index) {
       <div class="entity-badges">
         ${isVip ? `<span class="entity-badge badge-vip"><i data-lucide="crown" style="width:10px;height:10px;"></i> VIP</span>` : `<span class="entity-badge badge-free"><i data-lucide="sparkles" style="width:10px;height:10px;"></i> Free</span>`}
         ${i.isMod ? `<span class="entity-badge badge-mod"><i data-lucide="zap" style="width:9px;height:9px;"></i> MOD PRO</span>` : ''}
+        ${isDownloaded ? `<span class="entity-badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);"><i data-lucide="check-circle" style="width:9px;height:9px;"></i> Đã tải</span>` : ''}
       </div>
       ${i.isMod && i.modSummary ? `
         <div class="entity-mod-highlight" title="${i.modSummary}">

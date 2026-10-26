@@ -183,6 +183,14 @@
                   <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
               </button>
               
+              <button onclick="openSubPage('downloadHistoryPage')" class="w-full bg-cardLight dark:bg-cardDark p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-white/5 active:scale-95 transition-transform spatial-shadow">
+                  <div class="flex items-center gap-4 font-bold text-gray-800 dark:text-gray-200"><div class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center"><i data-lucide="download-cloud" class="w-5 h-5 text-blue-500"></i></div> Ứng Dụng Đã Tải</div>
+                  <div class="flex items-center gap-2">
+                      <span id="userTotalDlCount" class="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full">0 app</span>
+                      <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                  </div>
+              </button>
+              
               <button onclick="window.location.href='dichvu.html'" class="w-full bg-cardLight dark:bg-cardDark p-4 rounded-2xl flex items-center justify-between border border-gray-100 dark:border-white/5 active:scale-95 transition-transform spatial-shadow">
                   <div class="flex items-center gap-4 font-bold text-gray-800 dark:text-gray-200"><div class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center"><i data-lucide="shopping-bag" class="w-5 h-5 text-brand"></i></div> Cửa hàng Nạp thẻ</div>
                   <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
@@ -324,6 +332,24 @@
      </div>
   </div>
 
+  <div id="downloadHistoryPage" class="fixed inset-0 bg-bgLight dark:bg-bgDark slide-page flex flex-col overflow-hidden">
+     <div class="glass-effect h-[80px] w-full flex items-center px-4 shrink-0 border-b relative z-20">
+       <button onclick="closeSubPage('downloadHistoryPage')" class="flex items-center gap-1 text-brand font-bold text-[17px] active:opacity-60 transition">
+         <i data-lucide="chevron-left" class="w-6 h-6"></i> Trở lại
+       </button>
+       <h1 class="absolute left-1/2 -translate-x-1/2 font-black text-lg">Ứng Dụng Đã Tải</h1>
+     </div>
+     <div class="flex-1 overflow-y-auto px-5 py-6 pb-32">
+         <p class="text-sm text-gray-500 mb-6 text-center">Các tệp IPA bạn đã tải về máy sẽ được lưu trữ tại đây để tải lại nhanh chóng.</p>
+         <div id="userDownloadHistoryList" class="space-y-3">
+             <div class="py-10 text-center text-gray-400 flex flex-col items-center">
+               <i data-lucide="download-cloud" class="w-12 h-12 mb-3 opacity-30"></i>
+               <span class="text-sm">Chưa có ứng dụng nào được tải về.</span>
+             </div>
+         </div>
+     </div>
+  </div>
+
   <div id="logoutModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center px-4">
       <div class="absolute inset-0 bg-black/40 dark:bg-black/70 backdrop-blur-sm transition-opacity duration-300 opacity-0" id="logoutOverlay" onclick="closeLogoutModal()"></div>
       <div id="logoutPanel" class="bg-cardLight dark:bg-cardDark w-full max-w-[320px] rounded-[28px] shadow-2xl relative flex flex-col items-center p-6 transition-all duration-300 transform scale-95 opacity-0">
@@ -435,6 +461,63 @@
                 }); list.innerHTML = html; lucide.createIcons();
             }
         });
+
+        // 3. Lịch sử tải ứng dụng IPA
+        db.collection("users").doc(uid).collection("downloads").orderBy("downloadedAt", "desc").limit(30).onSnapshot(snap => {
+            renderUserDownloadsList(snap);
+        });
+    }
+
+    function renderUserDownloadsList(snap) {
+        const list = document.getElementById('userDownloadHistoryList');
+        const badge = document.getElementById('userTotalDlCount');
+        const myLocalDls = (function() {
+          try { return JSON.parse(localStorage.getItem('ipaviet_my_downloads') || '[]'); } catch(e) { return []; }
+        })();
+        const items = [];
+        if (snap && !snap.empty) {
+          snap.forEach(d => {
+            const data = d.data();
+            items.push({ id: d.id, ...data });
+          });
+        }
+        // Gộp với LocalStorage nếu có
+        myLocalDls.forEach(loc => {
+          if (!items.some(it => it.appId === loc.id || it.bundleId === loc.bundleId)) {
+            items.push(loc);
+          }
+        });
+
+        if (badge) badge.innerText = `${items.length} app`;
+        if (!list) return;
+
+        if (items.length === 0) {
+          list.innerHTML = `<div class="py-10 text-center text-gray-400 flex flex-col items-center"><div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3"><i data-lucide="download-cloud" class="w-8 h-8 opacity-50"></i></div><span class="text-[13px] font-medium">Bạn chưa tải ứng dụng nào từ kho.</span></div>`;
+        } else {
+          let html = '';
+          items.forEach(it => {
+            const safeName = it.appName || it.name || 'Ứng dụng';
+            const safeIcon = it.icon || 'https://placehold.co/60x60/f3f4f6/333?text=IPA';
+            const safeVer = it.version ? `v${it.version}` : '';
+            const dlUrl = `app-library/app.html?id=${encodeURIComponent(it.appId || it.id || it.bundleId || '')}`;
+            html += `
+              <div class="bg-cardLight dark:bg-cardDark border border-gray-100 dark:border-white/5 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm">
+                <div class="flex items-center gap-3 min-w-0">
+                  <img src="${safeIcon}" class="w-11 h-11 rounded-xl object-cover shrink-0 border border-black/5" onerror="this.src='https://placehold.co/60x60/f3f4f6/333?text=IPA'">
+                  <div class="min-w-0">
+                    <p class="font-bold text-[14px] text-gray-900 dark:text-white truncate">${safeName}</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5">${safeVer ? safeVer + ' • ' : ''}Đã tải về máy</p>
+                  </div>
+                </div>
+                <a href="${dlUrl}" class="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-brand font-bold text-xs shrink-0 flex items-center gap-1 active:scale-95 transition">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Tải lại
+                </a>
+              </div>
+            `;
+          });
+          list.innerHTML = html;
+        }
+        lucide.createIcons();
     }
 
     function copyToClip(elementId, btn) { const text = document.getElementById(elementId).value; navigator.clipboard.writeText(text); const originalText = btn.innerHTML; btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> ĐÃ COPY`; btn.className = "w-full py-3 rounded-xl bg-green-500 text-white font-bold text-[13px] flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-green-500/20"; lucide.createIcons(); setTimeout(() => { btn.innerHTML = originalText; btn.className = "w-full py-3 rounded-xl bg-brand hover:bg-brandDark text-white font-bold text-[13px] flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-brand/20"; lucide.createIcons(); }, 2000); }
@@ -593,7 +676,13 @@
 
     function showError(msg) { const errBox = document.getElementById('authError'); errBox.innerText = msg; errBox.classList.remove('hidden'); }
     
-    function openSubPage(pageId) { document.getElementById(pageId).classList.remove('hidden'); requestAnimationFrame(() => { document.getElementById(pageId).classList.add('open'); }); }
+    function openSubPage(pageId) { 
+        if (pageId === 'downloadHistoryPage') {
+            renderUserDownloadsList(null);
+        }
+        document.getElementById(pageId).classList.remove('hidden'); 
+        requestAnimationFrame(() => { document.getElementById(pageId).classList.add('open'); }); 
+    }
     function closeSubPage(pageId) { document.getElementById(pageId).classList.remove('open'); setTimeout(() => { document.getElementById(pageId).classList.add('hidden'); }, 400); }
     
     function openLogoutModal() { const m = document.getElementById('logoutModal'); const o = document.getElementById('logoutOverlay'); const p = document.getElementById('logoutPanel'); m.classList.remove('hidden'); requestAnimationFrame(() => { o.classList.add('opacity-100'); p.classList.remove('scale-95', 'opacity-0'); }); }

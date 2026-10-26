@@ -4325,6 +4325,92 @@
           }
         }
 
+        // 3.5. Đồng bộ dữ liệu thực tế từ Firestore (Ghi nhận từ tất cả thiết bị của khách)
+        if (typeof db !== 'undefined') {
+          try {
+            // A. Lượt tải hôm nay từ Firestore
+            const dailyDoc = await db.collection('analytics_daily').doc(todayStr).get().catch(() => null);
+            if (dailyDoc && dailyDoc.exists) {
+              const dData = dailyDoc.data();
+              dailyDownloads = Math.max(dailyDownloads, dData.downloads || 0);
+              if (dData.devices) {
+                Object.keys(dData.devices).forEach(k => {
+                  devStats[k] = Math.max(devStats[k] || 0, dData.devices[k] || 0);
+                });
+              }
+            }
+
+            // B. Thống kê từng App (analytics_apps)
+            const appsSnap = await db.collection('analytics_apps').limit(200).get().catch(() => null);
+            if (appsSnap && !appsSnap.empty) {
+              appsSnap.forEach(doc => {
+                const aData = doc.data();
+                const key = doc.id;
+                if (!appsMasterMap[key]) {
+                  appsMasterMap[key] = { id: key, ...aData };
+                } else {
+                  appsMasterMap[key].downloads = Math.max(appsMasterMap[key].downloads || 0, aData.downloads || 0);
+                  appsMasterMap[key].views = Math.max(appsMasterMap[key].views || 0, aData.views || 0);
+                  if (aData.icon && !appsMasterMap[key].icon) appsMasterMap[key].icon = aData.icon;
+                }
+              });
+            }
+
+            // C. Nhật ký tải gần đây (analytics_recent_downloads & analytics_downloads)
+            const fsRecent = [];
+            const recSnap = await db.collection('analytics_recent_downloads').orderBy('timestamp', 'desc').limit(30).get().catch(() => null);
+            if (recSnap && !recSnap.empty) {
+              recSnap.forEach(d => {
+                const r = d.data();
+                fsRecent.push({
+                  appName: r.appName || 'Ứng dụng',
+                  bundleId: r.bundleId || '',
+                  icon: r.icon || '',
+                  isMod: !!r.isMod,
+                  isVip: !!r.isVip,
+                  type: r.type || 'Free Ads',
+                  userEmail: r.userEmail || 'Khách vãng lai',
+                  timestamp: r.timestamp && r.timestamp.toDate ? r.timestamp.toDate().toISOString() : new Date().toISOString()
+                });
+              });
+            }
+
+            const oldDlSnap = await db.collection('analytics_downloads').orderBy('timestamp', 'desc').limit(30).get().catch(() => null);
+            if (oldDlSnap && !oldDlSnap.empty) {
+              oldDlSnap.forEach(d => {
+                const r = d.data();
+                fsRecent.push({
+                  appName: r.appName || 'Ứng dụng',
+                  bundleId: r.bundleId || '',
+                  icon: r.icon || '',
+                  isMod: false,
+                  isVip: !!r.isVip,
+                  type: r.method || 'Free Ads',
+                  userEmail: r.userEmail || (r.userId && r.userId !== 'guest' ? r.userId : 'Khách vãng lai'),
+                  timestamp: r.timestamp && r.timestamp.toDate ? r.timestamp.toDate().toISOString() : new Date().toISOString()
+                });
+              });
+            }
+
+            if (fsRecent.length > 0) {
+              const combinedRecent = [...fsRecent, ...recentDownloads];
+              const seenRecents = new Set();
+              recentDownloads = combinedRecent.filter(r => {
+                const rKey = (r.appName || '') + (r.timestamp || '') + (r.userEmail || '');
+                if (seenRecents.has(rKey)) return false;
+                seenRecents.add(rKey);
+                return true;
+              }).slice(0, 30);
+
+              if (dailyDownloads === 0 && fsRecent.length > 0) {
+                dailyDownloads = fsRecent.length;
+              }
+            }
+          } catch(fsErr) {
+            console.warn("Firestore analytics fetch notice:", fsErr);
+          }
+        }
+
         // 4. Đồng bộ CHUẨN XÁC với danh sách khách thực tế (1 IP = 1 khách)
         if (visitorLogsCache.visitors && visitorLogsCache.visitors.length > 0) {
           const vCount = visitorLogsCache.visitors.length;
