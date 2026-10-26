@@ -141,14 +141,13 @@
   <!-- ================================================================
        APPLE STICKY TOP NAVIGATION BAR
        ================================================================ -->
-  <header class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-all duration-200">
+  <header class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-all duration-200 pt-safe">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
       
-      <!-- Back Navigation -->
-      <a href="tap-hoa-mmo.html" class="flex items-center gap-1.5 text-apple-blue font-semibold text-sm sm:text-base hover:opacity-75 transition active:scale-95 shrink-0">
+      <!-- Back Navigation (Smart History / Referrer Aware) -->
+      <a href="javascript:void(0)" onclick="handleSmartBack(event)" class="flex items-center gap-1 text-apple-blue font-semibold text-sm sm:text-base hover:opacity-75 transition active:scale-95 shrink-0" id="backNavBtn" title="Quay lại">
         <i data-lucide="chevron-left" class="w-5 h-5 sm:w-6 sm:h-6 -ml-1 stroke-[2.5]"></i>
-        <span class="hidden xs:inline">Cửa Hàng MMO</span>
-        <span class="xs:hidden">Quay lại</span>
+        <span id="backNavText">Trở lại</span>
       </a>
 
       <!-- Center Title -->
@@ -834,13 +833,13 @@
             icon: 'success',
             title: 'Nạp Tiền Thành Công!',
             html: `Hệ thống đã tự động cộng <b class="text-apple-blue text-lg">+${data.coins.toLocaleString()}đ</b> vào ví của bạn.`,
-            confirmButtonText: 'Đến Cửa Hàng MMO',
+            confirmButtonText: 'Quay Lại Tiếp Tục',
             showCancelButton: true,
-            cancelButtonText: 'Ở Lại Trang',
+            cancelButtonText: 'Ở Lại Trang Nạp',
             confirmButtonColor: '#0071E3'
           }).then(r => {
             if (r.isConfirmed) {
-              window.location.href = 'tap-hoa-mmo.html';
+              handleSmartBack();
             }
           });
         }
@@ -958,7 +957,66 @@
       });
     }
 
+    /* ══════════════════════════════════════════════════════
+       SMART BACK NAVIGATION (DYNAMIC REFERRER / URL AWARE)
+       ══════════════════════════════════════════════════════ */
+    function handleSmartBack(e) {
+      if (e && e.preventDefault) e.preventDefault();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirect = urlParams.get('redirect') || urlParams.get('return') || urlParams.get('from');
+
+      // 1. Explicit redirect / return query param
+      if (redirect) {
+        window.location.href = redirect;
+        return;
+      }
+
+      // 2. Same-origin document.referrer
+      if (document.referrer) {
+        try {
+          const refUrl = new URL(document.referrer);
+          if (refUrl.host === window.location.host && !refUrl.pathname.endsWith('naptien.html') && !refUrl.pathname.includes('/top-up/')) {
+            window.location.href = document.referrer;
+            return;
+          }
+        } catch(err) {}
+      }
+
+      // 3. Browser history back if we navigated inside the site
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+
+      // 4. Default fallback
+      window.location.href = 'index.html';
+    }
+
+    function initBackNavLabel() {
+      const textEl = document.getElementById('backNavText');
+      if (!textEl) return;
+      const urlParams = new URLSearchParams(window.location.search);
+      const fromParam = (urlParams.get('from') || urlParams.get('redirect') || '').toLowerCase();
+      const referrer = (document.referrer || '').toLowerCase();
+
+      if (fromParam.includes('account') || referrer.includes('account.html')) {
+        textEl.innerText = 'Tài Khoản';
+      } else if (fromParam.includes('mmo-product') || referrer.includes('mmo-product.html')) {
+        textEl.innerText = 'Sản Phẩm';
+      } else if (fromParam.includes('mmo') || fromParam.includes('tap-hoa') || referrer.includes('tap-hoa-mmo.html')) {
+        textEl.innerText = 'Cửa Hàng';
+      } else if (fromParam.includes('dichvu') || referrer.includes('dichvu.html')) {
+        textEl.innerText = 'Dịch Vụ';
+      } else if (fromParam.includes('index') || referrer.includes('index.html')) {
+        textEl.innerText = 'Trang Chủ';
+      } else {
+        textEl.innerText = 'Trở lại';
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      initBackNavLabel();
       lucide.createIcons();
     });
   </script>
