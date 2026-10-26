@@ -478,7 +478,17 @@
         return;
       }
     } catch (err) {}
-    switchTab(STATE.currentTab);
+    const restored = getUrlOrSessionParamsVip();
+    STATE.currentPage = restored.page;
+    STATE.currentFilter = restored.filter;
+    if (restored.q) {
+      const sInput = document.getElementById('searchInput');
+      if (sInput) sInput.value = restored.q;
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (clearBtn) clearBtn.style.display = 'flex';
+    }
+    renderContent();
+    syncStateToUrlAndStorageVip();
     initScrollReveal();
     setTimeout(() => {
       const l = document.getElementById('loadingStage');
@@ -486,14 +496,72 @@
     }, 600);
   }
 
+
+  /* ─── VIP State Persistence & URL Sync Helpers ─── */
+  function getUrlOrSessionParamsVip() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pUrl = parseInt(urlParams.get('page'), 10);
+    const fUrl = urlParams.get('filter');
+    const qUrl = urlParams.get('q') || urlParams.get('search');
+
+    const pSess = parseInt(sessionStorage.getItem('ipaviet_vip_page'), 10);
+    const fSess = sessionStorage.getItem('ipaviet_vip_filter');
+    const qSess = sessionStorage.getItem('ipaviet_vip_q');
+
+    const page = (!isNaN(pUrl) && pUrl > 0) ? pUrl : ((!isNaN(pSess) && pSess > 0) ? pSess : 1);
+    const filter = fUrl || fSess || 'all';
+    const q = (typeof qUrl === 'string') ? qUrl : (qSess || '');
+
+    return { page, filter, q };
+  }
+
+  function syncStateToUrlAndStorageVip() {
+    const sInput = document.getElementById('searchInput');
+    const rawQuery = sInput ? sInput.value.trim() : '';
+
+    sessionStorage.setItem('ipaviet_vip_page', STATE.currentPage);
+    sessionStorage.setItem('ipaviet_vip_filter', STATE.currentFilter);
+    if (rawQuery) {
+      sessionStorage.setItem('ipaviet_vip_q', rawQuery);
+    } else {
+      sessionStorage.removeItem('ipaviet_vip_q');
+    }
+
+    try {
+      const url = new URL(window.location.href);
+      if (STATE.currentPage > 1) {
+        url.searchParams.set('page', STATE.currentPage);
+      } else {
+        url.searchParams.delete('page');
+      }
+
+      if (STATE.currentFilter && STATE.currentFilter !== 'all') {
+        url.searchParams.set('filter', STATE.currentFilter);
+      } else {
+        url.searchParams.delete('filter');
+      }
+
+      if (rawQuery) {
+        url.searchParams.set('q', rawQuery);
+      } else {
+        url.searchParams.delete('q');
+        url.searchParams.delete('search');
+      }
+
+      window.history.replaceState({ page: STATE.currentPage, filter: STATE.currentFilter, q: rawQuery }, '', url.toString());
+    } catch(e) {}
+  }
+
   function switchTab(tabId) {
     STATE.currentPage = 1; STATE.currentFilter = 'all';
+    syncStateToUrlAndStorageVip();
     renderContent();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function setFilter(filter) {
     STATE.currentFilter = filter; STATE.currentPage = 1;
+    syncStateToUrlAndStorageVip();
     renderContent();
   }
 
@@ -762,8 +830,9 @@
 
   function changePage(p) {
     STATE.currentPage = p;
+    syncStateToUrlAndStorageVip();
     renderContent();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 380, behavior: 'smooth' });
   }
 
   function isEmailAddress(str) {
@@ -780,6 +849,7 @@
     const clearBtn = document.getElementById('clearSearchBtn');
     if (clearBtn) clearBtn.style.display = 'none';
     STATE.currentPage = 1;
+    syncStateToUrlAndStorageVip();
     renderContent();
   }
 
@@ -976,10 +1046,29 @@
     setTimeout(sanitizeSearchAutofill, 800);
   });
 
+  window.addEventListener('popstate', () => {
+    const restored = getUrlOrSessionParamsVip();
+    STATE.currentPage = restored.page;
+    STATE.currentFilter = restored.filter;
+    const sInput = document.getElementById('searchInput');
+    if (sInput) {
+      sInput.value = restored.q;
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (clearBtn) clearBtn.style.display = restored.q ? 'flex' : 'none';
+    }
+    renderContent();
+  });
+
   window.addEventListener('pageshow', () => {
     sanitizeSearchAutofill();
     setTimeout(sanitizeSearchAutofill, 300);
     setTimeout(sanitizeSearchAutofill, 800);
+    const restored = getUrlOrSessionParamsVip();
+    if (restored.page !== STATE.currentPage || restored.filter !== STATE.currentFilter) {
+      STATE.currentPage = restored.page;
+      STATE.currentFilter = restored.filter;
+      renderContent();
+    }
   });
 
   document.addEventListener('keydown', e => {

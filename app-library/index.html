@@ -1380,7 +1380,27 @@ async function loadData() {
   // Inject hero floating entities
   injectHeroEntities();
 
-  switchTab(STATE.currentTab);
+  // Khôi phục page và filter đã lưu (từ URL hoặc sessionStorage khi Back lại)
+  const restored = getUrlOrSessionParams();
+  STATE.currentPage = restored.page;
+  STATE.currentFilter = restored.filter;
+  if (restored.q) {
+    const sInput = document.getElementById('searchInput');
+    if (sInput) sInput.value = restored.q;
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (clearBtn) clearBtn.style.display = 'flex';
+  }
+
+  renderContent();
+  syncStateToUrlAndStorage();
+
+  const savedY = sessionStorage.getItem('ipaviet_lib_scrollY');
+  if (savedY) {
+    setTimeout(() => {
+      window.scrollTo({ top: parseInt(savedY, 10), behavior: 'smooth' });
+      sessionStorage.removeItem('ipaviet_lib_scrollY');
+    }, 200);
+  }
 
   // Kiểm tra nếu người dùng vừa hoàn thành vượt link Link4m quay lại
   checkFreePassCallback();
@@ -1425,11 +1445,68 @@ function injectHeroEntities() {
   });
 }
 
+
+/* ─── State Persistence & URL Sync Helpers ─── */
+function getUrlOrSessionParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const pUrl = parseInt(urlParams.get('page'), 10);
+  const fUrl = urlParams.get('filter');
+  const qUrl = urlParams.get('q') || urlParams.get('search');
+
+  const pSess = parseInt(sessionStorage.getItem('ipaviet_lib_page'), 10);
+  const fSess = sessionStorage.getItem('ipaviet_lib_filter');
+  const qSess = sessionStorage.getItem('ipaviet_lib_q');
+
+  const page = (!isNaN(pUrl) && pUrl > 0) ? pUrl : ((!isNaN(pSess) && pSess > 0) ? pSess : 1);
+  const filter = fUrl || fSess || 'all';
+  const q = (typeof qUrl === 'string') ? qUrl : (qSess || '');
+
+  return { page, filter, q };
+}
+
+function syncStateToUrlAndStorage() {
+  const sInput = document.getElementById('searchInput');
+  const rawQuery = sInput ? sInput.value.trim() : '';
+
+  sessionStorage.setItem('ipaviet_lib_page', STATE.currentPage);
+  sessionStorage.setItem('ipaviet_lib_filter', STATE.currentFilter);
+  if (rawQuery) {
+    sessionStorage.setItem('ipaviet_lib_q', rawQuery);
+  } else {
+    sessionStorage.removeItem('ipaviet_lib_q');
+  }
+
+  try {
+    const url = new URL(window.location.href);
+    if (STATE.currentPage > 1) {
+      url.searchParams.set('page', STATE.currentPage);
+    } else {
+      url.searchParams.delete('page');
+    }
+
+    if (STATE.currentFilter && STATE.currentFilter !== 'all') {
+      url.searchParams.set('filter', STATE.currentFilter);
+    } else {
+      url.searchParams.delete('filter');
+    }
+
+    if (rawQuery) {
+      url.searchParams.set('q', rawQuery);
+    } else {
+      url.searchParams.delete('q');
+      url.searchParams.delete('search');
+    }
+
+    window.history.replaceState({ page: STATE.currentPage, filter: STATE.currentFilter, q: rawQuery }, '', url.toString());
+  } catch(e) {}
+}
+
 /* ─── Tab Switching ─── */
 function switchTab(tabId) {
   STATE.currentTab = tabId;
   STATE.currentPage = 1;
   STATE.currentFilter = 'all';
+  syncStateToUrlAndStorage();
 
   // Update desktop header tabs
   document.querySelectorAll('.desktop-tab-btn').forEach(b => {
@@ -1449,6 +1526,7 @@ function switchTab(tabId) {
 function setFilter(filter) {
   STATE.currentFilter = filter;
   STATE.currentPage = 1;
+  syncStateToUrlAndStorage();
   renderContent();
 }
 
@@ -1724,8 +1802,9 @@ function emptyState() {
 
 function changePage(p) {
   STATE.currentPage = p;
+  syncStateToUrlAndStorage();
   renderContent();
-  window.scrollTo({ top: 350, behavior: 'smooth' });
+  window.scrollTo({ top: 380, behavior: 'smooth' });
 }
 
 function isEmailAddress(str) {
@@ -1742,6 +1821,7 @@ function clearSearch() {
   const clearBtn = document.getElementById('clearSearchBtn');
   if (clearBtn) clearBtn.style.display = 'none';
   STATE.currentPage = 1;
+  syncStateToUrlAndStorage();
   renderContent();
 }
 
@@ -1769,6 +1849,7 @@ if (searchInputEl) {
       clearSearchBtnEl.style.display = val.trim().length > 0 ? 'flex' : 'none';
     }
     STATE.currentPage = 1;
+    syncStateToUrlAndStorage();
     renderContent();
     recordSearchQuery(val);
   });
@@ -1787,8 +1868,17 @@ function openAppView(appId) {
     localStorage.setItem('ipaviet_current_app', JSON.stringify(i));
   } catch(e) {}
 
-  // Mở trang chi tiết app riêng biệt
-  window.location.href = `app.html?id=${encodeURIComponent(i._id || appId)}`;
+  // Đánh dấu lưu trạng thái trang & vị trí cuộn
+  sessionStorage.setItem('ipaviet_lib_page', STATE.currentPage);
+  sessionStorage.setItem('ipaviet_lib_filter', STATE.currentFilter);
+  sessionStorage.setItem('ipaviet_lib_scrollY', window.scrollY);
+  const sInput = document.getElementById('searchInput');
+  if (sInput && sInput.value.trim()) {
+    sessionStorage.setItem('ipaviet_lib_q', sInput.value.trim());
+  }
+
+  // Mở trang chi tiết app riêng biệt kèm tham số quay về
+  window.location.href = `app.html?id=${encodeURIComponent(i._id || appId)}&fromPage=${STATE.currentPage}&fromFilter=${encodeURIComponent(STATE.currentFilter)}`;
   return;
 
   let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA';
@@ -3052,8 +3142,22 @@ window.addEventListener('DOMContentLoaded', () => {
   // Telemetry được xử lý thống nhất bởi ipaviet-tracker.js (tránh đếm trùng)
 });
 
-// Khôi phục trạng thái nút bấm & kiểm tra vượt link khi người dùng Back lại trang (Bfcache)
-window.addEventListener('pageshow', () => {
+// Lắng nghe người dùng bấm nút Back/Forward của trình duyệt để khôi phục đúng page
+window.addEventListener('popstate', (e) => {
+  const restored = getUrlOrSessionParams();
+  STATE.currentPage = restored.page;
+  STATE.currentFilter = restored.filter;
+  const sInput = document.getElementById('searchInput');
+  if (sInput) {
+    sInput.value = restored.q;
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (clearBtn) clearBtn.style.display = restored.q ? 'flex' : 'none';
+  }
+  renderContent();
+});
+
+// Khôi phục trạng thái nút bấm, vị trí cuộn & page khi người dùng Back lại trang (Bfcache)
+window.addEventListener('pageshow', (e) => {
   document.querySelectorAll('button[onclick*="downloadFreeStore"]').forEach(btn => {
     btn.disabled = false;
   });
@@ -3061,6 +3165,20 @@ window.addEventListener('pageshow', () => {
   sanitizeSearchAutofill();
   setTimeout(sanitizeSearchAutofill, 300);
   setTimeout(sanitizeSearchAutofill, 800);
+
+  const restored = getUrlOrSessionParams();
+  if (restored.page !== STATE.currentPage || restored.filter !== STATE.currentFilter) {
+    STATE.currentPage = restored.page;
+    STATE.currentFilter = restored.filter;
+    renderContent();
+  }
+  const savedY = sessionStorage.getItem('ipaviet_lib_scrollY');
+  if (savedY) {
+    setTimeout(() => {
+      window.scrollTo({ top: parseInt(savedY, 10), behavior: 'smooth' });
+      sessionStorage.removeItem('ipaviet_lib_scrollY');
+    }, 150);
+  }
 });
 
 // Keyboard shortcuts
