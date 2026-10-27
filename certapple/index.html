@@ -233,17 +233,23 @@
       </nav>
 
       <!-- Right Actions -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2">
         <!-- Theme Toggle -->
         <button onclick="toggleTheme()" class="w-9 h-9 rounded-full flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.08] text-apple-gray hover:text-black dark:hover:text-white transition-colors apple-btn-spring cursor-pointer" title="Đổi giao diện">
           <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
           <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
         </button>
 
-        <!-- Order History Drawer Trigger -->
-        <button onclick="toggleOrdersDrawer(true)" class="relative h-9 px-3.5 rounded-full flex items-center gap-1.5 bg-black/[0.04] dark:bg-white/[0.08] text-neutral-800 dark:text-neutral-200 text-xs font-bold hover:bg-black/[0.08] dark:hover:bg-white/[0.12] transition apple-btn-spring cursor-pointer border border-black/5 dark:border-white/5">
-          <i data-lucide="shopping-bag" class="w-4 h-4 text-apple-blue"></i>
-          <span class="hidden sm:inline">Đơn của tôi</span>
+        <!-- Tra Cứu UDID / Đơn Hàng -->
+        <button onclick="toggleOrdersDrawer(true, 'lookup')" class="h-9 px-3 rounded-full flex items-center gap-1.5 bg-black/[0.04] dark:bg-white/[0.08] text-neutral-800 dark:text-neutral-200 text-xs font-bold hover:bg-black/[0.08] dark:hover:bg-white/[0.12] transition apple-btn-spring cursor-pointer border border-black/5 dark:border-white/5" title="Tra cứu trạng thái cấp cert">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-sky-500"></i>
+          <span class="hidden md:inline">Tra Cứu UDID</span>
+        </button>
+
+        <!-- Cart / Orders Drawer Trigger -->
+        <button onclick="toggleOrdersDrawer(true, 'cart')" class="relative h-9 px-3.5 rounded-full flex items-center gap-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 text-xs font-bold transition apple-btn-spring cursor-pointer border border-sky-500/20 shadow-xs" title="Giỏ hàng & Đơn của tôi">
+          <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Giỏ Hàng</span>
           <span id="orderCountBadge" class="hidden min-w-[18px] h-[18px] px-1 rounded-full bg-apple-blue text-white text-[10px] font-black items-center justify-center">0</span>
         </button>
 
@@ -405,7 +411,7 @@
       </div>
 
       <!-- Packages Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+      <div id="certPlansContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         
         <!-- PLAN 1: BASIC -->
         <div class="apple-spring bg-white dark:bg-apple-cardDark rounded-[28px] p-6 sm:p-7 border border-apple-separatorLight dark:border-apple-separatorDark shadow-apple flex flex-col justify-between relative overflow-hidden">
@@ -458,10 +464,16 @@
             </ul>
           </div>
 
-          <button onclick="openCheckoutModal('plan1', 'Lấy Ngay Siêu Rẻ', 125000, '30 ngày', '200 ngày')" class="w-full py-3.5 px-6 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-apple-blue hover:text-white text-neutral-900 dark:text-white font-extrabold text-xs transition apple-btn-spring cursor-pointer border border-black/10 dark:border-white/10 shadow-sm flex items-center justify-center gap-1.5">
-            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
-            <span>Chọn Gói Cơ Bản</span>
-          </button>
+          <div class="grid grid-cols-2 gap-2 mt-4">
+            <button onclick="selectPlanForCart('plan1', 'Lấy Ngay Siêu Rẻ', 125000, '30 ngày', '200 ngày', 'GÓI CƠ BẢN'); toggleOrdersDrawer(true, 'cart');" class="py-3 px-3 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.12] text-neutral-900 dark:text-white font-bold text-xs transition apple-btn-spring cursor-pointer border border-black/10 dark:border-white/10 flex items-center justify-center gap-1">
+              <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+              <span>Giỏ Hàng</span>
+            </button>
+            <button onclick="openCheckoutModal('plan1', 'Lấy Ngay Siêu Rẻ', 125000, '30 ngày', '200 ngày')" class="py-3 px-3 rounded-full bg-apple-blue hover:bg-apple-darkBlue text-white font-bold text-xs transition apple-btn-spring cursor-pointer shadow-sm flex items-center justify-center gap-1">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+              <span>Mua Ngay</span>
+            </button>
+          </div>
         </div>
 
         <!-- PLAN 2: PRO STABLE (POPULAR) -->
@@ -523,10 +535,16 @@
             </ul>
           </div>
 
-          <button onclick="openCheckoutModal('plan2', 'Ổn Định Cao Cấp', 158000, '200 ngày', '300 ngày')" class="w-full py-3.5 px-6 rounded-full bg-apple-blue hover:bg-apple-darkBlue text-white font-extrabold text-xs transition apple-btn-spring cursor-pointer shadow-lg shadow-apple-blue/30 flex items-center justify-center gap-1.5">
-            <i data-lucide="zap" class="w-4 h-4"></i>
-            <span>Mua Gói Ổn Định Ngay</span>
-          </button>
+          <div class="grid grid-cols-2 gap-2 mt-4">
+            <button onclick="selectPlanForCart('plan2', 'Ổn Định Cao Cấp', 158000, '200 ngày', '300 ngày', '★ KHUYÊN DÙNG'); toggleOrdersDrawer(true, 'cart');" class="py-3 px-3 rounded-full bg-apple-blue/10 hover:bg-apple-blue/20 text-apple-blue font-bold text-xs transition apple-btn-spring cursor-pointer border border-apple-blue/30 flex items-center justify-center gap-1">
+              <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+              <span>Giỏ Hàng</span>
+            </button>
+            <button onclick="openCheckoutModal('plan2', 'Ổn Định Cao Cấp', 158000, '200 ngày', '300 ngày')" class="py-3 px-3 rounded-full bg-apple-blue hover:bg-apple-darkBlue text-white font-bold text-xs transition apple-btn-spring cursor-pointer shadow-md shadow-apple-blue/30 flex items-center justify-center gap-1">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+              <span>Mua Ngay</span>
+            </button>
+          </div>
         </div>
 
         <!-- PLAN 3: VIP UNBAN -->
@@ -581,10 +599,16 @@
             </ul>
           </div>
 
-          <button onclick="openCheckoutModal('plan3', 'Unban VIP Siêu Cấp', 199000, '300 ngày', '365 ngày')" class="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs transition apple-btn-spring cursor-pointer shadow-md shadow-amber-500/25 flex items-center justify-center gap-1.5">
-            <i data-lucide="crown" class="w-4 h-4"></i>
-            <span>Đăng Ký Gói VIP</span>
-          </button>
+          <div class="grid grid-cols-2 gap-2 mt-4">
+            <button onclick="selectPlanForCart('plan3', 'Unban VIP Siêu Cấp', 199000, '300 ngày', '365 ngày', '👑 VIP ĐẶC QUYỀN'); toggleOrdersDrawer(true, 'cart');" class="py-3 px-3 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs transition apple-btn-spring cursor-pointer border border-amber-500/30 flex items-center justify-center gap-1">
+              <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+              <span>Giỏ Hàng</span>
+            </button>
+            <button onclick="openCheckoutModal('plan3', 'Unban VIP Siêu Cấp', 199000, '300 ngày', '365 ngày')" class="py-3 px-3 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs transition apple-btn-spring cursor-pointer shadow-md shadow-amber-500/25 flex items-center justify-center gap-1">
+              <i data-lucide="crown" class="w-3.5 h-3.5"></i>
+              <span>Mua Ngay</span>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -729,6 +753,7 @@
           <div>
             <h3 class="font-extrabold text-sm text-neutral-900 dark:text-white" id="modalPlanName">Gói Chứng Chỉ Apple</h3>
             <p class="text-[11px] text-apple-gray" id="modalPlanSubtitle">Bảo hành 200 ngày</p>
+            <div id="modalAddonsBadge" class="hidden text-[10px] text-apple-blue font-bold mt-0.5"></div>
           </div>
         </div>
         <button onclick="closeCheckoutModal()" class="w-8 h-8 rounded-full flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.08] text-apple-gray hover:text-black dark:hover:text-white cursor-pointer apple-btn-spring">
@@ -852,35 +877,163 @@
   </div>
 
   <!-- ================================================================
-       ORDERS HISTORY DRAWER (QUẢN LÝ ĐƠN HÀNG CERT)
+       ORDERS & CART DRAWER (GIỎ HÀNG, ĐƠN HÀNG & TRA CỨU UDID)
        ================================================================ -->
   <div id="ordersDrawer" class="drawer-overlay closed fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex justify-end">
     <div class="drawer-panel bg-white dark:bg-apple-cardDark w-full max-w-md h-full flex flex-col border-l border-apple-separatorLight dark:border-apple-separatorDark shadow-2xl">
       
-      <!-- Drawer Header -->
-      <div class="p-5 border-b border-apple-separatorLight dark:border-apple-separatorDark flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <i data-lucide="shopping-bag" class="w-5 h-5 text-apple-blue"></i>
-          <h3 class="font-extrabold text-base text-neutral-900 dark:text-white">Lịch Sử Đơn Hàng Cert</h3>
+      <!-- Drawer Header & Segment Control -->
+      <div class="p-4 border-b border-apple-separatorLight dark:border-apple-separatorDark space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-apple-blue/10 text-apple-blue flex items-center justify-center">
+              <i data-lucide="shopping-cart" class="w-4 h-4" id="drawerHeaderIcon"></i>
+            </span>
+            <h3 class="font-extrabold text-base text-neutral-900 dark:text-white" id="drawerHeaderTitle">Giỏ Hàng & Quản Lý Cert</h3>
+          </div>
+          <button onclick="toggleOrdersDrawer(false)" class="w-8 h-8 rounded-full flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.08] text-apple-gray hover:text-black dark:hover:text-white cursor-pointer apple-btn-spring">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
         </div>
-        <button onclick="toggleOrdersDrawer(false)" class="w-8 h-8 rounded-full flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.08] text-apple-gray hover:text-black dark:hover:text-white cursor-pointer apple-btn-spring">
-          <i data-lucide="x" class="w-4 h-4"></i>
+
+        <!-- 3 Segment Tabs (Apple Style) -->
+        <div class="flex p-1 bg-black/[0.04] dark:bg-white/[0.08] rounded-xl text-xs font-bold text-apple-gray">
+          <button onclick="switchDrawerTab('cart')" id="dtab-cart" class="flex-1 py-1.5 rounded-lg bg-white dark:bg-neutral-800 text-apple-blue shadow-xs transition">
+            Giỏ Hàng
+          </button>
+          <button onclick="switchDrawerTab('orders')" id="dtab-orders" class="flex-1 py-1.5 rounded-lg hover:text-neutral-900 dark:hover:text-white transition">
+            Đơn Của Tôi
+          </button>
+          <button onclick="switchDrawerTab('lookup')" id="dtab-lookup" class="flex-1 py-1.5 rounded-lg hover:text-neutral-900 dark:hover:text-white transition">
+            Tra Cứu UDID
+          </button>
+        </div>
+      </div>
+
+      <!-- Drawer Body: TAB 1 - GIỎ HÀNG (CART) -->
+      <div id="drawerTabCart" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <!-- Selected Plan Summary Card -->
+        <div class="p-4 rounded-2xl bg-apple-bgLight dark:bg-[#111113] border border-apple-separatorLight dark:border-apple-separatorDark space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-apple-gray">Gói đã chọn:</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-apple-blue/10 text-apple-blue" id="cartPlanBadge">Gói Khuyên Dùng</span>
+          </div>
+          <div>
+            <h4 class="font-black text-base text-neutral-900 dark:text-white tracking-tight" id="cartPlanName">Gói Ổn Định Cao Cấp</h4>
+            <div class="text-xs text-apple-gray mt-0.5" id="cartPlanMeta">Bảo hành 200 ngày · Hạn 300 ngày</div>
+          </div>
+          <div class="flex items-baseline justify-between pt-2 border-t border-black/[0.04] dark:border-white/[0.04]">
+            <span class="text-xs text-apple-gray">Giá gói gốc:</span>
+            <span class="font-mono font-bold text-neutral-900 dark:text-white text-sm" id="cartPlanPrice">158.000đ</span>
+          </div>
+        </div>
+
+        <!-- Add-on Services Checklist -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-neutral-800 dark:text-neutral-200">Dịch Vụ Nâng Cấp Kèm Theo (Tùy Chọn):</label>
+          
+          <label class="flex items-start gap-3 p-3 rounded-2xl border border-apple-separatorLight dark:border-apple-separatorDark hover:bg-black/[0.02] dark:hover:bg-white/[0.02] cursor-pointer transition">
+            <input type="checkbox" id="addonWarrantyFast" onchange="calculateCartTotal()" class="w-4 h-4 mt-0.5 accent-apple-blue rounded">
+            <div class="flex-1 text-xs">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-neutral-900 dark:text-white">Bảo Hành 1 Đổi 1 Cấp Tốc 1 Giờ</span>
+                <span class="font-mono font-bold text-apple-blue">+20.000đ</span>
+              </div>
+              <p class="text-[11px] text-apple-gray mt-0.5">Ưu tiên cấp lại cert mới ngay lập tức nếu bị thu hồi mà không cần chờ đợi.</p>
+            </div>
+          </label>
+
+          <label class="flex items-start gap-3 p-3 rounded-2xl border border-apple-separatorLight dark:border-apple-separatorDark hover:bg-black/[0.02] dark:hover:bg-white/[0.02] cursor-pointer transition">
+            <input type="checkbox" id="addonSupportUltra" onchange="calculateCartTotal()" class="w-4 h-4 mt-0.5 accent-apple-blue rounded">
+            <div class="flex-1 text-xs">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-neutral-900 dark:text-white">Hỗ Trợ Ký & Cài App Qua Ultraview / Zalo</span>
+                <span class="font-mono font-bold text-apple-blue">+30.000đ</span>
+              </div>
+              <p class="text-[11px] text-apple-gray mt-0.5">Kỹ thuật viên IPAVIET hỗ trợ từ xa cài đặt VSign/ESign và ký các app bạn cần.</p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Voucher Code Input -->
+        <div class="p-3 rounded-2xl bg-apple-bgLight dark:bg-[#111113] border border-apple-separatorLight dark:border-apple-separatorDark">
+          <label class="block text-[11px] font-bold text-apple-gray mb-1.5">Mã Giảm Giá / Voucher:</label>
+          <div class="flex gap-2">
+            <input type="text" id="cartVoucherInput" placeholder="Nhập mã (VD: IPAVIET10)..." class="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-apple-cardDark text-xs font-mono uppercase border border-black/10 dark:border-white/10 outline-none focus:border-apple-blue">
+            <button onclick="applyCartVoucher()" class="px-4 py-2 rounded-xl bg-black/[0.05] dark:bg-white/[0.08] hover:bg-apple-blue hover:text-white font-bold text-xs transition apple-btn-spring">
+              Áp Dụng
+            </button>
+          </div>
+          <div id="voucherMsg" class="text-[11px] mt-1.5 hidden"></div>
+        </div>
+
+        <!-- Total Breakdown Card -->
+        <div class="p-4 rounded-2xl bg-sky-50/60 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/40 space-y-2 text-xs">
+          <div class="flex justify-between text-apple-gray">
+            <span>Tiền gói chứng chỉ:</span>
+            <span class="font-mono font-bold text-neutral-900 dark:text-white" id="breakdownBasePrice">158.000đ</span>
+          </div>
+          <div class="flex justify-between text-apple-gray" id="breakdownAddonsRow">
+            <span>Dịch vụ nâng cấp:</span>
+            <span class="font-mono font-bold text-apple-blue" id="breakdownAddonsPrice">0đ</span>
+          </div>
+          <div class="flex justify-between text-apple-gray hidden" id="breakdownDiscountRow">
+            <span>Mã giảm giá:</span>
+            <span class="font-mono font-bold text-apple-green" id="breakdownDiscountPrice">-0đ</span>
+          </div>
+          <div class="pt-2 border-t border-sky-200/60 dark:border-sky-800/40 flex justify-between items-baseline">
+            <span class="font-black text-neutral-900 dark:text-white text-sm">Tổng thanh toán:</span>
+            <span class="font-mono font-black text-apple-blue text-lg" id="cartGrandTotal">158.000đ</span>
+          </div>
+        </div>
+
+        <button onclick="proceedFromCartToCheckout()" class="w-full py-3.5 rounded-2xl bg-apple-blue hover:bg-apple-darkBlue text-white font-extrabold text-xs shadow-md shadow-apple-blue/25 flex items-center justify-center gap-2 apple-btn-spring cursor-pointer">
+          <i data-lucide="credit-card" class="w-4 h-4"></i>
+          <span>Tiến Hành Đặt Hàng & Thanh Toán</span>
         </button>
       </div>
 
-      <!-- Drawer Body -->
-      <div class="flex-1 overflow-y-auto p-4 space-y-3" id="ordersListContainer">
-        <!-- Empty State Default -->
-        <div class="text-center py-12 text-apple-gray" id="ordersEmptyState">
-          <i data-lucide="inbox" class="w-12 h-12 mx-auto stroke-1 opacity-40 mb-3"></i>
-          <p class="font-bold text-sm">Chưa có đơn hàng chứng chỉ nào</p>
-          <p class="text-xs mt-1">Đơn hàng của bạn sẽ được lưu và hiển thị tại đây.</p>
+      <!-- Drawer Body: TAB 2 - ĐƠN CỦA TÔI -->
+      <div id="drawerTabOrders" class="flex-1 overflow-y-auto p-4 space-y-3 hidden">
+        <div id="ordersListContainer" class="space-y-3">
+          <!-- Populated dynamically -->
+          <div class="text-center py-12 text-apple-gray" id="ordersEmptyState">
+            <i data-lucide="inbox" class="w-12 h-12 mx-auto stroke-1 opacity-40 mb-3"></i>
+            <p class="font-bold text-sm">Chưa có đơn hàng chứng chỉ nào</p>
+            <p class="text-xs mt-1">Đơn hàng của bạn sẽ được lưu và cập nhật trạng thái tại đây.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer Body: TAB 3 - TRA CỨU UDID / MÃ ĐƠN -->
+      <div id="drawerTabLookup" class="flex-1 overflow-y-auto p-4 space-y-4 hidden">
+        <div class="p-4 rounded-2xl bg-apple-bgLight dark:bg-[#111113] border border-apple-separatorLight dark:border-apple-separatorDark space-y-3">
+          <label class="block text-xs font-bold text-neutral-900 dark:text-white">
+            Nhập Mã UDID Hoặc Mã Đơn Hàng (CERT-XXXX):
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="lookupQueryInput" placeholder="Dán UDID máy hoặc mã đơn..." class="flex-1 px-3.5 py-2.5 rounded-xl bg-white dark:bg-apple-cardDark text-xs font-mono border border-black/10 dark:border-white/10 outline-none focus:border-apple-blue">
+            <button onclick="executeCertLookup()" class="px-4 py-2.5 rounded-xl bg-apple-blue hover:bg-apple-darkBlue text-white font-bold text-xs shrink-0 apple-btn-spring cursor-pointer shadow-sm">
+              <i data-lucide="search" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <p class="text-[11px] text-apple-gray">
+            💡 Dành cho khách hàng không đăng nhập tài khoản nhưng muốn kiểm tra xem chứng chỉ đã được Admin cấp xong chưa.
+          </p>
+        </div>
+
+        <div id="udidLookupResultContainer" class="space-y-3">
+          <!-- Results injected dynamically -->
         </div>
       </div>
 
       <!-- Drawer Footer -->
-      <div class="p-4 border-t border-apple-separatorLight dark:border-apple-separatorDark bg-apple-bgLight dark:bg-[#111113] text-center">
-        <p class="text-[11px] text-apple-gray">Cần kiểm tra trạng thái đơn qua Admin? <a href="https://t.me/dothaisonfpt" target="_blank" class="text-apple-blue font-bold">Chat Telegram</a></p>
+      <div class="p-4 border-t border-apple-separatorLight dark:border-apple-separatorDark bg-apple-bgLight dark:bg-[#111113] flex items-center justify-between text-[11px] text-apple-gray">
+        <span>Cần hỗ trợ?</span>
+        <div class="flex items-center gap-3">
+          <a href="https://t.me/dothaisonfpt" target="_blank" class="text-[#229ED9] font-bold flex items-center gap-1"><i data-lucide="send" class="w-3.5 h-3.5"></i> Telegram</a>
+          <a href="https://zalo.me/0869775239" target="_blank" class="text-[#0068FF] font-bold flex items-center gap-1"><i data-lucide="message-circle" class="w-3.5 h-3.5"></i> Zalo</a>
+        </div>
       </div>
 
     </div>
@@ -980,12 +1133,29 @@
     let currentCoins = 0;
     let isUserVip = false;
 
-    let selectedPlan = {
+    let cartSelectedPlan = {
       id: 'plan2',
       name: 'Ổn Định Cao Cấp',
       price: 158000,
       warranty: '200 ngày',
-      duration: '300 ngày'
+      duration: '300 ngày',
+      badge: '★ KHUYÊN DÙNG'
+    };
+    let cartDiscount = 0;
+    let appliedVoucherCode = '';
+    let activeDrawerTab = 'cart';
+    const notifiedOrderStatuses = new Set();
+
+    let selectedPlan = {
+      id: 'plan2',
+      name: 'Ổn Định Cao Cấp',
+      price: 158000,
+      basePrice: 158000,
+      warranty: '200 ngày',
+      duration: '300 ngày',
+      addons: [],
+      voucher: '',
+      discount: 0
     };
 
     let activePayMethod = 'vietqr'; // 'vietqr' or 'wallet'
@@ -1097,21 +1267,240 @@
       }
     }
 
+    // ─── Drawer Tab Switching ───
+    function switchDrawerTab(tabId) {
+      activeDrawerTab = tabId;
+      const tabCart = document.getElementById('drawerTabCart');
+      const tabOrders = document.getElementById('drawerTabOrders');
+      const tabLookup = document.getElementById('drawerTabLookup');
+
+      const btnCart = document.getElementById('dtab-cart');
+      const btnOrders = document.getElementById('dtab-orders');
+      const btnLookup = document.getElementById('dtab-lookup');
+
+      const titleEl = document.getElementById('drawerHeaderTitle');
+      const iconEl = document.getElementById('drawerHeaderIcon');
+
+      // Reset styles
+      [btnCart, btnOrders, btnLookup].forEach(b => {
+        if (b) b.className = "flex-1 py-1.5 rounded-lg hover:text-neutral-900 dark:hover:text-white transition cursor-pointer";
+      });
+
+      if (tabCart) tabCart.classList.add('hidden');
+      if (tabOrders) tabOrders.classList.add('hidden');
+      if (tabLookup) tabLookup.classList.add('hidden');
+
+      if (tabId === 'cart') {
+        if (btnCart) btnCart.className = "flex-1 py-1.5 rounded-lg bg-white dark:bg-neutral-800 text-apple-blue font-bold shadow-xs transition cursor-pointer";
+        if (tabCart) tabCart.classList.remove('hidden');
+        if (titleEl) titleEl.textContent = "Giỏ Hàng & Tùy Chọn";
+        if (iconEl) iconEl.setAttribute('data-lucide', 'shopping-cart');
+        calculateCartTotal();
+      } else if (tabId === 'orders') {
+        if (btnOrders) btnOrders.className = "flex-1 py-1.5 rounded-lg bg-white dark:bg-neutral-800 text-apple-blue font-bold shadow-xs transition cursor-pointer";
+        if (tabOrders) tabOrders.classList.remove('hidden');
+        if (titleEl) titleEl.textContent = "Đơn Hàng Của Tôi";
+        if (iconEl) iconEl.setAttribute('data-lucide', 'package');
+        renderOrdersDrawer();
+      } else if (tabId === 'lookup') {
+        if (btnLookup) btnLookup.className = "flex-1 py-1.5 rounded-lg bg-white dark:bg-neutral-800 text-apple-blue font-bold shadow-xs transition cursor-pointer";
+        if (tabLookup) tabLookup.classList.remove('hidden');
+        if (titleEl) titleEl.textContent = "Tra Cứu Chứng Chỉ UDID";
+        if (iconEl) iconEl.setAttribute('data-lucide', 'search');
+        const u = getStoredUdid();
+        const lInput = document.getElementById('lookupQueryInput');
+        if (lInput && !lInput.value && u) {
+          lInput.value = u;
+          executeCertLookup();
+        }
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleOrdersDrawer(show, initialTab) {
+      const d = document.getElementById('ordersDrawer');
+      if (!d) return;
+      if (show) {
+        if (initialTab) {
+          switchDrawerTab(initialTab);
+        } else {
+          switchDrawerTab(activeDrawerTab);
+        }
+        d.classList.remove('closed');
+      } else {
+        d.classList.add('closed');
+      }
+    }
+
+    // ─── Cart Logic ───
+    function selectPlanForCart(planId, name, price, warranty, duration, badge) {
+      cartSelectedPlan = {
+        id: planId,
+        name: name,
+        price: Number(price),
+        warranty: warranty || '200 ngày',
+        duration: duration || '300 ngày',
+        badge: badge || 'Gói Đã Chọn'
+      };
+
+      const planNameEl = document.getElementById('cartPlanName');
+      const planMetaEl = document.getElementById('cartPlanMeta');
+      const planBadgeEl = document.getElementById('cartPlanBadge');
+      const planPriceEl = document.getElementById('cartPlanPrice');
+
+      if (planNameEl) planNameEl.textContent = name;
+      if (planMetaEl) planMetaEl.textContent = `Bảo hành ${warranty} · Hạn ${duration}`;
+      if (planBadgeEl) planBadgeEl.textContent = badge || 'Gói Đã Chọn';
+      if (planPriceEl) planPriceEl.textContent = `${Number(price).toLocaleString('vi-VN')}đ`;
+
+      calculateCartTotal();
+      showToast(`🛒 Đã chọn gói: ${name}`);
+    }
+
+    function calculateCartTotal() {
+      const basePrice = Number(cartSelectedPlan.price) || 158000;
+      let addonsTotal = 0;
+      const chkWarranty = document.getElementById('addonWarrantyFast');
+      const chkSupport = document.getElementById('addonSupportUltra');
+
+      if (chkWarranty && chkWarranty.checked) addonsTotal += 20000;
+      if (chkSupport && chkSupport.checked) addonsTotal += 30000;
+
+      const subtotal = basePrice + addonsTotal;
+      const discount = Math.min(cartDiscount, subtotal);
+      const grandTotal = Math.max(0, subtotal - discount);
+
+      const baseEl = document.getElementById('breakdownBasePrice');
+      const addonsEl = document.getElementById('breakdownAddonsPrice');
+      const discountRow = document.getElementById('breakdownDiscountRow');
+      const discountEl = document.getElementById('breakdownDiscountPrice');
+      const totalEl = document.getElementById('cartGrandTotal');
+
+      if (baseEl) baseEl.textContent = `${basePrice.toLocaleString('vi-VN')}đ`;
+      if (addonsEl) addonsEl.textContent = `+${addonsTotal.toLocaleString('vi-VN')}đ`;
+
+      if (discountRow) {
+        if (discount > 0) {
+          discountRow.classList.remove('hidden');
+          if (discountEl) discountEl.textContent = `-${discount.toLocaleString('vi-VN')}đ`;
+        } else {
+          discountRow.classList.add('hidden');
+        }
+      }
+
+      if (totalEl) totalEl.textContent = `${grandTotal.toLocaleString('vi-VN')}đ`;
+      return { basePrice, addonsTotal, discount, grandTotal };
+    }
+
+    function applyCartVoucher() {
+      const input = document.getElementById('cartVoucherInput');
+      const msg = document.getElementById('voucherMsg');
+      if (!input || !msg) return;
+
+      const code = input.value.trim().toUpperCase();
+      if (!code) {
+        showToast("Vui lòng nhập mã giảm giá!");
+        return;
+      }
+
+      const { basePrice, addonsTotal } = calculateCartTotal();
+      const currentSubtotal = basePrice + addonsTotal;
+
+      let discount = 0;
+      if (code === 'IPAVIET10') {
+        discount = 10000;
+      } else if (code === 'IPAVIET20') {
+        discount = 20000;
+      } else if (code === 'APPLEVIP') {
+        discount = 30000;
+      } else if (code === 'CERT50' && currentSubtotal >= 180000) {
+        discount = 50000;
+      } else if (code === 'IPANEW') {
+        discount = 15000;
+      } else {
+        msg.className = "text-[11px] mt-1.5 text-apple-red font-medium block";
+        msg.innerHTML = `⚠️ Mã <b>"${code}"</b> không hợp lệ hoặc đã hết lượt dùng!`;
+        return;
+      }
+
+      cartDiscount = discount;
+      appliedVoucherCode = code;
+      msg.className = "text-[11px] mt-1.5 text-apple-green font-bold block";
+      msg.innerHTML = `✓ Áp dụng mã <b>${code}</b> thành công: Giảm <b>${discount.toLocaleString('vi-VN')}đ</b>`;
+      calculateCartTotal();
+      showToast(`🎉 Áp dụng voucher thành công: -${discount.toLocaleString('vi-VN')}đ!`);
+    }
+
+    function proceedFromCartToCheckout() {
+      const { basePrice, grandTotal } = calculateCartTotal();
+      const chkWarranty = document.getElementById('addonWarrantyFast');
+      const chkSupport = document.getElementById('addonSupportUltra');
+
+      const addons = [];
+      if (chkWarranty && chkWarranty.checked) {
+        addons.push({ id: 'addonWarrantyFast', name: 'BH Cấp Tốc 1h (+20K)', price: 20000 });
+      }
+      if (chkSupport && chkSupport.checked) {
+        addons.push({ id: 'addonSupportUltra', name: 'KTV Hỗ Trợ Ký (+30K)', price: 30000 });
+      }
+
+      openCheckoutModal(
+        cartSelectedPlan.id,
+        cartSelectedPlan.name,
+        grandTotal,
+        cartSelectedPlan.warranty,
+        cartSelectedPlan.duration,
+        addons,
+        appliedVoucherCode,
+        cartDiscount,
+        basePrice
+      );
+
+      toggleOrdersDrawer(false);
+    }
+
     // ─── Checkout Modal Logic ───
-    function openCheckoutModal(planId, name, price, warranty, duration) {
-      selectedPlan = { id: planId, name, price, warranty, duration };
+    function openCheckoutModal(planId, name, price, warranty, duration, addons = [], voucher = '', discount = 0, basePrice = 0) {
+      selectedPlan = {
+        id: planId,
+        name: name,
+        price: Number(price),
+        basePrice: basePrice ? Number(basePrice) : Number(price),
+        warranty: warranty || '200 ngày',
+        duration: duration || '300 ngày',
+        addons: Array.isArray(addons) ? addons : [],
+        voucher: voucher || '',
+        discount: Number(discount) || 0
+      };
       currentOrderId = generateOrderId();
 
       const modal = document.getElementById('checkoutModal');
       const planNameEl = document.getElementById('modalPlanName');
       const subtitleEl = document.getElementById('modalPlanSubtitle');
+      const addonsBadge = document.getElementById('modalAddonsBadge');
       const priceEl = document.getElementById('modalPrice');
       const transferContent = document.getElementById('checkoutTransferContent');
 
       if (planNameEl) planNameEl.textContent = name;
       if (subtitleEl) subtitleEl.textContent = `Bảo hành ${warranty} · Hạn ${duration}`;
-      if (priceEl) priceEl.textContent = `${price.toLocaleString('vi-VN')}đ`;
+      if (priceEl) priceEl.textContent = `${Number(price).toLocaleString('vi-VN')}đ`;
       if (transferContent) transferContent.innerHTML = `${currentOrderId} <i data-lucide="copy" class="w-3 h-3 inline"></i>`;
+
+      if (addonsBadge) {
+        const parts = [];
+        if (selectedPlan.addons && selectedPlan.addons.length > 0) {
+          parts.push(selectedPlan.addons.map(a => a.name).join(', '));
+        }
+        if (selectedPlan.voucher && selectedPlan.discount > 0) {
+          parts.push(`Mã ${selectedPlan.voucher} (-${selectedPlan.discount.toLocaleString('vi-VN')}đ)`);
+        }
+        if (parts.length > 0) {
+          addonsBadge.textContent = `★ Kèm: ${parts.join(' | ')}`;
+          addonsBadge.classList.remove('hidden');
+        } else {
+          addonsBadge.classList.add('hidden');
+        }
+      }
 
       // Pre-fill UDID if stored
       const u = getStoredUdid();
@@ -1218,7 +1607,11 @@
           orderId: currentOrderId,
           planId: selectedPlan.id,
           planName: selectedPlan.name,
-          price: selectedPlan.price,
+          price: Number(selectedPlan.price),
+          basePrice: Number(selectedPlan.basePrice || selectedPlan.price),
+          addons: selectedPlan.addons || [],
+          voucher: selectedPlan.voucher || '',
+          discount: Number(selectedPlan.discount) || 0,
           warranty: selectedPlan.warranty,
           duration: selectedPlan.duration,
           udid: udidVal,
@@ -1267,18 +1660,20 @@
 
         // Save to LocalStorage Orders list
         saveLocalOrder(orderRecord);
+        listenToCustomerOrders();
 
         closeCheckoutModal();
 
         Swal.fire({
           title: activePayMethod === 'wallet' ? '🎉 Đặt Hàng & Thanh Toán Thành Công!' : '✅ Đã Lên Đơn Hàng Thành Công!',
           html: `
-            <div class="text-left text-xs space-y-2 p-2 bg-gray-50 dark:bg-neutral-800 rounded-xl my-2">
+            <div class="text-left text-xs space-y-2 p-3 bg-gray-50 dark:bg-neutral-800 rounded-xl my-2">
               <div><b>Mã đơn:</b> <span class="font-mono text-apple-blue font-bold">${currentOrderId}</span></div>
               <div><b>Gói mua:</b> ${selectedPlan.name}</div>
+              <div><b>Tổng tiền:</b> ${(orderRecord.price || 0).toLocaleString('vi-VN')}đ</div>
               <div><b>Mã UDID:</b> <span class="font-mono">${udidVal}</span></div>
               <div><b>Liên hệ:</b> ${contactVal}</div>
-              <div><b>Trạng thái:</b> <span class="text-apple-amber font-bold">${activePayMethod === 'wallet' ? 'Đã thanh toán (Đang kích hoạt)' : 'Chờ quét chuyển khoản'}</span></div>
+              <div><b>Trạng thái:</b> <span class="text-amber-500 font-bold">${activePayMethod === 'wallet' ? 'Đã thanh toán (Đang kích hoạt)' : 'Chờ quét chuyển khoản VietQR'}</span></div>
             </div>
             <p class="text-xs text-gray-500 mt-2">Hệ thống đang tiến hành xử lý và đăng ký UDID với Apple Developer. Bạn có thể theo dõi tiến độ trong mục <b>Đơn của tôi</b>.</p>
           `,
@@ -1286,7 +1681,7 @@
           confirmButtonColor: '#0071E3',
           confirmButtonText: 'Xem Đơn Hàng'
         }).then(() => {
-          toggleOrdersDrawer(true);
+          toggleOrdersDrawer(true, 'orders');
         });
 
       } catch (err) {
@@ -1307,21 +1702,15 @@
 
     function saveLocalOrder(order) {
       const orders = getLocalOrders();
-      orders.unshift(order);
-      if (orders.length > 30) orders.length = 30;
+      const existingIdx = orders.findIndex(o => o.orderId === order.orderId);
+      if (existingIdx !== -1) {
+        orders[existingIdx] = { ...orders[existingIdx], ...order };
+      } else {
+        orders.unshift(order);
+      }
+      if (orders.length > 40) orders.length = 40;
       localStorage.setItem('ipaviet_cert_orders', JSON.stringify(orders));
       renderOrdersDrawer();
-    }
-
-    function toggleOrdersDrawer(show) {
-      const d = document.getElementById('ordersDrawer');
-      if (!d) return;
-      if (show) {
-        renderOrdersDrawer();
-        d.classList.remove('closed');
-      } else {
-        d.classList.add('closed');
-      }
     }
 
     function renderOrdersDrawer() {
@@ -1355,10 +1744,13 @@
       }
 
       container.innerHTML = list.map(o => {
-        const isPaid = o.status === 'PAID_PROCESSING' || o.status === 'COMPLETED';
         const isCompleted = o.status === 'COMPLETED';
+        const isPaid = o.status === 'PAID_PROCESSING';
         const statusLabel = isCompleted ? 'Đã cấp chứng chỉ' : (isPaid ? 'Đang đăng ký Apple' : 'Chờ thanh toán');
         const statusColor = isCompleted ? 'text-apple-green bg-apple-green/10 border-apple-green/20' : (isPaid ? 'text-apple-blue bg-apple-blue/10 border-apple-blue/20' : 'text-amber-500 bg-amber-500/10 border-amber-500/20');
+        const p12 = o.p12Url || '';
+        const prov = o.provUrl || o.provisionUrl || '';
+        const pass = o.certPass || '1';
 
         return `
           <div class="bg-apple-bgLight dark:bg-[#111113] p-4 rounded-2xl border border-apple-separatorLight dark:border-apple-separatorDark space-y-2.5">
@@ -1375,23 +1767,40 @@
             <div class="text-[11px] text-apple-gray space-y-1">
               <div>UDID: <span class="font-mono text-neutral-800 dark:text-neutral-200 font-medium truncate block">${o.udid}</span></div>
               <div class="flex justify-between">
-                <span>Số tiền: <b>${(o.price || 0).toLocaleString()}đ</b></span>
-                <span>${new Date(o.createdAt).toLocaleDateString('vi-VN')}</span>
+                <span>Số tiền: <b>${(o.price || 0).toLocaleString('vi-VN')}đ</b></span>
+                <span>${o.createdAt ? new Date(o.createdAt).toLocaleDateString('vi-VN') : 'Mới'}</span>
               </div>
+              ${o.fulfillNote ? `<div class="p-2 rounded-xl bg-apple-blue/5 border border-apple-blue/15 text-apple-blue text-[11px] font-medium">📌 Admin: ${o.fulfillNote}</div>` : ''}
             </div>
 
             ${isCompleted ? `
-              <div class="pt-2 border-t border-black/5 dark:border-white/5 flex gap-2">
-                <a href="${o.p12Url || '#'}" download class="flex-1 py-1.5 rounded-xl bg-apple-blue text-white text-[11px] font-bold text-center no-underline flex items-center justify-center gap-1">
-                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Tải P12
-                </a>
-                <a href="${o.provisionUrl || '#'}" download class="flex-1 py-1.5 rounded-xl bg-apple-green text-white text-[11px] font-bold text-center no-underline flex items-center justify-center gap-1">
-                  <i data-lucide="file-check" class="w-3.5 h-3.5"></i> Tải Prov
-                </a>
+              <div class="pt-2 border-t border-black/5 dark:border-white/5 space-y-2">
+                <div class="grid grid-cols-2 gap-2">
+                  <a href="${p12 || '#'}" ${p12 ? 'download target="_blank"' : ''} class="py-2 rounded-xl bg-apple-blue text-white text-[11px] font-bold text-center no-underline flex items-center justify-center gap-1 shadow-xs apple-btn-spring">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Tải P12
+                  </a>
+                  <a href="${prov || '#'}" ${prov ? 'download target="_blank"' : ''} class="py-2 rounded-xl bg-apple-green text-white text-[11px] font-bold text-center no-underline flex items-center justify-center gap-1 shadow-xs apple-btn-spring">
+                    <i data-lucide="file-check" class="w-3.5 h-3.5"></i> Tải Prov
+                  </a>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] p-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.05]">
+                  <span class="text-apple-gray">Mật khẩu P12:</span>
+                  <button onclick="copyText('${pass}', 'Đã chép pass cert!')" class="px-2 py-0.5 rounded bg-apple-blue text-white font-mono font-bold text-[10px] flex items-center gap-1 apple-btn-spring cursor-pointer">
+                    <span>${pass}</span>
+                    <i data-lucide="copy" class="w-3 h-3"></i>
+                  </button>
+                </div>
+
+                ${p12 ? `
+                  <a href="vsign://import?cert=${encodeURIComponent(p12)}&pass=${encodeURIComponent(pass)}" class="w-full py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-white font-bold text-[11px] text-center no-underline flex items-center justify-center gap-1 shadow-xs apple-btn-spring">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Nhập Thẳng Vào VSign (1-Chạm)
+                  </a>
+                ` : ''}
               </div>
             ` : `
               <div class="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[11px]">
-                <span class="text-apple-gray">Mật khẩu p12 mặc định: <b>1</b></span>
+                <span class="text-apple-gray">Kích hoạt: <b>24h - 72h</b></span>
                 <a href="https://t.me/dothaisonfpt" target="_blank" class="text-apple-blue font-bold flex items-center gap-0.5">
                   <i data-lucide="message-circle" class="w-3 h-3"></i> Hỗ trợ
                 </a>
@@ -1402,6 +1811,347 @@
       }).join('');
 
       if (window.lucide) lucide.createIcons();
+    }
+
+    // ─── UDID & Order Lookup Logic ───
+    async function executeCertLookup() {
+      const input = document.getElementById('lookupQueryInput');
+      const container = document.getElementById('udidLookupResultContainer');
+      if (!input || !container) return;
+
+      const query = input.value.trim();
+      if (!query) {
+        showToast("Vui lòng nhập UDID hoặc Mã đơn cần tra cứu!");
+        input.focus();
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="p-6 text-center text-apple-gray">
+          <div class="w-6 h-6 border-2 border-apple-blue border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p class="text-xs">Đang kiểm tra hệ thống Apple & Server...</p>
+        </div>
+      `;
+
+      try {
+        const results = [];
+        
+        // 1. Query Firestore cert_orders
+        if (typeof db !== 'undefined') {
+          // By Doc ID
+          try {
+            const docById = await db.collection('cert_orders').doc(query).get();
+            if (docById.exists) {
+              results.push({ ...docById.data(), id: docById.id });
+            }
+          } catch(e) {}
+
+          // By UDID
+          try {
+            const qByUdid = await db.collection('cert_orders').where('udid', '==', query).get();
+            qByUdid.forEach(doc => {
+              if (!results.some(r => r.orderId === doc.id || r.id === doc.id)) {
+                results.push({ ...doc.data(), id: doc.id });
+              }
+            });
+          } catch(e) {}
+        }
+
+        // 2. Local storage match
+        const localList = getLocalOrders();
+        localList.forEach(lo => {
+          if ((lo.orderId && lo.orderId.toLowerCase() === query.toLowerCase()) || 
+              (lo.udid && lo.udid.toLowerCase() === query.toLowerCase())) {
+            if (!results.some(r => r.orderId === lo.orderId)) {
+              results.push(lo);
+            }
+          }
+        });
+
+        if (results.length === 0) {
+          container.innerHTML = `
+            <div class="p-6 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-dashed border-apple-separatorLight dark:border-apple-separatorDark text-center space-y-2">
+              <i data-lucide="help-circle" class="w-8 h-8 text-apple-gray mx-auto"></i>
+              <h4 class="font-bold text-xs text-neutral-900 dark:text-white">Không tìm thấy đơn hàng</h4>
+              <p class="text-[11px] text-apple-gray">
+                Hệ thống chưa tìm thấy đơn nào khớp với <b>"${query}"</b>.<br>
+                Vui lòng kiểm tra lại UDID hoặc liên hệ hỗ trợ trực tiếp.
+              </p>
+              <div class="pt-2 flex justify-center gap-2">
+                <a href="https://t.me/dothaisonfpt" target="_blank" class="px-3 py-1.5 rounded-full bg-apple-blue/10 text-apple-blue text-[11px] font-bold no-underline">
+                  Nhắn Kỹ Thuật Viên
+                </a>
+              </div>
+            </div>
+          `;
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
+
+        container.innerHTML = results.map(o => {
+          const isCompleted = o.status === 'COMPLETED';
+          const isPaid = o.status === 'PAID_PROCESSING';
+          const p12 = o.p12Url || '';
+          const prov = o.provUrl || o.provisionUrl || '';
+          const pass = o.certPass || '1';
+
+          let statusBadge = '';
+          if (isCompleted) {
+            statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-apple-green/10 text-apple-green border border-apple-green/20">✓ Đã Cấp Chứng Chỉ</span>`;
+          } else if (isPaid) {
+            statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-apple-blue/10 text-apple-blue border border-apple-blue/20">Đang Đăng Ký Apple</span>`;
+          } else {
+            statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Chờ Quét Thanh Toán</span>`;
+          }
+
+          return `
+            <div class="p-4 rounded-2xl bg-white dark:bg-apple-cardDarkElevated border border-apple-separatorLight dark:border-apple-separatorDark shadow-xs space-y-3">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <span class="font-mono text-xs font-bold text-apple-blue">${o.orderId || o.id}</span>
+                  <h4 class="font-bold text-sm text-neutral-900 dark:text-white mt-0.5">${o.planName || 'Gói Chứng Chỉ'}</h4>
+                </div>
+                ${statusBadge}
+              </div>
+
+              <div class="text-[11px] text-apple-gray space-y-1">
+                <div>Mã UDID: <span class="font-mono text-neutral-800 dark:text-neutral-200 font-medium block truncate">${o.udid}</span></div>
+                <div class="flex justify-between">
+                  <span>Giá: <b>${(o.price || 0).toLocaleString('vi-VN')}đ</b></span>
+                  <span>${o.createdAt ? new Date(o.createdAt).toLocaleDateString('vi-VN') : 'Mới'}</span>
+                </div>
+                ${o.fulfillNote ? `<div class="p-2 rounded-xl bg-apple-bgLight dark:bg-[#111113] text-apple-blue font-medium mt-1">📌 Ghi chú: ${o.fulfillNote}</div>` : ''}
+              </div>
+
+              ${isCompleted ? `
+                <div class="pt-2 border-t border-black/5 dark:border-white/5 space-y-2">
+                  <div class="grid grid-cols-2 gap-2">
+                    <a href="${p12}" target="_blank" download class="py-2 px-3 rounded-xl bg-apple-blue hover:bg-apple-darkBlue text-white font-bold text-xs text-center no-underline flex items-center justify-center gap-1 shadow-xs apple-btn-spring">
+                      <i data-lucide="download" class="w-3.5 h-3.5"></i> Tải .P12
+                    </a>
+                    <a href="${prov}" target="_blank" download class="py-2 px-3 rounded-xl bg-apple-green hover:opacity-90 text-white font-bold text-xs text-center no-underline flex items-center justify-center gap-1 shadow-xs apple-btn-spring">
+                      <i data-lucide="file-check" class="w-3.5 h-3.5"></i> Tải .Prov
+                    </a>
+                  </div>
+
+                  <div class="flex items-center justify-between text-xs p-2.5 rounded-xl bg-black/[0.03] dark:bg-white/[0.05]">
+                    <span class="text-apple-gray font-medium">Mật khẩu file P12:</span>
+                    <button onclick="copyText('${pass}', 'Đã sao chép mật khẩu Cert: ${pass}!')" class="px-2.5 py-1 rounded-lg bg-apple-blue text-white font-mono font-bold text-xs flex items-center gap-1 apple-btn-spring cursor-pointer">
+                      <span>${pass}</span>
+                      <i data-lucide="copy" class="w-3 h-3"></i>
+                    </button>
+                  </div>
+
+                  ${p12 ? `
+                    <a href="vsign://import?cert=${encodeURIComponent(p12)}&pass=${encodeURIComponent(pass)}" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-white font-bold text-xs text-center no-underline flex items-center justify-center gap-1.5 shadow-sm apple-btn-spring">
+                      <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Nhập Thẳng Vào VSign (1-Chạm)
+                    </a>
+                  ` : ''}
+                </div>
+              ` : `
+                <div class="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
+                  <span class="text-apple-gray text-[11px]">Đang đăng ký lên Apple (24h - 72h)</span>
+                  <a href="https://t.me/dothaisonfpt" target="_blank" class="text-apple-blue font-bold flex items-center gap-1 text-[11px]">
+                    <i data-lucide="message-circle" class="w-3 h-3"></i> Giục Admin
+                  </a>
+                </div>
+              `}
+            </div>
+          `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+
+      } catch (err) {
+        container.innerHTML = `<div class="p-4 text-center text-apple-red text-xs">Lỗi khi tìm kiếm: ${err.message}</div>`;
+      }
+    }
+
+    // ─── Dynamic Cert Products from Firestore ───
+    async function loadDynamicCertPlans() {
+      if (typeof db === 'undefined') return;
+      try {
+        const snap = await db.collection('cert_products').get();
+        if (snap.empty) return; // Keep default cards if collection empty
+
+        const products = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          if (d.active !== false) {
+            products.push({ id: doc.id, ...d });
+          }
+        });
+
+        if (products.length === 0) return;
+
+        products.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+
+        const container = document.getElementById('certPlansContainer');
+        if (!container) return;
+
+        container.innerHTML = products.map((p, idx) => {
+          const isPro = idx === 1 || (p.badge && p.badge.includes('KHUYÊN DÙNG'));
+          const isVip = idx === 2 || (p.badge && p.badge.includes('VIP'));
+          const badgeText = p.badge || (isPro ? '★ KHUYÊN DÙNG' : (isVip ? '👑 VIP' : 'TIÊU CHUẨN'));
+
+          const borderClass = isPro ? 'border-2 border-apple-blue ring-4 ring-apple-blue/15 shadow-apple-hover' : (isVip ? 'border border-amber-500/30' : 'border border-apple-separatorLight dark:border-apple-separatorDark shadow-apple');
+          const bgClass = isPro ? 'bg-white dark:bg-apple-cardDarkElevated' : (isVip ? 'bg-gradient-to-b from-amber-500/[0.03] to-transparent bg-white dark:bg-apple-cardDark' : 'bg-white dark:bg-apple-cardDark');
+          const priceColor = isPro ? 'bg-gradient-to-r from-apple-blue to-indigo-500 bg-clip-text text-transparent' : (isVip ? 'text-amber-600 dark:text-amber-400' : 'text-neutral-900 dark:text-white');
+
+          const features = Array.isArray(p.features) && p.features.length > 0 
+            ? p.features 
+            : [
+                `Thời hạn chứng chỉ: <b>${p.duration || '300 ngày'}</b>`,
+                `Bảo hành 1 đổi 1: <b>${p.warranty || '200 ngày'}</b>`,
+                `Đầy đủ file <b>.p12 + .mobileprovision</b>`,
+                `Ký app qua <b>VSign, ESign, Scarlet, GBox</b>`,
+                `Kích hoạt theo chuẩn <b>Apple Developer 24h - 72h</b>`
+              ];
+
+          return `
+            <div class="apple-spring ${bgClass} rounded-[28px] p-6 sm:p-7 ${borderClass} flex flex-col justify-between relative overflow-hidden">
+              ${isPro ? `
+                <div class="absolute -top-1 -right-1">
+                  <span class="px-3.5 py-1 rounded-bl-2xl rounded-tr-2xl text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-apple-blue to-indigo-600 text-white shadow-md">
+                    ${badgeText}
+                  </span>
+                </div>
+              ` : ''}
+
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <span class="px-3 py-1 rounded-full text-[11px] font-bold ${isPro ? 'bg-apple-blue text-white' : (isVip ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30' : 'bg-apple-blue/10 text-apple-blue border border-apple-blue/20')}">
+                    ${badgeText}
+                  </span>
+                  <span class="text-xs font-semibold text-apple-gray">1 Thiết Bị</span>
+                </div>
+
+                <h3 class="text-xl font-black text-neutral-900 dark:text-white tracking-tight mb-1 flex items-center gap-1.5">
+                  <span>${p.name}</span>
+                  ${isPro ? `<i data-lucide="sparkles" class="w-4 h-4 text-apple-blue fill-apple-blue"></i>` : ''}
+                  ${isVip ? `<i data-lucide="crown" class="w-4 h-4 text-amber-500"></i>` : ''}
+                </h3>
+                <p class="text-xs text-apple-gray mb-5 min-h-[36px]">
+                  ${p.description || `Chứng chỉ cá nhân chuẩn Apple, cấp file đầy đủ, bảo hành ${p.warranty || 'dài hạn'}.`}
+                </p>
+
+                <!-- Price -->
+                <div class="mb-6 pb-6 border-b border-apple-separatorLight dark:border-apple-separatorDark">
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-3xl sm:text-4xl font-black ${priceColor} tracking-tight">
+                      ${Number(p.price || 0).toLocaleString('vi-VN')}đ
+                    </span>
+                    <span class="text-xs font-semibold text-apple-gray">/ gói</span>
+                  </div>
+                  <p class="text-[11px] font-bold mt-1 ${isPro ? 'text-apple-blue' : (isVip ? 'text-amber-500' : 'text-apple-green')}">
+                    ✓ Bảo hành ${p.warranty || 'uy tín'} (Đổi mới miễn phí)
+                  </p>
+                </div>
+
+                <!-- Features List -->
+                <ul class="space-y-3 text-xs text-neutral-700 dark:text-neutral-300 font-medium mb-6">
+                  ${features.map(f => `
+                    <li class="flex items-center gap-2.5">
+                      <i data-lucide="${isPro ? 'check-circle-2' : 'check'}" class="w-4 h-4 ${isPro ? 'text-apple-blue' : (isVip ? 'text-amber-500' : 'text-apple-green')} shrink-0"></i>
+                      <span>${f}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="grid grid-cols-2 gap-2 mt-4">
+                <button onclick="selectPlanForCart('${p.id}', '${p.name}', ${p.price}, '${p.warranty || ''}', '${p.duration || ''}', '${badgeText}'); toggleOrdersDrawer(true, 'cart');" class="py-3 px-3 rounded-full bg-black/[0.04] dark:bg-white/[0.08] hover:bg-black/[0.08] dark:hover:bg-white/[0.12] text-neutral-900 dark:text-white font-bold text-xs transition apple-btn-spring cursor-pointer border border-black/10 dark:border-white/10 flex items-center justify-center gap-1">
+                  <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+                  <span>Giỏ Hàng</span>
+                </button>
+                <button onclick="openCheckoutModal('${p.id}', '${p.name}', ${p.price}, '${p.warranty || ''}', '${p.duration || ''}')" class="py-3 px-3 rounded-full ${isPro ? 'bg-apple-blue hover:bg-apple-darkBlue shadow-md shadow-apple-blue/30' : (isVip ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-md shadow-amber-500/25' : 'bg-apple-blue hover:bg-apple-darkBlue shadow-sm')} text-white font-bold text-xs transition apple-btn-spring cursor-pointer flex items-center justify-center gap-1">
+                  <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                  <span>Mua Ngay</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (window.lucide) lucide.createIcons();
+      } catch(err) {
+        console.warn("Could not load dynamic cert plans:", err);
+      }
+    }
+
+    // ─── Real-Time Customer Order Listener ───
+    function listenToCustomerOrders() {
+      if (typeof db === 'undefined') return;
+      const localOrders = getLocalOrders();
+      if (!localOrders || localOrders.length === 0) return;
+
+      const pendingOrderIds = localOrders
+        .filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED')
+        .map(o => o.orderId)
+        .filter(Boolean);
+
+      if (pendingOrderIds.length === 0) return;
+
+      pendingOrderIds.slice(0, 10).forEach(orderId => {
+        db.collection('cert_orders').doc(orderId).onSnapshot(doc => {
+          if (!doc.exists) return;
+          const data = doc.data();
+          if (data.status === 'COMPLETED' && !notifiedOrderStatuses.has(orderId)) {
+            notifiedOrderStatuses.add(orderId);
+            
+            const orders = getLocalOrders();
+            const idx = orders.findIndex(o => o.orderId === orderId);
+            if (idx !== -1) {
+              orders[idx] = { ...orders[idx], ...data, status: 'COMPLETED' };
+              localStorage.setItem('ipaviet_cert_orders', JSON.stringify(orders));
+              renderOrdersDrawer();
+            }
+
+            Swal.fire({
+              title: '🎉 Chứng Chỉ Apple Đã Sẵn Sàng!',
+              html: `
+                <div class="text-left text-xs space-y-2 p-3 bg-apple-bgLight dark:bg-[#111113] rounded-2xl my-2">
+                  <div>Mã đơn: <b class="text-apple-blue font-mono">${orderId}</b></div>
+                  <div>Gói: <b>${data.planName || ''}</b></div>
+                  <div>Mật khẩu p12: <b class="font-mono text-apple-green">${data.certPass || '1'}</b></div>
+                  ${data.fulfillNote ? `<div class="text-apple-blue">📌 ${data.fulfillNote}</div>` : ''}
+                </div>
+                <p class="text-xs text-apple-gray">Admin đã cấp xong file chứng chỉ cho thiết bị của bạn. Bạn có thể tải về hoặc nhập vào VSign ngay bây giờ!</p>
+              `,
+              icon: 'success',
+              confirmButtonText: 'Xem & Tải Chứng Chỉ',
+              confirmButtonColor: '#0071E3'
+            }).then(() => {
+              toggleOrdersDrawer(true, 'orders');
+            });
+          }
+        });
+      });
+    }
+
+    // Sync user orders from firestore for cross-device access
+    async function syncUserFirestoreOrders() {
+      if (!currentUser || typeof db === 'undefined') return;
+      try {
+        const snap = await db.collection('cert_orders').where('userId', '==', currentUser.uid).get();
+        if (!snap.empty) {
+          const remoteOrders = [];
+          snap.forEach(d => remoteOrders.push({ ...d.data(), id: d.id }));
+          const local = getLocalOrders();
+          remoteOrders.forEach(ro => {
+            const idx = local.findIndex(l => l.orderId === ro.orderId);
+            if (idx === -1) {
+              local.push(ro);
+            } else {
+              local[idx] = { ...local[idx], ...ro };
+            }
+          });
+          local.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 30)));
+          renderOrdersDrawer();
+        }
+      } catch(e) {}
     }
 
     function updateUserBadge() {
@@ -1418,7 +2168,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();
 
-      // Check URL parameters for ?udid=...
+      // Check URL parameters for ?udid=... or ?plan=...
       const urlParams = new URLSearchParams(window.location.search);
       const incomingUdid = urlParams.get('udid');
       const incomingPlan = urlParams.get('plan');
@@ -1440,6 +2190,9 @@
         }
       }
 
+      // Load products from firestore if customized
+      loadDynamicCertPlans();
+
       // Auth Listener
       auth.onAuthStateChanged(async user => {
         currentUser = user;
@@ -1452,13 +2205,19 @@
               isUserVip = Boolean(data.isVip || (data.vipUntil && data.vipUntil.toMillis && data.vipUntil.toMillis() > Date.now()));
             }
           } catch(e) {}
+          syncUserFirestoreOrders();
         }
         updateUserBadge();
         updateWalletDisplay();
       });
 
       renderOrdersDrawer();
+      calculateCartTotal();
+      listenToCustomerOrders();
     });
   </script>
+
+  <!-- AI Chat Widget & Customer Support Assistant -->
+  <script src="../ai-chat-widget.js?v=7" data-bottom="84px" data-path-prefix="../"></script>
 </body>
 </html>
