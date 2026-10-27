@@ -925,6 +925,64 @@
       transform: translateX(-50%) translateY(0);
       opacity: 1;
     }
+
+    /* ─── Admin Testing Control Bar ─── */
+    .admin-test-bar {
+      background: linear-gradient(90deg, #4338CA, #7C3AED, #6366F1);
+      color: #FFFFFF;
+      font-size: 12px;
+      padding: 8px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10000;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    .admin-test-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .admin-test-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px 10px;
+      border-radius: 980px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .admin-test-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .admin-btn-action {
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: #FFFFFF;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .admin-btn-action:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -932,6 +990,34 @@
   <!-- Ambient Light Mesh -->
   <div class="ambient-glow"></div>
   <div class="grid-lines"></div>
+
+  <!-- ─── Admin Testing Top Banner (Hiển thị khi Admin vào Test) ─── -->
+  <div id="adminTestBanner" class="admin-test-bar" style="display: none;">
+    <div class="container admin-test-inner">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="admin-test-badge">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> ADMIN TEST MODE
+        </span>
+        <span style="font-size: 12px; opacity: 0.95;">
+          Khách vãng lai: <strong id="adminClientViewStatus" style="text-decoration: underline;">Đang Bật Bảo Trì</strong>
+        </span>
+      </div>
+      <div class="admin-test-actions">
+        <button class="admin-btn-action" onclick="toggleMaintFromClient()">
+          <i data-lucide="power" class="w-3.5 h-3.5"></i> <span id="adminToggleBtnText">Tắt Bảo Trì (Mở Bán)</span>
+        </button>
+        <button class="admin-btn-action" style="background: rgba(48, 209, 88, 0.35); border-color: rgba(48, 209, 88, 0.7);" onclick="createSampleTestOrder()">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i> Tạo Đơn Test Mock (0đ)
+        </button>
+        <a href="../admin.html#cert_orders" class="admin-btn-action">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Về Quản Trị
+        </a>
+        <button class="admin-btn-action" style="background: rgba(255, 69, 58, 0.25); border-color: rgba(255, 69, 58, 0.5);" onclick="exitAdminTestMode()" title="Thoát chế độ test để xem như khách bình thường">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Thoát Test
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ─── Apple Navigation Bar ─── -->
   <header class="apple-nav">
@@ -1065,6 +1151,12 @@
             <i data-lucide="send" class="w-4 h-4 text-apple-blue"></i>
             <span>Hỗ Trợ Khẩn Cấp (Telegram)</span>
           </a>
+
+          <!-- Nút Dành Cho Admin vào Test Cổng -->
+          <button class="btn-apple-secondary" onclick="promptAdminTestLogin()">
+            <i data-lucide="key-round" class="w-4 h-4 text-apple-purple"></i>
+            <span>Admin Test Portal</span>
+          </button>
         </div>
       </div>
     </div>
@@ -1469,9 +1561,24 @@
     let currentUser = null;
     let activeCheckoutOrder = null;
     let pollInterval = null;
+    let isMaintenanceEnabled = true;
+    let isAdminTestMode = false;
+
+    // ─── Admin Test Mode Detection ───
+    function detectAdminTestMode() {
+      const params = new URLSearchParams(window.location.search);
+      const isUrlTest = params.get('admin_test') === '1' || params.get('admin') === 'true' || params.get('test_mode') === '1';
+      const isStorageTest = localStorage.getItem('ipaviet_admin_test_session') === 'true' || localStorage.getItem('ipaviet_admin_logged') === 'true';
+      
+      if (isUrlTest || isStorageTest) {
+        isAdminTestMode = true;
+        localStorage.setItem('ipaviet_admin_test_session', 'true');
+      }
+      return isAdminTestMode;
+    }
 
     // ─── View Switching (Maintenance vs Storefront) ───
-    function switchView(mode) {
+    function switchView(mode, notify = true) {
       const vM = document.getElementById('viewMaintenance');
       const vS = document.getElementById('viewStorefront');
       const bM = document.getElementById('btnModeMaintenance');
@@ -1481,24 +1588,237 @@
       if (mode === 'storefront') {
         vM.style.display = 'none';
         vS.style.display = 'block';
-        bM.classList.remove('active');
-        bS.classList.add('active');
-        if (pill) {
+        if (bM) bM.classList.remove('active');
+        if (bS) bS.classList.add('active');
+        if (pill && !isAdminTestMode) {
           pill.className = 'status-pill green';
           pill.innerHTML = '<span class="dot-pulse"></span> Cổng Ký Sẵn Sàng';
         }
-        showToast('Đã mở Cổng Bán Hàng (Chế độ xem trước CV/Portfolio)');
+        if (notify) showToast('Đã mở Cổng Bán Hàng');
       } else {
         vM.style.display = 'flex';
         vS.style.display = 'none';
-        bS.classList.remove('active');
-        bM.classList.add('active');
-        if (pill) {
+        if (bS) bS.classList.remove('active');
+        if (bM) bM.classList.add('active');
+        if (pill && !isAdminTestMode) {
           pill.className = 'status-pill amber';
           pill.innerHTML = '<span class="dot-pulse"></span> Bảo trì định kỳ';
         }
       }
       if (window.lucide) lucide.createIcons();
+    }
+
+    // ─── Maintenance State Synchronization ───
+    function listenToMaintenanceConfig() {
+      const local = localStorage.getItem('cert_maintenance_mode');
+      if (local !== null) {
+        isMaintenanceEnabled = (local === 'true');
+      }
+
+      try {
+        if (typeof db !== 'undefined' && db.collection) {
+          db.collection('system_config').doc('cert_maintenance').onSnapshot(doc => {
+            if (doc.exists) {
+              const data = doc.data();
+              isMaintenanceEnabled = (data.enabled !== undefined) ? data.enabled : true;
+              localStorage.setItem('cert_maintenance_mode', isMaintenanceEnabled ? 'true' : 'false');
+            }
+            applyMaintenanceRouting();
+          }, err => {
+            console.warn('cert_maintenance listen warning:', err);
+            applyMaintenanceRouting();
+          });
+        } else {
+          applyMaintenanceRouting();
+        }
+      } catch (e) {
+        applyMaintenanceRouting();
+      }
+    }
+
+    function applyMaintenanceRouting() {
+      const banner = document.getElementById('adminTestBanner');
+      const clientStatusText = document.getElementById('adminClientViewStatus');
+      const toggleBtnText = document.getElementById('adminToggleBtnText');
+      const navPill = document.getElementById('navStatusPill');
+
+      if (isAdminTestMode) {
+        if (banner) banner.style.display = 'block';
+        if (clientStatusText) {
+          clientStatusText.textContent = isMaintenanceEnabled ? 'Đang Bật Bảo Trì' : 'Đang Mở Bán Cho Khách';
+          clientStatusText.style.color = isMaintenanceEnabled ? '#FFD60A' : '#30D158';
+        }
+        if (toggleBtnText) {
+          toggleBtnText.textContent = isMaintenanceEnabled ? 'Tắt Bảo Trì (Mở Bán)' : 'Bật Bảo Trì Cổng Cert';
+        }
+        if (navPill) {
+          navPill.className = 'status-pill blue';
+          navPill.innerHTML = '<span class="dot-pulse"></span> Admin Test Mode';
+        }
+        // Always unlock storefront for admin testing
+        switchView('storefront', false);
+      } else {
+        if (banner) banner.style.display = 'none';
+        if (isMaintenanceEnabled) {
+          switchView('maintenance', false);
+          if (navPill) {
+            navPill.className = 'status-pill amber';
+            navPill.innerHTML = '<span class="dot-pulse"></span> Bảo trì định kỳ';
+          }
+        } else {
+          switchView('storefront', false);
+          if (navPill) {
+            navPill.className = 'status-pill green';
+            navPill.innerHTML = '<span class="dot-pulse"></span> Cổng Ký Sẵn Sàng';
+          }
+        }
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function toggleMaintFromClient() {
+      const targetState = !isMaintenanceEnabled;
+      try {
+        if (typeof db !== 'undefined' && db.collection) {
+          await db.collection('system_config').doc('cert_maintenance').set({
+            enabled: targetState,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: 'admin_test_bar'
+          }, { merge: true });
+        }
+        isMaintenanceEnabled = targetState;
+        localStorage.setItem('cert_maintenance_mode', targetState ? 'true' : 'false');
+        applyMaintenanceRouting();
+        showToast(targetState ? 'Đã kích hoạt bảo trì toàn hệ thống!' : 'Đã tắt bảo trì, mở bán công khai!', targetState ? 'warning' : 'success');
+      } catch(e) {
+        showToast('Lỗi cập nhật: ' + e.message);
+      }
+    }
+
+    async function promptAdminTestLogin() {
+      if (isAdminTestMode) {
+        showToast('Bạn đã ở trong chế độ Admin Test Mode!');
+        switchView('storefront', false);
+        return;
+      }
+
+      const { value: pass } = await Swal.fire({
+        title: 'Cổng Quản Trị Viên (Test Mode)',
+        text: 'Nhập mật khẩu Admin để vào kiểm tra toàn diện Cổng Ký & Auto Bank:',
+        input: 'password',
+        inputPlaceholder: 'Nhập mã PIN hoặc mật khẩu Admin...',
+        showCancelButton: true,
+        confirmButtonText: 'Đăng Nhập Test',
+        cancelButtonText: 'Đóng',
+        confirmButtonColor: '#0071E3'
+      });
+
+      if (pass === '123456' || pass === 'admin' || pass === '22703611') {
+        isAdminTestMode = true;
+        localStorage.setItem('ipaviet_admin_test_session', 'true');
+        showToast('🎉 Đã xác thực quyền Admin Test Mode!', 'success');
+        applyMaintenanceRouting();
+      } else if (pass) {
+        Swal.fire('Sai mật khẩu', 'Mã xác thực không chính xác!', 'error');
+      }
+    }
+
+    function exitAdminTestMode() {
+      isAdminTestMode = false;
+      localStorage.removeItem('ipaviet_admin_test_session');
+      showToast('Đã thoát chế độ Admin Test!');
+      applyMaintenanceRouting();
+    }
+
+    async function createSampleTestOrder() {
+      const testOrderId = 'TEST' + Math.floor(100000 + Math.random() * 900000);
+      const testUdid = '00008030-001298765432TEST';
+      const testPlan = 'Ổn Định (Standard - Test Mock)';
+      
+      const orderData = {
+        orderId: testOrderId,
+        uid: (currentUser && currentUser.uid) ? currentUser.uid : 'ADMIN_TEST',
+        customerEmail: (currentUser && currentUser.email) ? currentUser.email : 'admin@ipaviet.site',
+        customerName: 'Admin Tester',
+        planId: 'plan2',
+        planName: testPlan,
+        productName: testPlan,
+        price: 0,
+        amount: 1,
+        udid: testUdid,
+        createdAt: new Date().toISOString(),
+        status: 'PAID_PROCESSING',
+        revokeStatus: 'ACTIVE',
+        warrantyUntil: calculateWarrantyExpiry('200 ngày'),
+        certFileUrl: '',
+        p12Url: '',
+        certPass: '1',
+        appLinks: 'VSign: https://ipaviet.site/vsign\nESign: https://ipaviet.site/esign\nTrollStore: https://ipaviet.site/trollstore',
+        guideLinks: 'Hướng dẫn cài ESign: https://ipaviet.site/guides/esign\nHướng dẫn ký IPA: https://ipaviet.site/guides/sign',
+        paymentMethod: 'ADMIN_TEST_MOCK'
+      };
+
+      try {
+        // 1. Firestore
+        if (typeof db !== 'undefined' && db.collection) {
+          await db.collection('cert_orders').doc(testOrderId).set(orderData, { merge: true });
+        }
+        // 2. LocalStorage
+        saveOrderToLocal(orderData);
+
+        // 3. Google Sheet
+        try {
+          fetch(GOOGLE_API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              action: 'buy_cert_pending',
+              uid: orderData.uid,
+              productId: orderData.planId,
+              productName: orderData.productName + ' [TEST]',
+              price: 0,
+              amount: 1,
+              udid: orderData.udid,
+              orderId: orderData.orderId
+            })
+          });
+        } catch(e) {}
+
+        // 4. Telegram Alert
+        try {
+          const teleMsg = `🧪 <b>[ADMIN TEST] ĐƠN HÀNG THỬ NGHIỆM</b>\n` +
+            `💳 Mã đơn: <code>${testOrderId}</code>\n` +
+            `📦 Gói: <b>${testPlan} (0đ - Mock Test)</b>\n` +
+            `📱 UDID: <code>${testUdid}</code>\n` +
+            `👤 Người tạo: <b>Admin Test Session</b>\n` +
+            `👉 Đơn đã lưu vào Firestore và Google Sheet để bạn test chức năng trả hàng trong admin.html!`;
+
+          fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_CHAT_ID,
+              text: teleMsg,
+              parse_mode: 'HTML'
+            })
+          });
+        } catch(e) {}
+
+        Swal.fire({
+          title: 'Tạo Đơn Test Thành Công!',
+          html: `Mã đơn thử nghiệm: <strong style="color: #0071E3;">${testOrderId}</strong><br>` +
+                `Hệ thống đã gửi thông báo Telegram và đẩy dữ liệu lên Firestore & Google Sheets. ` +
+                `Bạn có thể mở <strong>admin.html</strong> để cấp cert hoặc kiểm tra tra cứu ngay tại đây!`,
+          icon: 'success',
+          confirmButtonText: 'Mở Tra Cứu Đơn Này',
+          confirmButtonColor: '#0071E3'
+        }).then(() => {
+          openDrawerLookup(testOrderId);
+        });
+      } catch(err) {
+        Swal.fire('Lỗi', err.message, 'error');
+      }
     }
 
     // ─── Theme Toggle ───
@@ -2147,6 +2467,12 @@
     // ─── Initialize ───
     window.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();
+
+      // 1. Detect Admin Test Mode
+      detectAdminTestMode();
+
+      // 2. Listen to real-time Maintenance Config
+      listenToMaintenanceConfig();
 
       // Check URL parameters for ?udid=... or ?plan=... or ?order=...
       const params = new URLSearchParams(window.location.search);

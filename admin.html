@@ -1260,6 +1260,38 @@
           </div>
         </div>
 
+        <!-- Apple Cert Maintenance & Admin Test Controller -->
+        <div class="glass-card p-4 rounded-2xl border border-sky-100 shadow-apple flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-sky-50/70 via-white to-sky-50/40">
+          <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-sky-500/20 shrink-0">
+              <i data-lucide="shield-alert" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="font-bold text-sm text-gray-900 tracking-tight">Trạng Thái Cổng Bán Cert Apple</h4>
+                <span id="certMaintBadge" class="text-[11px] bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Đang BẬT Bảo Trì
+                </span>
+              </div>
+              <p class="text-xs text-gray-500 mt-0.5" id="certMaintDesc">
+                Khách truy cập sẽ thấy màn hình <strong class="text-amber-700">Bảo trì & Nâng cấp</strong> (vẫn tra cứu được đơn cũ).
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2.5 w-full md:w-auto justify-end flex-wrap">
+            <!-- Toggle Maintenance Switch -->
+            <button id="btnToggleCertMaint" onclick="toggleCertMaintenanceMode()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm shadow-emerald-600/20">
+              <i data-lucide="power" class="w-3.5 h-3.5"></i> <span id="btnToggleCertMaintText">Tắt Bảo Trì (Mở Bán)</span>
+            </button>
+
+            <!-- Vào Test Cổng Mua Hàng -->
+            <button onclick="openCertStoreTestMode()" class="px-4 py-2 bg-gradient-to-r from-sky-600 to-blue-600 hover:brightness-110 text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md shadow-sky-500/20 border border-white/10">
+              <i data-lucide="flask-conical" class="w-3.5 h-3.5"></i> Vào Test Cổng Mua (Admin)
+            </button>
+          </div>
+        </div>
+
         <!-- Filter & Search Bar -->
         <div class="glass-card p-4 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col md:flex-row justify-between items-center gap-3">
           <div class="relative w-full md:w-80">
@@ -4238,6 +4270,7 @@
 
       if (tabId === 'cert_orders') {
         loadCertOrders();
+        initCertMaintenanceState();
         setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
       }
 
@@ -7325,6 +7358,112 @@
     // 14. APPLE CERTIFICATE COMMERCE MANAGEMENT
     // ==========================================
     let currentCertFilter = 'ALL';
+    let certMaintenanceEnabled = true;
+
+    async function initCertMaintenanceState() {
+      const localMaint = localStorage.getItem('cert_maintenance_mode');
+      if (localMaint !== null) {
+        certMaintenanceEnabled = localMaint === 'true';
+        updateCertMaintUI();
+      }
+
+      try {
+        if (typeof db !== 'undefined' && db.collection) {
+          const doc = await db.collection('system_config').doc('cert_maintenance').get();
+          if (doc.exists) {
+            const data = doc.data();
+            certMaintenanceEnabled = (data.enabled !== undefined) ? data.enabled : true;
+            localStorage.setItem('cert_maintenance_mode', certMaintenanceEnabled ? 'true' : 'false');
+            updateCertMaintUI();
+          } else {
+            // Initialize doc with default true
+            await db.collection('system_config').doc('cert_maintenance').set({
+              enabled: true,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+          }
+        }
+      } catch (e) {
+        console.warn('initCertMaintenanceState warning:', e);
+      }
+    }
+
+    function updateCertMaintUI() {
+      const badge = document.getElementById('certMaintBadge');
+      const desc = document.getElementById('certMaintDesc');
+      const btn = document.getElementById('btnToggleCertMaint');
+      const btnText = document.getElementById('btnToggleCertMaintText');
+
+      if (certMaintenanceEnabled) {
+        if (badge) {
+          badge.className = 'text-[11px] bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1.5';
+          badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Đang BẬT Bảo Trì';
+        }
+        if (desc) {
+          desc.innerHTML = 'Khách truy cập sẽ thấy màn hình <strong class="text-amber-700">Bảo trì & Nâng cấp</strong> (vẫn tra cứu được đơn cũ).';
+        }
+        if (btn) {
+          btn.className = 'px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm shadow-emerald-600/20';
+        }
+        if (btnText) btnText.textContent = 'Tắt Bảo Trì (Mở Bán Cho Khách)';
+      } else {
+        if (badge) {
+          badge.className = 'text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1.5';
+          badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Đang MỞ BÁN BÌNH THƯỜNG';
+        }
+        if (desc) {
+          desc.innerHTML = 'Cổng bán chứng chỉ đang <strong class="text-emerald-700">Mở Bán Công Khai</strong> cho mọi khách hàng.';
+        }
+        if (btn) {
+          btn.className = 'px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm shadow-amber-600/20';
+        }
+        if (btnText) btnText.textContent = 'Bật Bảo Trì Cổng Cert';
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function toggleCertMaintenanceMode() {
+      const targetState = !certMaintenanceEnabled;
+      const confirmAction = await Swal.fire({
+        title: targetState ? 'Bật Chế Độ Bảo Trì Cert?' : 'Tắt Bảo Trì & Mở Bán Cert?',
+        text: targetState 
+          ? 'Khách hàng truy cập cổng Cert sẽ thấy thông báo bảo trì nâng cấp hệ thống (vẫn tra cứu được đơn cũ).'
+          : 'Cổng mua chứng chỉ Apple sẽ mở công khai cho tất cả khách hàng đặt mua bình thường!',
+        icon: targetState ? 'warning' : 'question',
+        showCancelButton: true,
+        confirmButtonText: targetState ? 'Xác Nhận Bật Bảo Trì' : 'Xác Nhận Mở Bán',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: targetState ? '#D97706' : '#059669'
+      });
+
+      if (!confirmAction.isConfirmed) return;
+
+      certMaintenanceEnabled = targetState;
+      localStorage.setItem('cert_maintenance_mode', certMaintenanceEnabled ? 'true' : 'false');
+      updateCertMaintUI();
+
+      try {
+        if (typeof db !== 'undefined' && db.collection) {
+          await db.collection('system_config').doc('cert_maintenance').set({
+            enabled: certMaintenanceEnabled,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: (AdminState.auth.user && AdminState.auth.user.email) || 'admin'
+          }, { merge: true });
+        }
+      } catch (err) {
+        console.warn('Save cert maintenance error:', err);
+      }
+
+      showToast(certMaintenanceEnabled ? 'Đã BẬT bảo trì cổng Cert!' : 'Đã TẮT bảo trì, mở bán công khai!', certMaintenanceEnabled ? 'warning' : 'success');
+      addAuditLog('CERT_MAINTENANCE_TOGGLE', `Chế độ bảo trì Cert Apple: ${certMaintenanceEnabled ? 'BẬT' : 'TẮT'}`);
+    }
+
+    function openCertStoreTestMode() {
+      localStorage.setItem('ipaviet_admin_test_session', 'true');
+      const testUrl = 'certapple/index.html?admin_test=1&admin_token=ipaviet_admin_' + Date.now();
+      window.open(testUrl, '_blank');
+      showToast('Đang mở Cổng Cert ở chế độ Admin Test Mode!', 'info');
+    }
 
     async function loadCertOrders(notify = false) {
       try {
@@ -7930,9 +8069,10 @@
       // Nạp cấu hình từ xa VSign App (Background sync)
       loadVSignRemoteConfig(true);
 
-      // Nạp Chứng Chỉ Apple (Orders & Products)
+      // Nạp Chứng Chỉ Apple (Orders & Products & Maintenance State)
       loadCertOrders(false);
       loadCertProducts();
+      initCertMaintenanceState();
 
       // Tự động làm mới danh sách khách trực tuyến mỗi 25 giây khi admin đang xem tab Thống Kê
       setInterval(() => {
