@@ -3,126 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác nhận lên đơn - VSign</title>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="../../minimalist-modern.css">
-    <style>
-        body { 
-            background: var(--background); 
-            font-family: var(--font-sans), -apple-system, sans-serif !important; 
-            display: flex; justify-content: center; align-items: center; 
-            min-height: 100vh; margin: 0; padding: 20px;
-            color: var(--foreground);
-            zoom: 70%;
-        }
-        .checkout-card { 
-            background: var(--card); 
-            border: 1px solid var(--border);
-            border-radius: 24px; padding: 40px 30px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.04); 
-            width: 100%; max-width: 400px; text-align: center; 
-        }
-        .brand { font-size: 11px; color: var(--accent); font-family: var(--font-mono); font-weight: 600; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-        h2 { color: var(--foreground); margin: 0 0 5px 0; font-size: 24px; font-family: var(--font-display); font-weight: normal; }
-        .price { font-size: 36px; font-weight: 700; color: var(--accent); margin-bottom: 30px; }
-        
-        .input-group { margin-bottom: 25px; text-align: left; }
-        label { display: block; font-size: 13px; font-weight: 600; color: var(--muted-foreground); margin-bottom: 8px; }
-        input { 
-            width: 100%; padding: 14px; border: 1px solid var(--border); 
-            border-radius: 12px; font-size: 16px; box-sizing: border-box; 
-            background: var(--background); color: var(--foreground); outline: none;
-        }
-        input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,82,255,0.15); }
-        
-        .btn-step1 { 
-            background: var(--foreground); color: var(--background); padding: 16px; 
-            border-radius: 980px; text-decoration: none; display: block; 
-            margin-bottom: 15px; font-weight: 500; font-size: 17px; transition: 0.2s;
-        }
-        .btn-step1:hover { transform: scale(1.02); }
-        
-        .btn-step2 { 
-            background: linear-gradient(135deg, var(--accent), var(--accent-secondary)); color: var(--accent-foreground); border: none; 
-            padding: 16px; border-radius: 980px; width: 100%; 
-            font-size: 17px; font-weight: 500; cursor: pointer; transition: 0.3s; 
-            box-shadow: 0 4px 14px rgba(0, 82, 255, 0.2);
-        }
-        .btn-step2:disabled { background: var(--muted); color: var(--muted-foreground); cursor: not-allowed; box-shadow: none; }
-        .btn-step2:hover:not(:disabled) { transform: translateY(-2px) scale(1.02); box-shadow: 0 6px 20px rgba(0, 82, 255, 0.3); }
-    </style>
-</head>
-<body>
-
-    <div class="checkout-card">
-        <div class="brand">VSIGN CERTIFICATE</div>
-        <h2>Gói Lấy Ngay Siêu Rẻ</h2>
-        <div class="price">125.561đ</div>
-        
-        <a href="https://www.ipaviet.site/certapple/order01/get_udid.mobileconfig" class="btn-step1">1. Lấy mã UDID tự động</a>
-        
-        <div class="input-group">
-            <label>Mã thiết bị (UDID) của bạn:</label>
-            <input type="text" id="inputUDID" placeholder="Vui lòng thực hiện Bước 1..." readonly>
-        </div>
-
-        <button id="btnSubmit" class="btn-step2" onclick="submitOrder()">2. Xác nhận lên đơn</button>
-    </div>
-
+    <title>Chuyển hướng đến IPAVIET Certificate...</title>
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const udid = urlParams.get('udid');
-        const btnSubmit = document.getElementById('btnSubmit');
-
-        if (udid) {
-            document.getElementById('inputUDID').value = udid;
-        } else {
-            btnSubmit.disabled = true;
-            btnSubmit.innerText = "Vui lòng lấy UDID trước";
-        }
-
-        function submitOrder() {
-            const inputUdid = document.getElementById('inputUDID').value;
-            if(!inputUdid) return;
-
-            btnSubmit.disabled = true;
-            btnSubmit.innerText = "Đang kết nối hệ thống...";
-
-            const productId = "GOI_01";
-            const productName = "LẤY NGAY SIÊU RẺ";
-            const price = 125561;
-            
-            // Đã tích hợp link Web App chính xác của hệ thống
-            const scriptUrl = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec"; 
-            
-            const finalUrl = `${scriptUrl}?action=buy_cert_pending&productId=${productId}&productName=${encodeURIComponent(productName)}&price=${price}&amount=1&udid=${inputUdid}`;
-
-            fetch(finalUrl)
-              .then(response => response.json())
-              .then(data => {
-                  if(data.success) {
-                      Swal.fire({
-                          title: 'Lên đơn thành công!',
-                          text: 'Mã đơn hàng của bạn: ' + data.orderId,
-                          icon: 'success',
-                          confirmButtonColor: '#0071e3',
-                          confirmButtonText: 'Đóng'
-                      }).then(() => {
-                          window.location.href = "https://www.ipaviet.site";
-                      });
-                  } else {
-                      Swal.fire('Lỗi', data.error || 'Có lỗi hệ thống', 'error');
-                      btnSubmit.disabled = false;
-                      btnSubmit.innerText = "2. Xác nhận lên đơn";
-                  }
-              })
-              .catch(err => {
-                  Swal.fire('Lỗi', 'Không thể kết nối với máy chủ', 'error');
-                  btnSubmit.disabled = false;
-                  btnSubmit.innerText = "2. Xác nhận lên đơn";
-              });
-        }
+        const params = new URLSearchParams(window.location.search);
+        let target = '../index.html?plan=order01';
+        if (params.has('udid')) target += '&udid=' + encodeURIComponent(params.get('udid'));
+        if (params.has('error')) target += '&error=' + encodeURIComponent(params.get('error'));
+        window.location.replace(target);
     </script>
-
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#090a0f; color:#fff; text-align:center;">
+    <div style="padding: 24px; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; background: rgba(255,255,255,0.03);">
+        <div style="font-size: 24px; margin-bottom: 8px;">🍎</div>
+        <p style="font-size: 15px; margin: 0 0 12px 0; color: #94a3b8;">Đang chuyển hướng đến cổng Mua Chứng Chỉ Apple IPAVIET...</p>
+        <a href="../index.html?plan=order01" style="color:#0ea5e9; text-decoration:none; font-weight:600; font-size:14px;">Bấm vào đây nếu trình duyệt không tự chuyển</a>
+    </div>
 </body>
 </html>
