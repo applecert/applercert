@@ -223,6 +223,56 @@ body::before { content: ""; position: fixed; inset: 0; z-index: 9998; pointer-ev
 a:focus-visible, button:focus-visible { outline: 2px solid var(--v-accent); outline-offset: 3px; border-radius: 4px; }
 .skip-link { position: absolute; top: -40px; left: 0; background: var(--v-accent); color: #fff; padding: 8px 16px; z-index: 10001; transition: top 0.3s; font-size: 13px; font-weight: 600; text-decoration: none; }
 .skip-link:focus { top: 0; }
+
+/* ── EDITION SELECTOR STYLES ── */
+.edition-pick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: var(--space-5);
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .edition-pick-grid { grid-template-columns: 1fr; }
+}
+.edition-pick-item {
+  border: 1.5px solid var(--v-border);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  cursor: pointer;
+  background: var(--v-bg-elevated);
+  transition: all 0.3s var(--ease-smooth);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  user-select: none;
+}
+.edition-pick-item:hover {
+  border-color: var(--v-accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.edition-pick-item.active {
+  border-color: var(--v-accent);
+  background: linear-gradient(180deg, var(--v-accent-soft), var(--v-bg-elevated));
+  box-shadow: 0 4px 20px rgba(10,132,255,0.15);
+}
+.edition-pick-item.pro-item.active {
+  border-color: #7c3aed;
+  background: linear-gradient(180deg, rgba(124,58,237,0.08), var(--v-bg-elevated));
+  box-shadow: 0 4px 20px rgba(124,58,237,0.18);
+}
+.edition-pill-tag {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  text-transform: uppercase;
+}
+.edition-pill-tag.std { background: rgba(10,132,255,0.12); color: var(--v-accent); }
+.edition-pill-tag.pro { background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(79,70,229,0.2)); color: #7c3aed; }
 </style>
 </head>
 <body>
@@ -291,8 +341,29 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--v-accent); outl
           <div class="wizard-card" v-if="currentStep === 1" key="step1">
             <div class="wizard-header">
               <div class="eyebrow" style="margin-bottom:var(--space-3);"><span class="eyebrow-dot"></span> Bước 1</div>
-              <h2 class="display-lg">Nhập Chứng Chỉ Apple</h2>
-              <p class="lead">Tải tệp ZIP chứa chứng chỉ .p12 &amp; .mobileprovision cá nhân của bạn để ký VSign.</p>
+              <h2 class="display-lg">Cài Đặt VSign Native 2.0</h2>
+              <p class="lead">Chọn phiên bản và tải chứng chỉ .p12 cá nhân của bạn để tiến hành ký và cài đặt.</p>
+            </div>
+
+            <!-- Edition Selector -->
+            <div style="margin-bottom:var(--space-5);">
+              <label class="input-label" style="display:block;margin-bottom:8px;font-weight:700;">Chọn Phiên Bản VSign:</label>
+              <div class="edition-pick-grid">
+                <div class="edition-pick-item" :class="{ active: selectedEdition === 'standard' }" @click="selectEdition('standard')">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                    <b style="font-size:13px;color:var(--v-ink);">VSign Standard</b>
+                    <span class="edition-pill-tag std">Bản Chuẩn</span>
+                  </div>
+                  <p style="font-size:11.5px;color:var(--v-ink-tertiary);line-height:1.4;">Tương thích 100% mọi loại Cert, tối ưu RAM, chuẩn sandbox iOS.</p>
+                </div>
+                <div class="edition-pick-item pro-item" :class="{ active: selectedEdition === 'pro' }" @click="selectEdition('pro')">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                    <b style="font-size:13px;color:#7c3aed;">VSign Pro MHAC2</b>
+                    <span class="edition-pill-tag pro">Pro MHA</span>
+                  </div>
+                  <p style="font-size:11.5px;color:var(--v-ink-tertiary);line-height:1.4;">Can thiệp container, backup save game, chèn tweak dylib.</p>
+                </div>
+              </div>
             </div>
 
             <div class="file-upload-zone" :class="{ 'has-file': certZip, 'dragover': isDragging }" @click="triggerFileInput" @dragover.prevent="isDragging = true" @dragleave="isDragging = false" @drop.prevent="handleDrop">
@@ -309,7 +380,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--v-accent); outl
             </div>
 
             <button class="btn btn-primary-pill btn-magnetic" style="width:100%;" :disabled="!canProgressStep1" @click="nextToStep2">
-              <span>Ký Ứng Dụng</span><i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+              <span>Ký {{ currentEditionName }}</span><i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
           </div>
 
@@ -318,7 +389,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--v-accent); outl
             <div class="wizard-header">
               <div class="eyebrow" style="margin-bottom:var(--space-3);"><span class="eyebrow-dot"></span> Bước 2</div>
               <h2 class="display-lg">Tiến Hành Ký VSign</h2>
-              <p class="lead">Chúng tôi đang ký VSign Pro bằng chứng chỉ của bạn...</p>
+              <p class="lead">Chúng tôi đang ký {{ currentEditionName }} bằng chứng chỉ của bạn...</p>
             </div>
 
             <div class="status-icon-wrap" :class="signingState">
@@ -335,7 +406,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--v-accent); outl
 
             <div style="display:flex; flex-direction:column; gap:12px; margin-top:var(--space-5);" v-if="signingState === 'completed'">
               <a :href="directInstallLink" @click="triggerInstall($event)" class="btn btn-primary-pill btn-magnetic" style="width:100%;">
-                <i class="fa-solid fa-download" aria-hidden="true"></i><span>CÀI ĐẶT VSIGN PRO</span>
+                <i class="fa-solid fa-download" aria-hidden="true"></i><span>CÀI ĐẶT {{ currentEditionName.toUpperCase() }}</span>
               </a>
 
               <div class="fallback-box" v-if="showFallback">
@@ -482,13 +553,17 @@ new Vue({
   el: '#wizardApp',
   data: {
     currentStep: 1,
+    selectedEdition: 'standard',
+    editionMap: {
+      'standard': { name: 'VSign Standard', ipaUrl: 'VSign-Standard.ipa', filename: 'VSign-Standard.ipa' },
+      'pro': { name: 'VSign Pro MHAC2', ipaUrl: 'VSign-Pro-MHAC2.ipa', filename: 'VSign-Pro-MHAC2.ipa' }
+    },
     certZip: null,
     certZipText: 'Chọn file ZIP chứa chứng chỉ',
     password: '',
     p12: null,
     mobileprovision: null,
     ipa: null,
-    vsignIpaUrl: 'AppIPAVIET_user.ipa',
     signingState: 'processing',
     progressPercentage: 0,
     statusMessage: 'Đang chuẩn bị...',
@@ -500,6 +575,10 @@ new Vue({
     isDragging: false
   },
   computed: {
+    currentEditionName() {
+      var item = this.editionMap[this.selectedEdition];
+      return item ? item.name : 'VSign';
+    },
     canProgressStep1() { return this.certZip && this.password; },
     stepperProgress() {
       if (this.currentStep === 1) return 0;
@@ -508,11 +587,22 @@ new Vue({
     }
   },
   mounted() {
+    var p = new URLSearchParams(window.location.search).get('edition');
+    if (p === 'pro') {
+      this.selectedEdition = 'pro';
+    }
     this.fetchVsignIpa();
     var loader = document.getElementById('pageLoader');
     if (loader) { loader.classList.add('hidden'); setTimeout(function() { loader.style.display = 'none'; }, 400); }
   },
   methods: {
+    selectEdition(ed) {
+      if (this.selectedEdition !== ed) {
+        this.selectedEdition = ed;
+        this.ipa = null;
+        this.fetchVsignIpa();
+      }
+    },
     triggerFileInput() { this.$refs.certInput.click(); },
     handleDrop(e) {
       this.isDragging = false;
@@ -544,15 +634,21 @@ new Vue({
       }
     },
     async fetchVsignIpa() {
-      try { var response = await fetch(this.vsignIpaUrl); var blob = await response.blob(); this.ipa = new File([blob], 'vsign.ipa', { type: 'application/octet-stream' }); }
-      catch (e) { console.error('Lỗi nạp IPA VSign mặc định!', e); }
+      var ed = this.editionMap[this.selectedEdition] || this.editionMap['standard'];
+      try {
+        var response = await fetch(ed.ipaUrl);
+        var blob = await response.blob();
+        this.ipa = new File([blob], ed.filename, { type: 'application/octet-stream' });
+      } catch (e) {
+        console.error('Lỗi nạp IPA VSign mặc định!', e);
+      }
     },
     nextToStep2() {
       if (!this.canProgressStep1) return;
       this.currentStep = 2;
       this.signingState = 'processing';
       this.progressPercentage = 10;
-      this.statusMessage = 'Đang bắt đầu ký ứng dụng...';
+      this.statusMessage = 'Đang bắt đầu ký ứng dụng ' + this.currentEditionName + '...';
       this.uploadAndSign();
     },
     resetToStep1() {
