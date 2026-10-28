@@ -1,72 +1,30 @@
 <!DOCTYPE html>
 <html lang="vi" data-cc-xem="toi">
 <head>
-  <meta charset="utf-8"/>
+  <meta charSet="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
   <title>Chungchi365 — Chứng chỉ ký ứng dụng iOS cho nhà phát triển</title>
-  <meta name="description" content="Chứng chỉ ký ứng dụng iOS dành cho nhà phát triển, cấp tự động theo UDID từng thiết bị. Không cần máy tính, không cần jailbreak."/>
+  <meta name="description" content="Dành cho lập trình viên iOS cần cài ứng dụng do chính mình phát triển lên máy thật để thử nghiệm. Gửi UDID, nhận chứng chỉ ký riêng cho từng thiết bị. Không cần máy tính, không cần jailbreak."/>
   <meta name="theme-color" content="#0b0e14"/>
   <link rel="icon" type="image/png" href="assets/favicon.png"/>
   <link rel="apple-touch-icon" href="assets/favicon.png"/>
-
-  <!-- Google Fonts: Inter / SF Pro -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-  <!-- Core Chungchi365 Stylesheet -->
   <link rel="stylesheet" href="chungchi365.css"/>
-
-  <!-- SweetAlert2 & Lucide Icons -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
   <script>
-    // Theme Manager
     (function(){
-      var N = { toi: '#0b0e14', sang: '#f6f7f9' };
-      function d(t) {
-        document.documentElement.setAttribute('data-cc-xem', t);
-        var m = document.querySelector('meta[name="theme-color"]');
-        if (m) m.setAttribute('content', N[t] || N.toi);
+      var N={toi:'#0b0e14',sang:'#f6f7f9'};
+      function d(t){
+        document.documentElement.setAttribute('data-cc-xem',t);
+        var m=document.querySelector('meta[name="theme-color"]');
+        if(m)m.setAttribute('content',N[t]||N.toi)
       }
-      try {
-        var v = localStorage.getItem('cc-giao-dien') || 'toi';
-        if (v !== 'toi' && v !== 'sang' && v !== 'may') v = 'toi';
-        d(v === 'may' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'sang' : 'toi') : v);
-      } catch(e) {
-        d('toi');
-      }
-    })();
+      try{
+        var v=localStorage.getItem('cc-giao-dien');
+        if(v!=='toi'&&v!=='sang'&&v!=='may')v='toi';
+        d(v==='may'?(window.matchMedia('(prefers-color-scheme: light)').matches?'sang':'toi'):v)
+      }catch(e){d('toi')}
+    })()
   </script>
-
   <style>
-    /* Bổ sung và đồng bộ các animations & helpers của Chungchi365 */
-    .ios-tap {
-      cursor: pointer;
-      user-select: none;
-      transition: opacity 0.15s ease, transform 0.15s ease;
-    }
-    .ios-tap:active {
-      opacity: 0.75;
-      transform: scale(0.98);
-    }
-    .ios-window {
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .ios-window:hover {
-      transform: translateY(-2px);
-    }
-    .ring-flame {
-      outline: 2px solid var(--flame);
-      box-shadow: 0 0 25px var(--flame-soft);
-    }
-    /* Modal VietQR Auto Bank */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -94,1033 +52,598 @@
       box-shadow: var(--window-shadow);
       color: var(--label);
     }
-    /* Toast Thông báo */
-    #ccToast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 100000;
-      background: var(--surface);
-      border: 1px solid var(--flame);
-      color: var(--label);
-      font-size: 13.5px;
-      padding: 12px 20px;
-      border-radius: 12px;
-      display: none;
-      box-shadow: var(--window-shadow);
-    }
   </style>
 </head>
-
 <body>
-  <div class="ios-root flex min-h-[100dvh] flex-col" style="--flame-toi:#e10e0e;--flame-bright-toi:#f33939;--flame-deep-toi:#f56060;--flame-on-fill-toi:#f33939;--flame-press-toi:#a70a0a;--flame-soft-toi:rgba(225, 14, 14, 0.14);--flame-bg-toi:#e10e0e;--on-flame-toi:#ffffff;--flame-sang:#e10e0e;--flame-bright-sang:#c40c0c;--flame-deep-sang:#a70a0a;--flame-on-fill-sang:#c40c0c;--flame-press-sang:#a70a0a;--flame-soft-sang:rgba(225, 14, 14, 0.1);--flame-bg-sang:#e10e0e;--on-flame-sang:#ffffff">
+<div class="ios-root flex min-h-[100dvh] flex-col" style="--flame-toi:#e10e0e;--flame-bright-toi:#f33939;--flame-deep-toi:#f56060;--flame-on-fill-toi:#f33939;--flame-press-toi:#a70a0a;--flame-soft-toi:rgba(225, 14, 14, 0.14);--flame-bg-toi:#e10e0e;--on-flame-toi:#ffffff;--flame-sang:#e10e0e;--flame-bright-sang:#c40c0c;--flame-deep-sang:#a70a0a;--flame-on-fill-sang:#c40c0c;--flame-press-sang:#a70a0a;--flame-soft-sang:rgba(225, 14, 14, 0.1);--flame-bg-sang:#e10e0e;--on-flame-sang:#ffffff"><div class="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6"><a class="ios-tap inline-flex min-w-0 items-center gap-2.5 py-1" aria-label="Chungchi365 — trang chủ" href="/"><img src="assets/logo.png" alt="" class="h-7 w-7 shrink-0 rounded-lg"/><span class="truncate text-headline text-label">Chungchi365</span></a></div><main class="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-4 sm:px-6"><section class="ios-band ios-band-hero ios-grain khoi-hero-duoi pt-10 text-center sm:pt-16"><div class="ios-reveal  ios-hero-veil"><p class="text-footnote font-semibold uppercase tracking-[0.12em] text-label">Chứng chỉ ký ứng dụng iOS cho nhà phát triển</p><h1 class="mx-auto mt-3 max-w-3xl text-balance text-title-1 font-extrabold leading-[1.14] tracking-tight text-label sm:text-[44px] sm:leading-[1.08]">Ký và chạy thử ứng dụng của bạn trên thiết bị thật</h1><p class="mx-auto mt-4 max-w-xl text-body text-label">Dành cho lập trình viên iOS cần cài ứng dụng do chính mình phát triển lên máy thật để thử nghiệm. Gửi UDID, nhận chứng chỉ ký riêng cho từng thiết bị. Không cần máy tính, không cần jailbreak.</p></div><div class="ios-reveal  " style="transition-delay:90ms"><div class="mt-8 flex flex-wrap items-center justify-center gap-3"><a href="#bang-gia" class="ios-btn ios-btn-outline pl-6">Xem bảng giá<span class="ios-btn-icon" aria-hidden="true"><svg viewBox="0 0 16 16" class="h-4 w-4" fill="none"><path d="M8 3v10M4 9.5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></a><a href="/tra-cuu" class="ios-btn ios-btn-plain px-5">Tra cứu đơn đã mua</a></div></div></section><section aria-labelledby="quyen-entitlements" class="khoi-trang"><div class="ios-reveal  "><h2 id="quyen-entitlements" class="text-title-2 font-bold tracking-tight text-label">Cấu hình quyền và entitlements</h2><p class="mt-2.5 max-w-xl text-body text-label-2">Những entitlements quan trọng cho phát triển đã được cấu hình.</p></div><div class="ios-reveal  " style="transition-delay:90ms"><div class="mt-5"><div class="ent-khoi"><button type="button" class="ent-thanh" aria-expanded="false" aria-controls="_R_139btb_"><span class="ent-thanh-giua"><span class="ent-thanh-chinh"><b>26</b> entitlements đã bật</span><span class="ent-thanh-phu">Chạm để xem danh sách</span></span><svg class="ent-mui-ten" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button><div class="ent-boc"><div class="ent-trong"><div class="ent-o"><div class="ent-bao-cuon"><div class="ent-ds" id="_R_139btb_" role="list" tabindex="0"><div><p class="ent-ten-nhom" style="--k:0">Thông báo &amp; xác thực</p><div class="ent-dong" role="listitem" style="--k:1"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Push Notifications</span><code class="ent-ma">aps-environment</code></span></div><div class="ent-dong" role="listitem" style="--k:2"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Sign in with Apple</span><code class="ent-ma">com.apple.developer.applesignin</code></span></div><div class="ent-dong" role="listitem" style="--k:3"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">AutoFill Credential Provider</span><code class="ent-ma">com.apple.developer.authentication-services.autofill-credential-provider</code></span></div><div class="ent-dong" role="listitem" style="--k:4"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">App Attest</span><code class="ent-ma">com.apple.developer.devicecheck.appattest-environment</code></span></div></div><div><p class="ent-ten-nhom" style="--k:5">Dữ liệu &amp; chia sẻ</p><div class="ent-dong" role="listitem" style="--k:6"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">App Groups</span><code class="ent-ma">com.apple.security.application-groups</code></span></div><div class="ent-dong" role="listitem" style="--k:7"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Keychain Access Groups</span><code class="ent-ma">keychain-access-groups</code></span></div><div class="ent-dong" role="listitem" style="--k:8"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">iCloud Services</span><code class="ent-ma">com.apple.developer.icloud-services</code></span></div><div class="ent-dong" role="listitem" style="--k:9"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Data Protection</span><code class="ent-ma">com.apple.developer.default-data-protection</code></span></div></div><div><p class="ent-ten-nhom" style="--k:10">Mạng</p><div class="ent-dong" role="listitem" style="--k:11"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Associated Domains</span><code class="ent-ma">com.apple.developer.associated-domains</code></span></div><div class="ent-dong" role="listitem" style="--k:12"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Network Extensions</span><code class="ent-ma">com.apple.developer.networking.networkextension</code></span></div><div class="ent-dong" role="listitem" style="--k:13"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Personal VPN</span><code class="ent-ma">com.apple.developer.networking.vpn.api</code></span></div><div class="ent-dong" role="listitem" style="--k:14"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Multipath</span><code class="ent-ma">com.apple.developer.networking.multipath</code></span></div><div class="ent-dong" role="listitem" style="--k:15"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Hotspot Configuration</span><code class="ent-ma">com.apple.developer.networking.HotspotConfiguration</code></span></div><div class="ent-dong" role="listitem" style="--k:16"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Access Wi-Fi Information</span><code class="ent-ma">com.apple.developer.networking.wifi-info</code></span></div></div><div><p class="ent-ten-nhom" style="--k:17">Thanh toán &amp; ví</p><div class="ent-dong" role="listitem" style="--k:18"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Apple Pay</span><code class="ent-ma">com.apple.developer.in-app-payments</code></span></div><div class="ent-dong" role="listitem" style="--k:19"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Wallet</span><code class="ent-ma">com.apple.developer.pass-type-identifiers</code></span></div></div><div><p class="ent-ten-nhom" style="--k:20">Hệ thống &amp; thiết bị</p><div class="ent-dong" role="listitem" style="--k:21"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">SiriKit</span><code class="ent-ma">com.apple.developer.siri</code></span></div><div class="ent-dong" role="listitem" style="--k:22"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">HealthKit</span><code class="ent-ma">com.apple.developer.healthkit</code></span></div><div class="ent-dong" role="listitem" style="--k:23"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">HomeKit</span><code class="ent-ma">com.apple.developer.homekit</code></span></div><div class="ent-dong" role="listitem" style="--k:24"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Game Center</span><code class="ent-ma">com.apple.developer.game-center</code></span></div><div class="ent-dong" role="listitem" style="--k:25"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">NFC Tag Reading</span><code class="ent-ma">com.apple.developer.nfc.readersession.formats</code></span></div><div class="ent-dong" role="listitem" style="--k:26"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Wireless Accessory Configuration</span><code class="ent-ma">com.apple.external-accessory.wireless-configuration</code></span></div><div class="ent-dong" role="listitem" style="--k:27"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">ClassKit</span><code class="ent-ma">com.apple.developer.ClassKit-environment</code></span></div><div class="ent-dong" role="listitem" style="--k:28"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">User Management</span><code class="ent-ma">com.apple.developer.user-management</code></span></div><div class="ent-dong" role="listitem" style="--k:29"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">App Clip</span><code class="ent-ma">com.apple.developer.on-demand-install-capable</code></span></div><div class="ent-dong" role="listitem" style="--k:30"><svg class="ent-tich" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="ent-dong-giua"><span class="ent-ten">Parent Application Identifiers</span><code class="ent-ma">com.apple.developer.parent-application-identifiers</code></span></div></div></div></div><p class="ent-chan">Đây là danh sách giới thiệu — thực tế hệ thống hỗ trợ nhiều hơn.</p></div></div></div></div></div></div></section><section id="bang-gia" aria-labelledby="bang-gia-heading" class="ios-band ios-band-price khoi-trang scroll-mt-28"><div class="ios-reveal  "><h2 id="bang-gia-heading" class="text-title-2 font-bold tracking-tight text-label">Bảng giá</h2><p class="mt-2.5 text-subhead text-label-2">Giá đã gồm mọi thứ, không phát sinh thêm.</p></div>
+<div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+  <!-- Gói 1: Cá Nhân -->
+  <div class="ios-window flex h-full flex-col package-card" id="pkg-canhan" data-slug="ca-nhan" data-name="Gói Cá Nhân (TIME 24h)" data-price="149000" data-duration="365" data-warranty="180" data-issue="1 - 24 giờ">
+    <div class="ios-window-bar relative">
+      <span class="relative z-10 flex shrink-0 items-center gap-2" aria-hidden="true">
+        <span class="ios-window-dot" style="background:#ff5f57"></span>
+        <span class="ios-window-dot" style="background:#febc2e"></span>
+        <span class="ios-window-dot" style="background:#28c840"></span>
+      </span>
+      <p class="pointer-events-none absolute inset-x-12 truncate text-center text-footnote font-semibold text-label">Gói Cá Nhân (TIME 24h)</p>
+    </div>
+    <div class="flex flex-1 flex-col p-5">
+      <div class="flex items-center gap-2">
+        <p class="text-footnote font-medium uppercase tracking-wide text-label-2">365 ngày</p>
+        <span class="ml-auto rounded-full bg-flame-soft px-2.5 py-1 text-caption font-semibold text-flame-deep selected-badge" style="display:none;">Đang chọn</span>
+      </div>
+      <p class="mt-2 flex items-baseline gap-2">
+        <span class="text-title-1 font-extrabold tracking-tight text-label">149.000&nbsp;₫</span>
+        <span class="text-callout text-label-2 line-through">180.000&nbsp;₫</span>
+      </p>
+      <p class="mt-1 text-subhead text-label-2">Cấp trong 1 - 24 giờ</p>
+      <ul class="mt-4 space-y-2">
+        <li class="flex items-start gap-2.5 text-subhead text-label-2">
+          <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Bảo hành 180 ngày (1 đổi 1)</span>
+        </li>
+        <li class="flex items-start gap-2.5 text-subhead text-label-2">
+          <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Tệp .P12 &amp; .MobileProvision</span>
+        </li>
+        <li class="flex items-start gap-2.5 text-subhead text-label-2">
+          <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Cài ESign, Scarlet, TrollStore</span>
+        </li>
+      </ul>
+      <div class="flex-1" aria-hidden="true"></div>
+      <button type="button" onclick="choosePackage('ca-nhan')" class="ios-btn mt-6 w-full ios-btn-filled btn-choose">Chọn gói này</button>
+    </div>
+  </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- 1. TOP HEADER BRAND (CHUNGCHI365)                                -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+  <!-- Gói 2: Cao Cấp PRO+ (Khuyên dùng) -->
+  <div class="ios-window flex h-full flex-col package-card ring-2 ring-flame" id="pkg-proplus" data-slug="pro-plus" data-name="Gói Cao Cấp (PRO+)" data-price="199000" data-duration="365" data-warranty="240" data-issue="1 - 24 giờ">
+    <div class="ios-window-bar relative">
+      <span class="relative z-10 flex shrink-0 items-center gap-2" aria-hidden="true">
+        <span class="ios-window-dot" style="background:#ff5f57"></span>
+        <span class="ios-window-dot" style="background:#febc2e"></span>
+        <span class="ios-window-dot" style="background:#28c840"></span>
+      </span>
+      <p class="pointer-events-none absolute inset-x-12 truncate text-center text-footnote font-semibold text-label">Gói Cao Cấp (PRO+)</p>
+    </div>
+    <div class="flex flex-1 flex-col p-5">
+      <div class="flex items-center gap-2">
+        <p class="text-footnote font-medium uppercase tracking-wide text-label-2">365 ngày</p>
+        <span class="rounded-full bg-flame-soft px-2.5 py-1 text-caption font-semibold text-flame-deep">Khuyên dùng</span>
+        <span class="ml-auto rounded-full bg-flame-soft px-2.5 py-1 text-caption font-semibold text-flame-deep selected-badge">Đang chọn</span>
+      </div>
+      <p class="mt-2 flex items-baseline gap-2">
+        <span class="text-title-1 font-extrabold tracking-tight text-label">199.000&nbsp;₫</span>
+        <span class="text-callout text-label-2 line-through">250.000&nbsp;₫</span>
+      </p>
+      <p class="mt-1 text-subhead text-label-2">Cấp trong 1 - 24 giờ</p>
+      <ul class="mt-4 space-y-2">
+        <li class="flex items-start gap-2.5 text-subhead text-label-2">
+          <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Bảo hành 240 ngày (1 đổi 1)</span>
+        </li>
+        <li class="flex items-start gap-2.5 text-subhead text-label-2">
+          <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Mở Full 26 Entitlements, Personal VPN</span>
+        </li>
+        <li class="flex items-start gap-2.5 text-subhead text-label-2">
+          <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Tự động fix lỗi văng ứng dụng</span>
+        </li>
+      </ul>
+      <div class="flex-1" aria-hidden="true"></div>
+      <button type="button" onclick="choosePackage('pro-plus')" class="ios-btn mt-6 w-full ios-btn-tinted btn-choose">Đã chọn — điền thông tin</button>
+    </div>
+  </div>
+
+  <!-- Gói 3: Siêu Tốc FAST 2h -->
+  <div class="ios-window flex h-full flex-col package-card" id="pkg-fast2h" data-slug="fast-2h" data-name="Gói Siêu Tốc (FAST 2h)" data-price="249000" data-duration="365" data-warranty="300" data-issue="Cấp siêu tốc 2 giờ">
+    <div class="ios-window-bar relative">
+      <span class="relative z-10 flex shrink-0 items-center gap-2" aria-hidden="true">
+        <span class="ios-window-dot" style="background:#ff5f57"></span>
+        <span class="ios-window-dot" style="background:#febc2e"></span>
+        <span class="ios-window-dot" style="background:#28c840"></span>
+      </span>
+      <p class="pointer-events-none absolute inset-x-12 truncate text-center text-footnote font-semibold text-label">Gói Siêu Tốc (FAST 2h)</p>
+    </div>
+    <div class="flex flex-1 flex-col p-5">
+      <div class="flex items-center gap-2">
+        <p class="text-footnote font-medium uppercase tracking-wide text-label-2">365 ngày</p>
+        <span class="ml-auto rounded-full bg-flame-soft px-2.5 py-1 text-caption font-semibold text-flame-deep selected-badge" style="display:none;">Đang chọn</span>
+      </div>
+      <p class="mt-2 flex items-baseline gap-2">
+        <span class="text-title-1 font-extrabold tracking-tight text-label">249.000&nbsp;₫</span>
+        <span class="text-callout text-label-2 line-through">300.000&nbsp;₫</span>
+      </p>
+      <p class="mt-1 text-subhead text-label-2">Cấp siêu tốc trong 2 giờ</p>
+      <ul class="mt-4 space-y-2">
+        <li class="flex items-start gap-2.5 text-subhead text-label-2">
+          <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Bảo hành 300 ngày (1 đổi 1)</span>
+        </li>
+        <li class="flex items-start gap-2.5 text-subhead text-label-2">
+          <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Đăng ký trực tiếp cổng Apple API</span>
+        </li>
+        <li class="flex items-start gap-2.5 text-subhead text-label-2">
+          <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>Hỗ trợ kỹ thuật 1 - 1 Telegram</span>
+        </li>
+      </ul>
+      <div class="flex-1" aria-hidden="true"></div>
+      <button type="button" onclick="choosePackage('fast-2h')" class="ios-btn mt-6 w-full ios-btn-filled btn-choose">Chọn gói này</button>
+    </div>
+  </div>
+</div>
+</section>
+<div id="scrollTargetDatHang" class="scroll-mt-28"></div>
+<section id="dat-hang" aria-labelledby="dat-hang-heading" class="khoi-trang mx-auto max-w-2xl mt-12 scroll-mt-28">
+  <div class="ios-reveal">
+    <h2 id="dat-hang-heading" class="text-title-2 font-bold tracking-tight text-label">
+      Đặt mua <span id="lblChosenName" class="text-flame">Gói Cao Cấp (PRO+)</span>
+    </h2>
+    <p class="mt-1.5 text-subhead text-label-2">
+      <span id="lblChosenPrice" class="font-bold text-label">199.000 ₫</span> · dùng 365 ngày · cấp trong <span id="lblChosenIssue">1 - 24 giờ</span>
+    </p>
+  </div>
+
+  <!-- Banner thông báo khi đã lấy được UDID -->
+  <div id="bannerUdidSuccess" class="ios-sheet mt-4 px-4 py-3" style="display: none;" role="status">
+    <p class="text-subhead text-label"><span class="text-green font-bold">✓</span> Đã lấy UDID từ máy này</p>
+    <p class="mt-1 font-mono text-footnote text-label-2" id="lblCapturedUdid"></p>
+    <p class="mt-1.5 text-footnote text-label-2">Điền nốt email rồi bấm đặt mua. Hồ sơ vừa cài gỡ được ngay trong Cài đặt → Cài đặt chung → VPN &amp; Quản lý thiết bị.</p>
+  </div>
+
+  <form id="formCheckout" onsubmit="handleFormSubmit(event)" class="mt-5">
+    <h3 class="mb-2 px-1 text-footnote font-semibold uppercase tracking-wide text-label-2">Thiết bị</h3>
+    <div class="ios-sheet">
+      <div class="ios-row py-2.5">
+        <label for="udid" class="w-24 shrink-0 text-body text-label">UDID</label>
+        <input id="udid" name="udid" required class="ios-field font-mono text-callout" placeholder="00008030-000A1B2C… hoặc 40 ký tự hex" oninput="validateUdid()"/>
+      </div>
+      <div class="ios-row py-2.5 border-t border-separator">
+        <label for="tenThietBi" class="w-24 shrink-0 text-body text-label">Tên máy</label>
+        <input id="tenThietBi" name="tenThietBi" class="ios-field text-callout" placeholder="Ví dụ: iPhone 15 Pro, iPad mini 6…"/>
+      </div>
+    </div>
+
+    <!-- Hướng dẫn và nút lấy UDID tự động -->
+    <div class="mt-3 px-1">
+      <div id="viewUdidAutoAction">
+        <a href="get_udid.mobileconfig" class="ios-btn ios-btn-tinted text-callout inline-flex">Lấy UDID tự động từ máy này</a>
+        <button type="button" onclick="pasteUdid()" class="ios-btn ios-btn-plain text-callout ml-2">Dán từ bộ nhớ</button>
+        <p class="mt-2 text-footnote text-label-2">Cài một hồ sơ cấu hình chỉ đọc UDID, dòng máy và phiên bản iOS. Gỡ được ngay sau đó.</p>
+      </div>
+    </div>
+
+    <h3 class="mb-2 mt-5 px-1 text-footnote font-semibold uppercase tracking-wide text-label-2">Nhận chứng chỉ</h3>
+    <div class="ios-sheet">
+      <div class="ios-row py-2.5">
+        <label for="email" class="w-24 shrink-0 text-body text-label">Email</label>
+        <input id="email" name="email" type="email" required class="ios-field text-callout" placeholder="Để gửi tệp chứng chỉ và thông báo"/>
+      </div>
+    </div>
+
+    <p id="udidErrorHint" class="mt-3 px-1 text-footnote text-red" style="display:none;">UDID chưa đúng dạng — 40 ký tự hex, hoặc 8 ký tự + dấu gạch + 16 ký tự.</p>
+
+    <button type="submit" id="btnSubmitOrder" class="ios-btn ios-btn-filled mt-6 w-full text-base font-bold py-3.5">
+      Đặt mua <span id="lblBtnName">Gói Cao Cấp (PRO+)</span> · <span id="lblBtnPrice">199.000 ₫</span>
+    </button>
+  </form>
+</section>
+<section aria-labelledby="faq" class="khoi-trang mx-auto max-w-3xl"><div class="ios-reveal  "><h2 id="faq" class="text-title-2 font-bold tracking-tight text-label">Những điều nên biết trước</h2></div><div class="mt-5 space-y-3"><div class="ios-reveal  "><details class="ios-sheet group"><summary class="ios-row ios-tap cursor-pointer list-none py-3.5 text-body text-label marker:hidden"><span class="flex-1">UDID là gì, lấy ở đâu?</span><svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="var(--label-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></summary><p class="px-4 pb-4 text-subhead text-label-2">Là mã định danh riêng của từng máy iPhone/iPad. Mở trang này bằng Safari trên chính máy cần cấp, bấm “Lấy UDID tự động” ở bước đặt hàng — máy sẽ tự gửi mã về. Không có Safari thì xem trong iTunes hoặc 3uTools rồi nhập tay.</p></details></div><div class="ios-reveal  " style="transition-delay:60ms"><details class="ios-sheet group"><summary class="ios-row ios-tap cursor-pointer list-none py-3.5 text-body text-label marker:hidden"><span class="flex-1">Chứng chỉ dùng được cho máy khác không?</span><svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="var(--label-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></summary><p class="px-4 pb-4 text-subhead text-label-2">Không. Chứng chỉ ký theo đúng UDID đã đặt, máy khác cài sẽ không chạy. Nhập nhầm UDID thì phải mua lại, nên kiểm tra kỹ trước khi trả tiền.</p></details></div><div class="ios-reveal  " style="transition-delay:120ms"><details class="ios-sheet group"><summary class="ios-row ios-tap cursor-pointer list-none py-3.5 text-body text-label marker:hidden"><span class="flex-1">Bảo hành nghĩa là gì?</span><svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="var(--label-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></summary><p class="px-4 pb-4 text-subhead text-label-2">Trong thời hạn bảo hành của gói, nếu chứng chỉ bị thu hồi thì được cấp lại miễn phí. Mốc hết hạn giữ nguyên theo lần mua đầu, không tính lại từ ngày cấp lại.</p></details></div></div></section><section class="ios-band ios-band-cta ios-grain -mb-16 min-h-[62vh] pb-[24vh] pt-[10vh] text-center"><div class="ios-reveal  ios-hero-veil"><h2 class="mx-auto max-w-3xl text-balance text-title-1 font-extrabold leading-[1.12] tracking-tight text-label sm:text-[44px] sm:leading-[1.08] lg:text-[56px]">Sẵn sàng ký ứng dụng đầu tiên?</h2><div class="mt-9 flex justify-center"><a href="#bang-gia" class="ios-btn ios-btn-outline pl-7">Chọn gói ngay<span class="ios-btn-icon" aria-hidden="true"><svg viewBox="0 0 16 16" class="h-4 w-4" fill="none"><path d="M8 3v10M4 9.5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></a></div></div></section></main><footer class="relative z-10 border-t border-separator bg-surface"><div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6"><div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"><div><div class="flex items-center gap-2.5"><img src="assets/logo.png" alt="" class="h-7 w-7 rounded-lg"/><span class="text-headline text-label">Chungchi365</span></div><p class="mt-3 max-w-xs text-footnote text-label-2">Chứng chỉ ký ứng dụng iOS dành cho nhà phát triển, cấp tự động theo UDID từng thiết bị.</p></div><div><p class="text-footnote font-semibold uppercase tracking-wide text-label">Dịch vụ</p><ul class="mt-3 space-y-2"><li><a class="text-subhead text-label-2 hover:text-label" href="/">Bảng giá</a></li><li><a class="text-subhead text-label-2 hover:text-label" href="/tra-cuu">Tra cứu đơn</a></li></ul></div><div><p class="text-footnote font-semibold uppercase tracking-wide text-label">Tài khoản</p><ul class="mt-3 space-y-2"><li><a class="text-subhead text-label-2 hover:text-label" href="/dang-nhap">Đăng nhập</a></li><li><a class="text-subhead text-label-2 hover:text-label" href="/dang-ky">Đăng ký</a></li></ul></div><div><p class="text-footnote font-semibold uppercase tracking-wide text-label">Hỗ trợ</p><ul class="mt-3 space-y-2"><li><a class="text-subhead text-label-2 hover:text-label" href="/tra-cuu">Kiểm tra trạng thái đơn</a></li></ul><ul class="mt-3 space-y-2"><li><a href="https://t.me/chungchi365cert" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-subhead text-label-2 hover:text-label"><svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3.5c4 0 7 2.5 7 5.7s-3 5.7-7 5.7c-.7 0-1.4-.08-2-.23L4.5 16.5l.6-2.4C3.8 13 3 11.2 3 9.2 3 6 6 3.5 10 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path></svg><span class="min-w-0"><span class="block truncate">Telegram</span><span class="block truncate text-footnote text-label-3">@chungchi365cert</span></span></a></li></ul></div></div><div class="mt-10 border-t border-separator pt-6"><p class="max-w-3xl text-caption leading-relaxed text-label-3">Dịch vụ chỉ dành cho lập trình viên thử nghiệm ứng dụng do chính mình phát triển hoặc được phép phân phối. Nghiêm cấm dùng để phát tán ứng dụng vi phạm bản quyền, phần mềm bẻ khoá, hoặc bất kỳ mục đích nào trái với quy định của Apple và pháp luật Việt Nam. Khách hàng tự chịu trách nhiệm về nội dung ứng dụng mình ký; chúng tôi không kiểm duyệt và không chịu trách nhiệm cho việc sử dụng sai mục đích.</p><div class="mt-4 flex flex-wrap items-center gap-3"><div role="group" aria-label="Ch\u1ebf \u0111\u1ed9 hi\u1ec3n th\u1ecb" class="inline-flex gap-1 rounded-full bg-fill p-1 "><button type="button" aria-pressed="false" class="rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label">Tối</button><button type="button" aria-pressed="false" class="rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label">Sáng</button><button type="button" aria-pressed="false" class="rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label">Theo máy</button></div><p class="text-footnote text-label-2">© <!-- -->2026<!-- --> <!-- -->Chungchi365</p></div></div></div><div style="height:var(--thanh-duoi-cho)" aria-hidden="true"></div></footer><div class="fixed right-4 z-40 flex flex-col items-end gap-2" style="bottom:calc(var(--thanh-duoi-cho) + 8px)"><button type="button" aria-expanded="false" aria-label="Liên hệ hỗ trợ" class="ios-tap flex h-12 w-12 items-center justify-center rounded-full bg-flame text-on-flame" style="box-shadow:var(--window-shadow)"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4c4.8 0 8.5 3.1 8.5 7s-3.7 7-8.5 7c-.9 0-1.7-.1-2.5-.3L5 20l.8-3c-1.4-1.3-2.3-3-2.3-5 0-3.9 3.7-7 8.5-7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"></path></svg></button></div><nav class="thanh-duoi chua-biet" aria-label="Điều hướng chính"><a class="thanh-duoi-muc" aria-label="Trang chủ" aria-current="page" href="/"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.5 9.5V20h13V9.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="thanh-duoi-chu">Trang chủ</span></a><a class="thanh-duoi-muc" aria-label="Tra cứu" href="/tra-cuu"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.4" stroke="currentColor" stroke-width="1.9"></circle><path d="M15.8 15.8 21 21" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path></svg></a><a class="thanh-duoi-muc" aria-label="Đăng nhập" href="/dang-nhap"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><path d="M4 12h10M11 8.5 14.5 12 11 15.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></a></nav></div>
+<div id="modalVietQr" class="modal-backdrop" onclick="closeVietQrModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between pb-3 border-b border-separator mb-4">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-flame-soft flex items-center justify-center text-flame font-bold">QR</div>
+        <div>
+          <h3 class="font-bold text-headline text-label">Thanh Toán Auto Bank VietQR</h3>
+          <p class="text-footnote text-label-2">Mã đơn: <strong id="modalOrderId" class="font-mono text-flame">CC365</strong></p>
+        </div>
+      </div>
+      <button type="button" onclick="closeVietQrModal()" class="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center text-label-2 hover:text-label">✕</button>
+    </div>
+
+    <div class="text-center p-3 bg-white rounded-2xl mb-4">
+      <img id="modalQrImage" src="" alt="VietQR" class="w-56 h-56 mx-auto object-contain"/>
+      <p class="text-caption text-gray-500 mt-1">Mở ứng dụng ngân hàng bất kỳ để quét mã</p>
+    </div>
+
+    <div class="space-y-2.5 text-subhead bg-surface-2 p-3.5 rounded-xl border border-separator mb-4">
       <div class="flex items-center justify-between">
-        <a class="ios-tap inline-flex min-w-0 items-center gap-2.5 py-1" aria-label="Chungchi365 — trang chủ" href="/">
-          <img src="assets/logo.png" alt="Chungchi365 Logo" class="h-7 w-7 shrink-0 rounded-lg"/>
-          <span class="truncate text-headline text-label font-bold">Chungchi365</span>
-        </a>
+        <span class="text-label-2">Ngân hàng:</span>
+        <strong class="text-label font-bold">ACB (Á Châu)</strong>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-label-2">Số tài khoản:</span>
         <div class="flex items-center gap-2">
-          <a href="#bang-gia" class="ios-btn ios-btn-plain px-3 py-1.5 text-subhead text-label-2 hover:text-label hidden sm:inline-flex">Bảng giá</a>
-          <a href="tra-cuu.html" class="ios-btn ios-btn-plain px-3 py-1.5 text-subhead text-label-2 hover:text-label">Tra cứu đơn</a>
+          <strong class="font-mono text-label text-base font-bold">22703611</strong>
+          <button type="button" class="text-caption text-flame hover:underline font-bold" onclick="copyText('22703611', 'Đã chép STK!')">Copy</button>
         </div>
       </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- 2. HERO SECTION                                                  -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <main class="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-4 sm:px-6">
-      <section class="ios-band ios-band-hero ios-grain khoi-hero-duoi pt-10 text-center sm:pt-16">
-        <div class="ios-reveal ios-hero-veil">
-          <p class="text-footnote font-semibold uppercase tracking-[0.12em] text-label">Chứng chỉ ký ứng dụng iOS cho nhà phát triển</p>
-          <h1 class="mx-auto mt-3 max-w-3xl text-balance text-title-1 font-extrabold leading-[1.14] tracking-tight text-label sm:text-[44px] sm:leading-[1.08]">
-            Ký và chạy thử ứng dụng của bạn trên thiết bị thật
-          </h1>
-          <p class="mx-auto mt-4 max-w-xl text-body text-label">
-            Dành cho lập trình viên iOS cần cài ứng dụng do chính mình phát triển lên máy thật để thử nghiệm. Gửi UDID, nhận chứng chỉ ký riêng cho từng thiết bị. Không cần máy tính, không cần jailbreak.
-          </p>
-        </div>
-
-        <div class="ios-reveal mt-8 flex flex-wrap items-center justify-center gap-3">
-          <a href="#bang-gia" class="ios-btn ios-btn-outline pl-6">
-            Xem bảng giá
-            <span class="ios-btn-icon" aria-hidden="true">
-              <svg viewBox="0 0 16 16" class="h-4 w-4" fill="none">
-                <path d="M8 3v10M4 9.5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
-            </span>
-          </a>
-          <a href="tra-cuu.html" class="ios-btn ios-btn-plain px-5">Tra cứu đơn đã mua</a>
-        </div>
-      </section>
-
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- 3. CẤU HÌNH QUYỀN VÀ ENTITLEMENTS (26 ENTITLEMENTS ĐÃ BẬT)       -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <section aria-labelledby="quyen-entitlements" class="khoi-trang">
-        <div class="ios-reveal">
-          <h2 id="quyen-entitlements" class="text-title-2 font-bold tracking-tight text-label">Cấu hình quyền và entitlements</h2>
-          <p class="mt-2.5 max-w-xl text-body text-label-2">Những entitlements quan trọng cho phát triển đã được cấu hình.</p>
-        </div>
-
-        <div class="ios-reveal mt-5">
-          <div class="ent-khoi">
-            <button type="button" class="ent-thanh" id="btnToggleEntitlements" aria-expanded="false" onclick="toggleEntitlements()">
-              <span class="ent-thanh-giua">
-                <span class="ent-thanh-chinh"><b>26</b> entitlements đã bật</span>
-                <span class="ent-thanh-phu" id="entSubtitle">Chạm để xem danh sách</span>
-              </span>
-              <svg id="entArrow" class="ent-mui-ten transition-transform duration-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
-            </button>
-
-            <div class="ent-boc" id="entListWrapper" style="display: none;">
-              <div class="ent-trong">
-                <div class="ent-o">
-                  <div class="ent-bao-cuon">
-                    <div class="ent-ds" role="list" tabindex="0">
-                      <!-- Nhóm 1: Thông báo & xác thực -->
-                      <div>
-                        <p class="ent-ten-nhom">Thông báo &amp; xác thực</p>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Push Notifications</span><code class="ent-ma">aps-environment</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Sign in with Apple</span><code class="ent-ma">com.apple.developer.applesignin</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">AutoFill Credential Provider</span><code class="ent-ma">com.apple.developer.authentication-services.autofill-credential-provider</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">App Attest</span><code class="ent-ma">com.apple.developer.devicecheck.appattest-environment</code></span>
-                        </div>
-                      </div>
-
-                      <!-- Nhóm 2: Dữ liệu & chia sẻ -->
-                      <div>
-                        <p class="ent-ten-nhom">Dữ liệu &amp; chia sẻ</p>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">App Groups</span><code class="ent-ma">com.apple.security.application-groups</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Keychain Access Groups</span><code class="ent-ma">keychain-access-groups</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">iCloud Services</span><code class="ent-ma">com.apple.developer.icloud-services</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Data Protection</span><code class="ent-ma">com.apple.developer.default-data-protection</code></span>
-                        </div>
-                      </div>
-
-                      <!-- Nhóm 3: Mạng -->
-                      <div>
-                        <p class="ent-ten-nhom">Mạng</p>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Associated Domains</span><code class="ent-ma">com.apple.developer.associated-domains</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Network Extensions</span><code class="ent-ma">com.apple.developer.networking.networkextension</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Personal VPN</span><code class="ent-ma">com.apple.developer.networking.vpn.api</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Multipath</span><code class="ent-ma">com.apple.developer.networking.multipath</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Hotspot Configuration</span><code class="ent-ma">com.apple.developer.networking.HotspotConfiguration</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Access Wi-Fi Information</span><code class="ent-ma">com.apple.developer.networking.wifi-info</code></span>
-                        </div>
-                      </div>
-
-                      <!-- Nhóm 4: Thanh toán & ví -->
-                      <div>
-                        <p class="ent-ten-nhom">Thanh toán &amp; ví</p>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Apple Pay</span><code class="ent-ma">com.apple.developer.in-app-payments</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Wallet</span><code class="ent-ma">com.apple.developer.pass-type-identifiers</code></span>
-                        </div>
-                      </div>
-
-                      <!-- Nhóm 5: Hệ thống & thiết bị -->
-                      <div>
-                        <p class="ent-ten-nhom">Hệ thống &amp; thiết bị</p>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">SiriKit</span><code class="ent-ma">com.apple.developer.siri</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">HealthKit</span><code class="ent-ma">com.apple.developer.healthkit</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">HomeKit</span><code class="ent-ma">com.apple.developer.homekit</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Game Center</span><code class="ent-ma">com.apple.developer.game-center</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">NFC Tag Reading</span><code class="ent-ma">com.apple.developer.nfc.readersession.formats</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Wireless Accessory Configuration</span><code class="ent-ma">com.apple.external-accessory.wireless-configuration</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">ClassKit</span><code class="ent-ma">com.apple.developer.ClassKit-environment</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">User Management</span><code class="ent-ma">com.apple.developer.user-management</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">App Clip</span><code class="ent-ma">com.apple.developer.on-demand-install-capable</code></span>
-                        </div>
-                        <div class="ent-dong" role="listitem">
-                          <svg class="ent-tich" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                          <span class="ent-dong-giua"><span class="ent-ten">Parent Application Identifiers</span><code class="ent-ma">com.apple.developer.parent-application-identifiers</code></span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p class="ent-chan">Đây là danh sách giới thiệu — thực tế hệ thống hỗ trợ nhiều hơn.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- 4. BẢNG GIÁ (#bang-gia)                                          -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <section id="bang-gia" aria-labelledby="bang-gia-heading" class="ios-band ios-band-price khoi-trang scroll-mt-28">
-        <div class="ios-reveal">
-          <h2 id="bang-gia-heading" class="text-title-2 font-bold tracking-tight text-label">Bảng giá</h2>
-          <p class="mt-2.5 text-subhead text-label-2">Giá đã gồm mọi thứ, không phát sinh thêm.</p>
-        </div>
-
-        <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" id="pricingCardsGrid">
-          <!-- Gói 1: Cá Nhân TIME 24h -->
-          <div class="ios-window flex h-full flex-col package-card" data-slug="time-24h" data-name="Gói Cá Nhân (TIME 24h)" data-price="149000" data-duration="365" data-warranty="180" data-issue="1 - 24 giờ">
-            <div class="ios-window-bar relative">
-              <span class="relative z-10 flex shrink-0 items-center gap-2" aria-hidden="true">
-                <span class="ios-window-dot" style="background:#ff5f57"></span>
-                <span class="ios-window-dot" style="background:#febc2e"></span>
-                <span class="ios-window-dot" style="background:#28c840"></span>
-              </span>
-              <p class="pointer-events-none absolute inset-x-12 truncate text-center text-footnote font-semibold text-label">Gói Cá Nhân (TIME 24h)</p>
-            </div>
-            <div class="flex flex-1 flex-col p-5">
-              <div class="flex items-center gap-2">
-                <p class="text-footnote font-medium uppercase tracking-wide text-label-2">365 ngày</p>
-                <span class="ml-auto rounded-full bg-flame-soft px-2.5 py-1 text-caption font-semibold text-flame-deep selected-badge" style="display:none;">Đang chọn</span>
-              </div>
-              <p class="mt-2 flex items-baseline gap-2">
-                <span class="text-title-1 font-extrabold tracking-tight text-label">149.000&nbsp;₫</span>
-                <span class="text-callout text-label-2 line-through">180.000&nbsp;₫</span>
-              </p>
-              <p class="mt-1 text-subhead text-label-2">Cấp trong 1 - 24 giờ</p>
-              <ul class="mt-4 space-y-2">
-                <li class="flex items-start gap-2.5 text-subhead text-label-2">
-                  <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  <span>Bảo hành 180 ngày (1 đổi 1)</span>
-                </li>
-                <li class="flex items-start gap-2.5 text-subhead text-label-2">
-                  <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  <span>Tệp .P12 &amp; .MobileProvision</span>
-                </li>
-                <li class="flex items-start gap-2.5 text-subhead text-label-2">
-                  <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  <span>Cài ESign, Scarlet, TrollStore trực tiếp</span>
-                </li>
-              </ul>
-              <div class="flex-1" aria-hidden="true"></div>
-              <button type="button" onclick="selectPackage('time-24h')" class="ios-btn mt-6 w-full ios-btn-filled btn-choose">Chọn gói này</button>
-            </div>
-          </div>
-
-          <!-- Gói 2: Cao Cấp PRO+ (Khuyên dùng) -->
-          <div class="ios-window flex h-full flex-col package-card" data-slug="pro-plus" data-name="Gói Cao Cấp (PRO+)" data-price="199000" data-duration="365" data-warranty="240" data-issue="1 - 24 giờ">
-            <div class="ios-window-bar relative">
-              <span class="relative z-10 flex shrink-0 items-center gap-2" aria-hidden="true">
-                <span class="ios-window-dot" style="background:#ff5f57"></span>
-                <span class="ios-window-dot" style="background:#febc2e"></span>
-                <span class="ios-window-dot" style="background:#28c840"></span>
-              </span>
-              <p class="pointer-events-none absolute inset-x-12 truncate text-center text-footnote font-semibold text-label">Gói Cao Cấp (PRO+)</p>
-            </div>
-            <div class="flex flex-1 flex-col p-5">
-              <div class="flex items-center gap-2">
-                <p class="text-footnote font-medium uppercase tracking-wide text-label-2">365 ngày</p>
-                <span class="rounded-full bg-flame-soft px-2.5 py-1 text-caption font-semibold text-flame-deep">🔥 Khuyên dùng</span>
-                <span class="ml-auto rounded-full bg-flame-soft px-2.5 py-1 text-caption font-semibold text-flame-deep selected-badge" style="display:none;">Đang chọn</span>
-              </div>
-              <p class="mt-2 flex items-baseline gap-2">
-                <span class="text-title-1 font-extrabold tracking-tight text-label">199.000&nbsp;₫</span>
-                <span class="text-callout text-label-2 line-through">250.000&nbsp;₫</span>
-              </p>
-              <p class="mt-1 text-subhead text-label-2">Cấp trong 1 - 24 giờ</p>
-              <ul class="mt-4 space-y-2">
-                <li class="flex items-start gap-2.5 text-subhead text-label-2">
-                  <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  <span>Bảo hành 240 ngày (1 đổi 1)</span>
-                </li>
-                <li class="flex items-start gap-2.5 text-subhead text-label-2">
-                  <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  <span>Mở Full 26 Entitlements, VPN cá nhân</span>
-                </li>
-                <li class="flex items-start gap-2.5 text-subhead text-label-2">
-                  <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  <span>Fix văng app và thu hồi sớm tối đa</span>
-                </li>
-              </ul>
-              <div class="flex-1" aria-hidden="true"></div>
-              <button type="button" onclick="selectPackage('pro-plus')" class="ios-btn mt-6 w-full ios-btn-filled btn-choose">Chọn gói này</button>
-            </div>
-          </div>
-
-          <!-- Gói 3: Siêu Tốc FAST 2h -->
-          <div class="ios-window flex h-full flex-col package-card" data-slug="fast-2h" data-name="Gói Siêu Tốc (FAST 2h)" data-price="249000" data-duration="365" data-warranty="300" data-issue="Cấp siêu tốc 2 giờ">
-            <div class="ios-window-bar relative">
-              <span class="relative z-10 flex shrink-0 items-center gap-2" aria-hidden="true">
-                <span class="ios-window-dot" style="background:#ff5f57"></span>
-                <span class="ios-window-dot" style="background:#febc2e"></span>
-                <span class="ios-window-dot" style="background:#28c840"></span>
-              </span>
-              <p class="pointer-events-none absolute inset-x-12 truncate text-center text-footnote font-semibold text-label">Gói Siêu Tốc (FAST 2h)</p>
-            </div>
-            <div class="flex flex-1 flex-col p-5">
-              <div class="flex items-center gap-2">
-                <p class="text-footnote font-medium uppercase tracking-wide text-label-2">365 ngày</p>
-                <span class="ml-auto rounded-full bg-flame-soft px-2.5 py-1 text-caption font-semibold text-flame-deep selected-badge" style="display:none;">Đang chọn</span>
-              </div>
-              <p class="mt-2 flex items-baseline gap-2">
-                <span class="text-title-1 font-extrabold tracking-tight text-label">249.000&nbsp;₫</span>
-                <span class="text-callout text-label-2 line-through">300.000&nbsp;₫</span>
-              </p>
-              <p class="mt-1 text-subhead text-label-2">Cấp siêu tốc trong 2 giờ</p>
-              <ul class="mt-4 space-y-2">
-                <li class="flex items-start gap-2.5 text-subhead text-label-2">
-                  <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  <span>Bảo hành 300 ngày (1 đổi 1)</span>
-                </li>
-                <li class="flex items-start gap-2.5 text-subhead text-label-2">
-                  <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  <span>Ưu tiên cấp chứng chỉ trực tiếp</span>
-                </li>
-                <li class="flex items-start gap-2.5 text-subhead text-label-2">
-                  <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 text-green mt-0.5" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  <span>Hỗ trợ kỹ thuật 1 - 1 qua Telegram</span>
-                </li>
-              </ul>
-              <div class="flex-1" aria-hidden="true"></div>
-              <button type="button" onclick="selectPackage('fast-2h')" class="ios-btn mt-6 w-full ios-btn-filled btn-choose">Chọn gói này</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Scroll Target -->
-      <div id="scrollTargetDatHang" class="scroll-mt-28"></div>
-
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- 5. FORM ĐẶT HÀNG TRỰC TIẾP (#dat-hang)                           -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <section id="dat-hang" aria-labelledby="dat-hang-heading" class="khoi-trang mx-auto max-w-2xl mt-12" style="display: none;">
-        <div class="ios-reveal">
-          <h2 id="dat-hang-heading" class="text-title-2 font-bold tracking-tight text-label">
-            Đặt mua <span id="lblChosenName" class="text-flame">Gói Cao Cấp (PRO+)</span>
-          </h2>
-          <p class="mt-1.5 text-subhead text-label-2">
-            <span id="lblChosenPrice" class="font-bold text-label">199.000 ₫</span> · dùng 365 ngày · cấp trong <span id="lblChosenIssue">1 - 24 giờ</span>
-          </p>
-        </div>
-
-        <!-- Banner khi đã lấy được UDID -->
-        <div id="bannerUdidSuccess" class="ios-sheet mt-4 px-4 py-3" style="display: none;" role="status">
-          <p class="text-subhead text-label">
-            <span class="text-green font-bold">✓</span> Đã lấy UDID từ máy này
-          </p>
-          <p class="mt-1 font-mono text-footnote text-label-2" id="lblCapturedUdid"></p>
-          <p class="mt-1.5 text-footnote text-label-2">
-            Hồ sơ vừa cài có thể gỡ ngay trong Cài đặt → Cài đặt chung → VPN & Quản lý thiết bị.
-          </p>
-        </div>
-
-        <form id="formCheckout" onsubmit="handleFormSubmit(event)" class="mt-5">
-          <!-- Nhóm 1: Thiết bị & UDID -->
-          <div class="flex items-center justify-between mb-2 px-1">
-            <h3 class="text-footnote font-semibold uppercase tracking-wide text-label-2">Thiết bị</h3>
-            <a href="get_udid.mobileconfig" class="text-footnote text-flame hover:underline font-semibold flex items-center gap-1">
-              <svg viewBox="0 0 16 16" class="w-3.5 h-3.5" fill="none"><path d="M8 2v9M4 7.5l4 4 4-4M3 13.5h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
-              Lấy UDID tự động từ máy này
-            </a>
-          </div>
-
-          <div class="ios-sheet p-4 space-y-3">
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label for="inputUdid" class="text-subhead text-label">Mã UDID phần cứng Apple</label>
-                <button type="button" onclick="pasteUdidFromClipboard()" class="text-caption text-flame hover:underline">Dán từ bộ nhớ</button>
-              </div>
-              <input id="inputUdid" name="udid" required class="ios-field font-mono text-callout w-full p-2.5 rounded-lg bg-surface-2 border border-separator text-label" placeholder="00008030-000A1B2C... hoặc 40 ký tự hex" oninput="validateUdidInput()"/>
-              <p id="udidErrorMsg" class="mt-1 text-footnote text-red" style="display: none;">UDID gồm 40 ký tự hex hoặc 25 ký tự có dấu gạch ngang.</p>
-            </div>
-            <div>
-              <label for="inputDeviceName" class="block text-subhead text-label mb-1">Dòng máy (tùy chọn)</label>
-              <input id="inputDeviceName" name="deviceName" class="ios-field text-callout w-full p-2.5 rounded-lg bg-surface-2 border border-separator text-label" placeholder="Ví dụ: iPhone 15 Pro Max, iPad Pro M4..."/>
-            </div>
-          </div>
-
-          <!-- Nhóm 2: Thông tin nhận hàng -->
-          <h3 class="mt-5 mb-2 px-1 text-footnote font-semibold uppercase tracking-wide text-label-2">Liên hệ &amp; Nhận hàng</h3>
-          <div class="ios-sheet p-4 space-y-3">
-            <div>
-              <label for="inputEmail" class="block text-subhead text-label mb-1">Email nhận file chứng chỉ (*)</label>
-              <input id="inputEmail" name="email" type="email" required class="ios-field text-callout w-full p-2.5 rounded-lg bg-surface-2 border border-separator text-label" placeholder="email@gmail.com để nhận tệp .P12 và hướng dẫn"/>
-            </div>
-            <div>
-              <label for="inputContact" class="block text-subhead text-label mb-1">Telegram hoặc Số điện thoại / Zalo</label>
-              <input id="inputContact" name="contact" class="ios-field text-callout w-full p-2.5 rounded-lg bg-surface-2 border border-separator text-label" placeholder="@username hoặc 0987654321"/>
-            </div>
-            <div>
-              <label for="inputCoupon" class="block text-subhead text-label mb-1">Mã giảm giá (nếu có)</label>
-              <input id="inputCoupon" name="coupon" class="ios-field text-callout w-full p-2.5 rounded-lg bg-surface-2 border border-separator text-label" placeholder="Nhập mã ưu đãi"/>
-            </div>
-          </div>
-
-          <button type="submit" id="btnSubmitOrder" class="ios-btn ios-btn-filled mt-6 w-full text-base font-bold py-3.5">
-            Tiếp tục thanh toán VietQR
-          </button>
-        </form>
-      </section>
-
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- 6. NHỮNG ĐIỀU NÊN BIẾT TRƯỚC (FAQ ACCORDION)                    -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <section aria-labelledby="faq" class="khoi-trang mx-auto max-w-3xl mt-16">
-        <div class="ios-reveal">
-          <h2 id="faq" class="text-title-2 font-bold tracking-tight text-label">Những điều nên biết trước</h2>
-        </div>
-
-        <div class="mt-5 space-y-3">
-          <div class="ios-reveal">
-            <details class="ios-sheet group">
-              <summary class="ios-row ios-tap cursor-pointer list-none py-3.5 text-body text-label marker:hidden flex items-center justify-between">
-                <span class="flex-1 font-semibold">UDID là gì, lấy ở đâu?</span>
-                <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" fill="none">
-                  <path d="M4 6l4 4 4-4" stroke="var(--label-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-              </summary>
-              <p class="px-4 pb-4 text-subhead text-label-2 leading-relaxed">
-                Là mã định danh riêng của từng máy iPhone/iPad. Mở trang này bằng Safari trên chính máy cần cấp, bấm “Lấy UDID tự động” ở bước đặt hàng — máy sẽ tự gửi mã về. Không có Safari thì xem trong iTunes hoặc 3uTools rồi nhập tay.
-              </p>
-            </details>
-          </div>
-
-          <div class="ios-reveal">
-            <details class="ios-sheet group">
-              <summary class="ios-row ios-tap cursor-pointer list-none py-3.5 text-body text-label marker:hidden flex items-center justify-between">
-                <span class="flex-1 font-semibold">Chứng chỉ dùng được cho máy khác không?</span>
-                <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" fill="none">
-                  <path d="M4 6l4 4 4-4" stroke="var(--label-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-              </summary>
-              <p class="px-4 pb-4 text-subhead text-label-2 leading-relaxed">
-                Không. Chứng chỉ ký theo đúng UDID đã đặt, máy khác cài sẽ không chạy. Nhập nhầm UDID thì phải mua lại, nên kiểm tra kỹ trước khi trả tiền.
-              </p>
-            </details>
-          </div>
-
-          <div class="ios-reveal">
-            <details class="ios-sheet group">
-              <summary class="ios-row ios-tap cursor-pointer list-none py-3.5 text-body text-label marker:hidden flex items-center justify-between">
-                <span class="flex-1 font-semibold">Bảo hành nghĩa là gì?</span>
-                <svg viewBox="0 0 16 16" class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" fill="none">
-                  <path d="M4 6l4 4 4-4" stroke="var(--label-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-              </summary>
-              <p class="px-4 pb-4 text-subhead text-label-2 leading-relaxed">
-                Trong thời hạn bảo hành của gói, nếu chứng chỉ bị thu hồi thì được cấp lại miễn phí. Mốc hết hạn giữ nguyên theo lần mua đầu, không tính lại từ ngày cấp lại.
-              </p>
-            </details>
-          </div>
-        </div>
-      </section>
-
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- 7. SECTION CALL-TO-ACTION                                       -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <section class="ios-band ios-band-cta ios-grain -mb-16 min-h-[50vh] pb-[16vh] pt-[10vh] text-center">
-        <div class="ios-reveal ios-hero-veil">
-          <h2 class="mx-auto max-w-3xl text-balance text-title-1 font-extrabold leading-[1.12] tracking-tight text-label sm:text-[44px] sm:leading-[1.08] lg:text-[56px]">
-            Sẵn sàng ký ứng dụng đầu tiên?
-          </h2>
-          <div class="mt-9 flex justify-center">
-            <a href="#bang-gia" class="ios-btn ios-btn-outline pl-7">
-              Chọn gói ngay
-              <span class="ios-btn-icon" aria-hidden="true">
-                <svg viewBox="0 0 16 16" class="h-4 w-4" fill="none">
-                  <path d="M8 3v10M4 9.5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-              </span>
-            </a>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- 8. FOOTER CHUNGCHI365                                            -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <footer class="relative z-10 border-t border-separator bg-surface">
-      <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
-        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <div class="flex items-center gap-2.5">
-              <img src="assets/logo.png" alt="" class="h-7 w-7 rounded-lg"/>
-              <span class="text-headline text-label font-bold">Chungchi365</span>
-            </div>
-            <p class="mt-3 max-w-xs text-footnote text-label-2">
-              Chứng chỉ ký ứng dụng iOS dành cho nhà phát triển, cấp tự động theo UDID từng thiết bị.
-            </p>
-          </div>
-
-          <div>
-            <p class="text-footnote font-semibold uppercase tracking-wide text-label">Dịch vụ</p>
-            <ul class="mt-3 space-y-2">
-              <li><a class="text-subhead text-label-2 hover:text-label" href="#bang-gia">Bảng giá</a></li>
-              <li><a class="text-subhead text-label-2 hover:text-label" href="tra-cuu.html">Tra cứu đơn</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <p class="text-footnote font-semibold uppercase tracking-wide text-label">Tài khoản</p>
-            <ul class="mt-3 space-y-2">
-              <li><a class="text-subhead text-label-2 hover:text-label" href="tra-cuu.html">Xem đơn đã mua</a></li>
-              <li><a class="text-subhead text-label-2 hover:text-label" href="../admin.html" target="_blank">Quản trị viên</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <p class="text-footnote font-semibold uppercase tracking-wide text-label">Hỗ trợ</p>
-            <ul class="mt-3 space-y-2">
-              <li><a class="text-subhead text-label-2 hover:text-label" href="tra-cuu.html">Kiểm tra trạng thái đơn</a></li>
-              <li>
-                <a href="https://t.me/chungchi365cert" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-subhead text-label-2 hover:text-label">
-                  <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none">
-                    <path d="M10 3.5c4 0 7 2.5 7 5.7s-3 5.7-7 5.7c-.7 0-1.4-.08-2-.23L4.5 16.5l.6-2.4C3.8 13 3 11.2 3 9.2 3 6 6 3.5 10 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
-                  </svg>
-                  <span class="min-w-0">
-                    <span class="block truncate">Telegram</span>
-                    <span class="block truncate text-footnote text-label-3">@chungchi365cert</span>
-                  </span>
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="mt-10 border-t border-separator pt-6">
-          <p class="max-w-3xl text-caption leading-relaxed text-label-3">
-            Dịch vụ chỉ dành cho lập trình viên thử nghiệm ứng dụng do chính mình phát triển hoặc được phép phân phối. Nghiêm cấm dùng để phát tán ứng dụng vi phạm bản quyền, phần mềm bẻ khoá, hoặc bất kỳ mục đích nào trái với quy định của Apple và pháp luật Việt Nam. Khách hàng tự chịu trách nhiệm về nội dung ứng dụng mình ký; chúng tôi không kiểm duyệt và không chịu trách nhiệm cho việc sử dụng sai mục đích.
-          </p>
-
-          <div class="mt-4 flex flex-wrap items-center gap-3">
-            <div role="group" aria-label="Chế độ hiển thị" class="inline-flex gap-1 rounded-full bg-fill p-1">
-              <button type="button" onclick="setTheme('toi')" id="btnThemeToi" class="rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label">Tối</button>
-              <button type="button" onclick="setTheme('sang')" id="btnThemeSang" class="rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label">Sáng</button>
-              <button type="button" onclick="setTheme('may')" id="btnThemeMay" class="rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label">Theo máy</button>
-            </div>
-            <p class="text-footnote text-label-2">© 2026 Chungchi365</p>
-          </div>
-        </div>
+      <div class="flex items-center justify-between">
+        <span class="text-label-2">Chủ tài khoản:</span>
+        <strong class="text-label font-bold">TRAN NGUYEN MINH QUI</strong>
       </div>
-      <div style="height:var(--thanh-duoi-cho, 60px)" aria-hidden="true"></div>
-    </footer>
-
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- 9. FLOATING ACTION BUTTON & MOBILE BOTTOM NAVIGATION             -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="fixed right-4 z-40 flex flex-col items-end gap-2" style="bottom:calc(var(--thanh-duoi-cho, 60px) + 8px)">
-      <a href="https://t.me/chungchi365cert" target="_blank" aria-label="Liên hệ hỗ trợ" class="ios-tap flex h-12 w-12 items-center justify-center rounded-full bg-flame text-on-flame" style="box-shadow:var(--window-shadow)">
-        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 4c4.8 0 8.5 3.1 8.5 7s-3.7 7-8.5 7c-.9 0-1.7-.1-2.5-.3L5 20l.8-3c-1.4-1.3-2.3-3-2.3-5 0-3.9 3.7-7 8.5-7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"></path>
-        </svg>
-      </a>
-    </div>
-
-    <!-- Thanh điều hướng đáy di động (Mobile Bottom Bar) -->
-    <nav class="thanh-duoi chua-biet" aria-label="Điều hướng chính">
-      <a class="thanh-duoi-muc" aria-label="Trang chủ" aria-current="page" href="/">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.5 9.5V20h13V9.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-        <span class="thanh-duoi-chu">Trang chủ</span>
-      </a>
-      <a class="thanh-duoi-muc" aria-label="Tra cứu" href="tra-cuu.html">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.4" stroke="currentColor" stroke-width="1.9"></circle><path d="M15.8 15.8 21 21" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path></svg>
-        <span class="thanh-duoi-chu">Tra cứu</span>
-      </a>
-      <a class="thanh-duoi-muc" aria-label="Admin" href="../admin.html" target="_blank">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><path d="M4 12h10M11 8.5 14.5 12 11 15.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-        <span class="thanh-duoi-chu">Quản trị</span>
-      </a>
-    </nav>
-
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════════════ -->
-  <!-- 10. MODAL THANH TOÁN VIETQR AUTO BANK                           -->
-  <!-- ═══════════════════════════════════════════════════════════════ -->
-  <div id="modalVietQr" class="modal-backdrop" onclick="closeVietQrModal(event)">
-    <div class="modal-box" onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between pb-3 border-b border-separator mb-4">
+      <div class="flex items-center justify-between">
+        <span class="text-label-2">Số tiền:</span>
         <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-flame-soft flex items-center justify-center text-flame font-bold">QR</div>
-          <div>
-            <h3 class="font-bold text-headline text-label">Thanh Toán Auto Bank VietQR</h3>
-            <p class="text-footnote text-label-2">Mã đơn: <strong id="modalOrderId" class="font-mono text-flame">CC365</strong></p>
-          </div>
-        </div>
-        <button onclick="closeVietQrModal()" class="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center text-label-2 hover:text-label">✕</button>
-      </div>
-
-      <!-- VietQR Image -->
-      <div class="text-center p-3 bg-white rounded-2xl mb-4">
-        <img id="modalQrImage" src="" alt="VietQR" class="w-56 h-56 mx-auto object-contain"/>
-        <p class="text-caption text-gray-500 mt-1">Mở ứng dụng ngân hàng bất kỳ để quét mã</p>
-      </div>
-
-      <!-- Bảng thông tin chuyển khoản -->
-      <div class="space-y-2.5 text-subhead bg-surface-2 p-3.5 rounded-xl border border-separator mb-4">
-        <div class="flex items-center justify-between">
-          <span class="text-label-2">Ngân hàng:</span>
-          <strong class="text-label font-bold">ACB (Á Châu)</strong>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-label-2">Số tài khoản:</span>
-          <div class="flex items-center gap-2">
-            <strong class="font-mono text-label text-base font-bold">22703611</strong>
-            <button class="text-caption text-flame hover:underline font-bold" onclick="copyText('22703611', 'Đã chép STK!')">Copy</button>
-          </div>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-label-2">Chủ tài khoản:</span>
-          <strong class="text-label font-bold">TRAN NGUYEN MINH QUI</strong>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="text-label-2">Số tiền:</span>
-          <div class="flex items-center gap-2">
-            <strong id="modalAmountText" class="font-bold text-flame text-base">199.000 ₫</strong>
-            <button class="text-caption text-flame hover:underline font-bold" onclick="copyText(activeOrder ? activeOrder.price : '', 'Đã chép số tiền!')">Copy</button>
-          </div>
-        </div>
-        <div class="flex items-center justify-between border-t border-separator pt-2">
-          <span class="text-label-2">Nội dung CK:</span>
-          <div class="flex items-center gap-2">
-            <strong id="modalSyntaxText" class="font-mono text-flame font-bold text-base">CC365</strong>
-            <button class="text-caption text-flame hover:underline font-bold" onclick="copyText(activeOrder ? activeOrder.orderId : '', 'Đã chép nội dung CK!')">Copy</button>
-          </div>
+          <strong id="modalAmountText" class="font-bold text-flame text-base">199.000 ₫</strong>
+          <button type="button" class="text-caption text-flame hover:underline font-bold" onclick="copyText(activeOrder ? activeOrder.price : '', 'Đã chép số tiền!')">Copy</button>
         </div>
       </div>
-
-      <div class="p-3 bg-flame-soft border border-flame rounded-xl mb-4 text-footnote text-label-2 flex items-center gap-2">
-        <i data-lucide="clock" class="w-4 h-4 text-flame shrink-0"></i>
-        <span>Giữ đơn và xác nhận trong <strong id="modalTimer" class="font-mono text-flame font-bold">15:00</strong>. Chuyển khoản đúng cú pháp để hệ thống tự động duyệt.</span>
+      <div class="flex items-center justify-between border-t border-separator pt-2">
+        <span class="text-label-2">Nội dung CK:</span>
+        <div class="flex items-center gap-2">
+          <strong id="modalSyntaxText" class="font-mono text-flame font-bold text-base">CC365</strong>
+          <button type="button" class="text-caption text-flame hover:underline font-bold" onclick="copyText(activeOrder ? activeOrder.orderId : '', 'Đã chép nội dung CK!')">Copy</button>
+        </div>
       </div>
-
-      <button type="button" onclick="confirmPaymentFinished()" class="ios-btn ios-btn-filled w-full py-3 text-base font-bold">
-        Tôi Đã Chuyển Khoản Thành Công
-      </button>
     </div>
+
+    <div class="p-3 bg-flame-soft border border-flame rounded-xl mb-4 text-footnote text-label-2 flex items-center gap-2">
+      <svg viewBox="0 0 16 16" class="w-4 h-4 text-flame shrink-0" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.6"></circle><path d="M8 4.5v4l2.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg>
+      <span>Giữ đơn và xác nhận trong <strong id="modalTimer" class="font-mono text-flame font-bold">15:00</strong>. Chuyển khoản đúng cú pháp để hệ thống tự động duyệt.</span>
+    </div>
+
+    <button type="button" onclick="confirmPaymentFinished()" class="ios-btn ios-btn-filled w-full py-3 text-base font-bold">
+      Tôi Đã Chuyển Khoản Thành Công
+    </button>
   </div>
+</div>
 
-  <div id="ccToast"></div>
 
-  <!-- ═══════════════════════════════════════════════════════════════ -->
-  <!-- JAVASCRIPT WORKFLOW & DATA ENGINE                               -->
-  <!-- ═══════════════════════════════════════════════════════════════ -->
-  <script>
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyDummyKeyForCertAppleProduction",
-      authDomain: "applercert.firebaseapp.com",
-      projectId: "applercert",
-      storageBucket: "applercert.appspot.com",
-      messagingSenderId: "1029384756",
-      appId: "1:1029384756:web:abcdef123456"
-    };
+<div id="ccToast" style="position:fixed;bottom:24px;right:24px;z-index:100000;background:var(--surface);border:1px solid var(--flame);color:var(--label);font-size:13.5px;padding:12px 20px;border-radius:12px;display:none;box-shadow:var(--window-shadow);"></div>
 
-    const BANK_ACC_NO = '22703611';
-    const BANK_ACC_NAME = 'TRAN NGUYEN MINH QUI';
-    const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec';
-    const TELEGRAM_BOT_TOKEN = '7986654042:AAHHbevmrLVmWSJ5dXIsQssUmRM5tPQWQjk';
-    const TELEGRAM_ADMIN_CHAT_ID = '8103429932';
+<!-- SweetAlert2 & Firebase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    let db;
-    try {
-      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      db = firebase.firestore();
-    } catch(e) {}
+<script>
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDummyKeyForCertAppleProduction",
+    authDomain: "applercert.firebaseapp.com",
+    projectId: "applercert",
+    storageBucket: "applercert.appspot.com",
+    messagingSenderId: "1029384756",
+    appId: "1:1029384756:web:abcdef123456"
+  };
 
-    // Current Selected Package
-    let currentPkg = {
-      slug: 'pro-plus',
-      name: 'Gói Cao Cấp (PRO+)',
-      price: 199000,
-      duration: '365',
-      warranty: '240',
-      issue: '1 - 24 giờ'
-    };
+  const BANK_ACC_NO = '22703611';
+  const BANK_ACC_NAME = 'TRAN NGUYEN MINH QUI';
+  const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec';
+  const TELEGRAM_BOT_TOKEN = '7986654042:AAHHbevmrLVmWSJ5dXIsQssUmRM5tPQWQjk';
+  const TELEGRAM_ADMIN_CHAT_ID = '8103429932';
 
-    let activeOrder = null;
-    let timerInterval = null;
+  let db;
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  } catch(e) {}
 
-    // Toggle 26 Entitlements
-    function toggleEntitlements() {
-      const wrapper = document.getElementById('entListWrapper');
-      const arrow = document.getElementById('entArrow');
-      const subtitle = document.getElementById('entSubtitle');
-      const btn = document.getElementById('btnToggleEntitlements');
+  let currentPkg = {
+    slug: 'pro-plus',
+    name: 'Gói Cao Cấp (PRO+)',
+    price: 199000,
+    duration: '365',
+    warranty: '240',
+    issue: '1 - 24 giờ'
+  };
 
-      if (wrapper.style.display === 'none' || !wrapper.style.display) {
-        wrapper.style.display = 'block';
-        arrow.style.transform = 'rotate(180deg)';
-        subtitle.textContent = 'Chạm để thu gọn';
-        btn.setAttribute('aria-expanded', 'true');
-      } else {
-        wrapper.style.display = 'none';
-        arrow.style.transform = 'rotate(0deg)';
-        subtitle.textContent = 'Chạm để xem danh sách';
+  let activeOrder = null;
+  let timerInterval = null;
+
+  // Toggle 26 Entitlements đúng chuẩn Chungchi365 (.ent-mo & aria-expanded)
+  function setupEntitlementsToggle() {
+    const btn = document.querySelector('.ent-thanh');
+    const boc = document.querySelector('.ent-boc');
+    const phu = document.querySelector('.ent-thanh-phu');
+    if (!btn || !boc) return;
+
+    btn.addEventListener('click', () => {
+      const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+      if (isExpanded) {
         btn.setAttribute('aria-expanded', 'false');
-      }
-    }
-
-    // Select Package
-    function selectPackage(slug) {
-      const card = document.querySelector(`.package-card[data-slug="${slug}"]`);
-      if (!card) return;
-
-      document.querySelectorAll('.package-card').forEach(c => {
-        c.classList.remove('ring-flame');
-        const b = c.querySelector('.selected-badge');
-        if (b) b.style.display = 'none';
-        const btn = c.querySelector('.btn-choose');
-        if (btn) {
-          btn.textContent = 'Chọn gói này';
-          btn.className = 'ios-btn mt-6 w-full ios-btn-filled btn-choose';
-        }
-      });
-
-      card.classList.add('ring-flame');
-      const curBadge = card.querySelector('.selected-badge');
-      if (curBadge) curBadge.style.display = 'inline-block';
-      const curBtn = card.querySelector('.btn-choose');
-      if (curBtn) {
-        curBtn.textContent = 'Đã chọn — điền thông tin';
-        curBtn.className = 'ios-btn mt-6 w-full ios-btn-tinted btn-choose';
-      }
-
-      currentPkg = {
-        slug: slug,
-        name: card.dataset.name,
-        price: parseInt(card.dataset.price, 10),
-        duration: card.dataset.duration,
-        warranty: card.dataset.warranty,
-        issue: card.dataset.issue
-      };
-
-      // Update Form Fields
-      document.getElementById('lblChosenName').textContent = currentPkg.name;
-      document.getElementById('lblChosenPrice').textContent = currentPkg.price.toLocaleString('vi-VN') + ' ₫';
-      document.getElementById('lblChosenIssue').textContent = currentPkg.issue;
-
-      // Show Order Form
-      const orderSec = document.getElementById('dat-hang');
-      orderSec.style.display = 'block';
-
-      // Smooth scroll
-      const target = document.getElementById('scrollTargetDatHang');
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-
-    // Validate UDID
-    function validateUdidInput() {
-      const input = document.getElementById('inputUdid');
-      const err = document.getElementById('udidErrorMsg');
-      const val = input.value.trim().toUpperCase();
-      const is25 = /^[0-9A-F]{8}-[0-9A-F]{16}$/i.test(val);
-      const is40 = /^[0-9A-F]{40}$/i.test(val);
-
-      if (val.length === 0) {
-        err.style.display = 'none';
-        return false;
-      }
-      if (is25 || is40) {
-        err.style.display = 'none';
-        return true;
+        boc.classList.remove('ent-mo');
+        if (phu) phu.textContent = 'Chạm để xem danh sách';
       } else {
-        err.style.display = 'block';
-        return false;
-      }
-    }
-
-    async function pasteUdidFromClipboard() {
-      try {
-        const text = await navigator.clipboard.readText();
-        const input = document.getElementById('inputUdid');
-        if (input && text) {
-          input.value = text.trim();
-          validateUdidInput();
-          showToast('Đã dán UDID từ bộ nhớ tạm!');
-        }
-      } catch(e) {
-        showToast('Vui lòng cấp quyền clipboard hoặc nhập tay!');
-      }
-    }
-
-    // Handle Form Submit -> Open VietQR Modal
-    function handleFormSubmit(e) {
-      e.preventDefault();
-      const udidInput = document.getElementById('inputUdid');
-      const udid = udidInput.value.trim().toUpperCase();
-
-      if (!validateUdidInput()) {
-        Swal.fire('Mã UDID không hợp lệ', 'UDID chuẩn Apple gồm 40 ký tự hex hoặc 25 ký tự có dấu gạch ngang.', 'warning');
-        return;
-      }
-
-      const email = document.getElementById('inputEmail').value.trim();
-      const contact = document.getElementById('inputContact').value.trim();
-      const deviceName = document.getElementById('inputDeviceName').value.trim();
-      const coupon = document.getElementById('inputCoupon').value.trim();
-
-      const orderId = 'CC365_' + Math.floor(100000 + Math.random() * 900000);
-
-      activeOrder = {
-        orderId: orderId,
-        uid: 'GUEST_' + Date.now(),
-        customerEmail: email,
-        customerContact: contact,
-        deviceName: deviceName,
-        coupon: coupon,
-        planId: currentPkg.slug,
-        planName: currentPkg.name,
-        productName: currentPkg.name,
-        price: currentPkg.price,
-        amount: 1,
-        udid: udid,
-        createdAt: new Date().toISOString(),
-        status: 'PAID_PROCESSING',
-        revokeStatus: 'ACTIVE',
-        warrantyUntil: currentPkg.warranty + ' Ngày',
-        certFileUrl: '',
-        p12Url: '',
-        certPass: '1'
-      };
-
-      // Open Modal
-      document.getElementById('modalOrderId').textContent = orderId;
-      document.getElementById('modalAmountText').textContent = currentPkg.price.toLocaleString('vi-VN') + ' ₫';
-      document.getElementById('modalSyntaxText').textContent = orderId;
-
-      const qrUrl = `https://api.vietqr.io/image/970416-${BANK_ACC_NO}-print.jpg?amount=${currentPkg.price}&addInfo=${orderId}&accountName=${encodeURIComponent(BANK_ACC_NAME)}`;
-      document.getElementById('modalQrImage').src = qrUrl;
-
-      document.getElementById('modalVietQr').classList.add('active');
-      startTimer(15 * 60);
-    }
-
-    function closeVietQrModal(e) {
-      if (e && e.target !== document.getElementById('modalVietQr')) return;
-      document.getElementById('modalVietQr').classList.remove('active');
-      clearInterval(timerInterval);
-    }
-
-    function startTimer(duration) {
-      clearInterval(timerInterval);
-      let timer = duration;
-      const el = document.getElementById('modalTimer');
-      timerInterval = setInterval(() => {
-        const m = parseInt(timer / 60, 10);
-        const s = parseInt(timer % 60, 10);
-        el.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
-        if (--timer < 0) {
-          clearInterval(timerInterval);
-          el.textContent = '00:00 (Hết giờ)';
-        }
-      }, 1000);
-    }
-
-    async function confirmPaymentFinished() {
-      if (!activeOrder) return;
-
-      try {
-        // 1. Save to Firestore
-        if (typeof db !== 'undefined' && db.collection) {
-          await db.collection('cert_orders').doc(activeOrder.orderId).set(activeOrder, { merge: true });
-        }
-
-        // 2. Save LocalStorage
-        const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
-        local.unshift(activeOrder);
-        localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 50)));
-        localStorage.setItem('ipaviet_user_udid', activeOrder.udid);
-
-        // 3. Post to Google Sheet
-        try {
-          fetch(GOOGLE_API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              action: 'buy_cert_pending',
-              uid: activeOrder.uid,
-              productId: activeOrder.planId,
-              productName: activeOrder.productName,
-              price: activeOrder.price,
-              amount: 1,
-              udid: activeOrder.udid,
-              orderId: activeOrder.orderId
-            })
-          });
-        } catch(e) {}
-
-        // 4. Send Telegram Admin
-        try {
-          const teleMsg = `🛒 <b>ĐƠN HÀNG CHUNGCHI365 MỚI</b>\n` +
-            `💳 Mã đơn: <code>${activeOrder.orderId}</code>\n` +
-            `📦 Gói: <b>${activeOrder.planName}</b>\n` +
-            `💰 Giá tiền: <b>${activeOrder.price.toLocaleString('vi-VN')}đ</b>\n` +
-            `📱 UDID: <code>${activeOrder.udid}</code>\n` +
-            `👤 Email: <b>${activeOrder.customerEmail}</b>\n` +
-            `🏦 Ngân hàng: <b>ACB 22703611 - TRAN NGUYEN MINH QUI</b>`;
-
-          fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: TELEGRAM_ADMIN_CHAT_ID,
-              text: teleMsg,
-              parse_mode: 'HTML'
-            })
-          });
-        } catch(e) {}
-
-        closeVietQrModal();
-
-        Swal.fire({
-          title: 'Ghi Nhận Đơn Hàng Thành Công!',
-          html: `Mã đơn của bạn: <strong style="color: #e10e0e;">${activeOrder.orderId}</strong><br>` +
-                `Hệ thống đang tiến hành kích hoạt chứng chỉ với Apple Developer. Bạn có thể tra cứu đơn bất kỳ lúc nào!`,
-          icon: 'success',
-          confirmButtonText: 'Tra Cứu Đơn Hàng',
-          confirmButtonColor: '#e10e0e'
-        }).then(() => {
-          window.location.href = `tra-cuu.html?q=${activeOrder.orderId}`;
-        });
-      } catch(err) {
-        Swal.fire('Lỗi', err.message, 'error');
-      }
-    }
-
-    // Toast
-    function showToast(msg) {
-      const t = document.getElementById('ccToast');
-      if (t) {
-        t.textContent = msg;
-        t.style.display = 'block';
-        clearTimeout(window._tTimer);
-        window._tTimer = setTimeout(() => { t.style.display = 'none'; }, 2600);
-      }
-    }
-
-    function copyText(val, msg = 'Đã sao chép!') {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(val).then(() => showToast(msg));
-      } else {
-        const el = document.createElement('textarea');
-        el.value = val;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        showToast(msg);
-      }
-    }
-
-    // Set Theme
-    function setTheme(t) {
-      localStorage.setItem('cc-giao-dien', t);
-      var effective = (t === 'may') ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'sang' : 'toi') : t;
-      document.documentElement.setAttribute('data-cc-xem', effective);
-      updateThemeButtons(t);
-    }
-
-    function updateThemeButtons(t) {
-      ['toi', 'sang', 'may'].forEach(k => {
-        const btn = document.getElementById('btnTheme' + k.charAt(0).toUpperCase() + k.slice(1));
-        if (btn) {
-          if (k === t) {
-            btn.className = 'rounded-full px-3 py-1.5 text-footnote font-semibold transition bg-surface text-label shadow-sm';
-          } else {
-            btn.className = 'rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label';
-          }
-        }
-      });
-    }
-
-    // Init & Check Query
-    window.addEventListener('DOMContentLoaded', () => {
-      if (window.lucide) lucide.createIcons();
-
-      const savedTheme = localStorage.getItem('cc-giao-dien') || 'toi';
-      updateThemeButtons(savedTheme);
-
-      // Check incoming udid from profile
-      const params = new URLSearchParams(window.location.search);
-      const incomingUdid = params.get('udid');
-      if (incomingUdid) {
-        selectPackage('pro-plus');
-        const input = document.getElementById('inputUdid');
-        if (input) input.value = incomingUdid;
-        document.getElementById('lblCapturedUdid').textContent = incomingUdid;
-        document.getElementById('bannerUdidSuccess').style.display = 'block';
+        btn.setAttribute('aria-expanded', 'true');
+        boc.classList.add('ent-mo');
+        if (phu) phu.textContent = 'Chạm để thu gọn';
       }
     });
-  </script>
+  }
+
+  // Chọn gói cước
+  function choosePackage(slug) {
+    const card = document.querySelector(`.package-card[data-slug="${slug}"]`);
+    if (!card) return;
+
+    document.querySelectorAll('.package-card').forEach(c => {
+      c.classList.remove('ring-2', 'ring-flame');
+      const b = c.querySelector('.selected-badge');
+      if (b) b.style.display = 'none';
+      const btn = c.querySelector('.btn-choose');
+      if (btn) {
+        btn.textContent = 'Chọn gói này';
+        btn.className = 'ios-btn mt-6 w-full ios-btn-filled btn-choose';
+      }
+    });
+
+    card.classList.add('ring-2', 'ring-flame');
+    const curBadge = card.querySelector('.selected-badge');
+    if (curBadge) curBadge.style.display = 'inline-block';
+    const curBtn = card.querySelector('.btn-choose');
+    if (curBtn) {
+      curBtn.textContent = 'Đã chọn — điền thông tin';
+      curBtn.className = 'ios-btn mt-6 w-full ios-btn-tinted btn-choose';
+    }
+
+    currentPkg = {
+      slug: slug,
+      name: card.dataset.name,
+      price: parseInt(card.dataset.price, 10),
+      duration: card.dataset.duration,
+      warranty: card.dataset.warranty,
+      issue: card.dataset.issue
+    };
+
+    document.getElementById('lblChosenName').textContent = currentPkg.name;
+    document.getElementById('lblChosenPrice').textContent = currentPkg.price.toLocaleString('vi-VN') + ' ₫';
+    document.getElementById('lblChosenIssue').textContent = currentPkg.issue;
+    document.getElementById('lblBtnName').textContent = currentPkg.name;
+    document.getElementById('lblBtnPrice').textContent = currentPkg.price.toLocaleString('vi-VN') + ' ₫';
+
+    const target = document.getElementById('scrollTargetDatHang');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // Validate UDID
+  function validateUdid() {
+    const input = document.getElementById('udid');
+    const err = document.getElementById('udidErrorHint');
+    const val = input.value.trim().toUpperCase();
+    const is25 = /^[0-9A-F]{8}-[0-9A-F]{16}$/i.test(val);
+    const is40 = /^[0-9A-F]{40}$/i.test(val);
+
+    if (val.length === 0) {
+      err.style.display = 'none';
+      return false;
+    }
+    if (is25 || is40) {
+      err.style.display = 'none';
+      return true;
+    } else {
+      err.style.display = 'block';
+      return false;
+    }
+  }
+
+  async function pasteUdid() {
+    try {
+      const text = await navigator.clipboard.readText();
+      const input = document.getElementById('udid');
+      if (input && text) {
+        input.value = text.trim();
+        validateUdid();
+        showToast('Đã dán UDID từ bộ nhớ tạm!');
+      }
+    } catch(e) {
+      showToast('Vui lòng cấp quyền dán hoặc nhập trực tiếp!');
+    }
+  }
+
+  // Submit Order Form
+  function handleFormSubmit(e) {
+    e.preventDefault();
+    const udidInput = document.getElementById('udid');
+    const udid = udidInput.value.trim().toUpperCase();
+
+    if (!validateUdid()) {
+      Swal.fire('Mã UDID không đúng định dạng', 'UDID chuẩn Apple gồm 40 ký tự hex hoặc 25 ký tự có dấu gạch ngang.', 'warning');
+      return;
+    }
+
+    const email = document.getElementById('email').value.trim();
+    const tenThietBi = document.getElementById('tenThietBi').value.trim();
+    const orderId = 'CC365_' + Math.floor(100000 + Math.random() * 900000);
+
+    activeOrder = {
+      orderId: orderId,
+      uid: 'GUEST_' + Date.now(),
+      customerEmail: email,
+      deviceName: tenThietBi,
+      planId: currentPkg.slug,
+      planName: currentPkg.name,
+      productName: currentPkg.name,
+      price: currentPkg.price,
+      amount: 1,
+      udid: udid,
+      createdAt: new Date().toISOString(),
+      status: 'PAID_PROCESSING',
+      revokeStatus: 'ACTIVE',
+      warrantyUntil: currentPkg.warranty + ' Ngày',
+      certFileUrl: '',
+      p12Url: '',
+      certPass: '1'
+    };
+
+    document.getElementById('modalOrderId').textContent = orderId;
+    document.getElementById('modalAmountText').textContent = currentPkg.price.toLocaleString('vi-VN') + ' ₫';
+    document.getElementById('modalSyntaxText').textContent = orderId;
+
+    const qrUrl = `https://api.vietqr.io/image/970416-${BANK_ACC_NO}-print.jpg?amount=${currentPkg.price}&addInfo=${orderId}&accountName=${encodeURIComponent(BANK_ACC_NAME)}`;
+    document.getElementById('modalQrImage').src = qrUrl;
+
+    document.getElementById('modalVietQr').classList.add('active');
+    startTimer(15 * 60);
+  }
+
+  function closeVietQrModal(e) {
+    if (e && e.target !== document.getElementById('modalVietQr')) return;
+    document.getElementById('modalVietQr').classList.remove('active');
+    clearInterval(timerInterval);
+  }
+
+  function startTimer(duration) {
+    clearInterval(timerInterval);
+    let timer = duration;
+    const el = document.getElementById('modalTimer');
+    timerInterval = setInterval(() => {
+      const m = parseInt(timer / 60, 10);
+      const s = parseInt(timer % 60, 10);
+      el.textContent = (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+      if (--timer < 0) {
+        clearInterval(timerInterval);
+        el.textContent = '00:00 (Hết hạn)';
+      }
+    }, 1000);
+  }
+
+  async function confirmPaymentFinished() {
+    if (!activeOrder) return;
+
+    try {
+      if (typeof db !== 'undefined' && db.collection) {
+        await db.collection('cert_orders').doc(activeOrder.orderId).set(activeOrder, { merge: true });
+      }
+
+      const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
+      local.unshift(activeOrder);
+      localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 50)));
+      localStorage.setItem('ipaviet_user_udid', activeOrder.udid);
+
+      try {
+        fetch(GOOGLE_API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            action: 'buy_cert_pending',
+            uid: activeOrder.uid,
+            productId: activeOrder.planId,
+            productName: activeOrder.productName,
+            price: activeOrder.price,
+            amount: 1,
+            udid: activeOrder.udid,
+            orderId: activeOrder.orderId
+          })
+        });
+      } catch(e) {}
+
+      try {
+        const teleMsg = `🛒 <b>ĐƠN HÀNG CHUNGCHI365 MỚI</b>\n` +
+          `💳 Mã đơn: <code>${activeOrder.orderId}</code>\n` +
+          `📦 Gói: <b>${activeOrder.planName}</b>\n` +
+          `💰 Giá tiền: <b>${activeOrder.price.toLocaleString('vi-VN')}đ</b>\n` +
+          `📱 UDID: <code>${activeOrder.udid}</code>\n` +
+          `👤 Email: <b>${activeOrder.customerEmail}</b>\n` +
+          `🏦 Ngân hàng: <b>ACB 22703611 - TRAN NGUYEN MINH QUI</b>`;
+
+        fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_ADMIN_CHAT_ID,
+            text: teleMsg,
+            parse_mode: 'HTML'
+          })
+        });
+      } catch(e) {}
+
+      closeVietQrModal();
+
+      Swal.fire({
+        title: 'Ghi Nhận Đơn Hàng Thành Công!',
+        html: `Mã đơn của bạn: <strong style="color: #e10e0e;">${activeOrder.orderId}</strong><br>Hệ thống đang tiến hành kích hoạt chứng chỉ với Apple Developer. Bạn có thể tra cứu đơn bất kỳ lúc nào!`,
+        icon: 'success',
+        confirmButtonText: 'Tra Cứu Đơn Hàng',
+        confirmButtonColor: '#e10e0e'
+      }).then(() => {
+        window.location.href = `tra-cuu.html?q=${activeOrder.orderId}`;
+      });
+    } catch(err) {
+      Swal.fire('Lỗi', err.message, 'error');
+    }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('ccToast');
+    if (t) {
+      t.textContent = msg;
+      t.style.display = 'block';
+      clearTimeout(window._tTimer);
+      window._tTimer = setTimeout(() => { t.style.display = 'none'; }, 2600);
+    }
+  }
+
+  function copyText(val, msg = 'Đã sao chép!') {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(val).then(() => showToast(msg));
+    } else {
+      const el = document.createElement('textarea');
+      el.value = val;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast(msg);
+    }
+  }
+
+  // Setup Theme Switcher
+  function setupThemeSwitcher() {
+    const group = document.querySelector('[role="group"][aria-label*="hiển thị"], [role="group"][aria-label*="hiển thị"]');
+    if (!group) return;
+    const buttons = group.querySelectorAll('button');
+    if (buttons.length < 3) return;
+
+    const [btnToi, btnSang, btnMay] = buttons;
+
+    function applyTheme(t) {
+      localStorage.setItem('cc-giao-dien', t);
+      const effective = (t === 'may') ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'sang' : 'toi') : t;
+      document.documentElement.setAttribute('data-cc-xem', effective);
+
+      buttons.forEach(b => {
+        b.className = 'rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label';
+        b.setAttribute('aria-pressed', 'false');
+      });
+
+      const activeBtn = (t === 'toi') ? btnToi : (t === 'sang') ? btnSang : btnMay;
+      activeBtn.className = 'rounded-full px-3 py-1.5 text-footnote font-semibold transition bg-surface text-label shadow-sm';
+      activeBtn.setAttribute('aria-pressed', 'true');
+    }
+
+    btnToi.addEventListener('click', () => applyTheme('toi'));
+    btnSang.addEventListener('click', () => applyTheme('sang'));
+    btnMay.addEventListener('click', () => applyTheme('may'));
+
+    const savedTheme = localStorage.getItem('cc-giao-dien') || 'toi';
+    applyTheme(savedTheme);
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    setupEntitlementsToggle();
+    setupThemeSwitcher();
+
+    // Check incoming udid from profile
+    const params = new URLSearchParams(window.location.search);
+    const incomingUdid = params.get('udid');
+    if (incomingUdid) {
+      choosePackage('pro-plus');
+      const input = document.getElementById('udid');
+      if (input) input.value = incomingUdid;
+      document.getElementById('lblCapturedUdid').textContent = incomingUdid;
+      document.getElementById('bannerUdidSuccess').style.display = 'block';
+    }
+  });
+</script>
+
 </body>
 </html>
