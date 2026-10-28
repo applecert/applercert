@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Đặt Mua Chứng Chỉ Apple Developer • IPAVIET Enterprise</title>
+  <meta name="description" content="Cổng thanh toán tự động VietQR ACB và đăng ký chứng chỉ Apple Developer P12, MobileProvision chính hãng IPAVIET.">
+  <link rel="icon" type="image/png" href="https://certapple.com/assets/image/logo/logo-cert.png">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- SweetAlert2 & Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #080A10;
+      --surface-card: #101422;
+      --surface-elevated: #181E32;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-active: rgba(59, 130, 246, 0.5);
+      --text-main: #FFFFFF;
+      --text-muted: #94A3B8;
+      --accent-blue: #0A84FF;
+      --accent-green: #30D158;
+      --accent-amber: #FF9F0A;
+      --accent-purple: #BF5AF2;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(10, 132, 255, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(191, 90, 242, 0.06) 0%, transparent 40%);
+    }
+
+    /* ─── Top Header ─── */
+    .checkout-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(8, 10, 16, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 20px;
+    }
+    .checkout-nav-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #FFF;
+    }
+    .brand-logo-badge {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0A84FF, #6366F1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(10, 132, 255, 0.35);
+    }
+    .brand-name {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 980px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: #E2E8F0;
+      font-size: 12.5px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateX(-2px);
+    }
+
+    /* ─── Breadcrumbs ─── */
+    .breadcrumbs {
+      max-width: 1140px;
+      margin: 20px auto 0;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .breadcrumbs a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .breadcrumbs a:hover {
+      color: #FFF;
+    }
+
+    /* ─── Main Container ─── */
+    .checkout-container {
+      max-width: 1140px;
+      margin: 16px auto 60px;
+      padding: 0 20px;
+      width: 100%;
+      flex: 1;
+    }
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .checkout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─── Cards & Sections ─── */
+    .card-panel {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .plan-summary-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(10, 132, 255, 0.15);
+      color: #60A5FA;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .plan-title {
+      font-size: 24px;
+      font-weight: 800;
+      margin: 8px 0 4px;
+      letter-spacing: -0.02em;
+    }
+
+    .plan-price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .plan-price-curr {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--accent-green);
+    }
+    .plan-price-old {
+      font-size: 16px;
+      color: #64748B;
+      text-decoration: line-through;
+    }
+
+    .spec-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+    }
+    .spec-item:last-child { border-bottom: none; }
+    .spec-icon {
+      color: var(--accent-blue);
+      flex-shrink: 0;
+    }
+
+    /* ─── Form Inputs ─── */
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .step-number {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFF;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #CBD5E1;
+      margin-bottom: 8px;
+    }
+    .input-field {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #FFF;
+      font-size: 13.5px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-field:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+    }
+
+    .udid-input-wrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .btn-action-small {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      color: #FFF;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.2s ease;
+    }
+    .btn-action-small:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .udid-status-msg {
+      font-size: 11.5px;
+      margin-top: 6px;
+      display: none;
+    }
+
+    /* ─── Payment Sticky Panel ─── */
+    .payment-panel {
+      position: sticky;
+      top: 90px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    }
+    .qr-frame {
+      background: #FFFFFF;
+      padding: 14px;
+      border-radius: 16px;
+      display: inline-block;
+      margin: 12px auto;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    }
+    .qr-frame img {
+      width: 210px;
+      height: 210px;
+      display: block;
+      border-radius: 8px;
+    }
+
+    .bank-info-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    .bank-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .bank-row:last-child { border-bottom: none; }
+    .bank-label { color: var(--text-muted); }
+    .copy-chip {
+      background: rgba(10, 132, 255, 0.18);
+      color: #60A5FA;
+      border: 1px solid rgba(10, 132, 255, 0.3);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .timer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #FBBF24;
+      padding: 4px 10px;
+      border-radius: 980px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .btn-submit-order {
+      width: 100%;
+      background: linear-gradient(135deg, #10B981, #059669);
+      color: #FFF;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 14px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s ease;
+    }
+    .btn-submit-order:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(16, 185, 129, 0.5);
+    }
+
+    /* ─── Success Screen (Hóa Đơn & Nhận Hàng) ─── */
+    #viewOrderSuccess {
+      display: none;
+      max-width: 760px;
+      margin: 40px auto;
+      text-align: center;
+    }
+    .success-card {
+      background: var(--surface-card);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 24px;
+      padding: 40px 28px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    }
+    .success-icon-wrap {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      color: #10B981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header class="checkout-nav">
+    <div class="checkout-nav-inner">
+      <a href="index.html" class="brand-link">
+        <div class="brand-logo-badge">
+          <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="brand-name">IPAVIET Certificate</div>
+          <div class="brand-sub">Apple Developer Provisioning</div>
+        </div>
+      </a>
+
+      <a href="index.html" class="back-btn">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Quay Lại Bảng Gói
+      </a>
+    </div>
+  </header>
+
+  <!-- Breadcrumbs -->
+  <div class="breadcrumbs">
+    <a href="index.html">Trang Chủ</a>
+    <span>/</span>
+    <a href="index.html">Gói Cước</a>
+    <span>/</span>
+    <span style="color: #FFF; font-weight: 600;">Đăng Ký & Thanh Toán</span>
+  </div>
+
+  <!-- Main Checkout Area -->
+  <main class="checkout-container">
+    
+    <!-- 1. CHECKOUT FORM VIEW -->
+    <div id="viewCheckoutForm" class="checkout-grid">
+      
+      <!-- Cột Trái: Chi Tiết Gói & Thông Tin Thiết Bị -->
+      <div>
+        
+        <!-- Package Summary Card -->
+        <div class="card-panel">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <span class="plan-summary-badge" id="displayPlanBadge">Cupertino Certified</span>
+            <span style="font-size: 11px; color: #10B981; font-weight: 700; background: rgba(16, 185, 129, 0.15); padding: 3px 8px; border-radius: 6px;">
+              ● Cụm Ký Sẵn Sàng
+            </span>
+          </div>
+
+          <h2 class="plan-title" id="displayPlanName">TIME 24h PRO+</h2>
+          
+          <div class="plan-price-row">
+            <span class="plan-price-curr" id="displayPriceCurr">180,000đ</span>
+            <span class="plan-price-old" id="displayPriceOld">200,000đ</span>
+            <span style="font-size: 12px; color: var(--text-muted); margin-left: auto;" id="displayPriceUsd">($12.00 USDT)</span>
+          </div>
+
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+            <div class="spec-item">
+              <i data-lucide="clock" class="w-4 h-4 spec-icon"></i>
+              <span>Thời gian cấp cert: <strong id="displayWaitingTime">24 - 28 Giờ</strong></span>
+            </div>
+            <div class="spec-item">
+              <i data-lucide="shield" class="w-4 h-4 spec-icon"></i>
+              <span>Thời hạn bảo hành 1 đổi 1: <strong id="displayWarranty">240 Ngày (1 Năm Sử Dụng)</strong></span>
+            </div>
+            <div class="spec-item">
+              <i data-lucide="file-check-2" class="w-4 h-4 spec-icon"></i>
+              <span>Tệp chứng chỉ: <strong>File .P12 + .MobileProvision (Full Quyền)</strong></span>
+            </div>
+            <div class="spec-item">
+              <i data-lucide="zap" class="w-4 h-4 spec-icon"></i>
+              <span>Tương thích: <strong>iOS 14 đến iOS 18.x (Tự động fix lỗi văng app)</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 1: Nhập Mã UDID Thiết Bị -->
+        <div class="card-panel">
+          <div class="step-header">
+            <div class="step-number">1</div>
+            <div class="step-title">Xác Thực Mã UDID Thiết Bị Apple (*)</div>
+          </div>
+
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+            Mã UDID là định danh phần cứng duy nhất của iPhone/iPad được đăng ký trực tiếp lên hệ thống Apple Developer để cấp quyền ký app vĩnh viễn.
+          </p>
+
+          <label class="input-label">Mã UDID Thiết Bị (25 ký tự có gạch ngang hoặc 40 ký tự):</label>
+          <div class="udid-input-wrap">
+            <input type="text" id="inputUdid" placeholder="Ví dụ: 00008030-001298765432... hoặc 40 ký tự hex" oninput="validateUdid()" class="input-field" style="font-family: monospace;">
+            <button type="button" onclick="pasteUdid()" class="btn-action-small">
+              <i data-lucide="clipboard" class="w-3.5 h-3.5"></i> Dán
+            </button>
+          </div>
+          <div id="udidFeedback" class="udid-status-msg"></div>
+
+          <!-- Nút Lấy UDID Tự Động -->
+          <div style="background: rgba(10, 132, 255, 0.08); border: 1px dashed rgba(10, 132, 255, 0.3); border-radius: 12px; padding: 12px 14px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 12px; color: #BFDBFE;">
+              💡 <strong>Chưa biết lấy UDID?</strong> Cài cấu hình để máy tự đọc chính xác 100%:
+            </div>
+            <a href="get_udid.mobileconfig" class="btn-action-small" style="background: var(--accent-blue); border: none; padding: 7px 14px;">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Lấy UDID Tự Động
+            </a>
+          </div>
+        </div>
+
+        <!-- Step 2: Thông Tin Nhận Hàng -->
+        <div class="card-panel">
+          <div class="step-header">
+            <div class="step-number">2</div>
+            <div class="step-title">Thông Tin Liên Hệ Nhận Chứng Chỉ</div>
+          </div>
+
+          <div style="margin-bottom: 14px;">
+            <label class="input-label">Email hoặc Số Zalo / Telegram:</label>
+            <input type="text" id="inputContact" placeholder="Nhập email hoặc SĐT Zalo để nhận thông báo..." class="input-field">
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Hệ thống sẽ gửi thông báo và link tải file cert ngay khi Apple duyệt xong.</div>
+          </div>
+
+          <div>
+            <label class="input-label">Ghi Chú Đơn Hàng (Tùy chọn):</label>
+            <input type="text" id="inputNote" placeholder="Ví dụ: Cần cert ký ESign, iPhone 15 Pro Max..." class="input-field">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Cột Phải: Cổng Thanh Toán Auto Bank VietQR ACB -->
+      <div>
+        <div class="payment-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 11px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em;">Thanh Toán Tự Động</span>
+            <div class="timer-badge">
+              <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+              <span id="countdownTimer">15:00</span>
+            </div>
+          </div>
+
+          <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">Cổng Auto Bank VietQR ACB</h3>
+          <p style="font-size: 12px; color: var(--text-muted);">Quét mã bằng app ngân hàng bất kỳ để hệ thống tự động xác nhận sau 3 giây.</p>
+
+          <!-- QR Code Display -->
+          <div style="text-align: center;">
+            <div class="qr-frame">
+              <img id="qrImage" src="" alt="VietQR ACB">
+            </div>
+            <div style="font-size: 11.5px; color: #10B981; font-weight: 600;">
+              ✓ Tự động điền số tiền và nội dung chuyển khoản
+            </div>
+          </div>
+
+          <!-- Bank Details Table -->
+          <div class="bank-info-box">
+            <div class="bank-row">
+              <span class="bank-label">Ngân hàng:</span>
+              <strong>ACB (Ngân Hàng Á Châu)</strong>
+            </div>
+            <div class="bank-row">
+              <span class="bank-label">Số tài khoản:</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <strong style="color: #60A5FA; font-family: monospace; font-size: 14px;">22703611</strong>
+                <button class="copy-chip" onclick="copyText('22703611', 'Đã chép số tài khoản ACB!')">Copy</button>
+              </div>
+            </div>
+            <div class="bank-row">
+              <span class="bank-label">Chủ tài khoản:</span>
+              <strong>TRAN NGUYEN MINH QUI</strong>
+            </div>
+            <div class="bank-row">
+              <span class="bank-label">Số tiền:</span>
+              <strong id="displayBankAmount" style="color: var(--accent-green); font-size: 15px;">180,000đ</strong>
+            </div>
+            <div class="bank-row">
+              <span class="bank-label">Nội dung CK:</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <strong id="displayOrderSyntax" style="color: #FBBF24; font-family: monospace; font-size: 14px;">CERT892104</strong>
+                <button class="copy-chip" onclick="copyOrderSyntax()">Copy</button>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="confirmOrderPayment()" class="btn-submit-order">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i> Tôi Đã Chuyển Khoản Thành Công
+          </button>
+
+          <div style="text-align: center; margin-top: 14px; font-size: 11.5px; color: var(--text-muted);">
+            Cần hỗ trợ gấp? <a href="https://t.me/ipaviet" target="_blank" style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">Chat với Kỹ Thuật Viên 24/7</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 2. ORDER SUCCESS & RECEIPT VIEW -->
+    <div id="viewOrderSuccess">
+      <div class="success-card">
+        <div class="success-icon-wrap">
+          <i data-lucide="check" class="w-10 h-10"></i>
+        </div>
+
+        <span style="font-size: 11.5px; font-weight: 800; color: #10B981; text-transform: uppercase; letter-spacing: 0.08em;">Giao Dịch Đã Ghi Nhận Thành Công</span>
+        <h2 style="font-size: 26px; font-weight: 800; margin: 6px 0 10px;">Đơn Hàng Chứng Chỉ Đang Được Kích Hoạt</h2>
+        <p style="font-size: 13.5px; color: var(--text-muted); max-width: 580px; margin: 0 auto 24px; line-height: 1.6;">
+          Hệ thống đã tự động đẩy thông tin UDID thiết bị lên cụm máy chủ Apple Developer. 
+          Bạn có thể chụp lại màn hình hoặc lưu mã đơn hàng dưới đây để kiểm tra tiến độ trả file bất kỳ lúc nào!
+        </p>
+
+        <!-- Receipt Box -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px; text-align: left; max-width: 540px; margin: 0 auto 24px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span style="color: var(--text-muted);">Mã Đơn Hàng:</span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <strong id="receiptOrderId" style="color: #60A5FA; font-family: monospace; font-size: 15px;">CERT892104</strong>
+              <button class="copy-chip" onclick="copyReceiptOrder()">Copy</button>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span style="color: var(--text-muted);">Gói Đăng Ký:</span>
+            <strong id="receiptPlanName">TIME 24h PRO+</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span style="color: var(--text-muted);">Mã UDID:</span>
+            <span id="receiptUdid" style="font-family: monospace; color: #E2E8F0;">00008030-001298765432...</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span style="color: var(--text-muted);">Trạng Thái:</span>
+            <span style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">
+              Đang Trong Hàng Đợi Ký Cấp Phép
+            </span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Bảo Hành Đến Ngày:</span>
+            <strong id="receiptWarranty" style="color: var(--accent-green);">--/--/----</strong>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+          <a href="index.html" class="btn-action-small" style="padding: 10px 20px; font-size: 13px;">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Về Cửa Hàng
+          </a>
+          <a id="btnCheckOrderStatus" href="index.html" class="btn-action-small" style="background: var(--accent-blue); border: none; padding: 10px 20px; font-size: 13px;">
+            <i data-lucide="search" class="w-4 h-4"></i> Tra Cứu Nhận File Cert
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const BANK_ACC_NO = "22703611";
+    const BANK_ACC_NAME = "TRAN NGUYEN MINH QUI";
+    const TELEGRAM_BOT_TOKEN = "7986654042:AAHHbevmrLVmWSJ5dXIsQssUmRM5tPQWQjk";
+    const TELEGRAM_ADMIN_CHAT_ID = "8103429932";
+    const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec";
+
+    // Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+      authDomain: "ipaviet-st.firebaseapp.com",
+      projectId: "ipaviet-st",
+      storageBucket: "ipaviet-st.firebasestorage.app",
+      messagingSenderId: "127619650916",
+      appId: "1:127619650916:web:fc8904c99804eeb7539671"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let currentOrder = {
+      orderId: 'CERT' + Math.floor(100000 + Math.random() * 900000),
+      planId: 'TIME24hPRO',
+      planName: 'TIME 24h PRO+',
+      price: 180000,
+      warranty: '240 Ngày',
+      waitingTime: '24 - 28 Giờ'
+    };
+
+    // Load URL params or localStorage
+    function loadPlanFromContext() {
+      const p = new URLSearchParams(window.location.search);
+      const urlPlan = p.get('plan') || p.get('id');
+      const urlName = p.get('name');
+      const urlPrice = p.get('price');
+      const urlWarranty = p.get('warranty');
+      const urlUdid = p.get('udid');
+
+      if (urlName) currentOrder.planName = urlName;
+      if (urlPrice) currentOrder.price = parseInt(urlPrice, 10) || 180000;
+      if (urlPlan) currentOrder.planId = urlPlan;
+      if (urlWarranty) currentOrder.warranty = urlWarranty;
+
+      // Also check saved plan if no query
+      if (!urlPlan) {
+        const saved = localStorage.getItem('cert_selected_plan');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            Object.assign(currentOrder, parsed);
+          } catch(e) {}
+        }
+      }
+
+      // Render UI
+      document.getElementById('displayPlanName').textContent = currentOrder.planName;
+      document.getElementById('displayPriceCurr').textContent = currentOrder.price.toLocaleString('vi-VN') + 'đ';
+      document.getElementById('displayBankAmount').textContent = currentOrder.price.toLocaleString('vi-VN') + 'đ';
+      document.getElementById('displayOrderSyntax').textContent = currentOrder.orderId;
+      document.getElementById('displayWarranty').textContent = currentOrder.warranty + ' (Bảo Hành 1 Đổi 1)';
+      
+      // Update Old Price & USD
+      const oldPrice = Math.round(currentOrder.price * 1.15 / 10000) * 10000;
+      document.getElementById('displayPriceOld').textContent = oldPrice.toLocaleString('vi-VN') + 'đ';
+      const usdPrice = (currentOrder.price / 25000).toFixed(2);
+      document.getElementById('displayPriceUsd').textContent = `($${usdPrice} USDT)`;
+
+      // Render VietQR ACB
+      const qrUrl = `https://api.vietqr.io/image/970416-${BANK_ACC_NO}-print.jpg?amount=${currentOrder.price}&addInfo=${currentOrder.orderId}&accountName=${encodeURIComponent(BANK_ACC_NAME)}`;
+      document.getElementById('qrImage').src = qrUrl;
+
+      // Fill UDID
+      const initialUdid = urlUdid || localStorage.getItem('ipaviet_user_udid') || '';
+      if (initialUdid) {
+        const input = document.getElementById('inputUdid');
+        input.value = initialUdid;
+        validateUdid();
+      }
+    }
+
+    function validateUdid() {
+      const input = document.getElementById('inputUdid');
+      const msg = document.getElementById('udidFeedback');
+      if (!input || !msg) return false;
+
+      const val = input.value.trim().toUpperCase();
+      const is25 = /^[0-9A-F]{8}-[0-9A-F]{16}$/i.test(val);
+      const is40 = /^[0-9A-F]{40}$/i.test(val);
+
+      if (val.length === 0) {
+        msg.style.display = 'none';
+        return false;
+      }
+
+      if (is25 || is40) {
+        msg.style.display = 'block';
+        msg.style.color = '#30D158';
+        msg.innerHTML = '✓ Mã UDID phần cứng Apple hợp lệ.';
+        localStorage.setItem('ipaviet_user_udid', val);
+        return true;
+      } else {
+        msg.style.display = 'block';
+        msg.style.color = '#FF9F0A';
+        msg.innerHTML = 'UDID Apple gồm 25 ký tự có gạch ngang (iPhone mới) hoặc 40 ký tự hex.';
+        return false;
+      }
+    }
+
+    async function pasteUdid() {
+      try {
+        const text = await navigator.clipboard.readText();
+        const input = document.getElementById('inputUdid');
+        if (input && text) {
+          input.value = text.trim();
+          validateUdid();
+          Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã dán UDID từ bộ nhớ tạm!', timer: 1500, showConfirmButton: false });
+        }
+      } catch(e) {
+        Swal.fire('Chú ý', 'Vui lòng cấp quyền clipboard hoặc gõ trực tiếp!', 'info');
+      }
+    }
+
+    function copyText(val, msg) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(val).then(() => {
+          Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: msg, timer: 1500, showConfirmButton: false });
+        });
+      }
+    }
+
+    function copyOrderSyntax() {
+      copyText(currentOrder.orderId, 'Đã chép nội dung CK: ' + currentOrder.orderId);
+    }
+
+    function copyReceiptOrder() {
+      copyText(currentOrder.orderId, 'Đã chép mã đơn hàng: ' + currentOrder.orderId);
+    }
+
+    // Countdown Timer
+    function startTimer(durationSeconds) {
+      let timer = durationSeconds;
+      const display = document.getElementById('countdownTimer');
+      const interval = setInterval(() => {
+        const minutes = parseInt(timer / 60, 10);
+        const seconds = parseInt(timer % 60, 10);
+        display.textContent = (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds < 10 ? "0" + seconds : seconds);
+        if (--timer < 0) {
+          clearInterval(interval);
+          display.textContent = "00:00 (Hết hạn)";
+        }
+      }, 1000);
+    }
+
+    function calculateWarrantyDate(warrantyText) {
+      const days = parseInt(warrantyText, 10) || 200;
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    async function confirmOrderPayment() {
+      const input = document.getElementById('inputUdid');
+      const udid = input ? input.value.trim().toUpperCase() : '';
+
+      if (!udid) {
+        Swal.fire({
+          title: 'Thiếu Mã UDID Thiết Bị',
+          text: 'Vui lòng nhập hoặc sử dụng tính năng "Lấy UDID Tự Động" để đăng ký chứng chỉ Apple!',
+          icon: 'warning',
+          confirmButtonColor: '#0A84FF'
+        });
+        return;
+      }
+
+      const contact = document.getElementById('inputContact').value.trim();
+      const note = document.getElementById('inputNote').value.trim();
+      const warrantyDate = calculateWarrantyDate(currentOrder.warranty);
+
+      const orderData = {
+        orderId: currentOrder.orderId,
+        uid: 'CLIENT_' + Date.now(),
+        customerEmail: contact || 'guest@ipaviet.site',
+        customerName: contact || 'Khách Hàng',
+        customerContact: contact,
+        planId: currentOrder.planId,
+        planName: currentOrder.planName,
+        productName: currentOrder.planName,
+        price: currentOrder.price,
+        amount: 1,
+        udid: udid,
+        note: note,
+        createdAt: new Date().toISOString(),
+        status: 'PAID_PROCESSING',
+        revokeStatus: 'ACTIVE',
+        warrantyUntil: warrantyDate,
+        certFileUrl: '',
+        p12Url: '',
+        certPass: '1',
+        appLinks: 'VSign: https://ipaviet.site/vsign\nESign: https://ipaviet.site/esign\nTrollStore: https://ipaviet.site/trollstore',
+        guideLinks: 'Hướng dẫn cài ESign: https://ipaviet.site/guides/esign\nHướng dẫn ký IPA: https://ipaviet.site/guides/sign',
+        paymentMethod: 'VIETQR_ACB_AUTO'
+      };
+
+      try {
+        // 1. Save to Firestore
+        if (typeof db !== 'undefined' && db.collection) {
+          await db.collection('cert_orders').doc(currentOrder.orderId).set(orderData, { merge: true });
+        }
+
+        // 2. Save Local Cache
+        const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
+        local.unshift(orderData);
+        localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 50)));
+
+        // 3. Post to Google Sheet CERTAPPLE
+        try {
+          fetch(GOOGLE_API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              action: 'buy_cert_pending',
+              uid: orderData.uid,
+              productId: orderData.planId,
+              productName: orderData.productName,
+              price: orderData.price,
+              amount: 1,
+              udid: orderData.udid,
+              orderId: orderData.orderId
+            })
+          });
+        } catch(e) {}
+
+        // 4. Send Rich Telegram Alert to Admin
+        try {
+          const teleMsg = `🛒 <b>ĐƠN HÀNG CERT MỚI (CHECKOUT)</b>\n` +
+            `💳 Mã đơn: <code>${orderData.orderId}</code>\n` +
+            `📦 Gói: <b>${orderData.planName}</b>\n` +
+            `💰 Giá tiền: <b>${orderData.price.toLocaleString('vi-VN')}đ</b>\n` +
+            `📱 UDID: <code>${udid}</code>\n` +
+            `👤 Liên hệ: <b>${contact || 'Chưa cung cấp'}</b>\n` +
+            `📝 Ghi chú: <i>${note || 'Không có'}</i>\n` +
+            `🏦 Ngân hàng: <b>ACB 22703611 - TRAN NGUYEN MINH QUI</b>\n` +
+            `👉 Hãy vào trang <b>admin.html</b> để cấp cert và trả file cho khách!`;
+
+          fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_ADMIN_CHAT_ID,
+              text: teleMsg,
+              parse_mode: 'HTML'
+            })
+          });
+        } catch(e) {}
+
+        // 5. Show Success Screen
+        document.getElementById('viewCheckoutForm').style.display = 'none';
+        document.getElementById('viewOrderSuccess').style.display = 'block';
+
+        document.getElementById('receiptOrderId').textContent = orderData.orderId;
+        document.getElementById('receiptPlanName').textContent = orderData.planName;
+        document.getElementById('receiptUdid').textContent = orderData.udid;
+        document.getElementById('receiptWarranty').textContent = orderData.warrantyUntil;
+        document.getElementById('btnCheckOrderStatus').href = `index.html?order=${orderData.orderId}`;
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch(err) {
+        Swal.fire('Lỗi', err.message, 'error');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      loadPlanFromContext();
+      startTimer(15 * 60);
+    });
+  </script>
+</body>
+</html>
