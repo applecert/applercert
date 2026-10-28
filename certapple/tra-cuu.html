@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="vi" data-cc-xem="toi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>Tra cứu đơn hàng — Chungchi365</title>
+  <meta name="description" content="Nhập mã đơn hoặc UDID để xem trạng thái chứng chỉ và tải file về."/>
+  <meta name="theme-color" content="#0b0e14"/>
+  <link rel="icon" type="image/png" href="assets/favicon.png"/>
+  <link rel="apple-touch-icon" href="assets/favicon.png"/>
+
+  <!-- Google Fonts: Inter / SF Pro -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Core Chungchi365 Stylesheet -->
+  <link rel="stylesheet" href="chungchi365.css"/>
+
+  <!-- SweetAlert2 & Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    (function(){
+      var N = { toi: '#0b0e14', sang: '#f6f7f9' };
+      function d(t) {
+        document.documentElement.setAttribute('data-cc-xem', t);
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute('content', N[t] || N.toi);
+      }
+      try {
+        var v = localStorage.getItem('cc-giao-dien') || 'toi';
+        if (v !== 'toi' && v !== 'sang' && v !== 'may') v = 'toi';
+        d(v === 'may' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'sang' : 'toi') : v);
+      } catch(e) {
+        d('toi');
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <div class="ios-root flex min-h-[100dvh] flex-col" style="--flame-toi:#e10e0e;--flame-bright-toi:#f33939;--flame-deep-toi:#f56060;--flame-on-fill-toi:#f33939;--flame-press-toi:#a70a0a;--flame-soft-toi:rgba(225, 14, 14, 0.14);--flame-bg-toi:#e10e0e;--on-flame-toi:#ffffff;--flame-sang:#e10e0e;--flame-bright-sang:#c40c0c;--flame-deep-sang:#a70a0a;--flame-on-fill-sang:#c40c0c;--flame-press-sang:#a70a0a;--flame-soft-sang:rgba(225, 14, 14, 0.1);--flame-bg-sang:#e10e0e;--on-flame-sang:#ffffff">
+
+    <!-- Header Brand -->
+    <div class="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+      <div class="flex items-center justify-between">
+        <a class="ios-tap inline-flex min-w-0 items-center gap-2.5 py-1" aria-label="Chungchi365 — trang chủ" href="index.html">
+          <img src="assets/logo.png" alt="Chungchi365 Logo" class="h-7 w-7 shrink-0 rounded-lg"/>
+          <span class="truncate text-headline text-label font-bold">Chungchi365</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <a href="index.html#bang-gia" class="ios-btn ios-btn-plain px-3 py-1.5 text-subhead text-label-2 hover:text-label">Bảng giá</a>
+          <a href="tra-cuu.html" class="ios-btn ios-btn-tinted px-3 py-1.5 text-subhead text-flame">Tra cứu</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-4 sm:px-6">
+      <div class="mx-auto max-w-xl pb-16 pt-6">
+        <div class="ios-reveal">
+          <h1 class="text-title-1 font-extrabold tracking-tight text-label">Tra cứu đơn hàng</h1>
+          <p class="mt-2 text-body text-label-2">Không cần đăng nhập. Dán mã đơn, UDID thiết bị, hoặc email bạn đã dùng khi đặt.</p>
+        </div>
+
+        <div class="ios-reveal mt-6">
+          <form onsubmit="handleLookupSubmit(event)">
+            <label for="inputQuery" class="mb-2 block px-1 text-footnote font-semibold uppercase tracking-wide text-label-2">Mã đơn, UDID hoặc email</label>
+            <div class="ios-sheet px-4 py-2 border border-separator">
+              <input id="inputQuery" class="ios-field font-mono text-callout w-full bg-transparent text-label outline-none py-1.5" placeholder="CC365_123456 · 00008030-000A1B2C… · ban@email.com" minlength="3" required autofocus autocomplete="off" spellcheck="false"/>
+            </div>
+            <p class="mt-2 px-1 text-footnote text-label-2">Không cần chọn loại — hệ thống tự nhận ra bạn đang nhập gì.</p>
+            <button type="submit" class="ios-btn ios-btn-filled mt-5 w-full py-3 text-base font-bold">Tra cứu</button>
+          </form>
+        </div>
+
+        <!-- Kết quả tra cứu -->
+        <div id="lookupResultsArea" class="mt-8"></div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 border-t border-separator bg-surface">
+      <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+        <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <div class="flex items-center gap-2.5">
+              <img src="assets/logo.png" alt="" class="h-7 w-7 rounded-lg"/>
+              <span class="text-headline text-label font-bold">Chungchi365</span>
+            </div>
+            <p class="mt-3 max-w-xs text-footnote text-label-2">
+              Chứng chỉ ký ứng dụng iOS dành cho nhà phát triển, cấp tự động theo UDID từng thiết bị.
+            </p>
+          </div>
+
+          <div>
+            <p class="text-footnote font-semibold uppercase tracking-wide text-label">Dịch vụ</p>
+            <ul class="mt-3 space-y-2">
+              <li><a class="text-subhead text-label-2 hover:text-label" href="index.html#bang-gia">Bảng giá</a></li>
+              <li><a class="text-subhead text-label-2 hover:text-label" href="tra-cuu.html">Tra cứu đơn</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <p class="text-footnote font-semibold uppercase tracking-wide text-label">Tài khoản</p>
+            <ul class="mt-3 space-y-2">
+              <li><a class="text-subhead text-label-2 hover:text-label" href="tra-cuu.html">Xem đơn đã mua</a></li>
+              <li><a class="text-subhead text-label-2 hover:text-label" href="../admin.html" target="_blank">Quản trị viên</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <p class="text-footnote font-semibold uppercase tracking-wide text-label">Hỗ trợ</p>
+            <ul class="mt-3 space-y-2">
+              <li><a class="text-subhead text-label-2 hover:text-label" href="tra-cuu.html">Kiểm tra trạng thái đơn</a></li>
+              <li>
+                <a href="https://t.me/chungchi365cert" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-subhead text-label-2 hover:text-label">
+                  <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 3.5c4 0 7 2.5 7 5.7s-3 5.7-7 5.7c-.7 0-1.4-.08-2-.23L4.5 16.5l.6-2.4C3.8 13 3 11.2 3 9.2 3 6 6 3.5 10 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+                  </svg>
+                  <span class="min-w-0">
+                    <span class="block truncate">Telegram</span>
+                    <span class="block truncate text-footnote text-label-3">@chungchi365cert</span>
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-10 border-t border-separator pt-6">
+          <p class="max-w-3xl text-caption leading-relaxed text-label-3">
+            Dịch vụ chỉ dành cho lập trình viên thử nghiệm ứng dụng do chính mình phát triển hoặc được phép phân phối. Nghiêm cấm dùng để phát tán ứng dụng vi phạm bản quyền, phần mềm bẻ khoá, hoặc bất kỳ mục đích nào trái với quy định của Apple và pháp luật Việt Nam. Khách hàng tự chịu trách nhiệm về nội dung ứng dụng mình ký; chúng tôi không kiểm duyệt và không chịu trách nhiệm cho việc sử dụng sai mục đích.
+          </p>
+
+          <div class="mt-4 flex flex-wrap items-center gap-3">
+            <div role="group" aria-label="Chế độ hiển thị" class="inline-flex gap-1 rounded-full bg-fill p-1">
+              <button type="button" onclick="setTheme('toi')" id="btnThemeToi" class="rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label">Tối</button>
+              <button type="button" onclick="setTheme('sang')" id="btnThemeSang" class="rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label">Sáng</button>
+              <button type="button" onclick="setTheme('may')" id="btnThemeMay" class="rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label">Theo máy</button>
+            </div>
+            <p class="text-footnote text-label-2">© 2026 Chungchi365</p>
+          </div>
+        </div>
+      </div>
+      <div style="height:var(--thanh-duoi-cho, 60px)" aria-hidden="true"></div>
+    </footer>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="thanh-duoi chua-biet" aria-label="Điều hướng chính">
+      <a class="thanh-duoi-muc" aria-label="Trang chủ" href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path><path d="M5.5 9.5V20h13V9.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <span class="thanh-duoi-chu">Trang chủ</span>
+      </a>
+      <a class="thanh-duoi-muc" aria-label="Tra cứu" aria-current="page" href="tra-cuu.html">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.4" stroke="currentColor" stroke-width="1.9"></circle><path d="M15.8 15.8 21 21" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path></svg>
+        <span class="thanh-duoi-chu">Tra cứu</span>
+      </a>
+      <a class="thanh-duoi-muc" aria-label="Admin" href="../admin.html" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><path d="M4 12h10M11 8.5 14.5 12 11 15.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <span class="thanh-duoi-chu">Quản trị</span>
+      </a>
+    </nav>
+
+  </div>
+
+  <script>
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDummyKeyForCertAppleProduction",
+      authDomain: "applercert.firebaseapp.com",
+      projectId: "applercert",
+      storageBucket: "applercert.appspot.com",
+      messagingSenderId: "1029384756",
+      appId: "1:1029384756:web:abcdef123456"
+    };
+
+    let db;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+    } catch(e) {}
+
+    function setTheme(t) {
+      localStorage.setItem('cc-giao-dien', t);
+      var effective = (t === 'may') ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'sang' : 'toi') : t;
+      document.documentElement.setAttribute('data-cc-xem', effective);
+      updateThemeButtons(t);
+    }
+
+    function updateThemeButtons(t) {
+      ['toi', 'sang', 'may'].forEach(k => {
+        const btn = document.getElementById('btnTheme' + k.charAt(0).toUpperCase() + k.slice(1));
+        if (btn) {
+          if (k === t) {
+            btn.className = 'rounded-full px-3 py-1.5 text-footnote font-semibold transition bg-surface text-label shadow-sm';
+          } else {
+            btn.className = 'rounded-full px-3 py-1.5 text-footnote font-semibold transition text-label-2 hover:text-label';
+          }
+        }
+      });
+    }
+
+    async function handleLookupSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('inputQuery');
+      const container = document.getElementById('lookupResultsArea');
+      const key = input.value.trim().toUpperCase();
+
+      if (!key) return;
+
+      container.innerHTML = '<div class="text-center py-10 text-label-2"><p>Đang tra cứu dữ liệu Apple Developer…</p></div>';
+
+      try {
+        let matched = [];
+
+        // 1. LocalStorage
+        const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
+        matched = local.filter(o => {
+          const oId = (o.orderId || o.id || '').toUpperCase();
+          const oUdid = (o.udid || '').toUpperCase();
+          const oEmail = (o.customerEmail || '').toUpperCase();
+          return oId.includes(key) || oUdid.includes(key) || oEmail.includes(key);
+        });
+
+        // 2. Firestore
+        if (typeof db !== 'undefined' && db.collection) {
+          const docSnap = await db.collection('cert_orders').doc(key).get().catch(() => null);
+          if (docSnap && docSnap.exists) {
+            const data = { id: docSnap.id, ...docSnap.data() };
+            if (!matched.find(o => (o.orderId || o.id) === data.id)) matched.push(data);
+          }
+          const udidSnap = await db.collection('cert_orders').where('udid', '==', key).limit(10).get().catch(() => null);
+          if (udidSnap && !udidSnap.empty) {
+            udidSnap.forEach(d => {
+              const data = { id: d.id, ...d.data() };
+              if (!matched.find(o => (o.orderId || o.id) === data.id)) matched.push(data);
+            });
+          }
+        }
+
+        if (matched.length === 0) {
+          container.innerHTML = `
+            <div class="ios-sheet p-6 text-center border border-separator">
+              <p class="text-headline font-bold text-label mb-1">Không tìm thấy đơn hàng</p>
+              <p class="text-subhead text-label-2">Không có đơn nào khớp với "<strong>${key}</strong>". Vui lòng kiểm tra lại chính xác Mã đơn, UDID hoặc Email.</p>
+            </div>
+          `;
+          return;
+        }
+
+        renderResults(matched);
+      } catch(err) {
+        container.innerHTML = `<div class="p-4 text-red">Lỗi tra cứu: ${err.message}</div>`;
+      }
+    }
+
+    function renderResults(orders) {
+      const container = document.getElementById('lookupResultsArea');
+      container.innerHTML = '';
+
+      orders.forEach(ord => {
+        const isDone = (ord.status === 'COMPLETED');
+        let statusBadge = '<span class="rounded-full px-2.5 py-1 text-caption font-semibold bg-amber-500/15 text-amber-500">Đang chờ cấp cert</span>';
+        if (isDone) {
+          statusBadge = '<span class="rounded-full px-2.5 py-1 text-caption font-semibold bg-green/15 text-green">Đã cấp thành công</span>';
+        }
+
+        let fulfillHtml = '';
+        if (ord.certFileUrl || ord.p12Url) {
+          const dlUrl = ord.certFileUrl || ord.p12Url;
+          const pass = ord.certPass || '1';
+          fulfillHtml = `
+            <div class="mt-4 p-4 rounded-xl border border-green/30 bg-green/10 space-y-3">
+              <p class="font-bold text-green text-subhead flex items-center gap-1.5">✓ Tệp chứng chỉ Apple Developer đã sẵn sàng</p>
+              <a href="${dlUrl}" target="_blank" class="ios-btn ios-btn-filled w-full text-center block py-2.5 font-bold">Tải về tệp (.P12 / .Zip)</a>
+              <div class="flex items-center justify-between text-subhead bg-surface p-2.5 rounded-lg border border-separator">
+                <span class="text-label-2">Mật khẩu chứng chỉ:</span>
+                <strong class="font-mono text-flame font-bold">${pass}</strong>
+              </div>
+            </div>
+          `;
+        } else {
+          fulfillHtml = `
+            <div class="mt-4 p-3.5 rounded-xl border border-separator bg-surface-2 text-subhead text-label-2">
+              <p class="text-amber-500 font-semibold mb-1">Đang trong hàng đợi ký cấp phép</p>
+              Hệ thống đang tiến hành đăng ký UDID với Apple Developer và xuất tệp P12. Vui lòng quay lại kiểm tra sau ít phút!
+            </div>
+          `;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'ios-sheet p-5 mb-4 border border-separator';
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <strong class="font-mono text-headline text-label font-bold">${ord.orderId || ord.id}</strong>
+              <p class="text-footnote text-label-2 mt-0.5">${ord.planName || ord.productName || 'Chứng chỉ iOS'}</p>
+            </div>
+            <div>${statusBadge}</div>
+          </div>
+          <div class="space-y-1.5 text-subhead border-t border-separator pt-3 text-label-2">
+            <div class="flex justify-between"><span>Mã UDID:</span><span class="font-mono text-label text-xs">${(ord.udid || '').substring(0, 16)}...</span></div>
+            <div class="flex justify-between"><span>Hạn bảo hành:</span><strong class="text-green">${ord.warrantyUntil || 'Theo gói'}</strong></div>
+          </div>
+          ${fulfillHtml}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('cc-giao-dien') || 'toi';
+      updateThemeButtons(savedTheme);
+
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q');
+      if (q) {
+        const input = document.getElementById('inputQuery');
+        if (input) {
+          input.value = q;
+          handleLookupSubmit();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
