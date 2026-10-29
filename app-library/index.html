@@ -1,466 +1,571 @@
-<!DOCTYPE html>
-<html lang="vi" class="scroll-smooth antialiased">
+<!doctype html>
+<html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Kho Ứng Dụng IPA — IPAVIET OS</title>
-  <meta name="description" content="Kho IPA iOS chính thức của IPAVIET: Cung cấp hàng ngàn app mod, game hack, tiện ích TrollStore, ký số trực tiếp 1 click.">
-  <meta name="theme-color" content="#0071E3">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>MacLife — Ứng dụng iOS, Game Mod & Ký IPA VSign</title>
+  <meta name="description" content="Khám phá hàng ngàn ứng dụng iOS, game hack mod, tweak TrollStore và ký số trực tiếp 1 click bằng VSign Native. Tuyển chọn bởi IPAVIET.">
+  <meta name="robots" content="index,follow">
+  <meta property="og:title" content="MacLife — Kho Ứng dụng iOS & Ký IPA VSign">
+  <meta property="og:description" content="Kho IPA iOS chính thức: Cung cấp hàng ngàn app mod, game hack, tiện ích TrollStore, ký số trực tiếp 1 click.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="MacLife IPAVIET">
 
   <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/96/apple-app-store--v2.png">
+  <link rel="stylesheet" href="maclife-store.css">
 
-  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- GSAP -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <!-- Theme Bootstrapper (No Flash of Unstyled Content) -->
+  <script>
+    try {
+      const t = localStorage.getItem('maclife_store_theme') || localStorage.getItem('theme');
+      document.documentElement.dataset.theme = (t === 'dark' || t === 'light') ? t : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    } catch(e) {}
+  </script>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace']
-          },
-          colors: {
-            apple: {
-              blue: '#0071E3',
-              darkBlue: '#0A84FF',
-              green: '#34C759',
-              amber: '#FF9500',
-              red: '#FF3B30',
-              purple: '#AF52DE',
-              gray: '#86868B',
-              grayLight: '#E5E5EA',
-              grayDark: '#1C1C1E',
-              bgLight: '#F5F5F7',
-              bgDark: '#161617',
-              cardLight: '#FFFFFF',
-              cardDark: '#1C1C1E',
-              separatorLight: 'rgba(0, 0, 0, 0.08)',
-              separatorDark: 'rgba(255, 255, 255, 0.12)'
-            },
-            brand: {
-              DEFAULT: '#0071E3',
-              light: '#3B82F6',
-              dark: '#0040C7'
-            }
-          },
-          boxShadow: {
-            'apple': '0 4px 24px rgba(0, 0, 0, 0.06)',
-            'apple-hover': '0 16px 36px rgba(0, 113, 227, 0.12)',
-            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.08)'
-          }
-        }
-      }
-    };
-  </script>
-
-  <!-- Initial Theme Check -->
-  <script>
-    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  </script>
-
-    <style>
-    html, body {
-      overflow-x: hidden;
-      max-width: 100vw;
-      width: 100%;
-      -webkit-overflow-scrolling: touch;
-    }
-    * {
-      -webkit-tap-highlight-color: transparent;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", sans-serif;
-      letter-spacing: -0.015em;
-    }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .apple-squircle {
-      border-radius: 22.5% !important;
-      overflow: hidden !important;
-      -webkit-corner-smoothing: antialiased;
-    }
-    .apple-glass {
-      background: rgba(245, 245, 247, 0.85);
-      backdrop-filter: blur(25px) saturate(180%);
-      -webkit-backdrop-filter: blur(25px) saturate(180%);
-    }
-    .dark .apple-glass {
-      background: rgba(22, 22, 23, 0.85);
-      backdrop-filter: blur(25px) saturate(180%);
-      -webkit-backdrop-filter: blur(25px) saturate(180%);
-    }
-    .apple-glass-card {
-      background: #FFFFFF;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-    }
-    .dark .apple-glass-card {
-      background: #1C1C1E;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    /* Loading Stage */
-    .loading-stage { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #F5F5F7; transition: opacity 0.6s, visibility 0.6s; }
-    .dark .loading-stage { background: #161617; }
-    .loading-stage.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-    .loading-ring { width: 44px; height: 44px; border: 3px solid rgba(0,113,227,0.15); border-top-color: #0071E3; border-radius: 50%; animation: spinRing 0.8s linear infinite; }
-    @keyframes spinRing { to { transform: rotate(360deg); } }
-    .loading-text { font-size: 13px; font-weight: 700; color: #86868B; margin-top: 14px; letter-spacing: 0.1em; }
-
-    /* App Detail Stage */
-    #app-detail-stage { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px; }
-    #app-detail-stage.active { display: flex; }
-    .detail-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-    .detail-close { position: absolute; top: 18px; left: 18px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.06); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; color: inherit; }
-    .dark .detail-close { background: rgba(255,255,255,0.1); color: #fff; }
-    .detail-content { position: relative; z-index: 2; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; border-radius: 28px; background: #fff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 24px 64px rgba(0,0,0,0.2); }
-    .dark .detail-content { background: #1C1C1E; border-color: rgba(255,255,255,0.08); }
-    .detail-hero { padding: 32px 24px 20px; text-align: center; position: relative; border-bottom: 1px solid rgba(0,0,0,0.06); }
-    .dark .detail-hero { border-color: rgba(255,255,255,0.06); }
-    .detail-hero-bg { display: none; }
-    .detail-icon-wrap { width: 88px; height: 88px; margin: 0 auto 16px; }
-    .detail-icon-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 22.5%; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-    .detail-title { font-size: 22px; font-weight: 800; }
-    .detail-dev { font-size: 13px; color: #86868B; margin-top: 4px; }
-    .detail-actions { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 18px; }
-    .detail-btn { padding: 10px 24px; border-radius: 9999px; font-size: 13px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
-    .detail-btn-primary { background: #0071E3; color: #fff; box-shadow: 0 4px 14px rgba(0,113,227,0.3); }
-    .detail-btn-primary:hover { background: #0052FF; }
-    .detail-btn-secondary { background: rgba(0,0,0,0.05); color: #86868B; }
-    .dark .detail-btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
-    .detail-body { padding: 24px; }
-    .detail-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; padding: 16px; background: rgba(0,0,0,0.02); border-radius: 18px; margin-bottom: 24px; }
-    .dark .detail-info-grid { background: rgba(255,255,255,0.03); }
-    .detail-info-value { font-size: 17px; font-weight: 800; color: #0071E3; }
-    .detail-info-label { font-size: 11px; color: #86868B; font-weight: 600; text-transform: uppercase; margin-top: 2px; }
-    .detail-section-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
-    .detail-desc { font-size: 13px; line-height: 1.6; color: #86868B; margin-bottom: 24px; }
-    .detail-screenshots { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; }
-    .detail-screenshots img { height: 180px; border-radius: 14px; }
-    .detail-data-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 12px; }
-    .dark .detail-data-row { border-color: rgba(255,255,255,0.04); }
-    .detail-data-label { color: #86868B; }
-    .detail-data-value { font-weight: 600; }
-
-    /* VSign Popup */
-    .popup-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.5); backdrop-filter: blur(12px); display: none; align-items: center; justify-content: center; padding: 16px; }
-    .popup-overlay.active { display: flex; }
-    .popup-card { width: 100%; max-width: 440px; border-radius: 28px; background: #fff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 24px 64px rgba(0,0,0,0.2); overflow: hidden; padding: 24px; }
-    .dark .popup-card { background: #1C1C1E; border-color: rgba(255,255,255,0.08); }
-    .popup-logo img { width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 12px; display: block; }
-    .popup-title { font-size: 18px; font-weight: 800; text-align: center; }
-    .popup-subtitle { font-size: 12px; color: #86868B; text-align: center; margin-top: 4px; margin-bottom: 16px; }
-    .popup-feat { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: 12px; }
-    .popup-feat-icon { width: 28px; height: 28px; border-radius: 50%; background: rgba(0,113,227,0.1); color: #0071E3; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .popup-actions { margin-top: 20px; }
-    .popup-btn-primary { width: 100%; padding: 12px; border-radius: 9999px; background: #0071E3; color: #fff; font-weight: 700; font-size: 13px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .popup-btn-group { display: flex; gap: 8px; margin-top: 8px; }
-    .popup-btn-secondary, .popup-btn-ghost { flex: 1; padding: 8px; border-radius: 9999px; background: rgba(0,0,0,0.05); border: none; font-size: 11px; font-weight: 600; color: #86868B; cursor: pointer; }
-    .dark .popup-btn-secondary, .dark .popup-btn-ghost { background: rgba(255,255,255,0.08); }
-
-    /* Toast */
-    .toast { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0; background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 9999px; font-size: 13px; font-weight: 600; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 9999; backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
-    .dark .toast { background: rgba(255,255,255,0.9); color: #000; }
-    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-    /* Ribbon Track */
-    .ribbon-track { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 14px; }
-    .ribbon-container { overflow: visible; margin-bottom: 32px; }
-
-    /* Scroll reveal transitions */
-    .reveal { opacity: 0; transform: translateY(20px); transition: all 0.5s ease-out; }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-  </style>
 </head>
-<body class="bg-[#F5F5F7] dark:bg-[#161617] text-black dark:text-white transition-colors duration-200 min-h-screen selection:bg-apple-blue selection:text-white pb-24 sm:pb-12">
+<body>
+  <a class="skip-link" href="#main">Đến nội dung chính</a>
 
-  <!-- Ambient Background Glow -->
-  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-apple-blue/5 dark:from-apple-blue/15 to-transparent blur-3xl pointer-events-none -z-10"></div>
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" id="sidebar" aria-label="Điều hướng website">
+    <div class="sidebar-top">
+      <a class="brand" href="./" onclick="setTab('explore'); return false;">
+        <img src="logo-maclife.svg" width="132" height="30" alt="MacLife IPAVIET">
+      </a>
+      <button type="button" class="icon-button sidebar-close" data-menu-close aria-label="Đóng menu">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 5 14 14M5 19 19 5"/></svg>
+      </button>
+    </div>
 
-  <!-- Loading Stage -->
-  <div class="loading-stage" id="loadingStage">
-    <div class="loading-ring"></div>
-    <div class="loading-text">IPAVIET OS</div>
-  </div>
+    <form class="sidebar-search" role="search" onsubmit="event.preventDefault();">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg>
+      <input type="search" id="searchInput" aria-label="Tìm ứng dụng" placeholder="Tìm kiếm" value="" autocomplete="off">
+    </form>
 
-  <!-- ================================================================
-       APPLE FROSTED GLASS HEADER (STICKY NAVIGATION)
-       ================================================================ -->
-  <!-- ================================================================
-       APPLE FROSTED GLASS HEADER (STICKY NAVIGATION)
-       ================================================================ -->
-  <header class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-colors">
-    <div class="max-w-7xl mx-auto px-3.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-6">
-      
-      <!-- Left: Brand Logo (Apple Store Style) -->
-      <a href="../index.html" class="flex items-center gap-2 sm:gap-2.5 text-inherit no-underline group shrink-0">
-        <div class="w-8 h-8 sm:w-10 sm:h-10 apple-squircle bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform shrink-0">
-          <i data-lucide="layers" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-        </div>
-        <div>
-          <div class="font-extrabold text-xs sm:text-base tracking-tight leading-none text-black dark:text-white flex items-center gap-1.5">
-            <span>Kho Ứng Dụng</span>
-            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-apple-blue/10 dark:bg-apple-blue/20 text-apple-blue">IPA OS</span>
-          </div>
-          <p class="text-[8px] sm:text-[10px] text-apple-gray font-semibold tracking-wider uppercase mt-0.5 hidden xs:block">IPAVIET ECOSYSTEM</p>
+    <nav class="sidebar-nav" aria-label="Thư viện ứng dụng">
+      <a href="javascript:void(0)" class="nav-item is-active" data-tab="explore" id="navExplore" onclick="setTab('explore')">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></svg>
+        <span>Khám phá</span>
+      </a>
+      <a href="javascript:void(0)" class="nav-item" data-tab="all" id="navAll" onclick="setTab('all')">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="m8 16 4-9 4 9M9 13h6"/></svg>
+        <span>Tất cả App</span>
+      </a>
+      <a href="javascript:void(0)" class="nav-item" data-tab="vip" id="navVip" onclick="setTab('vip')">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 3 1 3 1 1 3 2 4-2 4-1 3-3 1-3 1-3-1-3-1-1-3-2-4 2-4 1-3 3-1Z"/><path d="m8 12 3 3 5-6"/></svg>
+        <span>App VIP & Mod</span>
+      </a>
+      <a href="javascript:void(0)" class="nav-item" data-tab="games" id="navGames" onclick="setTab('games')">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="14" rx="3"/><path d="M7 3h10M5 5h14"/></svg>
+        <span>Game Hack</span>
+      </a>
+      <a href="javascript:void(0)" class="nav-item" data-tab="tools" id="navTools" onclick="setTab('tools')">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 16"/></svg>
+        <span>Tiện ích iOS</span>
+      </a>
+      <a href="../sign-app/index.html" class="nav-item sidebar-blog" target="_blank">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M4 14v6h16v-6"/></svg>
+        <span>Ký IPA VSign</span>
+        <svg class="icon nav-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3h7v7m0-7-10 10M10 3H3v18h18v-7"/></svg>
+      </a>
+      <a href="../index.html" class="nav-item" target="_blank">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4Z"/></svg>
+        <span>Mua Chứng Chỉ VIP</span>
+        <svg class="icon nav-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3h7v7m0-7-10 10M10 3H3v18h18v-7"/></svg>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <a href="../account.html" class="account-link" id="sidebarAccountLink" title="Tài khoản cá nhân">
+        <span class="avatar" id="sidebarAvatar">
+          <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+        </span>
+        <div class="account-info">
+          <strong id="sidebarUserName">Đăng nhập</strong>
+          <small id="sidebarUserCoins">0 Xu · Khách</small>
         </div>
       </a>
 
-      <!-- Center: Cupertino Live Search Box (Visible on Tablet / PC) -->
-      <div class="hidden sm:flex flex-1 max-w-xl mx-2 sm:mx-6">
-        <div class="relative w-full flex items-center">
-          <i data-lucide="search" class="w-4 h-4 text-apple-gray absolute left-3.5 pointer-events-none"></i>
-          <input 
-            type="search" 
-            name="search_query"
-            id="searchInput" 
-            placeholder="Tìm kiếm ứng dụng, game MOD, tiện ích, bundle ID..." 
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            spellcheck="false"
-            data-form-type="other"
-            data-lpignore="true"
-            data-1p-ignore="true"
-            oninput="onSearchInput(this.value)"
-            class="w-full h-9 sm:h-10 pl-9 sm:pl-10 pr-8 rounded-full bg-black/[0.05] dark:bg-white/[0.1] text-xs sm:text-sm font-medium focus:bg-white dark:focus:bg-[#1C1C1E] border border-transparent focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 outline-none transition placeholder:text-apple-gray text-black dark:text-white shadow-inner"
-          >
-          <button 
-            id="clearSearchBtn" 
-            onclick="clearSearch()" 
-            class="w-5 h-5 rounded-full text-apple-gray hover:text-black dark:hover:text-white absolute right-2.5 hidden items-center justify-center transition"
-          >
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+      <div class="sidebar-controls">
+        <span class="theme-label" id="theme-label">Giao diện</span>
+        <div class="theme-picker" role="group" aria-labelledby="theme-label">
+          <button type="button" class="theme-choice" data-theme-choice="system" aria-label="Theo hệ thống" aria-pressed="false" title="Theo hệ thống">
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v4m-4 0h8"/></svg>
+          </button>
+          <button type="button" class="theme-choice" data-theme-choice="light" aria-label="Giao diện sáng" aria-pressed="false" title="Giao diện sáng">
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg>
+          </button>
+          <button type="button" class="theme-choice" data-theme-choice="dark" aria-label="Giao diện tối" aria-pressed="false" title="Giao diện tối">
+            <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14A9 9 0 0 1 10 4a9 9 0 1 0 10 10Z"/></svg>
           </button>
         </div>
       </div>
-
-      <!-- Right: Navigation Links & Actions -->
-      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-        <a href="../certapple/index.html" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-apple-blue/10 hover:bg-apple-blue/20 text-apple-blue text-xs font-bold transition active:scale-95 border border-apple-blue/20 shadow-sm">
-          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-          <span>Mua Cert</span>
-        </a>
-        <a href="../ipavip.html" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-apple-amber/10 hover:bg-apple-amber/20 text-apple-amber text-xs font-bold transition active:scale-95">
-          <i data-lucide="crown" class="w-3.5 h-3.5"></i>
-          <span>Kho VIP</span>
-        </a>
-        <a href="../tap-hoa-mmo.html" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/[0.05] dark:bg-white/[0.1] hover:bg-black/[0.1] text-black dark:text-white text-xs font-bold transition active:scale-95">
-          <i data-lucide="shopping-bag" class="w-3.5 h-3.5 text-apple-blue"></i>
-          <span>Chợ MMO</span>
-        </a>
-        <button onclick="toggleTheme()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/[0.05] dark:bg-white/[0.1] text-black dark:text-white flex items-center justify-center transition active:scale-95" title="Đổi giao diện">
-          <i data-lucide="sun-moon" class="w-4 h-4"></i>
-        </button>
-        <a href="../account.html" id="headerProfileBtn" class="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-apple-blue hover:bg-apple-darkBlue text-white text-[11px] sm:text-xs font-bold shadow-sm transition flex items-center gap-1 active:scale-95">
-          <i data-lucide="user" class="w-3 h-3 sm:w-3.5 sm:h-3.5"></i>
-          <span class="hidden sm:inline">Tài khoản</span>
-        </a>
-      </div>
     </div>
+  </aside>
 
-    <!-- Mobile Search Bar (Row 2 on Mobile - Apple Cupertino Spotlight Style) -->
-    <div class="sm:hidden px-3.5 pb-2.5 pt-0.5">
-      <div class="relative flex items-center">
-        <i data-lucide="search" class="w-4 h-4 text-apple-gray absolute left-3.5 pointer-events-none"></i>
-        <input 
-          type="search" 
-          name="search_query_mobile"
-          id="searchInputMobile" 
-          placeholder="Tìm ứng dụng, game MOD, tiện ích..." 
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-          data-form-type="other"
-          data-lpignore="true"
-          data-1p-ignore="true"
-          oninput="onSearchInput(this.value)"
-          class="w-full h-9 pl-9 pr-8 rounded-full bg-black/[0.05] dark:bg-white/[0.1] text-xs font-medium focus:bg-white dark:focus:bg-[#1C1C1E] border border-transparent focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 outline-none transition placeholder:text-apple-gray text-black dark:text-white shadow-inner"
-        >
-        <button 
-          id="clearSearchBtnMobile" 
-          onclick="clearSearch()" 
-          class="w-5 h-5 rounded-full text-apple-gray hover:text-black dark:hover:text-white absolute right-2.5 hidden items-center justify-center transition"
-        >
-          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+  <!-- Mobile Scrim -->
+  <button class="menu-scrim" type="button" data-menu-close aria-label="Đóng menu" hidden></button>
+
+  <!-- ==================== MAIN STORE ==================== -->
+  <div class="store-main">
+    <header class="mobile-header">
+      <a href="./" class="brand" onclick="setTab('explore'); return false;">
+        <img src="logo-maclife.svg" width="132" height="30" alt="MacLife IPAVIET">
+      </a>
+      <div>
+        <button class="icon-button" type="button" data-theme-toggle aria-label="Đổi sáng tối">
+          <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg>
+        </button>
+        <button class="icon-button" type="button" data-menu-open aria-label="Mở menu">
+          <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- ================================================================
-       MAIN BODY CONTENT (APPLE STORE COMMERCIAL LAYOUT)
-       ================================================================ -->
-  <main id="spatial-stage" class="flex-1 max-w-7xl mx-auto w-full px-3.5 sm:px-6 lg:px-8 py-5 sm:py-7 pb-24 sm:pb-16 space-y-6">
-
-    <!-- ═══ 1. APPLE STORE HERO (MINIMAL, ELEGANT, UNCLUTTERED) ═══ -->
-    <div class="space-y-1">
-      <div id="todayDateStr" class="text-xs font-semibold text-apple-gray uppercase tracking-wider">HÔM NAY</div>
-      <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100">
-        Kho Ứng Dụng
-      </h1>
-      <p class="text-xs sm:text-sm text-apple-gray font-normal max-w-2xl">
-        Khám phá và cài đặt trực tiếp ứng dụng iOS & game MOD ký số an toàn.
-      </p>
-    </div>
-
-    <!-- Hidden compatibility placeholders -->
-    <div id="categoryShelf" style="display:none;"><div id="categoryPillsContainer"></div><span id="totalProductCounter">0</span></div>
-    <div id="dealBanner" style="display:none;"></div>
-    <div id="heroEntities" style="display:none;"></div>
-
-    <!-- ═══ 2. DYNAMIC CONTENT (APPLE SEGMENTED PILLS, APP GRID & PAGINATION) ═══ -->
-    <div id="dynamicContent" class="space-y-6"></div>
-
-  </main>
-
-  <!-- ================================================================
-       MODAL: APP DETAIL STAGE
-       ================================================================ -->
-  <div id="app-detail-stage">
-    <div class="detail-backdrop" onclick="closeAppView()"></div>
-    <div class="detail-content">
-      <button class="detail-close" onclick="closeAppView()"><i data-lucide="x" class="w-5 h-5"></i></button>
-      <div class="detail-hero">
-        <div class="detail-hero-bg"><img id="detailHeroBg" src="" alt="" onerror="this.src='https://placehold.co/400x400/0d0f1a/00f0ff?text=IPAVIET'"></div>
-        <div class="detail-icon-wrap"><img id="detailIcon" src="" alt="" onerror="this.src='https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA'"></div>
-        <h1 class="detail-title text-black dark:text-white" id="detailTitle">App Name</h1>
-        <p class="detail-dev" id="detailDev">Developer</p>
-        <div class="detail-actions">
-          <button class="detail-btn detail-btn-primary" id="detailInstallBtn" onclick="showDownloadAction()"><i data-lucide="download" class="w-4 h-4"></i> CÀI ĐẶT</button>
-          <button class="detail-btn detail-btn-secondary" onclick="shareApp()"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+    <main id="main" tabindex="-1">
+      <!-- ===== VIEW 1: EXPLORE / KHÁM PHÁ ===== -->
+      <div class="page-content" id="exploreView">
+        <div class="page-heading">
+          <h1>Khám phá</h1>
+          <p>Ứng dụng và công cụ iOS chọn lọc, ký số trực tiếp và cập nhật liên tục.</p>
         </div>
+
+        <!-- Spotlight: VSign Native 2.0 -->
+        <section class="product-spotlight spotlight-single-line" aria-label="Ứng dụng nổi bật: VSign Native 2.0">
+          <a class="spotlight-art" href="javascript:void(0)" onclick="openVsignSpotlightModal()" tabindex="-1" aria-hidden="true">
+            <img src="spotlight-hero.webp" alt="VSign Native 2.0 Cover" width="1672" height="941" fetchpriority="high">
+          </a>
+          <div class="spotlight-copy">
+            <a class="spotlight-identity" href="javascript:void(0)" onclick="openVsignSpotlightModal()">
+              <img src="https://img.icons8.com/fluency/96/apple-app-store--v2.png" alt="VSign Icon" width="52" height="52" style="border-radius:12px;">
+              <span><small>IPAVIET GIỚI THIỆU</small><strong>VSign Native 2.0</strong></span>
+            </a>
+            <h2>Ký IPA trực tiếp trên iPhone không cần máy tính</h2>
+            <p>Bản nâng cấp 2.0 đột phá: Standard & Pro MHAC-2.<br>
+            Ký siêu tốc 5 giây, bảo mật chứng chỉ Apple Developer, chứng chỉ chống thu hồi vĩnh viễn.</p>
+            <div class="spotlight-actions">
+              <button type="button" class="button" onclick="openVsignSpotlightModal()">
+                Cài đặt VSign <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></svg>
+              </button>
+              <span>Miễn phí<small>Dual Edition 2.0</small></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Banner Editorial Cards -->
+        <section class="banner-section" aria-label="Bộ sưu tập tuyển chọn">
+          <div class="rail-wrapper">
+            <div class="banner-rail" data-rail tabindex="0" aria-label="Bộ sưu tập tuyển chọn">
+              <!-- Card 1 -->
+              <a class="editorial-card palette-0" href="javascript:void(0)" onclick="setTab('vip')">
+                <div class="editorial-copy">
+                  <span class="eyebrow">IPAVIET TUYỂN CHỌN</span>
+                  <h2>Kho Ứng Dụng VIP & Mod</h2>
+                  <p>Mở khóa đặc quyền YouTube Premium, Spotify, CapCut Pro và chặn quảng cáo.</p>
+                </div>
+                <div class="editorial-art">
+                  <span class="art-orb"></span>
+                  <div class="art-apps" id="editorialArtVip">
+                    <img src="https://img.icons8.com/fluency/96/youtube-play.png" alt="YouTube" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/spotify.png" alt="Spotify" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/facebook-new.png" alt="Facebook" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/tiktok.png" alt="TikTok" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/capcut.png" alt="CapCut" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/apple-app-store--v2.png" alt="VSign" width="96" height="96" loading="lazy">
+                  </div>
+                  <span class="editorial-art-label">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="14" rx="3"/><path d="M7 3h10M5 5h14"/></svg>
+                    Kho VIP Tuyển Chọn
+                  </span>
+                </div>
+              </a>
+
+              <!-- Card 2 -->
+              <a class="editorial-card palette-1" href="javascript:void(0)" onclick="setTab('games')">
+                <div class="editorial-copy">
+                  <span class="eyebrow">CHIẾN GAME ĐỈNH CAO</span>
+                  <h2>Game Mod & Hack Độc Quyền</h2>
+                  <p>Liên Quân 120fps, Free Fire hack, Shadow Fight, Subway Surfers, Roblox.</p>
+                </div>
+                <div class="editorial-art">
+                  <span class="art-orb"></span>
+                  <div class="art-apps" id="editorialArtGames">
+                    <img src="https://img.icons8.com/fluency/96/controller.png" alt="Games" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/sword.png" alt="Action" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/roblox.png" alt="Roblox" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/minecraft-logo.png" alt="Minecraft" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/pubg.png" alt="Shooter" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/trophy.png" alt="Trophy" width="96" height="96" loading="lazy">
+                  </div>
+                  <span class="editorial-art-label">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="14" rx="3"/><path d="M7 3h10M5 5h14"/></svg>
+                    Game Mod Tuyển Chọn
+                  </span>
+                </div>
+              </a>
+
+              <!-- Card 3 -->
+              <a class="editorial-card palette-2" href="javascript:void(0)" onclick="setTab('tools')">
+                <div class="editorial-copy">
+                  <span class="eyebrow">TIỆN ÍCH BẬC CAO</span>
+                  <h2>TrollStore & Vượt Giới Hạn</h2>
+                  <p>Fake GPS, Ghi âm cuộc gọi, Chặn thu hồi DNS, Tweak hệ thống không cần Jailbreak.</p>
+                </div>
+                <div class="editorial-art">
+                  <span class="art-orb"></span>
+                  <div class="art-apps" id="editorialArtTools">
+                    <img src="https://img.icons8.com/fluency/96/settings.png" alt="Settings" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/shield.png" alt="Shield" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/map-marker.png" alt="GPS" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/services.png" alt="Tools" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/lock.png" alt="Security" width="96" height="96" loading="lazy">
+                    <img src="https://img.icons8.com/fluency/96/rocket.png" alt="Speed" width="96" height="96" loading="lazy">
+                  </div>
+                  <span class="editorial-art-label">
+                    <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="18" height="14" rx="3"/><path d="M7 3h10M5 5h14"/></svg>
+                    Tiện Ích Tuyển Chọn
+                  </span>
+                </div>
+              </a>
+            </div>
+            <button type="button" class="rail-arrow banner-arrow rail-arrow-prev" data-rail-prev hidden aria-label="Xem bộ sưu tập trước đó">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m14 5-7 7 7 7"/></svg>
+            </button>
+            <button type="button" class="rail-arrow banner-arrow" data-rail-next aria-label="Xem bộ sưu tập tiếp theo">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- Rail 1: App VIP Tuyển Chọn -->
+        <section class="app-section" aria-label="App VIP Tuyển Chọn">
+          <div class="section-heading">
+            <h2>App VIP Tuyển Chọn</h2>
+            <button type="button" class="quiet" onclick="setTab('vip')">
+              Xem tất cả <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+          <div class="rail-wrapper">
+            <div class="app-rail" id="railVip" data-rail tabindex="0" aria-label="App VIP Tuyển Chọn">
+              <!-- Dynamically populated 3 columns x 3 rows -->
+            </div>
+            <button type="button" class="rail-arrow rail-arrow-prev" data-rail-prev hidden aria-label="Xem trước">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m14 5-7 7 7 7"/></svg>
+            </button>
+            <button type="button" class="rail-arrow" data-rail-next aria-label="Xem tiếp">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- Rail 2: Ứng Dụng Nổi Bật -->
+        <section class="app-section" aria-label="Ứng dụng nổi bật">
+          <div class="section-heading">
+            <h2>Ứng Dụng Nổi Bật</h2>
+            <button type="button" class="quiet" onclick="setTab('all')">
+              Xem tất cả <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+          <div class="rail-wrapper">
+            <div class="app-rail" id="railPopular" data-rail tabindex="0" aria-label="Ứng dụng nổi bật">
+              <!-- Dynamically populated 3 columns x 3 rows -->
+            </div>
+            <button type="button" class="rail-arrow rail-arrow-prev" data-rail-prev hidden aria-label="Xem trước">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m14 5-7 7 7 7"/></svg>
+            </button>
+            <button type="button" class="rail-arrow" data-rail-next aria-label="Xem tiếp">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- Rail 3: Game Mod Bất Tử -->
+        <section class="app-section" aria-label="Game Mod Tuyển Chọn">
+          <div class="section-heading">
+            <h2>Game Mod & Hack Độc Quyền</h2>
+            <button type="button" class="quiet" onclick="setTab('games')">
+              Xem tất cả <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+          <div class="rail-wrapper">
+            <div class="app-rail" id="railGames" data-rail tabindex="0" aria-label="Game Mod Tuyển Chọn">
+              <!-- Dynamically populated 3 columns x 3 rows -->
+            </div>
+            <button type="button" class="rail-arrow rail-arrow-prev" data-rail-prev hidden aria-label="Xem trước">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m14 5-7 7 7 7"/></svg>
+            </button>
+            <button type="button" class="rail-arrow" data-rail-next aria-label="Xem tiếp">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- Rail 4: Tiện Ích & TrollStore -->
+        <section class="app-section" aria-label="Tiện ích & Hệ thống">
+          <div class="section-heading">
+            <h2>Tiện Ích & TrollStore</h2>
+            <button type="button" class="quiet" onclick="setTab('tools')">
+              Xem tất cả <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+          <div class="rail-wrapper">
+            <div class="app-rail" id="railTools" data-rail tabindex="0" aria-label="Tiện ích & Hệ thống">
+              <!-- Dynamically populated 3 columns x 3 rows -->
+            </div>
+            <button type="button" class="rail-arrow rail-arrow-prev" data-rail-prev hidden aria-label="Xem trước">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m14 5-7 7 7 7"/></svg>
+            </button>
+            <button type="button" class="rail-arrow" data-rail-next aria-label="Xem tiếp">
+              <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+        </section>
       </div>
-      <div class="detail-body">
-        <div class="detail-info-grid">
-          <div class="detail-info-cell"><div class="detail-info-value" id="detailRating">4.8</div><div class="detail-info-label">Đánh giá</div></div>
-          <div class="detail-info-cell"><div class="detail-info-value" id="detailAward">Top</div><div class="detail-info-label">Xếp hạng</div></div>
-          <div class="detail-info-cell"><div class="detail-info-value" id="detailAge">4+</div><div class="detail-info-label">Độ tuổi</div></div>
+
+      <!-- ===== VIEW 2: CATALOG / DANH MỤC & TÌM KIẾM ===== -->
+      <div class="page-content" id="catalogView" style="display:none;">
+        <div class="page-heading">
+          <h1 id="catalogTitle">Tất cả App</h1>
+          <p id="catalogSubtitle">Toàn bộ kho ứng dụng IPA được đồng bộ theo thời gian thực.</p>
         </div>
 
-        <div id="detailPurchasePanel"></div>
-        <div id="detailModPanel" style="display:none;margin-bottom:24px;"></div>
-
-        <div id="detailScreenshotsWrap">
-          <h3 class="detail-section-title text-black dark:text-white">Xem trước</h3>
-          <div class="detail-screenshots no-scrollbar" id="detailScreenshots"></div>
+        <div class="filter-bar">
+          <button type="button" class="filter-pill is-active" data-filter="all" onclick="setFilter('all')">Tất cả</button>
+          <button type="button" class="filter-pill" data-filter="vip" onclick="setFilter('vip')">App VIP & Mod</button>
+          <button type="button" class="filter-pill" data-filter="games" onclick="setFilter('games')">Game Hack</button>
+          <button type="button" class="filter-pill" data-filter="tools" onclick="setFilter('tools')">Tiện ích iOS</button>
+          <button type="button" class="filter-pill" data-filter="social" onclick="setFilter('social')">Mạng xã hội</button>
         </div>
 
-        <h3 class="detail-section-title text-black dark:text-white">Thông tin</h3>
-        <p class="detail-desc" id="detailDesc">Mô tả ứng dụng...</p>
-
-        <h3 class="detail-section-title text-black dark:text-white">Dữ liệu tệp</h3>
-        <div style="margin-bottom:24px;">
-          <div class="detail-data-row"><span class="detail-data-label">Nhà phát triển</span><span class="detail-data-value text-black dark:text-white" id="dInfoDev">IPAVIET</span></div>
-          <div class="detail-data-row"><span class="detail-data-label">Thể loại</span><span class="detail-data-value text-black dark:text-white" id="dInfoCat">Tiện ích</span></div>
-          <div class="detail-data-row"><span class="detail-data-label">Phiên bản</span><span class="detail-data-value text-black dark:text-white" id="dInfoVer">1.0</span></div>
-          <div class="detail-data-row"><span class="detail-data-label">Kích thước</span><span class="detail-data-value text-black dark:text-white" id="dInfoSize">--</span></div>
-          <div class="detail-data-row"><span class="detail-data-label">Bundle ID</span><span class="detail-data-value text-black dark:text-white" id="dInfoBundle">com.ipaviet.app</span></div>
+        <div class="results-heading">
+          <span id="catalogCount">Đang tải ứng dụng...</span>
+          <span id="catalogPageInfo">Trang 1</span>
         </div>
+
+        <div class="catalog-grid" id="catalogGrid">
+          <!-- Dynamically populated grid of .app-row -->
+        </div>
+
+        <nav class="pagination" id="catalogPagination" aria-label="Phân trang">
+          <!-- Pagination pills -->
+        </nav>
       </div>
-    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="compact-footer">
+      <a href="../index.html">Trang chủ</a>
+      <span>© 2026 IPAVIET</span>
+      <a href="../sign-app/index.html">Ký VSign</a>
+      <a href="https://t.me/ipaviet" target="_blank" rel="noopener noreferrer">Hỗ trợ Telegram</a>
+      <span>Khám phá. Chọn công cụ phù hợp. Kho IPA chuẩn Apple.</span>
+    </footer>
   </div>
 
-  <!-- ================================================================
-       MODAL: VSIGN POPUP
-       ================================================================ -->
-  <div id="vsignPopup" class="popup-overlay" onclick="if(event.target===this)closeVsignPopup()">
-    <div class="popup-card">
-      <div class="popup-header">
-        <div class="popup-logo"><img src="https://i.ibb.co/cSmzsSRv/T-n-D-n-13-Copy-Copy-Copy-Original.png" alt="VSign" class="apple-squircle"></div>
-      </div>
-      <div class="popup-body">
-        <h3 class="popup-title text-black dark:text-white">Ra Mắt App VSign Chính Thức!</h3>
-        <p class="popup-subtitle">Trải nghiệm cài đặt & ký app iOS trực tiếp trên thiết bị, tối ưu và mượt mà hơn trên Web.</p>
-        <div class="popup-features">
-          <div class="popup-feat">
-            <div class="popup-feat-icon apple-squircle"><i data-lucide="layers" class="w-4 h-4"></i></div>
-            <div class="popup-feat-text"><strong>Kho 10,000+ Ứng Dụng</strong><br><span class="text-apple-gray text-[11px]">Tải game/app MOD, Hack, Premium hoàn toàn miễn phí.</span></div>
-          </div>
-          <div class="popup-feat">
-            <div class="popup-feat-icon apple-squircle"><i data-lucide="zap" class="w-4 h-4"></i></div>
-            <div class="popup-feat-text"><strong>Tự Động Cài Đặt (OTA)</strong><br><span class="text-apple-gray text-[11px]">Ký xong tự động cài đặt trực tiếp cực kỳ tiện lợi, chỉ 1 click.</span></div>
-          </div>
-          <div class="popup-feat">
-            <div class="popup-feat-icon apple-squircle"><i data-lucide="sparkles" class="w-4 h-4"></i></div>
-            <div class="popup-feat-text"><strong>Tính Năng ESign Cao Cấp</strong><br><span class="text-apple-gray text-[11px]">Tích hợp tất cả các tùy chọn đổi tên, chèn dylib, fix thông báo...</span></div>
-          </div>
-        </div>
-        <div class="popup-actions">
-          <button class="popup-btn-primary" onclick="downloadVsignApp()"><i data-lucide="download" class="w-4 h-4"></i> Cài Đặt App VSign Ngay</button>
-          <div class="popup-btn-group">
-            <button class="popup-btn-secondary" onclick="dismissVsignPopup(5)">Tắt 5 phút</button>
-            <button class="popup-btn-secondary" onclick="dismissVsignPopup(60)">Tắt 1 giờ</button>
-            <button class="popup-btn-ghost" onclick="closeVsignPopup()">Để sau</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast -->
-  <div class="toast" id="toast"></div>
-
-  <!-- ================================================================
-       APPLE IOS FROSTED GLASS TAB BAR (BOTTOM NAVIGATION CHO MOBILE)
-       ================================================================ -->
-  <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 apple-glass border-t border-apple-separatorLight dark:border-apple-separatorDark px-2 py-1.5 flex items-center justify-around pb-safe shadow-lg">
-    <a href="../index.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
-      <i data-lucide="home" class="w-5 h-5"></i>
-      <span class="text-[9.5px]">Trang chủ</span>
+  <!-- ==================== MOBILE BOTTOM TABS ==================== -->
+  <nav class="bottom-tabs" aria-label="Điều hướng chính">
+    <a href="javascript:void(0)" class="tab-item is-active" data-bottom-tab="explore" onclick="setTab('explore')">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></svg>
+      <span>Khám phá</span>
     </a>
-    <a href="index.html" class="flex flex-col items-center gap-1 text-apple-blue font-bold transition active:scale-95">
-      <i data-lucide="layout-grid" class="w-5 h-5 stroke-[2.2]"></i>
-      <span class="text-[9.5px]">Kho IPA</span>
+    <a href="javascript:void(0)" class="tab-item" data-bottom-tab="all" onclick="setTab('all')">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="m8 16 4-9 4 9M9 13h6"/></svg>
+      <span>Tất cả</span>
     </a>
-    <a href="../certapple/index.html" class="flex flex-col items-center gap-1 text-sky-500 font-bold transition active:scale-95 relative">
-      <i data-lucide="shield-check" class="w-5 h-5"></i>
-      <span class="text-[9.5px]">Mua Cert</span>
-      <span class="absolute 0 top-0.5 right-2 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+    <a href="javascript:void(0)" class="tab-item" data-bottom-tab="vip" onclick="setTab('vip')">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3 3 1 3 1 1 3 2 4-2 4-1 3-3 1-3 1-3-1-3-1-1-3-2-4 2-4 1-3 3-1Z"/><path d="m8 12 3 3 5-6"/></svg>
+      <span>VIP & Mod</span>
     </a>
-    <a href="../ipavip.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-amber font-medium transition active:scale-95">
-      <i data-lucide="crown" class="w-5 h-5"></i>
-      <span class="text-[9.5px]">Kho VIP</span>
+    <a href="../sign-app/index.html" class="tab-item" target="_blank">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v11m-4-4 4 4 4-4M4 14v6h16v-6"/></svg>
+      <span>Ký VSign</span>
     </a>
-    <a href="../account.html" class="flex flex-col items-center gap-1 text-apple-gray hover:text-apple-blue font-medium transition active:scale-95">
-      <i data-lucide="user" class="w-5 h-5"></i>
-      <span class="text-[9.5px]">Cá nhân</span>
+    <a href="../account.html" class="tab-item">
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>
+      <span>Cá nhân</span>
     </a>
   </nav>
 
-<script>
+  <!-- ==================== PRODUCT DETAIL DIALOG ==================== -->
+  <dialog id="product-dialog" class="product-dialog" aria-labelledby="dialogHeroTitle">
+    <div class="dialog-sticky-header">
+      <div class="dialog-sticky-left">
+        <button type="button" class="icon-button" onclick="closeAppModal()" aria-label="Đóng">
+          <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m5 5 14 14M5 19 19 5"/></svg>
+        </button>
+        <img id="dialogStickyIcon" src="" width="26" height="26" style="border-radius:6px;object-fit:cover;" alt="">
+        <span class="dialog-sticky-title" id="dialogStickyTitle">Tên ứng dụng</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button type="button" class="icon-button" id="dialogBtnShare" aria-label="Chia sẻ ứng dụng">
+          <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 8H4v13h16V8h-4M12 16V2m-4 4 4-4 4 4"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="dialog-scroll-body">
+      <section class="product-hero">
+        <div class="product-icon">
+          <img id="dialogHeroIcon" src="" width="128" height="128" alt="" style="object-fit:cover;border-radius:24%;">
+          <span class="icon-fallback" id="dialogHeroFallback">A</span>
+        </div>
+        <div class="product-title">
+          <div class="product-heading" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <h1 id="dialogHeroTitle" style="font-size:26px;line-height:1.2;">Tên ứng dụng</h1>
+            <span id="dialogHeroBadge"></span>
+          </div>
+          <p id="dialogHeroSubtitle" style="color:var(--muted);font-size:14px;margin-top:6px;"></p>
+          <div class="product-actions" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <button type="button" class="button" id="dialogBtnSign">
+              <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v11m-4-4 4 4 4-4M4 14v6h16v-6"/></svg>
+              Ký Bằng VSign
+            </button>
+            <button type="button" class="button secondary" id="dialogBtnDownload">
+              <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3h7v7m0-7-10 10M10 3H3v18h18v-7"/></svg>
+              Tải File IPA
+            </button>
+            <a class="button secondary" id="dialogBtnWeb" target="_blank" rel="noopener noreferrer">
+              Mở trang riêng
+            </a>
+          </div>
+        </div>
+      </section>
 
-/* ================================================================
-   IPAVIET OS — CORE LOGIC
-   Preserved: Firebase, Auth, API, Database, Download, VIP, Coins
-   ================================================================ */
+      <div class="product-facts">
+        <div><small>NỀN TẢNG</small><strong id="factPlatform">iOS 14 - 18+</strong></div>
+        <div><small>GIÁ</small><strong id="factPrice">Miễn phí</strong></div>
+        <div><small>DANH MỤC</small><strong id="factCategory">Tiện ích</strong></div>
+        <div><small>NHÀ PHÁT TRIỂN</small><strong id="factDev">IPAVIET Studio</strong></div>
+        <div><small>PHIÊN BẢN</small><strong id="factVersion">1.0</strong></div>
+        <div><small>DUNG LƯỢNG</small><strong id="factSize">--</strong></div>
+      </div>
 
-const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec';
+      <div id="dialogModBox" class="mod-features-box" style="display:none;">
+        <h3>
+          <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3 3 1 3 1 1 3 2 4-2 4-1 3-3 1-3 1-3-1-3-1-1-3-2-4 2-4 1-3 3-1Z"/><path d="m8 12 3 3 5-6"/></svg>
+          Đặc quyền MOD & Tính năng mở khóa
+        </h3>
+        <ul id="dialogModList"></ul>
+      </div>
+
+      <section class="detail-section">
+        <div class="section-heading"><h2>Mô tả ứng dụng</h2></div>
+        <div class="prose" style="white-space:pre-line;line-height:1.6;font-size:14px;color:var(--text);margin-top:10px;" id="dialogDesc"></div>
+      </section>
+
+      <section class="detail-section" style="border-bottom:0;">
+        <div class="section-heading"><h2>Hướng dẫn cài đặt</h2></div>
+        <div class="prose" style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-top:8px;">
+          <p>1. <strong>Ký bằng VSign (Khuyến nghị):</strong> Bấm nút <strong>"Ký Bằng VSign"</strong> để tự động nhập file IPA vào app VSign hoặc trang ký số IPAVIET và cài đặt trực tiếp trên iPhone không cần máy tính.</p>
+          <p style="margin-top:6px;">2. <strong>Cài qua TrollStore:</strong> Tải file IPA về máy, chia sẻ vào TrollStore để cài đặt vĩnh viễn không lo bị thu hồi chứng chỉ.</p>
+          <p style="margin-top:6px;">3. <strong>Cài qua Sideloadly / AltStore:</strong> Dùng máy tính Windows hoặc Mac để cài đặt IPA qua Apple ID cá nhân.</p>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <!-- ==================== VSIGN SPOTLIGHT MODAL ==================== -->
+  <dialog id="vsign-spotlight-dialog" class="product-dialog" aria-labelledby="vsignSpotlightTitle">
+    <div class="dialog-sticky-header">
+      <div class="dialog-sticky-left">
+        <button type="button" class="icon-button" onclick="closeVsignModal()" aria-label="Đóng">
+          <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m5 5 14 14M5 19 19 5"/></svg>
+        </button>
+        <span class="dialog-sticky-title">Cài đặt VSign Native 2.0</span>
+      </div>
+    </div>
+    <div class="dialog-scroll-body">
+      <section class="product-hero">
+        <div class="product-icon" style="background:#007aff12;">
+          <img src="https://img.icons8.com/fluency/96/apple-app-store--v2.png" width="128" height="128" alt="VSign Native 2.0" style="object-fit:cover;border-radius:24%;">
+        </div>
+        <div class="product-title">
+          <div class="product-heading">
+            <h1 id="vsignSpotlightTitle" style="font-size:24px;">VSign Native 2.0</h1>
+            <span class="badge-vip">★ Bản Cập Nhật Lớn</span>
+          </div>
+          <p style="color:var(--muted);font-size:14px;margin-top:6px;">Hệ thống ký IPA trực tiếp trên iPhone không cần máy tính. Phiên bản 2.0 Dual Edition.</p>
+        </div>
+      </section>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin:20px 0;">
+        <!-- Standard Edition Card -->
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="font-size:17px;font-weight:700;">VSign Standard</h3>
+            <span class="badge-mod">Bản Tiêu Chuẩn</span>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Giao diện tối giản, ký app cực nhanh, dung lượng siêu nhẹ chỉ 4.9MB. Tương thích iOS 14 - 18+.</p>
+          <div style="font-size:12px;color:var(--muted);display:flex;gap:12px;">
+            <span>Phiên bản: 1.0</span>
+            <span>Dung lượng: 4.9 MB</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:auto;padding-top:10px;">
+            <a class="button" style="flex:1;text-align:center;" href="itms-services://?action=download-manifest&url=https://ipaviet.site/vsign-standard-manifest.plist">Cài Đặt OTA</a>
+            <a class="button secondary" href="../vsign/VSign-Standard.ipa" download>Tải IPA</a>
+          </div>
+        </div>
+
+        <!-- Pro Edition Card -->
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="font-size:17px;font-weight:700;">VSign Pro MHAC-2</h3>
+            <span class="badge-vip">Bản Nâng Cao</span>
+          </div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5;">Tích hợp công nghệ bảo mật MHAC-2, chống crash, mã hóa chứng chỉ Apple Developer, dung lượng 4.9MB.</p>
+          <div style="font-size:12px;color:var(--muted);display:flex;gap:12px;">
+            <span>Phiên bản: 1.0</span>
+            <span>Dung lượng: 4.9 MB</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:auto;padding-top:10px;">
+            <a class="button" style="flex:1;text-align:center;" href="itms-services://?action=download-manifest&url=https://ipaviet.site/vsign-pro-manifest.plist">Cài Đặt OTA</a>
+            <a class="button secondary" href="../vsign/VSign-Pro-MHAC2.ipa" download>Tải IPA</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- DNS Anti Revoke Box -->
+      <div style="background:var(--pill);border:1px dashed var(--line);border-radius:16px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+          <strong style="font-size:14px;display:block;">Cấu hình DNS Anti-Revoke IPAVIET</strong>
+          <small style="color:var(--muted);font-size:12px;">Chặn Apple thu hồi chứng chỉ và chặn quảng cáo hệ thống.</small>
+        </div>
+        <a class="button secondary" style="font-size:13px;padding:6px 16px;" href="../dns-anti-revoke-ipaviet.mobileconfig" download>Cài Đặt DNS</a>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ==================== SHARE DIALOG ==================== -->
+  <dialog id="share-dialog" class="share-dialog" aria-labelledby="share-title">
+    <div class="share-heading">
+      <h2 id="share-title">Chia sẻ</h2>
+      <button type="button" data-dialog-close class="icon-button" onclick="document.getElementById('share-dialog').close()" aria-label="Đóng chia sẻ">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m5 5 14 14M5 19 19 5"/></svg>
+      </button>
+    </div>
+    <p>Gửi liên kết cho bạn bè.</p>
+    <label for="share-url">Liên kết</label>
+    <input id="share-url" type="url" readonly autocomplete="off" spellcheck="false">
+    <div class="share-actions">
+      <button type="button" class="button" id="shareCopyBtn" onclick="copyShareLink()">Sao chép liên kết</button>
+      <button type="button" class="button secondary" id="shareNativeBtn" onclick="shareNativeLink()" hidden>
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 8H4v13h16V8h-4M12 16V2m-4 4 4-4 4 4"/></svg>
+        Chia sẻ qua thiết bị
+      </button>
+    </div>
+    <p class="share-status" id="shareStatus" role="status" aria-live="polite"></p>
+  </dialog>
+
+  <!-- Toast Notification -->
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- ==================== CORE SCRIPT ==================== -->
+  <script>
+  const GOOGLE_API_URL = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec';
 // PHƯƠNG ÁN 2: URL Web App Google Sheet Thống Kê Riêng Biệt (Không đụng chạm hệ thống nạp tiền)
 const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || 'https://script.google.com/macros/s/AKfycbyx3HSoUoQFWBGgPxkPJME_Qj0w8ltzLTmrFhUpkODdnlRK8r_-a45PCy9rU0dlS9SZ/exec';
 
@@ -527,13 +632,7 @@ let isUserVip = false;
 
 window.allAppsMap = {};
 const DB = { ipa: [], vip: [] };
-const STATE = { 
-  currentTab: 'ipa', 
-  currentPage: 1, 
-  itemsPerPage: 24, 
-  currentItem: null, 
-  currentFilter: 'all'
-};
+
 
 /* ─── Auth State ─── */
 auth.onAuthStateChanged(user => {
@@ -563,7 +662,9 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-/* ─── Client Analytics & Habit Tracking (Multi-Engine: LocalStorage + GAS + Firestore) ─── */
+
+
+  /* ─── Client Analytics & Habit Tracking (Multi-Engine: LocalStorage + GAS + Firestore) ─── */
 const ANALYTICS_BC = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('ipaviet_analytics_channel') : null;
 
 function getTodayDateStr() {
@@ -880,7 +981,9 @@ function recordSearchQuery(query) {
   }, 1000);
 }
 
-/* ─── 20 IPA Repositories (Curated, SideStore, Vietnamese & TrollStore) ─── */
+
+
+  /* ─── 20 IPA Repositories (Curated, SideStore, Vietnamese & TrollStore) ─── */
 const SOURCES_CONFIG = [
   // 1. Kho Tuyển chọn & VIP (Curated & FastSign - Ổn định cao nhất)
   { id: 'apptesters', name: 'AppTesters VIP', group: 'curated', groupLabel: 'Kho Tuyển Chọn & VIP', url: 'https://repository.apptesters.org/', tier: 1 },
@@ -1406,1078 +1509,9 @@ async function loadTier2Sources() {
   }
 }
 
-/* ─── Load Data ─── */
-async function loadData() {
-  try {
-    const tier1Repos = SOURCES_CONFIG.filter(s => s.tier === 1);
-    const fetchPromises = [
-      fetch(`vip.json?t=${Date.now()}`).then(r => r.text()).catch(() => null),
-      ...tier1Repos.map(repo => fetchRepoData(repo))
-    ];
 
-    const results = await Promise.allSettled(fetchPromises);
 
-    // Parse VIP
-    const vipRes = results[0];
-    if (vipRes.status === 'fulfilled' && vipRes.value) {
-      try {
-        const vipData = JSON.parse(vipRes.value);
-        if (Array.isArray(vipData)) {
-          DB.vip = vipData.map(item => {
-            item._id = getAppSlug(item.name || item.title, item.version, item.fileLink || item.downloadUrl || 'vip');
-            item._type = 'VIP';
-            item.developer = item.developer || 'IPAVIET Studio';
-            item.isMod = true;
-            const modInfo = extractModFeatures(item);
-            item.modSummary = modInfo.modSummary || 'Mở khóa đặc quyền VIP & Chứng chỉ cao cấp';
-            item.modFeatures = (modInfo.modFeatures && modInfo.modFeatures.length > 0) ? modInfo.modFeatures : [
-              'Chứng chỉ Apple Developer doanh nghiệp siêu ổn định',
-              'Mở khóa toàn bộ tính năng VIP độc quyền',
-              'Chặn triệt để 100% quảng cáo từ bên thứ ba',
-              'Bảo hành chứng chỉ cài đặt an toàn lâu dài'
-            ];
-            window.allAppsMap[item._id] = item;
-            return item;
-          });
-        }
-      } catch(e) { console.log("Lỗi parse vip.json"); }
-    }
-
-    // Parse Tier 1 Repos
-    let allTier1Apps = [];
-    tier1Repos.forEach((repo, idx) => {
-      const res = results[idx + 1];
-      if (res && res.status === 'fulfilled' && res.value) {
-        const parsed = parseRepoResponse(res.value, repo);
-        allTier1Apps = allTier1Apps.concat(parsed);
-      }
-    });
-
-    DB.ipa = sortItemsByDate(getUniqueApps(allTier1Apps));
-
-    try {
-      // Lưu subset app vào localStorage để app.html tra cứu siêu tốc khi mở tab mới
-      const cacheMap = {};
-      Object.keys(window.allAppsMap).slice(0, 1500).forEach(k => {
-        cacheMap[k] = window.allAppsMap[k];
-      });
-      localStorage.setItem('ipaviet_cached_apps_map', JSON.stringify(cacheMap));
-    } catch(e) {}
-  } catch(e) { console.error("Lỗi tổng loadData", e); }
-
-  try {
-    // Update stats
-    const statApps = document.getElementById('statApps');
-    if (statApps) statApps.textContent = DB.ipa.length.toLocaleString();
-    const statVip = document.getElementById('statVip');
-    if (statVip) statVip.textContent = DB.vip.length.toLocaleString();
-
-    // Inject hero floating entities
-    injectHeroEntities();
-
-    // Khôi phục page và filter đã lưu (từ URL hoặc sessionStorage khi Back lại)
-    const restored = getUrlOrSessionParams();
-    STATE.currentPage = restored.page;
-    STATE.currentFilter = restored.filter;
-    if (restored.q) {
-      const sInput = document.getElementById('searchInput');
-      if (sInput) sInput.value = restored.q;
-      const sMobile = document.getElementById('searchInputMobile');
-      if (sMobile) sMobile.value = restored.q;
-      const clearBtn = document.getElementById('clearSearchBtn');
-      if (clearBtn) clearBtn.style.display = 'flex';
-      const clearBtnMobile = document.getElementById('clearSearchBtnMobile');
-      if (clearBtnMobile) clearBtnMobile.style.display = 'flex';
-    }
-
-    renderContent();
-    syncStateToUrlAndStorage();
-
-    const savedY = sessionStorage.getItem('ipaviet_lib_scrollY');
-    if (savedY) {
-      setTimeout(() => {
-        window.scrollTo({ top: parseInt(savedY, 10), behavior: 'smooth' });
-        sessionStorage.removeItem('ipaviet_lib_scrollY');
-      }, 200);
-    }
-
-    // Kiểm tra nếu người dùng vừa hoàn thành vượt link Link4m quay lại
-    checkFreePassCallback();
-
-    // Init scroll reveal
-    initScrollReveal();
-  } catch(err) {
-    console.error("Lỗi hoàn tất render dữ liệu:", err);
-  } finally {
-    setTimeout(() => {
-      const loader = document.getElementById('loadingStage');
-      if (loader) loader.classList.add('hidden');
-    }, 400);
-  }
-
-  // Asynchronous background load Tier 2 (Kho mở rộng)
-  setTimeout(() => {
-    loadTier2Sources();
-  }, 1200);
-}
-
-function injectHeroEntities() {
-  const container = document.getElementById('heroEntities');
-  if (!container) return;
-}
-
-/* ─── State Persistence & URL Sync Helpers ─── */
-function getUrlOrSessionParams() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const pUrl = parseInt(urlParams.get('page'), 10);
-  const fUrl = urlParams.get('filter');
-  const qUrl = urlParams.get('q') || urlParams.get('search');
-
-  const pSess = parseInt(sessionStorage.getItem('ipaviet_lib_page'), 10);
-  const fSess = sessionStorage.getItem('ipaviet_lib_filter');
-  const qSess = sessionStorage.getItem('ipaviet_lib_q');
-
-  const page = (!isNaN(pUrl) && pUrl > 0) ? pUrl : ((!isNaN(pSess) && pSess > 0) ? pSess : 1);
-  const filter = fUrl || fSess || 'all';
-  const q = (typeof qUrl === 'string') ? qUrl : (qSess || '');
-
-  return { page, filter, q };
-}
-
-function getSearchQuery() {
-  const s1 = document.getElementById('searchInput');
-  const s2 = document.getElementById('searchInputMobile');
-  let val = (s1 && s1.value) ? s1.value : ((s2 && s2.value) ? s2.value : '');
-  if (typeof isEmailAddress === 'function' && isEmailAddress(val)) return '';
-  return val.trim();
-}
-
-function syncStateToUrlAndStorage() {
-  const rawQuery = getSearchQuery();
-
-  sessionStorage.setItem('ipaviet_lib_page', STATE.currentPage);
-  sessionStorage.setItem('ipaviet_lib_filter', STATE.currentFilter);
-  if (rawQuery) {
-    sessionStorage.setItem('ipaviet_lib_q', rawQuery);
-  } else {
-    sessionStorage.removeItem('ipaviet_lib_q');
-  }
-
-  try {
-    const url = new URL(window.location.href);
-    if (STATE.currentPage > 1) {
-      url.searchParams.set('page', STATE.currentPage);
-    } else {
-      url.searchParams.delete('page');
-    }
-
-    if (STATE.currentFilter && STATE.currentFilter !== 'all') {
-      url.searchParams.set('filter', STATE.currentFilter);
-    } else {
-      url.searchParams.delete('filter');
-    }
-
-    if (rawQuery) {
-      url.searchParams.set('q', rawQuery);
-    } else {
-      url.searchParams.delete('q');
-      url.searchParams.delete('search');
-    }
-
-    window.history.replaceState({ page: STATE.currentPage, filter: STATE.currentFilter, q: rawQuery }, '', url.toString());
-  } catch(e) {}
-}
-
-/* ─── Apple Store Date Display ─── */
-function initTodayDate() {
-  try {
-    const days = ['CHỦ NHẬT', 'THỨ HAI', 'THỨ BA', 'THỨ TƯ', 'THỨ NĂM', 'THỨ SÁU', 'THỨ BẢY'];
-    const now = new Date();
-    const dateEl = document.getElementById('todayDateStr');
-    if (dateEl) dateEl.textContent = `${days[now.getDay()]}, ${now.getDate()} THÁNG ${now.getMonth() + 1}`;
-  } catch(e) {}
-}
-
-/* ─── Tab & Filter Switching ─── */
-function switchTab(tabId) {
-  STATE.currentTab = tabId;
-  STATE.currentPage = 1;
-  STATE.currentFilter = 'all';
-  syncStateToUrlAndStorage();
-  renderContent();
-  window.scrollTo({ top: 350, behavior: 'smooth' });
-}
-
-function setFilter(filter) {
-  STATE.currentFilter = filter;
-  STATE.currentPage = 1;
-  syncStateToUrlAndStorage();
-  renderContent();
-  const shelf = document.getElementById('categoryShelf');
-  if (shelf) shelf.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function onSortChange(sortVal) {
-  STATE.sort = sortVal;
-  STATE.currentPage = 1;
-  renderContent();
-}
-
-function resetAllFilters(e) {
-  if (e) e.preventDefault();
-  STATE.currentFilter = 'all';
-  STATE.sort = 'new';
-  STATE.currentPage = 1;
-  const s1 = document.getElementById('searchInput');
-  const s2 = document.getElementById('searchInputMobile');
-  if (s1) s1.value = '';
-  if (s2) s2.value = '';
-  const c1 = document.getElementById('clearSearchBtn');
-  const c2 = document.getElementById('clearSearchBtnMobile');
-  if (c1) c1.style.display = 'none';
-  if (c2) c2.style.display = 'none';
-  const sortSel = document.getElementById('sortSelect');
-  if (sortSel) sortSel.value = 'new';
-  syncStateToUrlAndStorage();
-  renderContent();
-}
-
-function onSearchInput(val) {
-  if (isEmailAddress(val)) {
-    clearSearch();
-    return;
-  }
-  const s1 = document.getElementById('searchInput');
-  const s2 = document.getElementById('searchInputMobile');
-  if (s1 && s1.value !== val) s1.value = val;
-  if (s2 && s2.value !== val) s2.value = val;
-
-  const hasVal = val.trim().length > 0;
-  const c1 = document.getElementById('clearSearchBtn');
-  const c2 = document.getElementById('clearSearchBtnMobile');
-  if (c1) c1.style.display = hasVal ? 'flex' : 'none';
-  if (c2) c2.style.display = hasVal ? 'flex' : 'none';
-
-  STATE.currentPage = 1;
-  syncStateToUrlAndStorage();
-  renderContent();
-  if (hasVal) recordSearchQuery(val);
-}
-
-function clearSearch() {
-  const s1 = document.getElementById('searchInput');
-  const s2 = document.getElementById('searchInputMobile');
-  if (s1) s1.value = '';
-  if (s2) s2.value = '';
-  const c1 = document.getElementById('clearSearchBtn');
-  const c2 = document.getElementById('clearSearchBtnMobile');
-  if (c1) c1.style.display = 'none';
-  if (c2) c2.style.display = 'none';
-  STATE.currentPage = 1;
-  syncStateToUrlAndStorage();
-  renderContent();
-}
-
-function sanitizeSearchAutofill() {
-  const s1 = document.getElementById('searchInput');
-  const s2 = document.getElementById('searchInputMobile');
-  if ((s1 && isEmailAddress(s1.value)) || (s2 && isEmailAddress(s2.value))) {
-    clearSearch();
-  }
-}
-
-function isEmailAddress(str) {
-  if (!str || typeof str !== 'string') return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str.trim());
-}
-
-function fakeDownloadsNum(id) {
-  let s = 0;
-  for (const c of String(id || '')) s += c.charCodeAt(0);
-  return (s % 2200) + 280;
-}
-
-function fakeDownloads(id) {
-  return fakeDownloadsNum(id).toLocaleString();
-}
-
-/* ─── Apple Category Shelf Helper (No-op as integrated into renderContent) ─── */
-function renderCategoryShelf() {}
-
-/* ─── Render Content (Unified Apple Store Standard) ─── */
-function renderContent() {
-  initTodayDate();
-
-  const rawQuery = getSearchQuery();
-  const query = rawQuery.toLowerCase();
-  const container = document.getElementById('dynamicContent');
-  if (!container) return;
-
-  // Toggle dealBanner visibility
-  const dealBanner = document.getElementById('dealBanner');
-  if (dealBanner) {
-    dealBanner.style.display = (!query && STATE.currentFilter === 'all' && STATE.currentPage === 1) ? 'block' : 'none';
-  }
-
-  let items = [...(DB.ipa || [])];
-
-  // 1. Tìm kiếm thông minh
-  if (query) {
-    items = items.filter(i => {
-      const text = ((i.name || i.title || i.filename || '') + ' ' + (i.developer || '') + ' ' + (i.bundleId || '') + ' ' + (i.desc || '')).toLowerCase();
-      return text.includes(query);
-    });
-  }
-
-  // 2. Lọc danh mục chuẩn xác
-  if (STATE.currentFilter === 'mod') {
-    items = items.filter(i => i.isMod);
-  } else if (STATE.currentFilter !== 'all') {
-    items = items.filter(i => {
-      const c = i.category || smartCategorize(i);
-      if (STATE.currentFilter === 'game') return c === 'Trò chơi';
-      if (STATE.currentFilter === 'social') return c === 'Social';
-      if (STATE.currentFilter === 'media') return c === 'Giải trí';
-      if (STATE.currentFilter === 'edit') return c === 'Chỉnh sửa';
-      if (STATE.currentFilter === 'utility') return c === 'Tiện ích';
-      return true;
-    });
-  }
-
-  // 3. Sắp xếp thông minh
-  const sortMode = STATE.sort || 'new';
-  if (sortMode === 'popular') {
-    items.sort((a, b) => (b.downloads || fakeDownloadsNum(b._id)) - (a.downloads || fakeDownloadsNum(a._id)));
-  } else if (sortMode === 'name') {
-    items.sort((a, b) => (a.name || a.title || '').localeCompare(b.name || b.title || ''));
-  } else if (sortMode === 'mod') {
-    items.sort((a, b) => (b.isMod ? 1 : 0) - (a.isMod ? 1 : 0));
-  }
-
-  // Pagination calculation
-  const totalPages = Math.max(1, Math.ceil(items.length / STATE.itemsPerPage));
-  if (STATE.currentPage > totalPages) STATE.currentPage = 1;
-  const start = (STATE.currentPage - 1) * STATE.itemsPerPage;
-  const pagedItems = items.slice(start, start + STATE.itemsPerPage);
-
-  const filterNameMap = {
-    all: 'Tất cả ứng dụng',
-    mod: '⚡ Ứng dụng & Game MOD PRO',
-    game: 'Trò chơi iOS',
-    social: 'Mạng xã hội & Chat',
-    media: 'Giải trí & Phim ảnh',
-    edit: 'Chỉnh sửa ảnh & Video',
-    utility: 'Tiện ích hệ thống & TrollStore'
-  };
-  const activeTitle = query ? `Kết quả tìm kiếm cho: "${rawQuery}"` : (filterNameMap[STATE.currentFilter] || 'Kho Ứng Dụng');
-
-  const categories = [
-    { id: 'all', name: 'Tất cả' },
-    { id: 'mod', name: '⚡ Bản MOD' },
-    { id: 'game', name: 'Trò chơi' },
-    { id: 'social', name: 'Mạng xã hội' },
-    { id: 'media', name: 'Giải trí' },
-    { id: 'edit', name: 'Chỉnh sửa' },
-    { id: 'utility', name: 'Tiện ích' }
-  ];
-
-  const html = `
-    <!-- Apple App Store Cupertino Segmented Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3.5">
-      
-      <!-- Horizontal Scrollable Pill Filter -->
-      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
-        ${categories.map(c => {
-          const isActive = STATE.currentFilter === c.id;
-          return `
-            <button onclick="setFilter('${c.id}')" class="shrink-0 px-3.5 py-1.5 rounded-full text-xs transition active:scale-95 cursor-pointer whitespace-nowrap ${
-              isActive 
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-sm' 
-                : 'bg-black/[0.04] dark:bg-white/[0.06] text-neutral-600 dark:text-neutral-400 hover:bg-black/[0.08] dark:hover:bg-white/[0.1] font-semibold'
-            }">
-              ${c.name}
-            </button>
-          `;
-        }).join('')}
-      </div>
-
-      <!-- Controls: Sort & Counter -->
-      <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 text-xs">
-        <span class="text-apple-gray"><b class="text-neutral-900 dark:text-neutral-100 font-bold">${items.length.toLocaleString()}</b> ứng dụng</span>
-        <div class="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-full px-2.5 py-1">
-          <span class="text-apple-gray text-[11px] font-medium">Xếp:</span>
-          <select id="sortSelect" onchange="onSortChange(this.value)" class="bg-transparent text-neutral-900 dark:text-neutral-100 font-semibold text-xs outline-none cursor-pointer">
-            <option value="new" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'new' ? 'selected' : ''}>Mới nhất</option>
-            <option value="popular" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'popular' ? 'selected' : ''}>Tải nhiều nhất</option>
-            <option value="mod" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'mod' ? 'selected' : ''}>Bản MOD trước</option>
-            <option value="name" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'name' ? 'selected' : ''}>Tên A → Z</option>
-          </select>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Products Grid (Apple App Store Squircle Architecture) -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5 w-full">
-      ${pagedItems.length ? pagedItems.map((i, idx) => createEntity(i, idx)).join('') : emptyState()}
-    </div>
-
-    <!-- Cupertino Pagination -->
-    ${createPagination(totalPages)}
-  `;
-
-  container.innerHTML = html;
-  if (window.lucide) lucide.createIcons();
-  refreshScrollReveal();
-}
-
-/* ─── Product Card Builder (Apple App Store Clean Squircle Card with Spring Interactions) ─── */
-function createEntity(i, index) {
-  let safeName = i.name || i.title || 'Ứng dụng';
-  let safeDesc = i.desc || i.description || 'Nhấn để xem chi tiết';
-  let safeVer = i.version || '1.0';
-  const isVip = i._type === 'VIP';
-  const cat = i.category || smartCategorize(i);
-  let safeIcon = extractAppIcon(i, '');
-  const dlCount = i.downloads ? Number(i.downloads).toLocaleString() : fakeDownloads(i._id || i.name);
-  const cleanNameForJs = safeName.replace(/['"\\\n]/g, ' ');
-
-  return `
-    <div onclick="openAppView('${i._id}')" 
-         class="group bg-white dark:bg-[#1C1C1E] rounded-[22px] sm:rounded-[26px] p-3 sm:p-4 border border-black/[0.06] dark:border-white/[0.08] hover:border-apple-blue/35 dark:hover:border-apple-blue/45 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_28px_rgba(0,0,0,0.35)] -translate-y-0 hover:-translate-y-1.5 active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col justify-between relative overflow-hidden text-inherit cursor-pointer select-none">
-      
-      <!-- Top Image Area (True Apple Squircle) -->
-      <div>
-        <div class="relative w-full aspect-square apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.04] dark:border-white/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
-          <img src="${safeIcon}" alt="${safeName}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" onerror="this.onerror=null;this.src=getAppleAppFallbackIcon('${cleanNameForJs}','${cat}')">
-          
-          ${i.isMod ? `
-            <span class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/65 backdrop-blur-md text-amber-400 text-[9px] font-black tracking-wider border border-white/10 uppercase shadow-sm">
-              MOD
-            </span>
-          ` : (isVip ? `
-            <span class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-amber-500 text-black text-[9px] font-black tracking-wider uppercase shadow-sm">
-              VIP
-            </span>
-          ` : '')}
-        </div>
-
-        <!-- Info Area -->
-        <div class="mt-2.5 space-y-0.5">
-          <div class="flex items-center justify-between text-[11px] text-apple-gray font-semibold uppercase tracking-wider">
-            <span class="truncate">${cat}</span>
-            <span class="truncate text-[10px] opacity-75">v${safeVer}</span>
-          </div>
-
-          <h4 class="font-bold text-xs sm:text-[14px] text-neutral-900 dark:text-neutral-100 line-clamp-2 leading-snug group-hover:text-apple-blue transition-colors min-h-[32px] sm:min-h-[36px]" title="${safeName}">
-            ${safeName}
-          </h4>
-
-          <div class="flex items-center gap-1 text-[11px] text-apple-gray font-medium pt-0.5">
-            <span class="text-amber-500 font-bold flex items-center gap-0.5"><i data-lucide="star" class="w-3 h-3 fill-amber-500 text-amber-500"></i> 5.0</span>
-            <span>•</span>
-            <span class="truncate">${dlCount} lượt tải</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bottom: Cupertino "NHẬN" / "VIP" Pill Button -->
-      <div class="pt-2.5">
-        <button class="w-full py-1.5 rounded-full font-bold text-xs uppercase tracking-wider ${
-          isVip 
-            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white' 
-            : 'bg-[#F2F2F7] dark:bg-[#2C2C2E] text-apple-blue dark:text-apple-lightBlue hover:bg-apple-blue hover:text-white dark:hover:bg-apple-blue dark:hover:text-white'
-        } transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 shadow-sm text-center flex items-center justify-center gap-1" onclick="event.stopPropagation();openAppView('${i._id}')">
-          <span>${isVip ? 'TẢI VIP' : 'NHẬN'}</span>
-        </button>
-      </div>
-
-    </div>
-  `;
-}
-
-function createPagination(total) {
-  if (total <= 1) return '';
-  let btns = '';
-  let start = Math.max(1, STATE.currentPage - 2);
-  let end = Math.min(total, start + 4);
-  if (end - start < 4) {
-    start = Math.max(1, end - 4);
-  }
-
-  // Nút Previous
-  btns += `<button onclick="changePage(${STATE.currentPage - 1})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white ${STATE.currentPage === 1 ? 'opacity-30 pointer-events-none' : ''} transition active:scale-95 shadow-sm" title="Trang trước"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>`;
-
-  // Trang đầu
-  if (start > 1) {
-    btns += `<button onclick="changePage(1)" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs transition active:scale-95 border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white shadow-sm">1</button>`;
-    if (start > 2) btns += `<span class="px-1 text-apple-gray text-xs">...</span>`;
-  }
-
-  // Các trang ở giữa
-  for (let p = start; p <= end; p++) {
-    const isActive = p === STATE.currentPage;
-    btns += `<button onclick="changePage(${p})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs transition active:scale-95 shadow-sm ${isActive ? 'bg-apple-blue text-white shadow-apple-blue/30' : 'border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white'}">${p}</button>`;
-  }
-
-  // Trang cuối
-  if (end < total) {
-    if (end < total - 1) btns += `<span class="px-1 text-apple-gray text-xs">...</span>`;
-    btns += `<button onclick="changePage(${total})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-bold text-xs transition active:scale-95 border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white shadow-sm">${total}</button>`;
-  }
-
-  // Nút Next
-  btns += `<button onclick="changePage(${STATE.currentPage + 1})" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border border-apple-separatorLight dark:border-apple-separatorDark bg-white dark:bg-[#1C1C1E] text-apple-gray hover:text-black dark:hover:text-white ${STATE.currentPage === total ? 'opacity-30 pointer-events-none' : ''} transition active:scale-95 shadow-sm" title="Trang sau"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>`;
-
-  return `
-    <div class="flex flex-col items-center gap-2 mt-8 mb-4">
-      <div class="flex items-center justify-center gap-1.5 flex-wrap">${btns}</div>
-      <span class="text-[11px] text-apple-gray font-semibold">Trang ${STATE.currentPage} / ${total}</span>
-    </div>
-  `;
-}
-
-function emptyState() {
-  if (DB.ipa.length === 0 && DB.vip.length === 0) {
-    return `<div class="col-span-full py-16 text-center text-apple-gray"><div class="w-8 h-8 border-2 border-apple-blue border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p class="font-bold text-sm text-black dark:text-white">Đang kết nối và tổng hợp kho ứng dụng...</p></div>`;
-  }
-  return `
-    <div class="col-span-full py-16 text-center text-apple-gray">
-      <div class="w-16 h-16 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center mx-auto mb-3 text-apple-gray">
-        <i data-lucide="search-x" class="w-8 h-8"></i>
-      </div>
-      <p class="font-bold text-sm text-black dark:text-white">Không tìm thấy ứng dụng phù hợp</p>
-      <p class="text-xs text-apple-gray mt-1">Thử chuyển danh mục hoặc tìm kiếm với từ khóa khác</p>
-    </div>
-  `;
-}
-
-function changePage(p) {
-  STATE.currentPage = p;
-  syncStateToUrlAndStorage();
-  renderContent();
-  window.scrollTo({ top: 380, behavior: 'smooth' });
-}
-
-/* ─── App Detail View (Dedicated Page Navigation) ─── */
-function openAppView(appId) {
-  const i = window.allAppsMap[appId];
-  if (!i) return;
-  STATE.currentItem = i;
-  recordAppView(i);
-
-  // Lưu app hiện tại vào sessionStorage & localStorage để trang app.html mở ra tức thì 0ms
-  try {
-    sessionStorage.setItem('ipaviet_current_app', JSON.stringify(i));
-    localStorage.setItem('ipaviet_current_app', JSON.stringify(i));
-  } catch(e) {}
-
-  // Đánh dấu lưu trạng thái trang & vị trí cuộn
-  sessionStorage.setItem('ipaviet_lib_page', STATE.currentPage);
-  sessionStorage.setItem('ipaviet_lib_filter', STATE.currentFilter);
-  sessionStorage.setItem('ipaviet_lib_scrollY', window.scrollY);
-  const sInput = document.getElementById('searchInput');
-  if (sInput && sInput.value.trim()) {
-    sessionStorage.setItem('ipaviet_lib_q', sInput.value.trim());
-  }
-
-  // Mở trang chi tiết app riêng biệt kèm tham số quay về
-  window.location.href = `app.html?id=${encodeURIComponent(i._id || appId)}&fromPage=${STATE.currentPage}&fromFilter=${encodeURIComponent(STATE.currentFilter)}`;
-  return;
-
-  let safeIcon = i.icon || i.iconUrl || 'https://placehold.co/120x120/0d0f1a/00f0ff?text=IPA';
-  const heroBg = document.getElementById('detailHeroBg');
-  const iconImg = document.getElementById('detailIcon');
-  const iconWrap = iconImg.parentElement;
-  const title = document.getElementById('detailTitle');
-  const dev = document.getElementById('detailDev');
-  const actions = document.querySelector('.detail-actions');
-  const body = document.querySelector('.detail-body');
-  const closeBtn = document.querySelector('.detail-close');
-
-  // Reset animation states
-  heroBg.style.opacity = '0';
-  heroBg.style.transform = 'scale(1.5)';
-  iconWrap.classList.remove('animated');
-  iconWrap.style.opacity = '0';
-  iconWrap.style.transform = 'scale(0.6) translateY(40px) rotateX(20deg)';
-  title.style.opacity = '0';
-  title.style.transform = 'translateY(30px)';
-  dev.style.opacity = '0';
-  dev.style.transform = 'translateY(20px)';
-  actions.style.opacity = '0';
-  actions.style.transform = 'translateY(20px) scale(0.95)';
-  body.style.opacity = '0';
-  body.style.transform = 'translateY(40px)';
-  closeBtn.style.opacity = '0';
-  closeBtn.style.transform = 'scale(0.5) rotate(-90deg)';
-
-  // Set text content
-  title.innerText = i.name || i.title || 'Unknown App';
-  dev.innerText = i.developer || 'IPAVIET Studio';
-  const descEl = document.getElementById('detailDesc');
-  const modFallbackDesc = (i.isMod && i.modFeatures && i.modFeatures.length > 0)
-    ? (i.modSummary ? i.modSummary + '\n\n' : '') + i.modFeatures.map(f => '• ' + f).join('\n')
-    : "Ứng dụng tuyệt vời được phân phối bởi hệ thống IPAVIET.";
-  descEl.innerText = i.fullDesc || i.description || i.desc || modFallbackDesc;
-  document.getElementById('dInfoDev').innerText = i.developer || 'IPAVIET Studio';
-  document.getElementById('dInfoCat').innerText = i.category || 'Tiện ích';
-  document.getElementById('dInfoVer').innerText = i.version || '1.0.0';
-  document.getElementById('dInfoSize').innerText = i.size || '--';
-  document.getElementById('dInfoBundle').innerText = i.bundleId || ('com.ipaviet.' + (i.name || "app").replace(/[^a-zA-Z0-9]/g, '').toLowerCase());
-
-  // MOD Award & Features Showcase
-  const awardEl = document.getElementById('detailAward');
-  if (i.isMod) {
-    awardEl.innerText = '⚡ Bản MOD';
-    awardEl.style.color = '#f43f5e';
-    awardEl.style.textShadow = '0 0 12px rgba(236,72,153,0.5)';
-  } else if (i._type === 'VIP') {
-    awardEl.innerText = 'Siêu Phẩm';
-    awardEl.style.color = 'var(--accent-amber)';
-    awardEl.style.textShadow = 'none';
-  } else {
-    awardEl.innerText = 'Khuyên Dùng';
-    awardEl.style.color = 'var(--text-primary)';
-    awardEl.style.textShadow = 'none';
-  }
-
-  const modPanel = document.getElementById('detailModPanel');
-  if (modPanel) {
-    // Reset inline styles so it does not stay at opacity 0 from closeAppView
-    modPanel.style.opacity = '1';
-    modPanel.style.transform = 'translateY(0)';
-    if (i.isMod) {
-      const feats = (i.modFeatures && i.modFeatures.length > 0) ? i.modFeatures : [
-        'Đã kích hoạt các tính năng nâng cao & đặc quyền',
-        'Tối ưu hóa hiệu năng, tương thích hoàn hảo iOS 15 - 18+',
-        'Không cần Jailbreak máy, cài đặt trực tiếp qua IPA'
-      ];
-      modPanel.innerHTML = `
-        <div class="mod-feature-card">
-          <div class="mod-card-header">
-            <div class="mod-badge-wrap">
-              <span class="mod-badge-pill">
-                <i data-lucide="zap" style="width:13px;height:13px;"></i>
-                TÍNH NĂNG MOD & HACK ĐẶC QUYỀN
-              </span>
-            </div>
-            <span class="mod-status-tag">
-              <i data-lucide="check-circle-2" style="width:12px;height:12px;"></i> ĐÃ KÍCH HOẠT SẴN
-            </span>
-          </div>
-          <div class="mod-feature-list">
-            ${feats.map(f => `
-              <div class="mod-feature-item">
-                <div class="mod-feat-icon"><i data-lucide="zap" style="width:12px;height:12px;"></i></div>
-                <span class="mod-feat-text">${f}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-      modPanel.style.display = 'block';
-    } else {
-      modPanel.innerHTML = '';
-      modPanel.style.display = 'none';
-    }
-  }
-
-  // Screenshots & Smart API Handling
-  const ssWrap = document.getElementById('detailScreenshotsWrap');
-  const ssList = document.getElementById('detailScreenshots');
-  ssList.innerHTML = '';
-  ssWrap.style.opacity = '0';
-  ssWrap.style.transform = 'translateY(20px)';
-
-  const renderSS = (urls) => {
-    ssList.innerHTML = '';
-    urls.forEach(url => {
-      const img = document.createElement('img');
-      img.src = url;
-      img.onerror = () => img.remove();
-      ssList.appendChild(img);
-    });
-    ssWrap.style.display = urls.length ? 'block' : 'none';
-  };
-
-  // ═════════════════════════════════════════════════════════════
-  // TÍNH NĂNG LỌC API THÔNG MINH:
-  // - Nếu API có sẵn screenshots và mô tả: dùng ngay, KHÔNG gọi thêm
-  // - Chỉ khi thiếu screenshots hoặc mô tả mới gọi Apple iTunes fallback
-  // - Không bao giờ ghi đè mô tả hack của bản MOD bằng mô tả gốc App Store
-  // ═════════════════════════════════════════════════════════════
-  if (Array.isArray(i.screenshots) && i.screenshots.length > 0) {
-    renderSS(i.screenshots);
-  } else {
-    ssWrap.style.display = 'none';
-    fetchAppleMetadataSmart(i).then(meta => {
-      if (meta && meta.screenshots && meta.screenshots.length > 0) {
-        i.screenshots = meta.screenshots.slice(0, 6);
-        renderSS(i.screenshots);
-        gsap.to(ssWrap, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' });
-        gsap.to('.detail-section-title', { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' });
-      }
-      if (!i.hasNativeDesc && meta && meta.description && !i.isMod) {
-        i.fullDesc = meta.description;
-        descEl.innerText = meta.description;
-      }
-      if (!i.hasNativeIcon && meta && meta.icon) {
-        i.icon = meta.icon;
-        heroBg.src = meta.icon;
-        iconImg.src = meta.icon;
-      }
-    });
-  }
-
-  // Reset info cells
-  document.querySelectorAll('.detail-info-cell').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-  });
-  document.querySelectorAll('.detail-data-row').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateX(-10px)';
-  });
-  document.querySelectorAll('.detail-section-title').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-  });
-
-  // Purchase panel reset
-  document.getElementById('detailPurchasePanel').innerHTML = '';
-
-  // Bắt buộc đăng nhập: nếu khách chưa đăng nhập, cập nhật nút cài đặt và hiển thị panel đăng nhập ngay
-  const installBtn = document.getElementById('detailInstallBtn');
-  const appCfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
-  const isLoginRequired = (appCfg && appCfg.require_login !== false);
-  if (!currentUser && isLoginRequired) {
-    if (installBtn) {
-      installBtn.innerHTML = `<i data-lucide="lock" style="width:16px;height:16px;"></i> ĐĂNG NHẬP ĐỂ TẢI`;
-      installBtn.onclick = () => { window.location.href = '../account.html'; };
-    }
-    showDownloadAction();
-  } else {
-    if (installBtn) {
-      installBtn.innerHTML = `<i data-lucide="download" style="width:16px;height:16px;"></i> CÀI ĐẶT`;
-      installBtn.onclick = () => { showDownloadAction(); };
-    }
-  }
-
-  // Show stage immediately
-  const stage = document.getElementById('app-detail-stage');
-  stage.classList.add('active');
-  document.body.style.overflow = 'hidden';
-  lucide.createIcons();
-
-  // Preload images then animate
-  const preload = (src) => new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(src);
-    img.onerror = () => resolve('https://placehold.co/400x400/0d0f1a/00f0ff?text=IPAVIET');
-    img.src = src;
-  });
-
-  Promise.all([preload(safeIcon)]).then(([loadedIcon]) => {
-    heroBg.src = loadedIcon;
-    iconImg.src = loadedIcon;
-
-    // ═══ GSAP ANIMATION SEQUENCE ═══
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
-    // 1. Backdrop blur morph
-    tl.fromTo('.detail-backdrop',
-      { backdropFilter: 'blur(0px) saturate(100%)', WebkitBackdropFilter: 'blur(0px) saturate(100%)' },
-      { backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)', duration: 0.8 },
-      0
-    );
-
-    // 2. Background image scale + fade
-    tl.to(heroBg, { opacity: 0.35, scale: 1.2, duration: 1.2, ease: 'power2.out' }, 0);
-
-    // 3. Close button spin in
-    tl.to(closeBtn, { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: 'back.out(1.7)' }, 0.2);
-
-    // 4. Icon fly in with 3D depth
-    tl.to(iconWrap, {
-      opacity: 1, scale: 1, y: 0, rotateX: 0,
-      duration: 0.7, ease: 'back.out(1.4)',
-      onComplete: () => iconWrap.classList.add('animated')
-    }, 0.15);
-
-    // 5. Title slide up
-    tl.to(title, { opacity: 1, y: 0, duration: 0.6 }, 0.35);
-
-    // 6. Developer fade
-    tl.to(dev, { opacity: 1, y: 0, duration: 0.5 }, 0.45);
-
-    // 7. Actions pop
-    tl.to(actions, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'back.out(1.2)' }, 0.5);
-
-    // 8. Info grid stagger
-    tl.to('.detail-info-cell', {
-      opacity: 1, y: 0, duration: 0.5,
-      stagger: 0.08, ease: 'power2.out'
-    }, 0.55);
-
-    // 8.5 MOD Panel slide in with glowing effect
-    if (i.isMod && modPanel && modPanel.style.display !== 'none') {
-      tl.fromTo(modPanel,
-        { opacity: 0, y: 25 },
-        { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' },
-        0.58
-      );
-    }
-
-    // 9. Body content slide up
-    tl.to(body, { opacity: 1, y: 0, duration: 0.6 }, 0.6);
-
-    // 10. Section titles
-    tl.to('.detail-section-title', {
-      opacity: 1, y: 0, duration: 0.5,
-      stagger: 0.1, ease: 'power2.out'
-    }, 0.7);
-
-    // 11. Description
-    tl.to('#detailDesc', { opacity: 1, y: 0, duration: 0.5 }, 0.75);
-
-    // 12. Screenshots
-    tl.to(ssWrap, { opacity: 1, y: 0, duration: 0.6 }, 0.8);
-
-    // 13. Data rows stagger from left
-    tl.to('.detail-data-row', {
-      opacity: 1, x: 0, duration: 0.4,
-      stagger: 0.06, ease: 'power2.out'
-    }, 0.85);
-  });
-}
-
-function closeAppView() {
-  const stage = document.getElementById('app-detail-stage');
-  const iconWrap = document.getElementById('detailIcon').parentElement;
-
-  // Kill any running timeline
-  gsap.killTweensOf('.detail-backdrop');
-  gsap.killTweensOf('#detailHeroBg');
-  gsap.killTweensOf('.detail-close');
-  gsap.killTweensOf(iconWrap);
-  gsap.killTweensOf('#detailTitle');
-  gsap.killTweensOf('#detailDev');
-  gsap.killTweensOf('.detail-actions');
-  gsap.killTweensOf('#detailModPanel');
-  gsap.killTweensOf('.detail-body');
-  gsap.killTweensOf('.detail-info-cell');
-  gsap.killTweensOf('.detail-section-title');
-  gsap.killTweensOf('#detailDesc');
-  gsap.killTweensOf('#detailScreenshotsWrap');
-  gsap.killTweensOf('.detail-data-row');
-
-  // Reverse animation out
-  const tl = gsap.timeline({
-    defaults: { ease: 'power2.in' },
-    onComplete: () => {
-      stage.classList.remove('active');
-      iconWrap.classList.remove('animated');
-      document.body.style.overflow = '';
-    }
-  });
-
-  tl.to('.detail-body', { opacity: 0, y: 30, duration: 0.3 }, 0);
-  tl.to('#detailModPanel', { opacity: 0, y: 15, duration: 0.25 }, 0.05);
-  tl.to('.detail-data-row', { opacity: 0, x: -10, duration: 0.2, stagger: 0.03 }, 0);
-  tl.to('#detailScreenshotsWrap', { opacity: 0, y: 20, duration: 0.3 }, 0.05);
-  tl.to('.detail-section-title', { opacity: 0, y: 15, duration: 0.25, stagger: 0.05 }, 0.05);
-  tl.to('#detailDesc', { opacity: 0, y: 15, duration: 0.25 }, 0.1);
-  tl.to('.detail-info-cell', { opacity: 0, y: 15, duration: 0.25, stagger: 0.04 }, 0.1);
-  tl.to('.detail-actions', { opacity: 0, scale: 0.9, y: 10, duration: 0.3 }, 0.15);
-  tl.to('#detailDev', { opacity: 0, y: 10, duration: 0.25 }, 0.2);
-  tl.to('#detailTitle', { opacity: 0, y: 20, duration: 0.3 }, 0.2);
-  tl.to(iconWrap, { opacity: 0, scale: 0.7, y: 30, rotateX: 15, duration: 0.35 }, 0.25);
-  tl.to('#detailHeroBg', { opacity: 0, scale: 1.4, duration: 0.4 }, 0.2);
-  tl.to('.detail-close', { opacity: 0, scale: 0.5, rotation: -90, duration: 0.3 }, 0.25);
-  tl.to('.detail-backdrop', {
-    backdropFilter: 'blur(0px) saturate(100%)',
-    WebkitBackdropFilter: 'blur(0px) saturate(100%)',
-    duration: 0.4
-  }, 0.2);
-}
-
-function shareApp() {
-  if (navigator.share && STATE.currentItem) {
-    navigator.share({
-      title: STATE.currentItem.name || 'IPAVIET App',
-      text: STATE.currentItem.desc || 'Tải app từ IPAVIET',
-      url: window.location.href
-    });
-  } else {
-    showToast('Đã sao chép liên kết');
-  }
-}
-
-/* ─── Download / Purchase Logic ─── */
-function showDownloadAction() {
-  const panel = document.getElementById('detailPurchasePanel');
-  const isAppVIP = STATE.currentItem._type === 'VIP';
-  const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
-  const isLoginRequired = (cfg && cfg.require_login !== false);
-
-  if (!currentUser && isLoginRequired) {
-    panel.innerHTML = `
-      <div class="purchase-panel purchase-panel-normal" style="border: 1px solid rgba(6,182,212,0.3); background: rgba(6,182,212,0.06); padding: 22px; border-radius: 18px; text-align: center;">
-        <div style="width:48px;height:48px;border-radius:14px;background:rgba(6,182,212,0.15);color:var(--accent-cyan);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
-          <i data-lucide="lock" style="width:24px;height:24px;"></i>
-        </div>
-        <p style="font-size:11px;font-weight:700;color:var(--accent-cyan);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">YÊU CẦU ĐĂNG NHẬP</p>
-        <h4 style="font-size:18px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);margin-bottom:8px;">Đăng Nhập Để Tải Ứng Dụng</h4>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:18px;line-height:1.5;">
-          Vui lòng đăng nhập hoặc đăng ký tài khoản IPAVIET để mở khóa tính năng tải ứng dụng.
-        </p>
-        <a href="../account.html" style="text-decoration:none;">
-          <button class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;font-size:14px;background:var(--accent-cyan);color:#000;font-weight:700;">
-            <i data-lucide="log-in" style="width:16px;height:16px;"></i> ĐĂNG NHẬP / ĐĂNG KÝ NGAY
-          </button>
-        </a>
-      </div>`;
-    lucide.createIcons();
-    panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-
-  if (!currentUser) {
-    panel.innerHTML = `
-      <div class="purchase-panel purchase-panel-normal">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <div>
-            <p style="font-size:11px;font-weight:700;color:var(--accent-cyan);letter-spacing:0.1em;text-transform:uppercase;">Chế độ khách</p>
-            <p style="font-size:18px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">Tải Free hoặc Đăng Nhập</p>
-          </div>
-          <a href="../account.html" style="font-size:12px;color:var(--accent-cyan);text-decoration:none;font-weight:700;">Đăng nhập VIP →</a>
-        </div>
-        <button onclick="downloadFreeStore(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;margin-bottom:12px;"><i data-lucide="cloud-lightning" style="width:16px;height:16px;"></i> TẢI XUỐNG NGAY (FREE ADS)</button>
-        <a href="../account.html" style="text-decoration:none;"><button class="detail-btn detail-btn-secondary magnetic" style="width:100%;justify-content:center;font-size:13px;"><i data-lucide="user" style="width:14px;height:14px;"></i> Đăng Nhập / Đăng Ký Tài Khoản</button></a>
-      </div>`;
-    lucide.createIcons();
-    panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-
-  if (isUserVip) {
-    const pName = (SHORTENER_CONFIG && SHORTENER_CONFIG.provider === 'link4m') ? 'Link4m' : 'YeuMoney';
-    panel.innerHTML = `
-      <div class="purchase-panel purchase-panel-vip">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <div>
-            <p style="font-size:11px;font-weight:700;color:var(--accent-amber);letter-spacing:0.1em;text-transform:uppercase;">Đặc quyền VIP</p>
-            <p style="font-size:20px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">Miễn phí tải trực tiếp</p>
-          </div>
-          <i data-lucide="crown" style="width:28px;height:28px;color:var(--accent-amber);"></i>
-        </div>
-        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
-          Tài khoản của bạn là <b>Hội Viên VIP</b> nên được tải trực tiếp siêu tốc, không giới hạn.
-        </p>
-        <button onclick="downloadVipApp(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;margin-bottom:10px;">
-          <i data-lucide="zap" style="width:16px;height:16px;"></i> TẢI XUỐNG NGAY (VIP TRỰC TIẾP)
-        </button>
-      </div>`;
-  } else {
-    if (isAppVIP) {
-      panel.innerHTML = `
-        <div class="purchase-panel purchase-panel-locked">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-            <div style="width:40px;height:40px;border-radius:50%;background:rgba(244,63,94,0.15);display:flex;align-items:center;justify-content:center;"><i data-lucide="shield-alert" style="width:20px;height:20px;color:var(--accent-rose);"></i></div>
-            <div>
-              <p style="font-size:11px;font-weight:700;color:var(--accent-rose);letter-spacing:0.1em;text-transform:uppercase;">Truy cập bị từ chối</p>
-              <p style="font-size:18px;font-weight:700;color:var(--text-primary);">Chỉ dành cho VIP</p>
-            </div>
-          </div>
-          <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6;">Siêu phẩm này nằm trong bộ sưu tập độc quyền. Bạn cần nâng cấp lên Hội Viên VIP.</p>
-          <a href="../dichvu.html" style="text-decoration:none;"><button class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;background:linear-gradient(135deg,var(--accent-rose),#be123c);"><i data-lucide="zap" style="width:16px;height:16px;"></i> NÂNG CẤP VIP NGAY</button></a>
-        </div>`;
-    } else {
-      const isShortenerActive = (cfg && cfg.enabled !== false && !cfg.free_pass_locked);
-      panel.innerHTML = `
-        <div class="purchase-panel purchase-panel-normal">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <div><p style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.1em;text-transform:uppercase;">Phí tải App</p><p style="font-size:22px;font-weight:700;color:var(--accent-cyan);font-family:var(--font-display);">1.000đ</p></div>
-            <div style="text-align:right;"><p style="font-size:11px;font-weight:700;color:var(--text-tertiary);letter-spacing:0.1em;text-transform:uppercase;">Số dư</p><p style="font-size:18px;font-weight:700;color:var(--text-primary);font-family:var(--font-display);">${currentCoins.toLocaleString()}đ</p></div>
-          </div>
-          <button onclick="buyAppWithCoins(this)" class="detail-btn detail-btn-primary magnetic" style="width:100%;justify-content:center;margin-bottom:12px;"><i data-lucide="zap" style="width:16px;height:16px;"></i> THANH TOÁN & TẢI</button>
-          <div style="display:flex;gap:8px;margin-bottom:${isShortenerActive ? '0' : '10px'};">
-            ${isShortenerActive ? `
-              <button onclick="downloadFreeStore(this)" class="detail-btn detail-btn-secondary magnetic" style="flex:1;justify-content:center;font-size:13px;"><i data-lucide="cloud-lightning" style="width:14px;height:14px;"></i> Tải Miễn Phí</button>
-            ` : `
-              <button onclick="downloadFreeStore(this)" class="detail-btn detail-btn-secondary magnetic" style="flex:1;justify-content:center;font-size:12px;opacity:0.65;border-color:rgba(245,158,11,0.3);color:var(--text-secondary);" title="Tính năng đang tạm bảo trì"><i data-lucide="wrench" style="width:13px;height:13px;color:#f59e0b;"></i> Tải Miễn Phí (Đang Bảo Trì)</button>
-            `}
-            <a href="../dichvu.html" style="flex:1;text-decoration:none;"><button class="detail-btn detail-btn-secondary magnetic" style="width:100%;justify-content:center;font-size:13px;color:var(--accent-emerald);border-color:rgba(16,185,129,0.2);"><i data-lucide="wallet" style="width:14px;height:14px;"></i> Nạp Tiền</button></a>
-          </div>
-          ${!isShortenerActive ? `
-            <div style="padding:10px 14px;border-radius:12px;background:rgba(245,158,11,0.06);border:1px dashed rgba(245,158,11,0.3);font-size:12px;color:var(--text-secondary);line-height:1.45;text-align:center;">
-              <span style="color:var(--accent-amber);font-weight:700;display:inline-flex;align-items:center;gap:4px;"><i data-lucide="wrench" style="width:13px;height:13px;"></i> Thông báo:</span> Tính năng tải miễn phí đang tạm thời bảo trì để nâng cấp hệ thống. Bạn có thể dùng <b>Xu</b> hoặc nâng cấp <b>Hội Viên VIP</b> để tải trực tiếp ngay.
-            </div>
-          ` : ''}
-        </div>`;
-    }
-  }
-  lucide.createIcons();
-  panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-async function downloadVipApp(btnEl) {
-  const originalText = btnEl.innerHTML;
-  btnEl.innerHTML = `<div style="width:20px;height:20px;border:2px solid var(--void);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>`;
-  btnEl.disabled = true;
-  try {
-    const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-    if (rawLink) {
-      await recordAppDownload(STATE.currentItem, 'VIP');
-      showToast("Đặc quyền VIP: Bắt đầu tải ứng dụng...");
-      setTimeout(() => {
-        window.location.href = rawLink;
-      }, 250);
-    } else {
-      showToast("Không tìm thấy link tải");
-    }
-  } catch (error) {
-    showToast("Lỗi kết nối");
-  }
-  setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
-}
-
-async function buyAppWithCoins(btnEl) {
-  const APP_PRICE = 1000;
-  if (currentCoins < APP_PRICE) {
-    showToast("Không đủ số dư. Vui lòng nạp thêm!");
-    setTimeout(() => window.location.href = '../dichvu.html', 1000);
-    return;
-  }
-  const originalText = btnEl.innerHTML;
-  btnEl.innerHTML = `<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>`;
-  btnEl.disabled = true;
-  try {
-    const rawLink = STATE.currentItem.fileLink || STATE.currentItem.downloadUrl || STATE.currentItem.link;
-    const appName = STATE.currentItem.name || STATE.currentItem.title || "Ứng dụng";
-    if (rawLink) {
-      try {
-        await db.collection("users").doc(currentUser.uid).set({ coins: firebase.firestore.FieldValue.increment(-APP_PRICE) }, { merge: true });
-        await db.collection("users").doc(currentUser.uid).collection("transactions").add({ amount: -APP_PRICE, desc: `Tải lẻ: ${appName}`, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-      } catch (fbErr) {
-        console.warn("Firestore coins deduction warning:", fbErr);
-      }
-      await recordAppDownload(STATE.currentItem, 'Xu (1000đ)');
-      showToast(`Đã thanh toán ${APP_PRICE.toLocaleString()}đ`);
-      setTimeout(() => {
-        window.location.href = rawLink;
-      }, 250);
-    } else {
-      showToast("Không tìm thấy link tải");
-    }
-  } catch (error) {
-    showToast("Lỗi kết nối mạng");
-  }
-  setTimeout(() => { btnEl.innerHTML = originalText; btnEl.disabled = false; }, 2000);
-}
-
-// ═══════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════
 // HỆ THỐNG BẢO MẬT VƯỢT LINK (YEUMONEY / LINK4M / CHỐNG LỖ HỔNG)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -3122,199 +2156,703 @@ async function downloadFreeStore(btnEl) {
   }
 }
 
-/* ─── VSign Popup ─── */
-function closeVsignPopup() {
-  document.getElementById('vsignPopup').classList.remove('active');
-}
-function dismissVsignPopup(minutes) {
-  closeVsignPopup();
-  const untilTime = Date.now() + minutes * 60 * 1000;
-  localStorage.setItem('vsign_popup_until', untilTime.toString());
-}
-function downloadVsignApp() {
-  closeVsignPopup();
-  window.location.href = '../sign-app/index.html?app=vsign';
-}
 
-/* ─── Theme ─── */
-function toggleTheme() {
-  const isDark = document.documentElement.classList.toggle('dark');
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-}
 
-/* ─── Toast ─── */
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3000);
-}
+  /* ─── UI Application State ─── */
+  const STATE = {
+    currentTab: 'explore', // 'explore' or 'catalog'
+    currentFilter: 'all',  // 'all', 'vip', 'games', 'tools', 'social'
+    currentPage: 1,
+    itemsPerPage: 24,
+    currentItem: null,
+    searchQuery: ''
+  };
 
-/* ─── Magnetic Effects ─── */
-function initMagnetic() {
-  if (window.matchMedia('(pointer: coarse)').matches) return;
-  document.querySelectorAll('.magnetic:not([data-magnetic])').forEach(el => {
-    el.setAttribute('data-magnetic', '1');
-    el.addEventListener('mousemove', e => {
-      const rect = el.getBoundingClientRect();
-      const x = e.clientX - rect.left - rect.width / 2;
-      const y = e.clientY - rect.top - rect.height / 2;
-      el.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+  /* ─── Backwards Compatibility Wrappers ─── */
+  function renderContent() {
+    renderRails();
+    renderCatalog();
+  }
+
+  function closeAppView() {
+    closeAppModal();
+  }
+
+  function openAppView(appId) {
+    openAppModal(appId);
+  }
+
+  /* ─── Toast Helper ─── */
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(t.hideTimer);
+    t.hideTimer = setTimeout(() => { t.hidden = true; }, 3500);
+  }
+
+  /* ─── Theme Management (Exact MacLife) ─── */
+  const themeMedia = matchMedia('(prefers-color-scheme: dark)');
+  const themeKey = 'maclife_store_theme';
+
+  function savedTheme() {
+    try {
+      const v = localStorage.getItem(themeKey) || localStorage.getItem('theme');
+      return (v === 'light' || v === 'dark') ? v : 'system';
+    } catch(e) { return 'system'; }
+  }
+
+  let currentThemeChoice = savedTheme();
+
+  function setTheme(choice, persist = true) {
+    if (!['system', 'light', 'dark'].includes(choice)) return;
+    currentThemeChoice = choice;
+    if (persist) {
+      try {
+        if (choice === 'system') {
+          localStorage.removeItem(themeKey);
+          localStorage.removeItem('theme');
+        } else {
+          localStorage.setItem(themeKey, choice);
+          localStorage.setItem('theme', choice);
+        }
+      } catch(e) {}
+    }
+    document.documentElement.dataset.theme = choice === 'system' ? (themeMedia.matches ? 'dark' : 'light') : choice;
+    document.querySelectorAll('[data-theme-choice]').forEach(btn => {
+      btn.setAttribute('aria-pressed', String(btn.dataset.themeChoice === choice));
     });
-    el.addEventListener('mouseleave', () => {
-      el.style.transform = '';
+  }
+
+  setTheme(currentThemeChoice, false);
+
+  document.querySelectorAll('[data-theme-choice]').forEach(btn => {
+    btn.addEventListener('click', () => setTheme(btn.dataset.themeChoice));
+  });
+
+  document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      setTheme(isDark ? 'light' : 'dark');
     });
   });
-}
 
-function initEntityGlow() {
-  document.querySelectorAll('.entity:not([data-glow])').forEach(el => {
-    el.setAttribute('data-glow', '1');
-    el.addEventListener('mousemove', e => {
-      const rect = el.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      el.style.setProperty('--mouse-x', x + '%');
-      el.style.setProperty('--mouse-y', y + '%');
-    });
+  themeMedia.addEventListener('change', () => {
+    if (currentThemeChoice === 'system') setTheme('system', false);
   });
-}
 
-let scrollRevealObserver = null;
+  /* ─── Mobile Sidebar Navigation ─── */
+  const sidebarEl = document.getElementById('sidebar');
+  const scrimEl = document.querySelector('.menu-scrim');
 
-function initScrollReveal() {
-  if (scrollRevealObserver) return; // chỉ tạo 1 lần
-  if (typeof IntersectionObserver === 'undefined') return;
-  scrollRevealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        scrollRevealObserver.unobserve(entry.target); // unobserve sau khi reveal
+  function menu(open) {
+    if (sidebarEl) sidebarEl.classList.toggle('is-open', open);
+    if (scrimEl) scrimEl.hidden = !open;
+  }
+
+  document.querySelectorAll('[data-menu-open]').forEach(b => b.addEventListener('click', () => menu(true)));
+  document.querySelectorAll('[data-menu-close]').forEach(b => b.addEventListener('click', () => menu(false)));
+
+  /* ─── Rail Scrolling Logic ─── */
+  const motion = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+
+  function setupRails() {
+    document.querySelectorAll('[data-rail]').forEach(rail => {
+      const p = rail.parentElement;
+      const next = p.querySelector('[data-rail-next]');
+      const prev = p.querySelector('[data-rail-prev]');
+      const update = () => {
+        const scrollable = rail.scrollWidth > rail.clientWidth + 3;
+        if (prev) prev.hidden = !scrollable || rail.scrollLeft <= 4;
+        if (next) next.hidden = !scrollable || rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4;
+      };
+      const move = dir => rail.scrollBy({ left: dir * rail.clientWidth * 0.85, behavior: motion() });
+      if (next) next.onclick = () => move(1);
+      if (prev) prev.onclick = () => move(-1);
+      rail.onscroll = update;
+      new ResizeObserver(update).observe(rail);
+      update();
+    });
+  }
+
+  /* ─── App Row Component ─── */
+  function createAppRow(item) {
+    if (!item) return '';
+    const name = item.name || item.title || 'Unknown App';
+    const desc = item.modSummary || item.desc || item.description || item.subtitle || (item.developer || 'IPAVIET Studio');
+    const safeIcon = item.icon || item.iconUrl || 'https://img.icons8.com/fluency/96/apple-app-store--v2.png';
+    const isVip = item._type === 'VIP';
+    const isMod = item.isMod;
+    const initial = (name.charAt(0) || 'A').toUpperCase();
+
+    let badgeHtml = '';
+    if (isVip) {
+      badgeHtml = `<span class="badge-vip">VIP</span>`;
+    } else if (isMod) {
+      badgeHtml = `<span class="badge-mod">MOD</span>`;
+    }
+
+    const actionText = isVip ? 'Ký VIP' : 'Nhận';
+    const priceText = isVip ? 'Đặc quyền' : 'Miễn phí';
+
+    return `
+      <article class="app-row" data-id="${item._id}" onclick="openAppModal('${item._id}')">
+        <a class="app-icon" href="javascript:void(0)" tabindex="-1" aria-hidden="true" onclick="event.preventDefault(); openAppModal('${item._id}')">
+          <img src="${safeIcon}" alt="${name}" loading="lazy" width="68" height="68" onerror="this.src='https://img.icons8.com/fluency/96/apple-app-store--v2.png'">
+          <span class="icon-fallback">${initial}</span>
+        </a>
+        <div class="app-copy">
+          <div class="app-name">
+            <a class="app-title" href="javascript:void(0)" onclick="event.preventDefault(); openAppModal('${item._id}')">${name}</a>
+            ${badgeHtml}
+          </div>
+          <p>${desc}</p>
+        </div>
+        <div class="app-action">
+          <button class="pill" type="button" onclick="event.stopPropagation(); openAppModal('${item._id}')">${actionText}</button>
+          <small>${priceText}</small>
+        </div>
+      </article>
+    `;
+  }
+
+  /* ─── Render Horizontal Rails ─── */
+  function populateRail(railId, items) {
+    const el = document.getElementById(railId);
+    if (!el) return;
+    if (!items || items.length === 0) {
+      el.innerHTML = '<div style="padding:24px;color:var(--muted);font-size:14px;">Đang tải ứng dụng...</div>';
+      return;
+    }
+    // Render up to 15 apps (5 columns x 3 rows)
+    const list = items.slice(0, 15);
+    let html = '';
+    for (let c = 0; c < Math.ceil(list.length / 3); c++) {
+      const chunk = list.slice(c * 3, (c + 1) * 3);
+      if (chunk.length === 0) break;
+      html += '<div class="app-column">';
+      chunk.forEach(app => { html += createAppRow(app); });
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  }
+
+  function renderRails() {
+    // 1. VIP Rail
+    populateRail('railVip', DB.vip);
+
+    // 2. Popular Apps Rail
+    populateRail('railPopular', DB.ipa);
+
+    // 3. Game Mod Rail
+    const games = DB.ipa.filter(a => a.category === 'Game' || (a.name && /game|hack|mod|rpg|action/i.test(a.name)));
+    populateRail('railGames', games.length > 0 ? games : DB.ipa.slice(10, 25));
+
+    // 4. Tools Rail
+    const tools = DB.ipa.filter(a => a.category === 'Tiện ích' || (a.name && /troll|tool|tweak|jailbreak|vpn|dns|clean/i.test(a.name)));
+    populateRail('railTools', tools.length > 0 ? tools : DB.ipa.slice(25, 40));
+
+    // Dynamic Editorial Arts
+    try {
+      const artVip = document.getElementById('editorialArtVip');
+      if (artVip && DB.vip.length >= 6) {
+        artVip.innerHTML = DB.vip.slice(0, 6).map(a => `<img src="${a.icon || a.iconUrl}" alt="${a.name}" width="96" height="96" loading="lazy" onerror="this.src='https://img.icons8.com/fluency/96/apple-app-store--v2.png'">`).join('');
       }
+      const artGames = document.getElementById('editorialArtGames');
+      if (artGames && games.length >= 6) {
+        artGames.innerHTML = games.slice(0, 6).map(a => `<img src="${a.icon || a.iconUrl}" alt="${a.name}" width="96" height="96" loading="lazy" onerror="this.src='https://img.icons8.com/fluency/96/apple-app-store--v2.png'">`).join('');
+      }
+      const artTools = document.getElementById('editorialArtTools');
+      if (artTools && tools.length >= 6) {
+        artTools.innerHTML = tools.slice(0, 6).map(a => `<img src="${a.icon || a.iconUrl}" alt="${a.name}" width="96" height="96" loading="lazy" onerror="this.src='https://img.icons8.com/fluency/96/apple-app-store--v2.png'">`).join('');
+      }
+    } catch(e) {}
+
+    setupRails();
+  }
+
+  /* ─── Render Catalog Grid & Pagination ─── */
+  function getFilteredItems() {
+    let items = [];
+    if (STATE.currentFilter === 'vip') {
+      items = DB.vip.slice();
+    } else if (STATE.currentFilter === 'games') {
+      items = DB.ipa.filter(a => a.category === 'Game' || (a.name && /game|hack|mod|rpg/i.test(a.name)));
+    } else if (STATE.currentFilter === 'tools') {
+      items = DB.ipa.filter(a => a.category === 'Tiện ích' || (a.name && /troll|tool|tweak|jailbreak|vpn|dns/i.test(a.name)));
+    } else if (STATE.currentFilter === 'social') {
+      items = DB.ipa.filter(a => a.category === 'Mạng xã hội' || (a.name && /youtube|facebook|tiktok|insta|telegram|zalo/i.test(a.name)));
+    } else {
+      items = DB.vip.concat(DB.ipa);
+    }
+
+    // Apply Search Filter if any
+    if (STATE.searchQuery && STATE.searchQuery.trim()) {
+      const q = STATE.searchQuery.toLowerCase().trim();
+      items = items.filter(a => {
+        const n = (a.name || a.title || '').toLowerCase();
+        const d = (a.desc || a.description || '').toLowerCase();
+        const b = (a.bundleId || '').toLowerCase();
+        return n.includes(q) || d.includes(q) || b.includes(q);
+      });
+    }
+    return items;
+  }
+
+  function renderCatalog() {
+    const items = getFilteredItems();
+    const countEl = document.getElementById('catalogCount');
+    const pageInfoEl = document.getElementById('catalogPageInfo');
+    const gridEl = document.getElementById('catalogGrid');
+    const paginationEl = document.getElementById('catalogPagination');
+
+    if (!gridEl) return;
+
+    const total = items.length;
+    const totalPages = Math.max(1, Math.ceil(total / STATE.itemsPerPage));
+    if (STATE.currentPage > totalPages) STATE.currentPage = totalPages;
+
+    if (countEl) countEl.textContent = `${total.toLocaleString()} sản phẩm`;
+    if (pageInfoEl) pageInfoEl.textContent = `Trang ${STATE.currentPage} / ${totalPages}`;
+
+    if (total === 0) {
+      gridEl.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 48px 16px; text-align: center; color: var(--muted);">
+          <svg class="icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 12px; display: block; opacity: 0.5;"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg>
+          <strong style="font-size: 16px; color: var(--text); display: block;">Không tìm thấy ứng dụng phù hợp</strong>
+          <p style="font-size: 14px; margin-top: 6px;">Hãy thử tìm từ khóa khác hoặc xóa bộ lọc.</p>
+        </div>
+      `;
+      if (paginationEl) paginationEl.innerHTML = '';
+      return;
+    }
+
+    const start = (STATE.currentPage - 1) * STATE.itemsPerPage;
+    const end = start + STATE.itemsPerPage;
+    const pageSlice = items.slice(start, end);
+
+    gridEl.innerHTML = pageSlice.map(a => createAppRow(a)).join('');
+
+    // Pagination
+    if (paginationEl) {
+      if (totalPages <= 1) {
+        paginationEl.innerHTML = '';
+      } else {
+        let pBtns = '';
+        const cur = STATE.currentPage;
+        const addPill = (p) => {
+          pBtns += `<button type="button" class="pill" ${p === cur ? 'aria-current="page"' : ''} onclick="changePage(${p})">${p}</button>`;
+        };
+
+        if (totalPages <= 7) {
+          for (let p = 1; p <= totalPages; p++) addPill(p);
+        } else {
+          addPill(1);
+          if (cur > 3) pBtns += `<span style="padding:0 6px;color:var(--muted);">...</span>`;
+          const pStart = Math.max(2, cur - 1);
+          const pEnd = Math.min(totalPages - 1, cur + 1);
+          for (let p = pStart; p <= pEnd; p++) addPill(p);
+          if (cur < totalPages - 2) pBtns += `<span style="padding:0 6px;color:var(--muted);">...</span>`;
+          addPill(totalPages);
+        }
+        paginationEl.innerHTML = pBtns;
+      }
+    }
+  }
+
+  function changePage(p) {
+    STATE.currentPage = p;
+    renderCatalog();
+    window.scrollTo({ top: 0, behavior: motion() });
+  }
+
+  /* ─── Navigation Tabs & Filters ─── */
+  function setTab(tab) {
+    menu(false);
+    const exploreView = document.getElementById('exploreView');
+    const catalogView = document.getElementById('catalogView');
+
+    // Update nav links active state
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => {
+      el.classList.toggle('is-active', el.dataset.tab === tab);
     });
-  }, { threshold: 0.05, rootMargin: '0px 0px -30px 0px' });
-  refreshScrollReveal();
-}
+    document.querySelectorAll('.bottom-tabs .tab-item').forEach(el => {
+      el.classList.toggle('is-active', el.dataset.bottomTab === tab);
+    });
 
-function refreshScrollReveal() {
-  if (!scrollRevealObserver) return;
-  document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
-    scrollRevealObserver.observe(el);
-  });
-}
+    if (tab === 'explore') {
+      STATE.currentTab = 'explore';
+      if (exploreView) exploreView.style.display = 'block';
+      if (catalogView) catalogView.style.display = 'none';
+      window.scrollTo({ top: 0, behavior: motion() });
+    } else {
+      STATE.currentTab = 'catalog';
+      if (exploreView) exploreView.style.display = 'none';
+      if (catalogView) catalogView.style.display = 'block';
 
-/* ─── Hero Character Animation ─── */
-function initHeroText() {
-  const title = document.getElementById('heroTitle');
-  if (!title) return;
-  const text = title.textContent;
-  title.innerHTML = '';
-  text.split('').forEach((char, i) => {
-    const span = document.createElement('span');
-    span.className = 'char';
-    span.textContent = char;
-    span.style.animationDelay = (i * 0.08) + 's';
-    title.appendChild(span);
-  });
-}
-
-/* ─── Nav Scroll Effect ─── */
-function initNavScroll() {
-  const nav = document.getElementById('spatialNav');
-  if (!nav) return;
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) nav.classList.add('scrolled');
-    else nav.classList.remove('scrolled');
-  });
-}
-
-/* ─── Initialization ─── */
-window.addEventListener('DOMContentLoaded', () => {
-  // Fallback an toàn tuyệt đối: Luôn tắt màn hình loading sau tối đa 2s nếu mạng chập chờn
-  setTimeout(() => {
-    const loader = document.getElementById('loadingStage');
-    if (loader && !loader.classList.contains('hidden')) {
-      loader.classList.add('hidden');
+      // Set category filter
+      setFilter(tab);
+      window.scrollTo({ top: 0, behavior: motion() });
     }
-  }, 2000);
+  }
 
-  try { initHeroText(); } catch(e) {}
-  try { initNavScroll(); } catch(e) {}
-  try { initMagnetic(); } catch(e) {}
+  function setFilter(filter) {
+    STATE.currentFilter = filter;
+    STATE.currentPage = 1;
 
-  // VSign popup
-  try {
-    const popupUntil = localStorage.getItem('vsign_popup_until');
-    if (!popupUntil || Date.now() > parseInt(popupUntil)) {
-      setTimeout(() => {
-        const popup = document.getElementById('vsignPopup');
-        if (popup) popup.classList.add('active');
-        if (window.lucide) lucide.createIcons();
-      }, 2000);
+    // Update filter pills in catalog
+    document.querySelectorAll('.filter-bar .filter-pill').forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.filter === filter);
+    });
+
+    // Update title
+    const tEl = document.getElementById('catalogTitle');
+    const sEl = document.getElementById('catalogSubtitle');
+    if (filter === 'vip') {
+      if (tEl) tEl.textContent = 'App VIP & Mod';
+      if (sEl) sEl.textContent = 'Ứng dụng cao cấp mở khóa tính năng độc quyền.';
+    } else if (filter === 'games') {
+      if (tEl) tEl.textContent = 'Game Mod & Hack';
+      if (sEl) sEl.textContent = 'Trọn bộ game iOS mod bất tử, 120fps và vô hạn tài nguyên.';
+    } else if (filter === 'tools') {
+      if (tEl) tEl.textContent = 'Tiện ích iOS & TrollStore';
+      if (sEl) sEl.textContent = 'Bộ công cụ mở rộng hệ thống, chặn thu hồi và tùy biến.';
+    } else if (filter === 'social') {
+      if (tEl) tEl.textContent = 'Mạng Xã Hội Mod';
+      if (sEl) sEl.textContent = 'YouTube, Facebook, TikTok, Instagram không quảng cáo.';
+    } else {
+      if (tEl) tEl.textContent = 'Tất cả App';
+      if (sEl) sEl.textContent = 'Toàn bộ kho ứng dụng IPA được đồng bộ theo thời gian thực.';
     }
-  } catch(e) {}
 
-  try {
-    loadData();
-  } catch(e) {
-    console.error("Lỗi khi gọi loadData:", e);
-    const loader = document.getElementById('loadingStage');
-    if (loader) loader.classList.add('hidden');
+    const exploreView = document.getElementById('exploreView');
+    const catalogView = document.getElementById('catalogView');
+    if (exploreView) exploreView.style.display = 'none';
+    if (catalogView) catalogView.style.display = 'block';
+
+    renderCatalog();
   }
 
-  setTimeout(sanitizeSearchAutofill, 300);
-  setTimeout(sanitizeSearchAutofill, 800);
-  // Telemetry được xử lý thống nhất bởi ipaviet-tracker.js (tránh đếm trùng)
-});
+  /* ─── Search Input Handling ─── */
+  let searchTimer = null;
+  const searchInputEl = document.getElementById('searchInput');
 
-// Lắng nghe người dùng bấm nút Back/Forward của trình duyệt để khôi phục đúng page
-window.addEventListener('popstate', (e) => {
-  const restored = getUrlOrSessionParams();
-  STATE.currentPage = restored.page;
-  STATE.currentFilter = restored.filter;
-  const sInput = document.getElementById('searchInput');
-  if (sInput) {
-    sInput.value = restored.q;
-    const clearBtn = document.getElementById('clearSearchBtn');
-    if (clearBtn) clearBtn.style.display = restored.q ? 'flex' : 'none';
+  if (searchInputEl) {
+    searchInputEl.addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      const val = e.target.value.trim();
+      searchTimer = setTimeout(() => {
+        STATE.searchQuery = val;
+        STATE.currentPage = 1;
+        if (val) {
+          recordSearchQuery(val);
+          const exploreView = document.getElementById('exploreView');
+          const catalogView = document.getElementById('catalogView');
+          if (exploreView) exploreView.style.display = 'none';
+          if (catalogView) catalogView.style.display = 'block';
+          const tEl = document.getElementById('catalogTitle');
+          const sEl = document.getElementById('catalogSubtitle');
+          if (tEl) tEl.textContent = `Kết quả tìm kiếm: "${val}"`;
+          if (sEl) sEl.textContent = 'Các ứng dụng khớp với từ khóa tìm kiếm của bạn.';
+          renderCatalog();
+        } else {
+          if (STATE.currentTab === 'explore') {
+            setTab('explore');
+          } else {
+            setFilter(STATE.currentFilter);
+          }
+        }
+      }, 180);
+    });
   }
-  renderContent();
-});
 
-// Khôi phục trạng thái nút bấm, vị trí cuộn & page khi người dùng Back lại trang (Bfcache)
-window.addEventListener('pageshow', (e) => {
-  document.querySelectorAll('button[onclick*="downloadFreeStore"]').forEach(btn => {
-    btn.disabled = false;
+  /* ─── App Detail Modal ─── */
+  function openAppModal(appId) {
+    const i = window.allAppsMap[appId];
+    if (!i) return;
+    STATE.currentItem = i;
+    recordAppView(i);
+
+    try {
+      sessionStorage.setItem('ipaviet_current_app', JSON.stringify(i));
+      localStorage.setItem('ipaviet_current_app', JSON.stringify(i));
+    } catch(e) {}
+
+    const dialog = document.getElementById('product-dialog');
+    if (!dialog) return;
+
+    const safeIcon = i.icon || i.iconUrl || 'https://img.icons8.com/fluency/96/apple-app-store--v2.png';
+    const appName = i.name || i.title || 'Ứng dụng';
+    const initial = (appName.charAt(0) || 'A').toUpperCase();
+
+    // Sticky Top
+    document.getElementById('dialogStickyTitle').textContent = appName;
+    const sIcon = document.getElementById('dialogStickyIcon');
+    if (sIcon) sIcon.src = safeIcon;
+
+    // Hero
+    const heroIcon = document.getElementById('dialogHeroIcon');
+    if (heroIcon) {
+      heroIcon.src = safeIcon;
+      heroIcon.onerror = () => { heroIcon.src = 'https://img.icons8.com/fluency/96/apple-app-store--v2.png'; };
+    }
+    document.getElementById('dialogHeroFallback').textContent = initial;
+    document.getElementById('dialogHeroTitle').textContent = appName;
+    document.getElementById('dialogHeroSubtitle').textContent = i.desc || i.description || (i.developer || 'IPAVIET Studio');
+
+    // Badge
+    const badgeEl = document.getElementById('dialogHeroBadge');
+    if (i._type === 'VIP') {
+      badgeEl.innerHTML = `<span class="badge-vip">★ VIP Độc Quyền</span>`;
+    } else if (i.isMod) {
+      badgeEl.innerHTML = `<span class="badge-mod">⚡ Bản Mod Mở Khóa</span>`;
+    } else {
+      badgeEl.innerHTML = `<span class="verified-badge"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3 3 1 3 1 1 3 2 4-2 4-1 3-3 1-3 1-3-1-3-1-1-3-2-4 2-4 1-3 3-1Z"/><path d="m8 12 3 3 5-6"/></svg> Tuyển chọn</span>`;
+    }
+
+    // Facts
+    document.getElementById('factPlatform').textContent = 'iOS 14 - 18+';
+    document.getElementById('factPrice').textContent = i._type === 'VIP' ? 'Đặc quyền VIP' : 'Miễn phí';
+    document.getElementById('factCategory').textContent = i.category || 'Tiện ích';
+    document.getElementById('factDev').textContent = i.developer || 'IPAVIET Studio';
+    document.getElementById('factVersion').textContent = i.version || '1.0';
+    document.getElementById('factSize').textContent = i.size || '--';
+
+    // Mod features
+    const modBox = document.getElementById('dialogModBox');
+    if (i.isMod || i._type === 'VIP') {
+      modBox.style.display = 'block';
+      const feats = (i.modFeatures && i.modFeatures.length > 0) ? i.modFeatures : [
+        'Mở khóa toàn bộ tính năng cao cấp & đặc quyền',
+        'Chặn triệt để 100% quảng cáo gây phiền toái',
+        'Tối ưu hóa bộ nhớ, không cần Jailbreak máy',
+        'Cài đặt trực tiếp an toàn qua VSign hoặc TrollStore'
+      ];
+      document.getElementById('dialogModList').innerHTML = feats.map(f => `<li>${f}</li>`).join('');
+    } else {
+      modBox.style.display = 'none';
+    }
+
+    // Description
+    const modFallbackDesc = (i.isMod && i.modFeatures && i.modFeatures.length > 0)
+      ? (i.modSummary ? i.modSummary + '\n\n' : '') + i.modFeatures.map(f => '• ' + f).join('\n')
+      : "Ứng dụng tuyệt vời được phân phối bởi hệ thống IPAVIET.";
+    document.getElementById('dialogDesc').textContent = i.fullDesc || i.description || i.desc || modFallbackDesc;
+
+    // Action Buttons
+    const btnSign = document.getElementById('dialogBtnSign');
+    const btnDownload = document.getElementById('dialogBtnDownload');
+    const btnWeb = document.getElementById('dialogBtnWeb');
+
+    btnSign.onclick = () => {
+      const ipaUrl = i.fileLink || i.downloadUrl || i.link || '';
+      window.open(`../sign-app/index.html?ipa=${encodeURIComponent(ipaUrl)}&name=${encodeURIComponent(appName)}`, '_blank');
+    };
+
+    btnDownload.onclick = function() {
+      if (i._type === 'VIP') {
+        if (isUserVip) {
+          downloadVipApp(this);
+        } else {
+          buyAppWithCoins(this);
+        }
+      } else {
+        downloadFreeStore(this);
+      }
+    };
+
+    btnWeb.href = `app.html?id=${encodeURIComponent(i._id || appId)}`;
+
+    // Share button
+    document.getElementById('dialogBtnShare').onclick = () => {
+      const shareUrl = window.location.origin + window.location.pathname.replace('index.html', '') + `app.html?id=${encodeURIComponent(i._id || appId)}`;
+      openShare(shareUrl, appName);
+    };
+
+    dialog.showModal();
+  }
+
+  function closeAppModal() {
+    const dialog = document.getElementById('product-dialog');
+    if (dialog && dialog.open) dialog.close();
+  }
+
+  // Click outside to close modal
+  document.getElementById('product-dialog')?.addEventListener('click', e => {
+    const dialog = document.getElementById('product-dialog');
+    if (e.target === dialog) {
+      const r = dialog.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+        dialog.close();
+      }
+    }
   });
-  checkFreePassCallback();
-  sanitizeSearchAutofill();
-  setTimeout(sanitizeSearchAutofill, 300);
-  setTimeout(sanitizeSearchAutofill, 800);
 
-  const restored = getUrlOrSessionParams();
-  if (restored.page !== STATE.currentPage || restored.filter !== STATE.currentFilter) {
-    STATE.currentPage = restored.page;
-    STATE.currentFilter = restored.filter;
-    renderContent();
+  /* ─── VSign Spotlight Modal ─── */
+  function openVsignSpotlightModal() {
+    const d = document.getElementById('vsign-spotlight-dialog');
+    if (d) d.showModal();
   }
-  const savedY = sessionStorage.getItem('ipaviet_lib_scrollY');
-  if (savedY) {
+
+  function closeVsignModal() {
+    const d = document.getElementById('vsign-spotlight-dialog');
+    if (d && d.open) d.close();
+  }
+
+  document.getElementById('vsign-spotlight-dialog')?.addEventListener('click', e => {
+    const d = document.getElementById('vsign-spotlight-dialog');
+    if (e.target === d) {
+      const r = d.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+        d.close();
+      }
+    }
+  });
+
+  /* ─── Share Dialog Handling ─── */
+  const shareDialog = document.getElementById('share-dialog');
+  const shareUrlInput = document.getElementById('share-url');
+  const shareStatusEl = document.getElementById('shareStatus');
+  let currentShareData = null;
+
+  function openShare(url, title = 'IPAVIET Store') {
+    if (!shareDialog || !shareUrlInput) return;
+    currentShareData = { title: title, url: url };
+    shareUrlInput.value = url;
+    document.getElementById('share-title').textContent = `Chia sẻ ${title}`;
+    shareStatusEl.textContent = '';
+
+    const hasNativeShare = typeof navigator.share === 'function';
+    document.getElementById('shareNativeBtn').hidden = !hasNativeShare;
+
+    shareDialog.showModal();
+  }
+
+  async function copyShareLink() {
+    if (!currentShareData) return;
+    try {
+      await navigator.clipboard.writeText(currentShareData.url);
+      shareStatusEl.textContent = 'Đã sao chép liên kết vào bộ nhớ tạm!';
+      showToast('Đã sao chép liên kết');
+    } catch(e) {
+      shareUrlInput.select();
+      shareStatusEl.textContent = 'Nhấn Ctrl+C / ⌘C để sao chép liên kết.';
+    }
+  }
+
+  async function shareNativeLink() {
+    if (!currentShareData) return;
+    try {
+      await navigator.share(currentShareData);
+      shareStatusEl.textContent = 'Đã chia sẻ liên kết thành công.';
+    } catch(e) {
+      shareStatusEl.textContent = 'Đã hủy chia sẻ.';
+    }
+  }
+
+  /* ─── Load Data Implementation ─── */
+  async function loadData() {
+    try {
+      const tier1Repos = SOURCES_CONFIG.filter(s => s.tier === 1);
+      const fetchPromises = [
+        fetch(`vip.json?t=${Date.now()}`).then(r => r.ok ? r.text() : fetch(`../vip.json?t=${Date.now()}`).then(r2 => r2.text())).catch(() => null),
+        ...tier1Repos.map(repo => fetchRepoData(repo))
+      ];
+
+      const results = await Promise.allSettled(fetchPromises);
+
+      // 1. Parse VIP Apps
+      const vipRes = results[0];
+      if (vipRes.status === 'fulfilled' && vipRes.value) {
+        try {
+          const vipData = JSON.parse(vipRes.value);
+          if (Array.isArray(vipData)) {
+            DB.vip = vipData.map(item => {
+              item._id = getAppSlug(item.name || item.title, item.version, item.fileLink || item.downloadUrl || 'vip');
+              item._type = 'VIP';
+              item.developer = item.developer || 'IPAVIET Studio';
+              item.isMod = true;
+              const modInfo = extractModFeatures(item);
+              item.modSummary = modInfo.modSummary || 'Mở khóa đặc quyền VIP & Chứng chỉ cao cấp';
+              item.modFeatures = (modInfo.modFeatures && modInfo.modFeatures.length > 0) ? modInfo.modFeatures : [
+                'Chứng chỉ Apple Developer doanh nghiệp siêu ổn định',
+                'Mở khóa toàn bộ tính năng VIP độc quyền',
+                'Chặn triệt để 100% quảng cáo từ bên thứ ba',
+                'Bảo hành chứng chỉ cài đặt an toàn lâu dài'
+              ];
+              window.allAppsMap[item._id] = item;
+              return item;
+            });
+          }
+        } catch(e) { console.warn("Lỗi parse vip.json:", e); }
+      }
+
+      // 2. Parse Tier 1 Repos
+      let allTier1Apps = [];
+      tier1Repos.forEach((repo, idx) => {
+        const res = results[idx + 1];
+        if (res && res.status === 'fulfilled' && res.value) {
+          const parsed = parseRepoResponse(res.value, repo);
+          allTier1Apps = allTier1Apps.concat(parsed);
+        }
+      });
+
+      DB.ipa = sortItemsByDate(getUniqueApps(allTier1Apps));
+
+      try {
+        const cacheMap = {};
+        Object.keys(window.allAppsMap).slice(0, 1500).forEach(k => {
+          cacheMap[k] = window.allAppsMap[k];
+        });
+        localStorage.setItem('ipaviet_cached_apps_map', JSON.stringify(cacheMap));
+      } catch(e) {}
+
+    } catch(e) {
+      console.error("Lỗi tổng loadData:", e);
+    }
+
+    // Render Rails and Catalog
+    renderRails();
+    renderCatalog();
+
+    // Check Free Pass Return Callback
+    checkFreePassCallback();
+
+    // Auto-open app from URL query ?id=... or ?app=...
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const targetAppId = params.get('id') || params.get('app');
+      if (targetAppId && window.allAppsMap[targetAppId]) {
+        openAppModal(targetAppId);
+      }
+    } catch(e) {}
+
+    // Tier 2 background load
     setTimeout(() => {
-      window.scrollTo({ top: parseInt(savedY, 10), behavior: 'smooth' });
-      sessionStorage.removeItem('ipaviet_lib_scrollY');
-    }, 150);
+      loadTier2Sources();
+    }, 1200);
   }
-});
 
-// Keyboard shortcuts
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeAppView();
-  if (e.key === '/' && document.activeElement !== document.getElementById('searchInput')) {
-    e.preventDefault();
-    document.getElementById('searchInput').focus();
-  }
-});
-</script>
-<script src="../ipaviet-tracker.js?v=2"></script>
+  /* ─── Initialization ─── */
+  window.addEventListener('DOMContentLoaded', () => {
+    loadData();
+  });
+
+  // Keyboard Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeAppModal();
+      closeVsignModal();
+      menu(false);
+      document.getElementById('share-dialog')?.close();
+    }
+    if (e.key === '/' && document.activeElement !== searchInputEl) {
+      e.preventDefault();
+      searchInputEl?.focus();
+    }
+  });
+  </script>
+  <script src="../ipaviet-tracker.js?v=2"></script>
 </body>
 </html>
