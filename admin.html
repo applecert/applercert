@@ -7025,13 +7025,13 @@
     async function saveVSignMaintenance() {
       const btn = document.getElementById('btnSaveVSignMaint');
       const enabled = document.getElementById('vsignMaintEnabled').checked;
-      const title = document.getElementById('vsignMaintTitle').value.trim();
-      const message = document.getElementById('vsignMaintMsg').value.trim();
+      const title = document.getElementById('vsignMaintTitle').value.trim() || 'Hệ Thống Đang Bảo Trì';
+      const message = document.getElementById('vsignMaintMsg').value.trim() || 'VSign đang tiến hành nâng cấp hạ tầng và làm mới chứng chỉ. Vui lòng quay lại sau ít phút.';
       const estimatedTime = document.getElementById('vsignMaintEst').value.trim();
       const contactUrl = document.getElementById('vsignMaintContact').value.trim();
 
-      if (!title || !message) {
-        Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập tiêu đề và nội dung bảo trì!' });
+      if (enabled && (!document.getElementById('vsignMaintTitle').value.trim() || !document.getElementById('vsignMaintMsg').value.trim())) {
+        Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập tiêu đề và nội dung khi BẬT chế độ bảo trì!' });
         return;
       }
 
@@ -7091,16 +7091,18 @@
     async function saveVSignUpdate() {
       const btn = document.getElementById('btnSaveVSignUpdate');
       const enabled = document.getElementById('vsignUpdateEnabled').checked;
-      const latestVersion = document.getElementById('vsignLatestVersion').value.trim();
-      const minVersion = document.getElementById('vsignMinVersion').value.trim();
+      const latestVersion = document.getElementById('vsignLatestVersion').value.trim() || '2.0.0';
+      const minVersionInput = document.getElementById('vsignMinVersion').value.trim();
       const forceUpdate = document.getElementById('vsignForceUpdate').checked;
-      const title = document.getElementById('vsignUpdateTitle').value.trim();
-      const message = document.getElementById('vsignUpdateMsg').value.trim();
-      const downloadUrl = document.getElementById('vsignUpdateDownloadUrl').value.trim();
+      // QUAN TRỌNG: Nếu forceUpdate = false hoặc update tắt, minVersion tự động về 0.0.1 để tránh so sánh chuỗi numeric "1.0" < "1.0.0" làm khóa app nhầm
+      const minVersion = (enabled && forceUpdate) ? (minVersionInput || latestVersion) : '0.0.1';
+      const title = document.getElementById('vsignUpdateTitle').value.trim() || 'Đã Có Bản Cập Nhật Mới';
+      const message = document.getElementById('vsignUpdateMsg').value.trim() || 'Bản cập nhật mới tối ưu tốc độ ký và sửa các lỗi chứng chỉ.';
+      const downloadUrl = document.getElementById('vsignUpdateDownloadUrl').value.trim() || 'https://ipaviet.site/vsign.html';
       const releaseNotes = document.getElementById('vsignReleaseNotes').value.trim();
 
-      if (!latestVersion || !title) {
-        Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập phiên bản và tiêu đề cập nhật!' });
+      if (enabled && (!document.getElementById('vsignUpdateTitle').value.trim() || !downloadUrl)) {
+        Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng nhập tiêu đề và link tải khi bật cập nhật!' });
         return;
       }
 
