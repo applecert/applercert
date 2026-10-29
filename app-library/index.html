@@ -2183,11 +2183,11 @@ async function downloadFreeStore(btnEl) {
   }
 
   function closeAppView() {
-    closeAppModal();
+    // Navigation is direct to app.html, no popup modal
   }
 
   function openAppView(appId) {
-    openAppModal(appId);
+    handleAppClick(null, appId);
   }
 
   /* ─── Toast Helper ─── */
@@ -2303,20 +2303,20 @@ async function downloadFreeStore(btnEl) {
     const appUrl = `app.html?id=${encodeURIComponent(item._id)}&fromPage=${STATE.currentPage}&fromFilter=${encodeURIComponent(STATE.currentFilter)}&fromTab=${encodeURIComponent(STATE.currentTab)}`;
 
     return `
-      <article class="app-row" data-id="${item._id}" onclick="openAppModal('${item._id}')">
-        <a class="app-icon" href="${appUrl}" tabindex="-1" aria-hidden="true" onclick="event.preventDefault(); openAppModal('${item._id}')">
+      <article class="app-row" data-id="${item._id}" onclick="handleAppClick(event, '${item._id}')">
+        <a class="app-icon" href="${appUrl}" tabindex="-1" aria-hidden="true" onclick="handleAppClick(event, '${item._id}')">
           <img src="${safeIcon}" alt="${name}" loading="lazy" width="68" height="68" onerror="this.src='https://img.icons8.com/fluency/96/apple-app-store--v2.png'">
           <span class="icon-fallback">${initial}</span>
         </a>
         <div class="app-copy">
           <div class="app-name">
-            <a class="app-title" href="${appUrl}" onclick="event.preventDefault(); openAppModal('${item._id}')">${name}</a>
+            <a class="app-title" href="${appUrl}" onclick="handleAppClick(event, '${item._id}')">${name}</a>
             ${badgeHtml}
           </div>
           <p>${desc}</p>
         </div>
         <div class="app-action">
-          <button class="pill" type="button" onclick="event.stopPropagation(); openAppModal('${item._id}')">${actionText}</button>
+          <a class="pill" href="${appUrl}" onclick="handleAppClick(event, '${item._id}')">${actionText}</a>
           <small>${priceText}</small>
         </div>
       </article>
@@ -2324,8 +2324,29 @@ async function downloadFreeStore(btnEl) {
   }
 
   function handleAppClick(event, appId) {
-    if (event) event.preventDefault();
-    openAppModal(appId);
+    // If opening in a new tab via Meta/Ctrl/Shift or middle click, allow browser default link handling
+    if (event && (event.metaKey || event.ctrlKey || event.shiftKey || event.button === 1)) {
+      return;
+    }
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const app = (window.allAppsMap && window.allAppsMap[appId]) || (STATE.appMap && STATE.appMap.get(appId)) || STATE.allApps.find(a => a._id === appId);
+    if (app) {
+      try {
+        sessionStorage.setItem('ipaviet_current_app', JSON.stringify(app));
+        localStorage.setItem('ipaviet_current_app', JSON.stringify(app));
+        sessionStorage.setItem('ipaviet_lib_page', String(STATE.currentPage));
+        sessionStorage.setItem('ipaviet_lib_filter', STATE.currentFilter);
+        sessionStorage.setItem('ipaviet_lib_tab', STATE.currentTab);
+        sessionStorage.setItem('ipaviet_lib_scrollY', String(window.scrollY || 0));
+      } catch(e) {}
+    }
+
+    const appUrl = `app.html?id=${encodeURIComponent(appId)}&fromPage=${STATE.currentPage}&fromFilter=${encodeURIComponent(STATE.currentFilter)}&fromTab=${encodeURIComponent(STATE.currentTab)}`;
+    window.location.href = appUrl;
   }
 
   /* ─── Render Horizontal Rails ─── */
@@ -2683,137 +2704,14 @@ async function downloadFreeStore(btnEl) {
     });
   }
 
-  /* ─── App Detail Modal (100% MacLife Store UX) ─── */
+  /* ─── App Detail Direct Navigation (Zero Popup, Registered Permanent Links) ─── */
   function openAppModal(appId) {
-    const i = window.allAppsMap[appId];
-    if (!i) return;
-    STATE.currentItem = i;
-    recordAppView(i);
-
-    try {
-      sessionStorage.setItem('ipaviet_current_app', JSON.stringify(i));
-      localStorage.setItem('ipaviet_current_app', JSON.stringify(i));
-    } catch(e) {}
-
-    const dialog = document.getElementById('product-dialog');
-    if (!dialog) return;
-
-    const safeIcon = i.icon || i.iconUrl || 'https://img.icons8.com/fluency/96/apple-app-store--v2.png';
-    const appName = i.name || i.title || 'Ứng dụng';
-    const initial = (appName.charAt(0) || 'A').toUpperCase();
-
-    // Sticky Top
-    document.getElementById('dialogStickyTitle').textContent = appName;
-    const sIcon = document.getElementById('dialogStickyIcon');
-    if (sIcon) sIcon.src = safeIcon;
-
-    // Hero
-    const heroIcon = document.getElementById('dialogHeroIcon');
-    if (heroIcon) {
-      heroIcon.src = safeIcon;
-      heroIcon.onerror = () => { heroIcon.src = 'https://img.icons8.com/fluency/96/apple-app-store--v2.png'; };
-    }
-    document.getElementById('dialogHeroFallback').textContent = initial;
-    document.getElementById('dialogHeroTitle').textContent = appName;
-    document.getElementById('dialogHeroSubtitle').textContent = (i.developer || 'IPAVIET Studio') + ' · ' + (i.category || 'Tiện ích');
-
-    // Badge
-    const badgeEl = document.getElementById('dialogHeroBadge');
-    if (i.isMod) {
-      badgeEl.innerHTML = `<span class="badge-mod"><svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Bản Mod Mở Khóa</span>`;
-    } else {
-      badgeEl.innerHTML = `<span class="verified-badge"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3 3 1 3 1 1 3 2 4-2 4-1 3-3 1-3 1-3-1-3-1-1-3-2-4 2-4 1-3 3-1Z"/><path d="m8 12 3 3 5-6"/></svg> Tuyển chọn</span>`;
-    }
-
-    // Facts
-    document.getElementById('factPlatform').textContent = 'iOS 14 - 18+';
-    document.getElementById('factPrice').textContent = 'Miễn phí';
-    document.getElementById('factCategory').textContent = i.category || 'Tiện ích';
-    document.getElementById('factDev').textContent = i.developer || 'IPAVIET Studio';
-    document.getElementById('factVersion').textContent = i.version || '1.0';
-    document.getElementById('factSize').textContent = i.size || '--';
-
-    // Mod features
-    const modBox = document.getElementById('dialogModBox');
-    if (i.isMod) {
-      modBox.style.display = 'block';
-      const feats = (i.modFeatures && i.modFeatures.length > 0) ? i.modFeatures : [
-        'Mở khóa toàn bộ tính năng cao cấp & đặc quyền',
-        'Chặn triệt để 100% quảng cáo gây phiền toái',
-        'Tối ưu hóa bộ nhớ, không cần Jailbreak máy',
-        'Cài đặt trực tiếp an toàn qua VSign hoặc TrollStore'
-      ];
-      document.getElementById('dialogModList').innerHTML = feats.map(f => `<li>${f}</li>`).join('');
-    } else {
-      modBox.style.display = 'none';
-    }
-
-    // Description
-    const modFallbackDesc = (i.isMod && i.modFeatures && i.modFeatures.length > 0)
-      ? (i.modSummary ? i.modSummary + '\n\n' : '') + i.modFeatures.map(f => '• ' + f).join('\n')
-      : "Ứng dụng tuyệt vời được phân phối bởi hệ thống IPAVIET.";
-    document.getElementById('dialogDesc').textContent = i.fullDesc || i.description || i.desc || modFallbackDesc;
-
-    // Action Buttons
-    const btnSign = document.getElementById('dialogBtnSign');
-    const btnDownload = document.getElementById('dialogBtnDownload');
-    const btnCoins = document.getElementById('dialogBtnCoins');
-    const btnWeb = document.getElementById('dialogBtnWeb');
-
-    btnSign.onclick = () => {
-      const ipaUrl = i.fileLink || i.downloadUrl || i.link || '';
-      window.open(`../sign-app/index.html?ipa=${encodeURIComponent(ipaUrl)}&name=${encodeURIComponent(appName)}`, '_blank');
-    };
-
-    btnDownload.onclick = function() {
-      downloadFreeStore(this);
-    };
-
-    if (btnCoins) {
-      btnCoins.onclick = function() {
-        buyAppWithCoins(this);
-      };
-    }
-
-    btnWeb.href = `app.html?id=${encodeURIComponent(i._id || appId)}&fromPage=${STATE.currentPage}&fromFilter=${encodeURIComponent(STATE.currentFilter)}&fromTab=${encodeURIComponent(STATE.currentTab)}`;
-
-    // Share button
-    document.getElementById('dialogBtnShare').onclick = () => {
-      const shareUrl = window.location.origin + window.location.pathname.replace('index.html', '') + `app.html?id=${encodeURIComponent(i._id || appId)}`;
-      openShare(shareUrl, appName);
-    };
-
-    // Register modal URL with pushState so browser Back closes modal without losing page!
-    const modalUrl = `index.html?app=${encodeURIComponent(appId)}&page=${STATE.currentPage}&filter=${encodeURIComponent(STATE.currentFilter)}&tab=${encodeURIComponent(STATE.currentTab)}`;
-    if (!window.history.state || window.history.state.modalAppId !== appId) {
-      window.history.pushState({ modalAppId: appId, page: STATE.currentPage, filter: STATE.currentFilter, tab: STATE.currentTab }, '', modalUrl);
-    }
-
-    dialog.showModal();
+    handleAppClick(null, appId);
   }
 
   function closeAppModal() {
-    const dialog = document.getElementById('product-dialog');
-    if (dialog && dialog.open) {
-      dialog.close();
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('app')) {
-        const cleanUrl = `index.html?tab=${encodeURIComponent(STATE.currentTab)}&filter=${encodeURIComponent(STATE.currentFilter)}&page=${encodeURIComponent(STATE.currentPage)}`;
-        window.history.replaceState({ page: STATE.currentPage, filter: STATE.currentFilter, tab: STATE.currentTab }, '', cleanUrl);
-      }
-    }
+    // Direct page navigation replaces modal
   }
-
-  // Click outside to close modal
-  document.getElementById('product-dialog')?.addEventListener('click', e => {
-    const dialog = document.getElementById('product-dialog');
-    if (e.target === dialog) {
-      const r = dialog.getBoundingClientRect();
-      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
-        dialog.close();
-      }
-    }
-  });
 
   /* ─── VSign Spotlight Modal ─── */
   function openVsignSpotlightModal() {
@@ -2941,8 +2839,9 @@ async function downloadFreeStore(btnEl) {
     try {
       const params = new URLSearchParams(window.location.search);
       const targetAppId = params.get('id') || params.get('app');
-      if (targetAppId && window.allAppsMap[targetAppId]) {
-        openAppModal(targetAppId);
+      if (targetAppId) {
+        window.location.replace(`app.html?id=${encodeURIComponent(targetAppId)}&fromPage=${initialParams.page}&fromFilter=${encodeURIComponent(initialParams.filter)}&fromTab=${encodeURIComponent(initialParams.tab)}`);
+        return;
       }
     } catch(e) {}
 

@@ -218,10 +218,19 @@
         </div>
 
         <!-- Screenshots Rail (100% MacLife) -->
-        <section class="detail-section" id="screenshotsSection" style="display:none;">
-          <div class="section-heading"><h2>Ảnh xem trước</h2></div>
+        <section class="detail-section" id="screenshotsSection">
+          <div class="section-heading">
+            <h2>Ảnh xem trước</h2>
+            <span id="previewCount" style="font-size:13px;color:var(--muted);font-weight:500;"></span>
+          </div>
           <div class="rail-wrapper">
-            <div class="preview-rail" id="screenshotsList" role="region" aria-label="Ảnh chụp màn hình"></div>
+            <button type="button" class="rail-arrow left" data-rail-prev aria-label="Xem ảnh trước">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <div class="preview-rail" id="screenshotsList" role="region" aria-label="Ảnh chụp màn hình" data-rail></div>
+            <button type="button" class="rail-arrow right" data-rail-next aria-label="Xem ảnh sau">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
           </div>
         </section>
 
@@ -242,7 +251,7 @@
         </section>
 
         <!-- Technical Information Grid (100% MacLife) -->
-        <section class="detail-section" style="border-bottom:0;">
+        <section class="detail-section">
           <div class="section-heading"><h2>Thông tin kỹ thuật & Bản quyền</h2></div>
           <div class="information-grid">
             <dl><dt>Bundle Identifier</dt><dd id="dBundle">com.ipaviet.app</dd></dl>
@@ -251,6 +260,23 @@
             <dl><dt>Mã định danh (ID)</dt><dd id="dSlug">--</dd></dl>
             <dl><dt>Tương thích thiết bị</dt><dd>iPhone, iPad, iPod Touch (iOS 14.0 - 18+)</dd></dl>
             <dl><dt>Công cụ tương thích</dt><dd>VSign Native, TrollStore, Esign, Scarlet, GBox</dd></dl>
+          </div>
+        </section>
+
+        <!-- Related Apps Section (100% MacLife) -->
+        <section class="detail-section" id="relatedAppsSection" style="display:none;border-bottom:0;">
+          <div class="section-heading">
+            <h2>Ứng dụng cùng chuyên mục</h2>
+            <a href="index.html" id="relatedCategoryLink" class="quiet">Xem tất cả <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></a>
+          </div>
+          <div class="rail-wrapper">
+            <button type="button" class="rail-arrow left" data-rail-prev aria-label="Xem trước">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <div class="preview-rail" id="relatedAppsList" role="region" aria-label="Ứng dụng liên quan" data-rail></div>
+            <button type="button" class="rail-arrow right" data-rail-next aria-label="Xem tiếp">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
           </div>
         </section>
 
@@ -474,6 +500,224 @@
         img.src = src;
         dlg.showModal();
       }
+    }
+
+    /* ─── Rail Scrolling Logic (Exact MacLife) ─── */
+    const motion = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+
+    function setupRails() {
+      document.querySelectorAll('[data-rail]').forEach(rail => {
+        const p = rail.parentElement;
+        if (!p) return;
+        const next = p.querySelector('[data-rail-next]');
+        const prev = p.querySelector('[data-rail-prev]');
+        const update = () => {
+          const scrollable = rail.scrollWidth > rail.clientWidth + 3;
+          if (prev) prev.hidden = !scrollable || rail.scrollLeft <= 4;
+          if (next) next.hidden = !scrollable || rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4;
+        };
+        const move = dir => rail.scrollBy({ left: dir * rail.clientWidth * 0.82, behavior: motion() });
+        if (next) next.onclick = () => move(1);
+        if (prev) prev.onclick = () => move(-1);
+        rail.onscroll = update;
+        try { new ResizeObserver(update).observe(rail); } catch(e) {}
+        update();
+      });
+    }
+
+    /* ─── Apple App Store Screenshot Enrichment Engine ─── */
+    async function fetchScreenshotsFromApple(app) {
+      if (!app) return [];
+
+      // 1. Try Apple Lookup by bundleIdentifier
+      if (app.bundleId && !app.bundleId.includes('com.ipaviet.') && app.bundleId.includes('.')) {
+        try {
+          const url = `https://itunes.apple.com/lookup?bundleId=${encodeURIComponent(app.bundleId)}`;
+          const res = await fetch(url).then(r => r.json()).catch(() => null);
+          if (res && res.results && res.results[0]) {
+            const item = res.results[0];
+            const shots = [
+              ...(item.screenshotUrls || []),
+              ...(item.ipadScreenshotUrls || [])
+            ].filter(Boolean);
+            if (shots.length > 0) return shots;
+          }
+        } catch(e) {}
+      }
+
+      // 2. Clean app name (remove mod words, brackets, version tags)
+      const rawName = (app.name || app.title || '').trim();
+      const cleanName = rawName
+        .replace(/[\(\[\{][^\)\]\}]*[\)\]\}]/g, ' ')
+        .replace(/\b(Mod|Mods|Hacked|Hack|VIP|Plus|Premium|Unlocked|Cercube|Reborn|Crack|Cracked|\+\+|Pro|Gold|Wolf|No Ads|Unlimited)\b/gi, ' ')
+        .replace(/[^a-zA-Z0-9\s]/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ');
+
+      if (cleanName) {
+        try {
+          const url = `https://itunes.apple.com/search?term=${encodeURIComponent(cleanName)}&entity=software&limit=1`;
+          const res = await fetch(url).then(r => r.json()).catch(() => null);
+          if (res && res.results && res.results[0]) {
+            const item = res.results[0];
+            const shots = [
+              ...(item.screenshotUrls || []),
+              ...(item.ipadScreenshotUrls || [])
+            ].filter(Boolean);
+            if (shots.length > 0) return shots;
+          }
+        } catch(e) {}
+      }
+
+      return [];
+    }
+
+    /* Curated illustrations for Sideload & Emulators */
+    function generateCuratedAppIllustrations(app) {
+      const name = (app.name || app.title || 'App').toLowerCase();
+      if (name.includes('trollstore')) {
+        return [
+          'https://user-images.githubusercontent.com/10901844/190875618-97ffb007-a5ec-44ec-b91c-1647f3ca612d.png',
+          'https://user-images.githubusercontent.com/10901844/190875631-0dfdbcf2-9f9b-43fe-a3a8-b63e9f50fbd9.png'
+        ];
+      }
+      if (name.includes('delta')) {
+        return [
+          'https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/bf/f6/fb/bff6fb3a-d68a-67a3-5c31-314aa5cf051b/Screen_1.png/392x696bb.png',
+          'https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/9c/0b/46/9c0b46ec-b44c-205e-f5ea-6ea06cbbd425/Screen_2.png/392x696bb.png'
+        ];
+      }
+      if (name.includes('ppsspp')) {
+        return [
+          'https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/be/8c/89/be8c89b4-3a25-e5b1-0bc4-72212fbeff86/Screen_1.png/392x696bb.png',
+          'https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/28/7d/51/287d512a-beea-2ef8-0245-c322d7ba4893/Screen_2.png/392x696bb.png'
+        ];
+      }
+      return [];
+    }
+
+    async function loadAppScreenshots(app) {
+      const ssSec = document.getElementById('screenshotsSection');
+      const ssList = document.getElementById('screenshotsList');
+      const countEl = document.getElementById('previewCount');
+      if (!ssSec || !ssList) return;
+
+      // Check if already present on app object
+      if (Array.isArray(app.screenshots) && app.screenshots.length > 0) {
+        renderScreenshots(app.screenshots);
+        return;
+      }
+
+      // Check session cache
+      const cacheKey = 'ipaviet_ss_' + (app.bundleId || app._id || app.name);
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            renderScreenshots(parsed);
+            return;
+          }
+        }
+      } catch(e) {}
+
+      // Show sleek loading skeletons
+      ssSec.style.display = 'block';
+      ssList.innerHTML = [1, 2, 3, 4].map(() => `
+        <div class="preview-item skeleton-box" style="width:210px;height:380px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;">
+          <span class="spinner-sm"></span>
+        </div>
+      `).join('');
+
+      let shots = await fetchScreenshotsFromApple(app);
+      if (!shots || shots.length === 0) {
+        shots = generateCuratedAppIllustrations(app);
+      }
+
+      if (shots && shots.length > 0) {
+        app.screenshots = shots;
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(shots)); } catch(e) {}
+        renderScreenshots(shots);
+      } else {
+        ssSec.style.display = 'none';
+      }
+
+      function renderScreenshots(items) {
+        ssSec.style.display = 'block';
+        if (countEl) countEl.textContent = `${items.length} ảnh`;
+        ssList.innerHTML = items.map((url, idx) => `
+          <div class="preview-item" onclick="openImageDialog('${url}')" title="Nhấn để phóng to ảnh ${idx + 1}" role="button" tabindex="0">
+            <img src="${url}" alt="${app.name || 'App'} - Ảnh chụp màn hình ${idx + 1}" loading="lazy" onerror="this.parentElement.remove()">
+          </div>
+        `).join('');
+        setupRails();
+      }
+    }
+
+    /* ─── Related Apps Engine (MacLife Format) ─── */
+    function loadRelatedApps(currentApp) {
+      const relSec = document.getElementById('relatedAppsSection');
+      const relList = document.getElementById('relatedAppsList');
+      const catLink = document.getElementById('relatedCategoryLink');
+      if (!relSec || !relList) return;
+
+      let allApps = [];
+      try {
+        const mapStr = localStorage.getItem('ipaviet_cached_apps_map');
+        if (mapStr) {
+          allApps = Object.values(JSON.parse(mapStr));
+        }
+      } catch(e) {}
+
+      if (!allApps || allApps.length === 0) {
+        relSec.style.display = 'none';
+        return;
+      }
+
+      const currentCat = (currentApp && currentApp.category) || '';
+      if (catLink && currentCat) {
+        catLink.href = `index.html?filter=${encodeURIComponent(currentCat.toLowerCase())}`;
+        catLink.innerHTML = `Xem tất cả ${currentCat} <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>`;
+      }
+
+      let matches = allApps.filter(a => a._id !== currentApp._id && a.name !== currentApp.name);
+      if (currentCat) {
+        const catMatches = matches.filter(a => a.category === currentCat);
+        if (catMatches.length >= 3) matches = catMatches;
+      }
+
+      matches = matches.slice(0, 8);
+      if (matches.length === 0) {
+        relSec.style.display = 'none';
+        return;
+      }
+
+      relSec.style.display = 'block';
+      relList.innerHTML = matches.map(item => {
+        const appName = item.name || item.title || 'App';
+        const safeIcon = extractAppIcon(item, '');
+        const targetUrl = `app.html?id=${encodeURIComponent(item._id)}&fromTab=explore`;
+        return `
+          <div class="app-column" style="flex:0 0 260px;">
+            <article class="app-row" style="background:var(--surface);padding:10px 14px;border-radius:14px;border:1px solid var(--line);">
+              <a class="app-icon" href="${targetUrl}" tabindex="-1" style="width:52px;height:52px;">
+                <img src="${safeIcon}" alt="${appName}" loading="lazy" width="52" height="52" onerror="this.src='https://img.icons8.com/fluency/96/apple-app-store--v2.png'">
+              </a>
+              <div class="app-copy">
+                <div class="app-name">
+                  <a class="app-title" href="${targetUrl}" style="font-size:14px;font-weight:600;">${appName}</a>
+                </div>
+                <p style="font-size:12px;color:var(--muted);">${item.developer || 'IPAVIET'}</p>
+              </div>
+              <div class="app-action">
+                <a class="pill" href="${targetUrl}" style="min-width:60px;min-height:26px;font-size:12px;">Xem</a>
+              </div>
+            </article>
+          </div>
+        `;
+      }).join('');
+
+      setupRails();
     }
 
     /* 4. Shortener Token Generation & Verification */
@@ -973,21 +1217,11 @@
         if (modBox) modBox.style.display = 'none';
       }
 
-      // Screenshots Preview
-      const ssSec = document.getElementById('screenshotsSection');
-      const ssList = document.getElementById('screenshotsList');
-      if (Array.isArray(app.screenshots) && app.screenshots.length > 0) {
-        if (ssSec) ssSec.style.display = 'block';
-        if (ssList) {
-          ssList.innerHTML = app.screenshots.map(s => `
-            <div class="preview-item" onclick="openImageDialog('${s}')" title="Nhấn để phóng to ảnh">
-              <img src="${s}" alt="Screenshot" loading="lazy" onerror="this.parentElement.remove()">
-            </div>
-          `).join('');
-        }
-      } else {
-        if (ssSec) ssSec.style.display = 'none';
-      }
+      // Screenshots Gallery & Illustrations (100% MacLife)
+      loadAppScreenshots(app);
+
+      // Related Apps Rail (100% MacLife)
+      loadRelatedApps(app);
 
       // Description
       const descEl = document.getElementById('appDesc');
