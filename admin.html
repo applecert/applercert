@@ -3122,119 +3122,161 @@
       auth.signOut().then(() => window.location.reload());
     }
 
+    // Helper fetch with timeout
+    async function fetchWithTimeout(url, opts = {}, timeout = 10000) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      try {
+        const response = await fetch(url, { ...opts, signal: controller.signal });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
+      }
+    }
+
     // ==========================================
-    // 2. CORE DATA SYNC & STATE POPULATION
+    // 2. CORE DATA SYNC & STATE POPULATION (TẢI SONG SONG SIÊU TỐC)
     // ==========================================
     async function loadAllData() {
       const refreshIcon = document.getElementById('refreshIcon');
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
 
-      // Recover PIN from sessionStorage if needed
+      // Luôn đảm bảo có mã PIN máy chủ hợp lệ (ưu tiên từ session -> local -> Master PIN)
       if (!AdminState.auth.inMemoryPin) {
-        AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || '';
+        AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || 
+                                      localStorage.getItem('adminPin') || 
+                                      localStorage.getItem('admin_verified_pin') || 
+                                      MASTER_SERVER_PIN;
       }
+      const pin = AdminState.auth.inMemoryPin || MASTER_SERVER_PIN;
 
       // Reset Unsaved State
       AdminState.dirty = { products: false, shortcuts: false, ai: false };
       toggleSaveButton();
 
-      // 1. Fetch Users from Firestore
-      try {
-        const userSnap = await db.collection("users").get();
-        AdminState.users = [];
-        userSnap.forEach(doc => AdminState.users.push({ uid: doc.id, ...doc.data() }));
-        renderUserTable();
-      } catch (userErr) {
-        console.warn("Firestore users query warning:", userErr);
-      }
-
-      // 2. Fetch Google Sheets Transactions & Revenue
-      try {
-        if (AdminState.auth.inMemoryPin) {
-          const res = await fetch(`${GOOGLE_API_URL}?action=get_admin_data&pin=${encodeURIComponent(AdminState.auth.inMemoryPin)}`);
-          const data = await res.json();
-          if (data.success && data.dataThuNgan) {
-            let totalRev = 0;
-            let txs = [];
-            for (let i = 1; i < data.dataThuNgan.length; i++) {
-              let r = data.dataThuNgan[i];
-              if (r[4] === 'CLAIMED') totalRev += (parseInt(r[2]) || 0);
-              txs.push({ orderId: r[0], uid: r[1], amount: r[2], coins: r[3], status: r[4], time: r[5] });
-            }
-            AdminState.totalRevenue = totalRev;
-            AdminState.transactions = txs.reverse();
-            renderTransactions();
+      // Thực thi đồng thời 10 luồng dữ liệu song song (Promise.allSettled)
+      const results = await Promise.allSettled([
+        // 1. Fetch Users từ Firestore
+        (async () => {
+          try {
+            const userSnap = await db.collection("users").get();
+            AdminState.users = [];
+            userSnap.forEach(doc => AdminState.users.push({ uid: doc.id, ...doc.data() }));
+            renderUserTable();
+          } catch (userErr) {
+            console.warn("Firestore users query warning:", userErr);
           }
-        }
-      } catch (txErr) {
-        console.warn("Transactions fetch warning:", txErr);
-      }
+        })(),
 
-      // 3. Fetch MMO Orders
-      try {
-        if (AdminState.auth.inMemoryPin) {
-          const resOrders = await fetch(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${encodeURIComponent(AdminState.auth.inMemoryPin)}`);
-          const dataOrders = await resOrders.json();
-          if (dataOrders.success) {
-            AdminState.orders = dataOrders.data || [];
-            renderMMOOrders();
-          }
-        }
-      } catch (orderErr) {
-        console.warn("MMO Orders fetch warning:", orderErr);
-      }
-
-      // 4. Fetch KingMMO Products & Configurations
-      try {
-        const resP = await fetch(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
-        const dataP = await resP.json();
-        if (dataP.success) {
-          AdminState.products = dataP.kingmmoProducts || [];
-          AdminState.productConfigs = dataP.configs || {};
-          
-          Object.keys(AdminState.productConfigs).forEach(k => {
-            if (k.startsWith('CAT___')) {
-              let cName = k.replace('CAT___', '');
-              AdminState.categories[cName] = AdminState.productConfigs[k];
-            } else if (k === 'DEAL___HOT') {
-              loadDealHotToForm(AdminState.productConfigs[k]);
+        // 2. Fetch Google Sheets Transactions & Revenue (Sổ quỹ thu ngân)
+        (async () => {
+          try {
+            const res = await fetchWithTimeout(`${GOOGLE_API_URL}?action=get_admin_data&pin=${encodeURIComponent(pin)}`);
+            const data = await res.json();
+            if (data && data.success && data.dataThuNgan) {
+              let totalRev = 0;
+              let txs = [];
+              for (let i = 1; i < data.dataThuNgan.length; i++) {
+                let r = data.dataThuNgan[i];
+                if (r[4] === 'CLAIMED') totalRev += (parseInt(r[2]) || 0);
+                txs.push({ orderId: r[0], uid: r[1], amount: r[2], coins: r[3], status: r[4], time: r[5] });
+              }
+              AdminState.totalRevenue = totalRev;
+              AdminState.transactions = txs.reverse();
+              renderTransactions();
             }
-          });
-          renderConfigTable();
-          renderCategoryManager();
-        }
-      } catch (prodErr) {
-        console.warn("Products fetch warning:", prodErr);
-      }
+          } catch (txErr) {
+            console.warn("Transactions fetch warning:", txErr);
+          }
+        })(),
 
-      // 5. Fetch Shortcuts & AI & Audit
-      try { await loadShortcutsData(); } catch(e) {}
-      try { await loadAIKnowledgeData(); } catch(e) {}
-      try { await loadAuditLogs(); } catch(e) {}
+        // 3. Fetch MMO Orders
+        (async () => {
+          try {
+            const resOrders = await fetchWithTimeout(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${encodeURIComponent(pin)}`);
+            const dataOrders = await resOrders.json();
+            if (dataOrders && dataOrders.success) {
+              AdminState.orders = dataOrders.data || [];
+              renderMMOOrders();
+            }
+          } catch (orderErr) {
+            console.warn("MMO Orders fetch warning:", orderErr);
+          }
+        })(),
 
-      // 6. Fetch Support Chats & Start Real-time Chat Polling
-      try {
-        await fetchSupportChats(false);
-        startAdminChatPolling();
-      } catch(chatErr) {
-        console.warn("Support chats fetch warning:", chatErr);
-      }
+        // 4. Fetch KingMMO Products & Configurations
+        (async () => {
+          try {
+            const resP = await fetchWithTimeout(`${GOOGLE_API_URL}?action=get_kingmmo_products`);
+            const dataP = await resP.json();
+            if (dataP && dataP.success) {
+              AdminState.products = dataP.kingmmoProducts || [];
+              AdminState.productConfigs = dataP.configs || {};
+              
+              Object.keys(AdminState.productConfigs).forEach(k => {
+                if (k.startsWith('CAT___')) {
+                  let cName = k.replace('CAT___', '');
+                  AdminState.categories[cName] = AdminState.productConfigs[k];
+                } else if (k === 'DEAL___HOT') {
+                  loadDealHotToForm(AdminState.productConfigs[k]);
+                }
+              });
+              renderConfigTable();
+              renderCategoryManager();
+            }
+          } catch (prodErr) {
+            console.warn("Products fetch warning:", prodErr);
+          }
+        })(),
 
-      // 7. Fetch Apple Certificate Orders & Products
-      try {
-        await loadCertOrders(false);
-        await loadCertProducts();
-      } catch(certErr) {
-        console.warn("Cert orders fetch warning:", certErr);
-      }
+        // 5. Fetch Shortcuts
+        (async () => {
+          try { await loadShortcutsData(); } catch(e) {}
+        })(),
 
-      // 7. Fetch IPA & User Habit Analytics
-      try {
-        await loadAppAnalytics(false);
-      } catch(analyticsErr) {
-        console.warn("App analytics fetch warning:", analyticsErr);
-      }
+        // 6. Fetch AI Knowledge
+        (async () => {
+          try { await loadAIKnowledgeData(); } catch(e) {}
+        })(),
 
+        // 7. Fetch Audit Logs
+        (async () => {
+          try { await loadAuditLogs(); } catch(e) {}
+        })(),
+
+        // 8. Fetch Support Chats
+        (async () => {
+          try {
+            await fetchSupportChats(false);
+            startAdminChatPolling();
+          } catch(chatErr) {
+            console.warn("Support chats fetch warning:", chatErr);
+          }
+        })(),
+
+        // 9. Fetch Apple Certificate Orders & Products
+        (async () => {
+          try {
+            await loadCertOrders(false);
+            await loadCertProducts();
+          } catch(certErr) {
+            console.warn("Cert orders fetch warning:", certErr);
+          }
+        })(),
+
+        // 10. Fetch IPA & User Habit Analytics
+        (async () => {
+          try {
+            await loadAppAnalytics(false);
+          } catch(analyticsErr) {
+            console.warn("App analytics fetch warning:", analyticsErr);
+          }
+        })()
+      ]);
+
+      // Cập nhật số liệu trên giao diện Dashboard ngay sau khi các luồng song song xong
       updateDashboardMetrics();
       if (refreshIcon) {
         setTimeout(() => refreshIcon.classList.remove('animate-spin'), 600);
