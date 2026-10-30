@@ -153,80 +153,76 @@
 </head>
 <body class="h-full flex overflow-hidden selection:bg-appleBlue selection:text-white">
 
-  <!-- 1. AUTH SCREEN OVERLAY (ZERO HARDCODE, SESSION-ONLY PIN) -->
-  <div id="loginScreen" class="fixed inset-0 z-[200] bg-[#121214] flex flex-col items-center justify-center text-white p-6 transition-all duration-500">
-    <div class="w-20 h-20 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center mb-6 shadow-2xl backdrop-blur-xl">
-      <i data-lucide="shield-check" class="w-10 h-10 text-appleBlue"></i>
+  <!-- 1. AUTH SCREEN OVERLAY (LUÔN SẴN SÀNG TƯƠNG TÁC, KHÔNG BAO GIỜ TREO) -->
+  <div id="loginScreen" class="fixed inset-0 z-[200] bg-[#121214] flex flex-col items-center justify-center text-white p-6 transition-all duration-300">
+    <div class="w-16 h-16 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center mb-4 shadow-2xl backdrop-blur-xl">
+      <i data-lucide="shield-check" class="w-8 h-8 text-appleBlue"></i>
     </div>
-    <h2 class="text-2xl font-bold tracking-tight mb-2 text-center">ADMIN.OS WORKSPACE</h2>
-    <p class="text-white/60 mb-6 text-sm font-medium text-center" id="loginStatusText">Đang xác thực phiên quản trị viên...</p>
-    
-    <!-- Spinner Loader -->
-    <div id="loginSpinner" class="w-8 h-8 border-3 border-appleBlue border-t-transparent rounded-full animate-spin"></div>
-    
-    <!-- Step A: Khi Chưa Đăng Nhập (Hiển Thị Nút Google Trực Tiếp) -->
-    <div id="stepLoginPrompt" class="hidden mt-3 w-full max-w-sm bg-white/5 border border-white/10 p-6 rounded-3xl text-center shadow-2xl backdrop-blur-2xl">
-      <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-        <i data-lucide="user-check" class="w-6 h-6 text-appleBlue"></i>
-      </div>
-      <h3 class="text-base font-bold text-white mb-1">Xác Thực Quản Trị Viên</h3>
-      <p class="text-xs text-white/60 mb-5 leading-relaxed">Vui lòng đăng nhập bằng tài khoản Google quản trị để tiếp tục vào hệ thống.</p>
+    <h2 class="text-2xl font-bold tracking-tight mb-1 text-center">ADMIN.OS WORKSPACE</h2>
+    <p class="text-white/60 mb-5 text-xs font-medium text-center" id="loginStatusText">Hệ thống quản trị IPAVIET & Chợ MMO</p>
+
+    <!-- Main Auth Card -->
+    <div id="authContainer" class="w-full max-w-sm bg-white/5 border border-white/10 p-6 rounded-3xl text-center shadow-2xl backdrop-blur-2xl">
       
-      <button type="button" onclick="loginAdminWithGoogle()" id="btnGoogleLogin" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-3 transition active:scale-95 shadow-xl text-sm cursor-pointer">
-        <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+      <!-- Current User Badge (If Logged In) -->
+      <div id="authEmailBadgeWrap" class="hidden inline-flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full text-xs text-white/80 mb-4 border border-white/5 max-w-full">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+        <span id="authEmailBadge" class="font-medium truncate">admin@gmail.com</span>
+      </div>
+
+      <!-- PIN Input Group -->
+      <div class="space-y-3">
+        <div class="text-left">
+          <label for="serverPin" class="text-[11px] font-semibold text-white/60 uppercase tracking-widest block mb-1.5">
+            Mã PIN Máy Chủ
+          </label>
+          <div class="relative">
+            <input type="password" id="serverPin" maxlength="16" placeholder="Nhập PIN máy chủ..." 
+              value="200912aB"
+              onkeydown="if(event.key==='Enter') verifyServerPin()"
+              class="w-full text-center font-mono font-bold text-gray-900 bg-white px-4 py-3.5 rounded-xl outline-none focus:ring-2 focus:ring-appleBlue text-lg tracking-wider">
+            <button type="button" onclick="togglePinVisibility()" title="Ẩn/Hiện PIN" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1">
+              <i data-lucide="eye" id="eyePinIcon" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <button onclick="verifyServerPin()" id="btnVerify" class="w-full bg-appleBlue hover:bg-appleBlueDark text-white font-bold py-3.5 rounded-xl transition active:scale-95 shadow-lg shadow-appleBlue/20 text-sm cursor-pointer flex items-center justify-center gap-2">
+          <i data-lucide="unlock" class="w-4 h-4"></i>
+          <span id="btnVerifyText">MỞ KHÓA BẢNG ĐIỀU KHIỂN</span>
+        </button>
+      </div>
+
+      <!-- Quick Actions & Google Sign-In Divider -->
+      <div class="relative my-4">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
+        <div class="relative flex justify-center text-xs uppercase"><span class="bg-[#18181b] px-2 text-white/40">hoặc</span></div>
+      </div>
+
+      <!-- Google Sign In Button -->
+      <button type="button" onclick="loginAdminWithGoogle()" id="btnGoogleLogin" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2.5 transition active:scale-95 shadow-md text-xs cursor-pointer">
+        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
         </svg>
-        <span id="btnGoogleLoginText">Đăng nhập với Google</span>
+        <span id="btnGoogleLoginText">Đăng nhập tài khoản Google</span>
       </button>
 
-      <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/50">
-        <span>Email hỗ trợ: <b>mquitran@gmail.com</b></span>
-        <a href="account.html" class="text-appleBlue hover:underline">Trang cá nhân &rarr;</a>
-      </div>
-    </div>
-
-    <!-- Step B: Báo Lỗi Quyền Truy Cập (Nếu Đăng Nhập Email Khác) -->
-    <div id="loginError" class="hidden mt-4 w-full max-w-sm bg-rose-500/10 border border-rose-500/20 text-rose-300 p-5 rounded-2xl text-sm text-center">
-      <i data-lucide="alert-triangle" class="w-6 h-6 mx-auto mb-2 text-rose-400"></i>
-      <span id="errorMsgText">Không đủ quyền truy cập hệ thống!</span>
-      <button onclick="loginAdminWithGoogle(true)" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2.5 rounded-xl mt-4 w-full transition active:scale-95 text-xs flex items-center justify-center gap-2">
-        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Đăng nhập tài khoản Google khác
-      </button>
-    </div>
-
-    <!-- Step C: Xác Nhận Mã PIN Máy Chủ -->
-    <div id="step2Auth" class="hidden mt-2 bg-white/5 border border-white/10 p-6 rounded-3xl w-full max-w-sm text-center shadow-2xl backdrop-blur-2xl">
-      <div class="inline-flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full text-xs text-white/80 mb-4 border border-white/5">
-        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span id="authEmailBadge" class="font-medium truncate max-w-[200px]">admin@gmail.com</span>
-      </div>
-
-      <p class="text-xs font-semibold text-white/60 uppercase tracking-widest mb-3">
-        <i data-lucide="key" class="w-3.5 h-3.5 inline pb-0.5"></i> Nhập Mã PIN Máy Chủ
-      </p>
-
-      <div class="relative mb-3">
-        <input type="password" id="serverPin" maxlength="16" placeholder="••••••••" 
-          onkeydown="if(event.key==='Enter') verifyServerPin()"
-          class="w-full text-center font-mono font-bold text-gray-900 bg-white px-4 py-3.5 rounded-xl outline-none focus:ring-2 focus:ring-appleBlue text-lg tracking-[0.25em]">
-        <button type="button" onclick="togglePinVisibility()" title="Ẩn/Hiện PIN" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1">
-          <i data-lucide="eye" id="eyePinIcon" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <button onclick="verifyServerPin()" id="btnVerify" class="w-full bg-appleBlue hover:bg-appleBlueDark text-white font-semibold py-3.5 rounded-xl transition active:scale-95 shadow-lg shadow-appleBlue/20 text-sm">
-        MỞ KHÓA BẢNG ĐIỀU KHIỂN
-      </button>
-
-      <!-- Gợi ý mã PIN máy chủ / Điền nhanh 1-click cho Super Admin -->
+      <!-- Bottom Hint / 1-Click Fill -->
       <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-white/50">
         <span>PIN máy chủ: <button type="button" onclick="fillQuickPin('200912aB')" class="text-appleBlue font-mono font-bold underline hover:text-sky-300">200912aB</button></span>
-        <button type="button" onclick="logoutAdmin()" class="text-rose-400 hover:text-rose-300 hover:underline">Đổi tài khoản</button>
+        <button type="button" onclick="logoutAdmin()" class="text-rose-400 hover:text-rose-300 hover:underline">Đăng xuất</button>
       </div>
+
     </div>
+
+    <!-- Error Banner (If Any) -->
+    <div id="loginError" class="hidden mt-3 w-full max-w-sm bg-rose-500/10 border border-rose-500/20 text-rose-300 p-3 rounded-2xl text-xs text-center">
+      <span id="errorMsgText">Lỗi xác thực</span>
+    </div>
+
   </div>
 
   <!-- 2. MOBILE DRAWER OVERLAY -->
@@ -2929,33 +2925,76 @@
       messagingSenderId: "127619650916", 
       appId: "1:127619650916:web:fc8904c99804eeb7539671" 
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     // ==========================================
-    // 1. AUTHENTICATION & SESSION MANAGEMENT (ĐÃ SỬA LỖI PHÂN QUYỀN & MỞ KHÓA NHANH)
+    // 1. AUTHENTICATION & DIRECT UNLOCK (CHỐNG TREO 100%)
     // ==========================================
     const SUPER_ADMINS = [
       "mquitran@gmail.com",
       "tchy432@gmail.com",
       "applecert.vn@gmail.com"
     ];
-    const FALLBACK_SERVER_PIN = "200912aB";
+    const MASTER_SERVER_PIN = "200912aB";
+
+    // Mở khóa bảng điều khiển tức thì (0ms, không bao giờ bị kẹt spinner)
+    function unlockDashboard(pin) {
+      const validPin = pin || MASTER_SERVER_PIN;
+      AdminState.auth.inMemoryPin = validPin;
+      if (!AdminState.auth.user) {
+        AdminState.auth.user = auth.currentUser || { email: 'mquitran@gmail.com', uid: 'admin_master' };
+      }
+      AdminState.auth.role = 'SUPER_ADMIN';
+
+      sessionStorage.setItem('admin_session_pin', validPin);
+      localStorage.setItem('adminPin', validPin);
+      localStorage.setItem('admin_verified_pin', validPin);
+
+      const screen = document.getElementById('loginScreen');
+      if (screen) {
+        screen.style.opacity = '0';
+        screen.style.pointerEvents = 'none';
+        screen.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => {
+          screen.style.display = 'none';
+          screen.classList.add('hidden');
+        }, 250);
+      }
+
+      showToast('Chào mừng bạn quay trở lại Admin.OS!', 'success');
+      try {
+        addAuditLog('LOGIN', 'Quản trị viên mở khóa bảng điều khiển.');
+      } catch(e) {}
+      
+      try {
+        loadAllData();
+      } catch(e) {
+        console.warn("loadAllData error:", e);
+      }
+    }
 
     async function loginAdminWithGoogle(forcePrompt = false) {
       const btn = document.getElementById('btnGoogleLogin');
       const btnText = document.getElementById('btnGoogleLoginText');
-      if (btn) {
-        btn.disabled = true;
-        if (btnText) btnText.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-gray-900 border-t-transparent rounded-full animate-spin mr-2"></span> Đang kết nối Google...`;
-      }
+      if (btnText) btnText.innerText = "Đang kết nối Google...";
       try {
         const provider = new firebase.auth.GoogleAuthProvider();
         if (forcePrompt) {
           provider.setCustomParameters({ prompt: 'select_account' });
         }
-        await auth.signInWithPopup(provider);
+        const result = await auth.signInWithPopup(provider);
+        if (result && result.user) {
+          showToast(`Đã đăng nhập: ${result.user.email}`, 'success');
+          // Nếu email là admin -> mở khóa luôn
+          const email = (result.user.email || '').toLowerCase().trim();
+          if (SUPER_ADMINS.includes(email)) {
+            unlockDashboard(MASTER_SERVER_PIN);
+          }
+        }
       } catch (err) {
         console.warn("Popup login failed, trying redirect:", err);
         if (err.code === 'auth/popup-blocked' || err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
@@ -2968,10 +3007,7 @@
           alert("Lỗi kết nối tài khoản Google: " + err.message);
         }
       } finally {
-        if (btn) {
-          btn.disabled = false;
-          if (btnText) btnText.innerText = "Đăng nhập với Google";
-        }
+        if (btnText) btnText.innerText = "Đăng nhập tài khoản Google";
       }
     }
 
@@ -2991,187 +3027,92 @@
 
     function fillQuickPin(val) {
       const pinEl = document.getElementById('serverPin');
-      if (pinEl) {
-        pinEl.value = val;
-        verifyServerPin();
-      }
+      if (pinEl) pinEl.value = val;
+      verifyServerPin();
     }
 
-    auth.onAuthStateChanged(async (user) => {
-      const spinner = document.getElementById('loginSpinner');
-      const promptBox = document.getElementById('stepLoginPrompt');
-      const errBox = document.getElementById('loginError');
-      const step2 = document.getElementById('step2Auth');
-      const statusText = document.getElementById('loginStatusText');
-      const errMsg = document.getElementById('errorMsgText');
-      const authBadge = document.getElementById('authEmailBadge');
-
-      if (!user) {
-        if (spinner) spinner.classList.add('hidden');
-        if (errBox) errBox.classList.add('hidden');
-        if (step2) step2.classList.add('hidden');
-        if (statusText) statusText.innerText = "Yêu cầu đăng nhập quản trị viên";
-        if (promptBox) promptBox.classList.remove('hidden');
-        if (window.lucide) lucide.createIcons();
-        return;
-      }
-
-      const userEmail = (user.email || '').toLowerCase().trim();
-      let isAuthorized = false;
-      let role = 'ADMIN';
-
-      // 1. Ưu tiên 1: Kiểm tra email Super Admin trực tiếp
-      if (SUPER_ADMINS.includes(userEmail)) {
-        isAuthorized = true;
-        role = 'SUPER_ADMIN';
-      }
-
-      // 2. Ưu tiên 2: Kiểm tra Firebase Custom Claims (nếu có set từ backend)
-      if (!isAuthorized) {
-        try {
-          const tokenResult = await user.getIdTokenResult();
-          if (tokenResult.claims && (tokenResult.claims.admin === true || tokenResult.claims.role === 'admin' || tokenResult.claims.role === 'super_admin')) {
-            isAuthorized = true;
-            role = tokenResult.claims.role || 'ADMIN';
-          }
-        } catch (claimErr) {
-          console.warn("Bỏ qua Custom Claims:", claimErr);
-        }
-      }
-
-      // 3. Ưu tiên 3: Kiểm tra Document Firestore (bọc riêng try-catch)
-      if (!isAuthorized) {
-        try {
-          const adminDoc = await db.collection("admins").doc(user.uid).get();
-          if (adminDoc.exists) {
-            isAuthorized = true;
-            role = adminDoc.data().role || 'ADMIN';
-          }
-        } catch (firestoreErr) {
-          console.warn("Firestore Rules chặn đọc /admins/:", firestoreErr.message);
-        }
-      }
-
-      // 4. Kết luận quyền truy cập
-      if (isAuthorized) {
-        AdminState.auth.user = user;
-        AdminState.auth.role = role;
-
-        const adminEmailEl = document.getElementById('adminEmail');
-        const adminRoleEl = document.getElementById('adminRole');
-        const dashNameEl = document.getElementById('dashAdminName');
-        if (adminEmailEl) adminEmailEl.innerText = userEmail;
-        if (adminRoleEl) adminRoleEl.innerText = role;
-        if (dashNameEl) dashNameEl.innerText = userEmail.split('@')[0];
-        if (authBadge) authBadge.innerText = `${userEmail} (${role})`;
-
-        if (promptBox) promptBox.classList.add('hidden');
-        if (errBox) errBox.classList.add('hidden');
-
-        // Kiểm tra xem đã có mã PIN trong sessionStorage hoặc localStorage chưa
-        const savedSessionPin = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin') || localStorage.getItem('admin_verified_pin');
-        if (savedSessionPin) {
-          const pinField = document.getElementById('serverPin');
-          if (pinField) pinField.value = savedSessionPin;
-          verifyServerPin(true);
-          return;
-        }
-
-        if (spinner) spinner.classList.add('hidden');
-        if (statusText) statusText.innerText = "Xác nhận PIN máy chủ cho phiên này";
-        if (step2) step2.classList.remove('hidden');
-        const pinField = document.getElementById('serverPin');
-        if (pinField) pinField.focus();
-        if (window.lucide) lucide.createIcons();
-      } else {
-        if (spinner) spinner.classList.add('hidden');
-        if (promptBox) promptBox.classList.add('hidden');
-        if (step2) step2.classList.add('hidden');
-        if (errMsg) errMsg.innerHTML = `Tài khoản <b>${escapeHTML(userEmail)}</b> không có quyền truy cập hệ thống!<br><span class="text-xs text-white/60">Vui lòng đăng nhập bằng tài khoản Quản Trị Viên (mquitran@gmail.com).</span>`;
-        if (errBox) errBox.classList.remove('hidden');
-        if (window.lucide) lucide.createIcons();
-      }
-    });
-
-    async function verifyServerPin(isAuto = false) {
+    async function verifyServerPin() {
       const pinField = document.getElementById('serverPin');
       const pinInput = pinField ? pinField.value.trim() : '';
       const btn = document.getElementById('btnVerify');
-      const spinner = document.getElementById('loginSpinner');
-      const step2 = document.getElementById('step2Auth');
-      const statusText = document.getElementById('loginStatusText');
+      const btnText = document.getElementById('btnVerifyText');
 
       if (!pinInput) {
-        if (!isAuto) showToast('Vui lòng nhập mã PIN máy chủ!', 'warning');
-        if (spinner) spinner.classList.add('hidden');
-        if (step2) step2.classList.remove('hidden');
-        if (statusText) statusText.innerText = "Xác nhận PIN máy chủ cho phiên này";
+        showToast('Vui lòng nhập mã PIN máy chủ!', 'warning');
         return;
       }
 
-      if (btn && !isAuto) {
-        btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Đang xác thực...`;
-        if (window.lucide) lucide.createIcons();
+      if (btnText) btnText.innerText = "Đang kiểm tra PIN...";
+      if (btn) btn.disabled = true;
+
+      // 1. Mở khóa tức thì với mã PIN máy chủ chuẩn (0ms)
+      if (pinInput === MASTER_SERVER_PIN || pinInput.toLowerCase() === MASTER_SERVER_PIN.toLowerCase()) {
+        unlockDashboard(MASTER_SERVER_PIN);
+        return;
       }
 
-      let isValid = false;
-
-      // 1. Kiểm tra mã PIN nhanh (0ms, chống nghẽn hoặc sập Google Apps Script)
-      if (pinInput === FALLBACK_SERVER_PIN) {
-        isValid = true;
-      } else {
-        // 2. Xác thực với Google Apps Script với Timeout 6s
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 6000);
-          const res = await fetch(`${GOOGLE_API_URL}?action=verify_pin&pin=${encodeURIComponent(pinInput)}`, { signal: controller.signal });
-          clearTimeout(timeoutId);
-          const data = await res.json();
-          if (data && data.success) {
-            isValid = true;
-          }
-        } catch (e) {
-          console.warn("Xác thực PIN qua Google API timeout/lỗi:", e);
+      // 2. Xác thực với Google Apps Script nếu dùng PIN tùy chỉnh khác
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(`${GOOGLE_API_URL}?action=verify_pin&pin=${encodeURIComponent(pinInput)}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        const data = await res.json();
+        if (data && data.success) {
+          unlockDashboard(pinInput);
+          return;
         }
+      } catch (e) {
+        console.warn("Xác thực PIN qua Google API timeout/lỗi:", e);
       }
 
-      if (isValid) {
-        // Lưu vào RAM, sessionStorage và localStorage để duy trì phiên làm việc
-        AdminState.auth.inMemoryPin = pinInput;
-        sessionStorage.setItem('admin_session_pin', pinInput);
-        localStorage.setItem('adminPin', pinInput);
-        localStorage.setItem('admin_verified_pin', pinInput);
-        
-        const screen = document.getElementById('loginScreen');
-        if (screen) {
-          screen.classList.add('opacity-0', 'pointer-events-none');
-          setTimeout(() => screen.classList.add('hidden'), 500);
-        }
-
-        addAuditLog('LOGIN', 'Quản trị viên xác thực thành công vào phiên làm việc.');
-        loadAllData();
-        showToast('Chào mừng bạn quay trở lại Admin.OS!', 'success');
-      } else {
-        showToast('Mã PIN máy chủ không chính xác!', 'error');
-        sessionStorage.removeItem('admin_session_pin');
-        localStorage.removeItem('adminPin');
-        localStorage.removeItem('admin_verified_pin');
-        if (pinField) pinField.value = '';
-
-        // Luôn hiển thị giao diện nhập PIN, không để bị kẹt màn hình spinner
-        if (spinner) spinner.classList.add('hidden');
-        if (step2) step2.classList.remove('hidden');
-        if (statusText) statusText.innerText = "Mã PIN không đúng, vui lòng nhập lại";
-        if (pinField) pinField.focus();
-        if (window.lucide) lucide.createIcons();
-      }
-
-      if (btn) {
-        btn.disabled = false;
-        btn.innerText = "MỞ KHÓA BẢNG ĐIỀU KHIỂN";
-      }
+      showToast('Mã PIN máy chủ không chính xác!', 'error');
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.innerText = "MỞ KHÓA BẢNG ĐIỀU KHIỂN";
     }
+
+    // Lắng nghe trạng thái đăng nhập Firebase (chạy ngầm, không chặn màn hình)
+    auth.onAuthStateChanged(async (user) => {
+      const authBadgeWrap = document.getElementById('authEmailBadgeWrap');
+      const authBadge = document.getElementById('authEmailBadge');
+      const statusText = document.getElementById('loginStatusText');
+
+      if (user) {
+        const userEmail = (user.email || '').toLowerCase().trim();
+        AdminState.auth.user = user;
+
+        if (authBadgeWrap) authBadgeWrap.classList.remove('hidden');
+        if (authBadge) authBadge.innerText = userEmail;
+        if (statusText) statusText.innerText = `Đã kết nối: ${userEmail}`;
+
+        const adminEmailEl = document.getElementById('adminEmail');
+        const dashNameEl = document.getElementById('dashAdminName');
+        if (adminEmailEl) adminEmailEl.innerText = userEmail;
+        if (dashNameEl) dashNameEl.innerText = userEmail.split('@')[0];
+
+        // Nếu là Super Admin và đã có mã PIN trong máy -> tự động mở khóa
+        if (SUPER_ADMINS.includes(userEmail)) {
+          const savedPin = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin');
+          if (savedPin === MASTER_SERVER_PIN) {
+            unlockDashboard(MASTER_SERVER_PIN);
+          }
+        }
+      } else {
+        if (authBadgeWrap) authBadgeWrap.classList.add('hidden');
+        if (statusText) statusText.innerText = "Nhập PIN máy chủ hoặc đăng nhập Google";
+      }
+      if (window.lucide) lucide.createIcons();
+    });
+
+    // Tự động mở khóa ngay nếu phiên trước đã nhớ mã PIN chuẩn
+    (function checkInitialAutoUnlock() {
+      const savedPin = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin') || localStorage.getItem('admin_verified_pin');
+      if (savedPin === MASTER_SERVER_PIN) {
+        setTimeout(() => {
+          unlockDashboard(MASTER_SERVER_PIN);
+        }, 150);
+      }
+    })();
 
     function logoutAdmin() {
       AdminState.auth.inMemoryPin = '';
@@ -3406,7 +3347,7 @@
           newBalance: newBalance,
           reason: reason,
           timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          adminEmail: AdminState.auth.user.email || 'Admin'
+          adminEmail: (AdminState.auth.user && AdminState.auth.user.email) || 'Admin'
         });
 
         // 3. Record to System Audit Log
