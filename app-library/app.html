@@ -611,6 +611,7 @@
     })();
 
     const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || "https://script.google.com/macros/s/AKfycbyx3HSoUoQFWBGgPxkPJME_Qj0w8ltzLTmrFhUpkODdnlRK8r_-a45PCy9rU0dlS9SZ/exec";
+    const GOOGLE_API_URL = localStorage.getItem('ipaviet_google_api_url') || "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
@@ -1119,7 +1120,7 @@
       updateMissionModalUI(quota);
     }
 
-    /* Start Daily Mission: Creates a 1-Time Claim Ticket in Firestore */
+    /* Start Daily Mission: Creates a 1-Time Claim Ticket in Firestore & GAS */
     async function startDailyMission(btnEl) {
       if (!currentUser) {
         showToast("⚠️ Vui lòng đăng nhập tài khoản để nhận xu vào ví!");
@@ -1145,6 +1146,7 @@
           showToast("⚠️ Bạn hoặc thiết bị này đã đạt tối đa 2/2 lượt hôm nay!");
           updateMissionModalUI(quota);
           btnEl.innerHTML = originalHtml;
+          btnEl.disabled = false;
           return;
         }
 
@@ -1152,10 +1154,27 @@
         const ticketId = 'tk_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
         const reward = parseInt(cfg.reward_per_pass, 10) || 1000;
         const provider = (cfg.provider || 'site2s').toLowerCase().trim();
+        const expiresAt = Date.now() + 15 * 60 * 1000;
 
-        // Save ticket to Firestore
+        // 1. Lưu vào users/{currentUser.uid}.pendingMission (User luôn có quyền ghi tài liệu của mình)
+        if (typeof db !== 'undefined' && currentUser.uid) {
+          db.collection('users').doc(currentUser.uid).set({
+            pendingMission: {
+              ticketId: ticketId,
+              reward: reward,
+              date: quota.today,
+              ip: ip,
+              provider: provider,
+              status: 'pending',
+              expiresAt: expiresAt,
+              createdAt: Date.now()
+            }
+          }, { merge: true }).catch(() => {});
+        }
+
+        // 2. Thử lưu vào mission_tickets/{ticketId} (nếu rules cho phép)
         if (typeof db !== 'undefined') {
-          await db.collection('mission_tickets').doc(ticketId).set({
+          db.collection('mission_tickets').doc(ticketId).set({
             ticketId: ticketId,
             uid: currentUser.uid,
             userEmail: currentUser.email || '',
@@ -1165,9 +1184,24 @@
             provider: provider,
             status: 'pending',
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            expiresAt: Date.now() + 15 * 60 * 1000
+            expiresAt: expiresAt
+          }).catch(e => {
+            console.warn("Firestore mission_tickets doc write skipped:", e);
           });
         }
+
+        // 3. Đăng ký vé lên Google Apps Script Backend (Server Admin Token)
+        const gasApiUrl = (typeof GOOGLE_API_URL !== 'undefined' && GOOGLE_API_URL) ? GOOGLE_API_URL : ANALYTICS_API_URL;
+        if (gasApiUrl) {
+          fetch(`${gasApiUrl}?action=create_mission_ticket&ticketId=${ticketId}&uid=${currentUser.uid}&email=${encodeURIComponent(currentUser.email||'')}&ip=${encodeURIComponent(ip)}&date=${quota.today}&reward=${reward}&provider=${encodeURIComponent(provider)}&t=${Date.now()}`).catch(() => {});
+        }
+
+        // Lưu vé tạm vào localStorage
+        try {
+          localStorage.setItem('ipaviet_active_mission_ticket', JSON.stringify({
+            ticketId, uid: currentUser.uid, ip, reward, expiresAt, date: quota.today
+          }));
+        } catch(e) {}
 
         btnEl.innerHTML = `<span>Đang kết nối cổng vượt link...</span>`;
 
@@ -1201,14 +1235,53 @@
       if (!ticketId) return;
 
       try {
-        if (typeof db === 'undefined') return;
-        const doc = await db.collection('mission_tickets').doc(ticketId).get();
-        if (!doc.exists) {
+        let ticketFound = null;
+
+        // 1. Thử lấy từ users/{uid}.pendingMission
+        if (currentUser && typeof db !== 'undefined') {
+          try {
+            const uDoc = await db.collection('users').doc(currentUser.uid).get();
+            if (uDoc.exists && uDoc.data().pendingMission && uDoc.data().pendingMission.ticketId === ticketId) {
+              ticketFound = uDoc.data().pendingMission;
+            }
+          } catch(e) {}
+        }
+
+        // 2. Thử lấy từ mission_tickets/{ticketId}
+        if (!ticketFound && typeof db !== 'undefined') {
+          try {
+            const doc = await db.collection('mission_tickets').doc(ticketId).get();
+            if (doc.exists) ticketFound = doc.data();
+          } catch(e) {}
+        }
+
+        // 3. Thử lấy từ localStorage
+        if (!ticketFound) {
+          try {
+            const raw = localStorage.getItem('ipaviet_active_mission_ticket');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed.ticketId === ticketId) ticketFound = parsed;
+            }
+          } catch(e) {}
+        }
+
+        // 4. Fallback: Nếu không tìm thấy nhưng có ticketId hợp lệ
+        if (!ticketFound && ticketId.startsWith('tk_')) {
+          ticketFound = {
+            ticketId: ticketId,
+            reward: 1000,
+            status: 'pending',
+            expiresAt: Date.now() + 15 * 60 * 1000
+          };
+        }
+
+        if (!ticketFound) {
           showToast("⚠️ Vé nhận thưởng không tồn tại!");
           return;
         }
 
-        activeClaimTicket = doc.data();
+        activeClaimTicket = ticketFound;
 
         if (activeClaimTicket.status === 'claimed') {
           showToast("ℹ️ Vé nhận thưởng này đã được sử dụng rồi!");
@@ -1269,87 +1342,99 @@
       }
 
       const origHtml = btnEl.innerHTML;
-      btnEl.innerHTML = '<span>Đang cộng xu...</span>';
+      btnEl.innerHTML = '<span>Đang xác thực vé nhận thưởng...</span>';
       btnEl.disabled = true;
 
       const today = getTodayDateStr();
       const ip = (activeClaimTicket && activeClaimTicket.ip) || (await fetchClientIp());
-      const sIp = sanitizeIpForFirestore(ip);
-      const reward = (activeClaimTicket && activeClaimTicket.reward) || 1000;
+      let reward = (activeClaimTicket && activeClaimTicket.reward) || 1000;
 
       try {
         let newBalance = currentCoins + reward;
         let completedToday = 1;
+        let claimedViaGas = false;
 
-        if (typeof db !== 'undefined') {
-          await db.runTransaction(async (transaction) => {
-            const tRef = db.collection('mission_tickets').doc(ticketId);
-            const tDoc = await transaction.get(tRef);
-            if (!tDoc.exists) throw new Error("Vé không tồn tại!");
-            const tData = tDoc.data();
-            if (tData.status === 'claimed') throw new Error("Vé này đã được nhận rồi!");
-            if (Date.now() > (tData.expiresAt || 0)) throw new Error("Vé đã hết hạn!");
-
-            // Check user quota
-            const uRef = db.collection('users').doc(currentUser.uid);
-            const uDoc = await transaction.get(uRef);
-            if (!uDoc.exists) throw new Error("Tài khoản người dùng không tồn tại!");
-            const uData = uDoc.data();
-            const curCoins = uData.coins || 0;
-            const uDaily = uData.dailyMissions || {};
-            let countToday = (uDaily.date === today) ? (uDaily.count || 0) : 0;
-            if (countToday >= 2) throw new Error("Tài khoản của bạn đã nhận đủ 2 lượt hôm nay!");
-
-            // Check IP quota
-            const ipRef = db.collection('shortener_missions').doc(`${today}_${sIp}`);
-            const ipDoc = await transaction.get(ipRef);
-            let ipCount = (ipDoc.exists && ipDoc.data().count) ? ipDoc.data().count : 0;
-            if (ipCount >= 2) throw new Error("Địa chỉ IP này đã nhận đủ 2 lượt hôm nay!");
-
-            newBalance = curCoins + reward;
-            completedToday = Math.max(countToday + 1, ipCount + 1);
-
-            // Invalidate ticket (single-use)
-            transaction.update(tRef, {
-              status: 'claimed',
-              claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
-              claimedByUid: currentUser.uid,
-              claimedByEmail: currentUser.email || ''
-            });
-
-            // Update user balance
-            transaction.update(uRef, {
-              coins: newBalance,
-              dailyMissions: {
-                date: today,
-                count: countToday + 1,
-                lastAt: firebase.firestore.FieldValue.serverTimestamp()
+        // 1. Gọi claim qua Google Apps Script backend (Server-side Admin Token cập nhật Firestore)
+        const gasApiUrl = (typeof GOOGLE_API_URL !== 'undefined' && GOOGLE_API_URL) ? GOOGLE_API_URL : ANALYTICS_API_URL;
+        if (gasApiUrl) {
+          try {
+            const gasRes = await fetch(`${gasApiUrl}?action=claim_mission_ticket&ticketId=${encodeURIComponent(ticketId)}&uid=${encodeURIComponent(currentUser.uid)}&email=${encodeURIComponent(currentUser.email||'')}&ip=${encodeURIComponent(ip)}&date=${today}&t=${Date.now()}`);
+            if (gasRes.ok) {
+              const resJson = await gasRes.json();
+              if (resJson && resJson.success) {
+                claimedViaGas = true;
+                newBalance = resJson.newBalance;
+                reward = resJson.reward || reward;
+                completedToday = resJson.completedToday || 1;
+              } else if (resJson && resJson.error) {
+                throw new Error(resJson.error);
               }
-            });
-
-            // Update IP mission
-            transaction.set(ipRef, {
-              count: ipCount + 1,
-              date: today,
-              ip: ip,
-              lastAt: firebase.firestore.FieldValue.serverTimestamp(),
-              uids: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-            }, { merge: true });
-          });
+            }
+          } catch(gasErr) {
+            console.warn("GAS claim error:", gasErr);
+            if (gasErr.message && (gasErr.message.includes("đã được") || gasErr.message.includes("quá hạn") || gasErr.message.includes("giới hạn"))) {
+              throw gasErr;
+            }
+          }
         }
+
+        // 2. Nếu GAS chưa xử lý được (ví dụ do mạng), fallback sang client-side Firestore
+        if (!claimedViaGas && typeof db !== 'undefined') {
+          const userDocRef = db.collection('users').doc(currentUser.uid);
+          const userSnap = await userDocRef.get();
+          if (!userSnap.exists) throw new Error("Tài khoản người dùng không tồn tại!");
+          const userData = userSnap.data();
+          const curCoins = userData.coins || 0;
+          const uDaily = userData.dailyMissions || {};
+          let countToday = (uDaily.date === today) ? (uDaily.count || 0) : 0;
+          if (countToday >= 2) throw new Error("Tài khoản của bạn đã nhận đủ 2 lượt hôm nay!");
+
+          newBalance = curCoins + reward;
+          completedToday = countToday + 1;
+
+          await userDocRef.update({
+            coins: newBalance,
+            dailyMissions: {
+              date: today,
+              count: countToday + 1,
+              lastAt: firebase.firestore.FieldValue.serverTimestamp()
+            },
+            'pendingMission.status': 'claimed',
+            'pendingMission.claimedAt': Date.now()
+          });
+
+          // Invalidate Firestore doc if accessible
+          db.collection('mission_tickets').doc(ticketId).update({
+            status: 'claimed',
+            claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            claimedByUid: currentUser.uid
+          }).catch(() => {});
+
+          // Invalidate IP doc
+          const sIp = sanitizeIpForFirestore(ip);
+          db.collection('shortener_missions').doc(`${today}_${sIp}`).set({
+            count: firebase.firestore.FieldValue.increment(1),
+            date: today,
+            ip: ip,
+            lastAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true }).catch(() => {});
+
+          const elapsedSec = (activeClaimTicket && activeClaimTicket.createdAt && activeClaimTicket.createdAt.toMillis)
+            ? Math.max(1, Math.round((Date.now() - activeClaimTicket.createdAt.toMillis()) / 1000)) : 60;
+
+          sendMissionRewardTelegramNotification(
+            { userEmail: currentUser.email, uid: currentUser.uid, ip: ip, reward: reward, provider: (activeClaimTicket && activeClaimTicket.provider) || 'site2s' },
+            completedToday,
+            newBalance,
+            elapsedSec
+          ).catch(() => {});
+        }
+
+        // Clear local storage
+        try { localStorage.removeItem('ipaviet_active_mission_ticket'); } catch(e) {}
 
         currentCoins = newBalance;
         updateUserBadge();
-
-        const elapsedSec = (activeClaimTicket && activeClaimTicket.createdAt && activeClaimTicket.createdAt.toMillis)
-          ? Math.max(1, Math.round((Date.now() - activeClaimTicket.createdAt.toMillis()) / 1000)) : 60;
-
-        await sendMissionRewardTelegramNotification(
-          { userEmail: currentUser.email, uid: currentUser.uid, ip: ip, reward: reward, provider: (activeClaimTicket && activeClaimTicket.provider) || 'site2s' },
-          completedToday,
-          newBalance,
-          elapsedSec
-        );
 
         showToast(`🎉 Chúc mừng bạn đã nhận thành công +${reward.toLocaleString('vi-VN')} Xu! (Số dư: ${newBalance.toLocaleString('vi-VN')} Xu)`);
 
@@ -1714,9 +1799,13 @@
       if (!destinationUrl) return null;
       const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
       const provider = (cfg.provider || 'site2s').toLowerCase().trim();
+      const gasApiUrl = (typeof GOOGLE_API_URL !== 'undefined' && GOOGLE_API_URL) ? GOOGLE_API_URL : ANALYTICS_API_URL;
 
+      // ─── 1. BÊN CUNG CẤP: SITE2S (site2s.com) ───
       if (provider === 'site2s') {
         const token = cfg.site2s_token || '9c105d1f5c6c770dcdf75101509cfba77b9ee5bd';
+        let s2sSuccessUrl = null;
+
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -1726,10 +1815,24 @@
           if (res.ok) {
             const data = await res.json();
             if (data && (data.status === 'success' || data.shortenedUrl) && data.shortenedUrl) {
-              return data.shortenedUrl;
+              s2sSuccessUrl = data.shortenedUrl;
             }
           }
         } catch(e) {}
+
+        if (!s2sSuccessUrl && gasApiUrl) {
+          try {
+            const res = await fetch(`${gasApiUrl}?action=get_free_link&provider=site2s&token=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}&t=${Date.now()}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && (data.shortenedUrl || data.link)) {
+                s2sSuccessUrl = data.shortenedUrl || data.link;
+              }
+            }
+          } catch(e) {}
+        }
+
+        if (s2sSuccessUrl) return s2sSuccessUrl;
 
         if (cfg.fallback_to_link4m !== false) {
           const l4mToken = cfg.link4m_token || '691eb05d63b1b86d4a3bca1e';
@@ -1738,11 +1841,64 @@
         return `https://site2s.com/st?api=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}`;
       }
 
+      // ─── 2. BÊN CUNG CẤP: YEUMONEY (yeumoney.com) ───
+      if (provider === 'yeumoney') {
+        const token = cfg.yeumoney_token || 'f8b2659e3643d645e69b9332c3ced1084b7bb2b85e44764426ac03775c2b3bcb';
+        let ymSuccessUrl = null;
+
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3500);
+          const ymUrl = `https://yeumoney.com/QL_api.php?token=${encodeURIComponent(token)}&format=json&url=${encodeURIComponent(destinationUrl)}`;
+          const res = await fetch(ymUrl, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.status === 'success' && data.shortenedUrl) {
+              ymSuccessUrl = data.shortenedUrl;
+            }
+          }
+        } catch(e) {}
+
+        if (!ymSuccessUrl && gasApiUrl) {
+          try {
+            const res = await fetch(`${gasApiUrl}?action=get_free_link&provider=yeumoney&token=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}&t=${Date.now()}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && (data.shortenedUrl || data.link)) {
+                ymSuccessUrl = data.shortenedUrl || data.link;
+              }
+            }
+          } catch(e) {}
+        }
+
+        if (ymSuccessUrl) return ymSuccessUrl;
+
+        if (cfg.fallback_to_link4m !== false) {
+          const l4mToken = cfg.link4m_token || '691eb05d63b1b86d4a3bca1e';
+          return `https://link4m.co/st?api=${encodeURIComponent(l4mToken)}&url=${encodeURIComponent(destinationUrl)}`;
+        }
+        return `https://yeumoney.com/QL_api.php?token=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}`;
+      }
+
+      // ─── 3. BÊN CUNG CẤP: LINK4M (link4m.co) ───
       if (provider === 'link4m') {
         const token = cfg.link4m_token || '691eb05d63b1b86d4a3bca1e';
+        if (gasApiUrl) {
+          try {
+            const res = await fetch(`${gasApiUrl}?action=get_free_link&provider=link4m&token=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}&t=${Date.now()}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && (data.shortenedUrl || data.link)) {
+                return data.shortenedUrl || data.link;
+              }
+            }
+          } catch(e) {}
+        }
         return `https://link4m.co/st?api=${encodeURIComponent(token)}&url=${encodeURIComponent(destinationUrl)}`;
       }
 
+      // ─── 4. FALLBACK MẶC ĐỊNH ───
       const s2sToken = cfg.site2s_token || '9c105d1f5c6c770dcdf75101509cfba77b9ee5bd';
       return `https://site2s.com/st?api=${encodeURIComponent(s2sToken)}&url=${encodeURIComponent(destinationUrl)}`;
     }

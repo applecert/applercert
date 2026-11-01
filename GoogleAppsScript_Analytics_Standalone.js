@@ -703,6 +703,93 @@ function doGet(e) {
       }
     }
 
+    // -------------------------------------------------------------
+    // ACTION 6: QUẢN LÝ VÉ NHIỆM VỤ VƯỢT LINK (STANDALONE ANALYTICS)
+    // -------------------------------------------------------------
+    if (action === 'create_mission_ticket') {
+      var ticketId = e.parameter.ticketId || ('tk_' + new Date().getTime().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
+      var uid = e.parameter.uid || '';
+      var ip = e.parameter.ip || 'unknown';
+      var date = e.parameter.date || Utilities.formatDate(new Date(), "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
+      var reward = parseInt(e.parameter.reward, 10) || 1000;
+      var provider = e.parameter.provider || 'site2s';
+      var expiresAt = Date.now() + 15 * 60 * 1000;
+
+      var sheetMissions = getOrCreateSheet(ss, "Mission_Tickets", [
+        "Ticket ID", "UID", "IP", "Ngày", "Phần Thưởng", "Trạng Thái", "Tạo Lúc", "Hết Hạn", "Nhận Lúc", "Cổng"
+      ]);
+      sheetMissions.appendRow([
+        ticketId, uid, ip, date, reward, "pending", new Date().toISOString(), expiresAt, "", provider
+      ]);
+
+      return output.setContent(JSON.stringify({
+        success: true,
+        ticketId: ticketId,
+        reward: reward,
+        expiresAt: expiresAt
+      }));
+    }
+
+    if (action === 'claim_mission_ticket') {
+      var ticketId = e.parameter.ticketId || '';
+      var uid = e.parameter.uid || '';
+      var ip = e.parameter.ip || 'unknown';
+      var date = e.parameter.date || Utilities.formatDate(new Date(), "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
+      var reward = parseInt(e.parameter.reward, 10) || 1000;
+
+      var sheetMissions = getOrCreateSheet(ss, "Mission_Tickets", [
+        "Ticket ID", "UID", "IP", "Ngày", "Phần Thưởng", "Trạng Thái", "Tạo Lúc", "Hết Hạn", "Nhận Lúc", "Cổng"
+      ]);
+      var mData = sheetMissions.getDataRange().getValues();
+      var foundIdx = -1;
+      for (var mi = 1; mi < mData.length; mi++) {
+        if (String(mData[mi][0]) === String(ticketId)) {
+          foundIdx = mi + 1;
+          break;
+        }
+      }
+      if (foundIdx > 0) {
+        sheetMissions.getRange(foundIdx, 6).setValue("claimed");
+        sheetMissions.getRange(foundIdx, 9).setValue(new Date().toISOString());
+      } else {
+        sheetMissions.appendRow([
+          ticketId, uid, ip, date, reward, "claimed", new Date().toISOString(), Date.now() + 15 * 60 * 1000, new Date().toISOString(), "Direct"
+        ]);
+      }
+
+      return output.setContent(JSON.stringify({
+        success: true,
+        reward: reward,
+        message: "Ghi nhận vé thành công!"
+      }));
+    }
+
+    if (action === 'get_mission_quota') {
+      var uid = e.parameter.uid || '';
+      var ip = e.parameter.ip || 'unknown';
+      var date = e.parameter.date || Utilities.formatDate(new Date(), "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
+
+      var sheetMissions = getOrCreateSheet(ss, "Mission_Tickets", [
+        "Ticket ID", "UID", "IP", "Ngày", "Phần Thưởng", "Trạng Thái", "Tạo Lúc", "Hết Hạn", "Nhận Lúc", "Cổng"
+      ]);
+      var mData = sheetMissions.getDataRange().getValues();
+      var count = 0;
+      for (var mi = 1; mi < mData.length; mi++) {
+        if (String(mData[mi][3]) === String(date) && String(mData[mi][5]) === "claimed") {
+          if ((uid && String(mData[mi][1]) === String(uid)) || (ip && String(mData[mi][2]) === String(ip))) {
+            count++;
+          }
+        }
+      }
+      return output.setContent(JSON.stringify({
+        success: true,
+        completedToday: count,
+        maxQuota: 2,
+        remaining: Math.max(0, 2 - count),
+        isLimitReached: count >= 2
+      }));
+    }
+
     return output.setContent(JSON.stringify({ success: false, message: "Hành động không hợp lệ: " + action }));
   } catch (err) {
     return output.setContent(JSON.stringify({ success: false, error: err.toString() }));

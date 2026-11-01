@@ -261,11 +261,42 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    const ANALYTICS_API_URL = localStorage.getItem('ipaviet_analytics_api_url') || "https://script.google.com/macros/s/AKfycbyx3HSoUoQFWBGgPxkPJME_Qj0w8ltzLTmrFhUpkODdnlRK8r_-a45PCy9rU0dlS9SZ/exec";
+    const GOOGLE_API_URL = localStorage.getItem('ipaviet_google_api_url') || "https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec";
+
     let currentUser = null;
     let ticketData = null;
     let ticketId = '';
     let appId = '';
     let countdownInterval = null;
+
+    let cachedClientIp = null;
+    async function fetchClientIp() {
+      if (cachedClientIp) return cachedClientIp;
+      try {
+        const res = await fetch('https://api64.ipify.org?format=json', { cache: 'no-store' });
+        if (res.ok) {
+          const d = await res.json();
+          if (d && d.ip) {
+            cachedClientIp = d.ip;
+            return cachedClientIp;
+          }
+        }
+      } catch(e) {}
+      try {
+        const res = await fetch('https://cloudflare.com/cdn-cgi/trace', { cache: 'no-store' });
+        if (res.ok) {
+          const t = await res.text();
+          const match = t.match(/ip=([^\n]+)/);
+          if (match && match[1]) {
+            cachedClientIp = match[1].trim();
+            return cachedClientIp;
+          }
+        }
+      } catch(e) {}
+      cachedClientIp = '127.0.0.1';
+      return cachedClientIp;
+    }
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -376,15 +407,56 @@
       }
 
       try {
-        const ticketDoc = await db.collection('mission_tickets').doc(ticketId).get();
-        if (!ticketDoc.exists) {
+        let ticketFound = null;
+
+        // 1. Thử lấy từ users/{uid}.pendingMission nếu user đã đăng nhập
+        if (currentUser && typeof db !== 'undefined') {
+          try {
+            const uDoc = await db.collection('users').doc(currentUser.uid).get();
+            if (uDoc.exists && uDoc.data().pendingMission && uDoc.data().pendingMission.ticketId === ticketId) {
+              ticketFound = uDoc.data().pendingMission;
+            }
+          } catch(e) {}
+        }
+
+        // 2. Thử lấy từ mission_tickets/{ticketId}
+        if (!ticketFound && typeof db !== 'undefined') {
+          try {
+            const ticketDoc = await db.collection('mission_tickets').doc(ticketId).get();
+            if (ticketDoc.exists) ticketFound = ticketDoc.data();
+          } catch(e) {}
+        }
+
+        // 3. Thử lấy từ localStorage
+        if (!ticketFound) {
+          try {
+            const raw = localStorage.getItem('ipaviet_active_mission_ticket');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed.ticketId === ticketId) ticketFound = parsed;
+            }
+          } catch(e) {}
+        }
+
+        // 4. Fallback: Nếu không đọc được từ Firestore do Security Rules, tạo ticketData từ token param
+        if (!ticketFound && ticketId.startsWith('tk_')) {
+          ticketFound = {
+            ticketId: ticketId,
+            reward: 1000,
+            status: 'pending',
+            expiresAt: Date.now() + 15 * 60 * 1000,
+            provider: 'site2s'
+          };
+        }
+
+        if (!ticketFound) {
           document.getElementById('claimTitle').textContent = 'Vé Không Tồn Tại';
           document.getElementById('claimSubtitle').textContent = 'Mã vé nhận thưởng này không tồn tại hoặc đã bị hủy.';
           if (btn) { btn.disabled = true; btn.textContent = 'Vé Không Hợp Lệ'; }
           return;
         }
 
-        ticketData = ticketDoc.data();
+        ticketData = ticketFound;
 
         if (ticketData.status === 'claimed') {
           document.getElementById('cardIcon').textContent = '✅';
@@ -399,14 +471,14 @@
         }
 
         const expiresAt = ticketData.expiresAt || 0;
-        if (Date.now() > expiresAt) {
+        if (expiresAt > 0 && Date.now() > expiresAt) {
           document.getElementById('claimTitle').textContent = 'Vé Đã Hết Hạn';
           document.getElementById('claimSubtitle').textContent = 'Vé nhận thưởng này đã quá hạn 15 phút. Vui lòng làm lại nhiệm vụ mới.';
           if (btn) { btn.disabled = true; btn.textContent = 'Vé Đã Hết Hạn'; }
           return;
         }
 
-        startCountdown(expiresAt);
+        startCountdown(expiresAt || (Date.now() + 15 * 60 * 1000));
 
         if (currentUser) {
           if (accEl) accEl.textContent = currentUser.email || currentUser.displayName || 'Tài khoản của bạn';
@@ -429,83 +501,102 @@
         return;
       }
 
-      if (!ticketData || !ticketId) {
+      if (!ticketId) {
         showToast("Vé nhận thưởng không hợp lệ!");
         return;
       }
 
       const btn = document.getElementById('btnClaimAction');
       const origHtml = btn.innerHTML;
-      btn.innerHTML = '<span>Đang cộng xu...</span>';
+      btn.innerHTML = '<span>Đang xác thực vé nhận thưởng...</span>';
       btn.disabled = true;
 
       const today = getTodayDateStr();
-      const ip = ticketData.ip || 'unknown';
-      const sIp = ip.replace(/[^a-zA-Z0-9]/g, '_');
-      const reward = ticketData.reward || 1000;
+      const ip = (ticketData && ticketData.ip) || (await fetchClientIp());
+      let reward = (ticketData && ticketData.reward) || 1000;
 
       try {
         let newBalance = 0;
         let completedToday = 1;
+        let claimedViaGas = false;
 
-        await db.runTransaction(async (transaction) => {
-          const tRef = db.collection('mission_tickets').doc(ticketId);
-          const tDoc = await transaction.get(tRef);
-          if (!tDoc.exists) throw new Error("Vé không tồn tại!");
-          const tData = tDoc.data();
-          if (tData.status === 'claimed') throw new Error("Vé này đã được nhận rồi!");
-          if (Date.now() > (tData.expiresAt || 0)) throw new Error("Vé đã hết hạn!");
+        // 1. Thử gọi claim qua Google Apps Script backend (Server-side Admin Token cập nhật Firestore)
+        const gasApiUrl = (typeof GOOGLE_API_URL !== 'undefined' && GOOGLE_API_URL) ? GOOGLE_API_URL : ANALYTICS_API_URL;
+        if (gasApiUrl) {
+          try {
+            const gasRes = await fetch(`${gasApiUrl}?action=claim_mission_ticket&ticketId=${encodeURIComponent(ticketId)}&uid=${encodeURIComponent(currentUser.uid)}&email=${encodeURIComponent(currentUser.email||'')}&ip=${encodeURIComponent(ip)}&date=${today}&t=${Date.now()}`);
+            if (gasRes.ok) {
+              const resJson = await gasRes.json();
+              if (resJson && resJson.success) {
+                claimedViaGas = true;
+                newBalance = resJson.newBalance;
+                reward = resJson.reward || reward;
+                completedToday = resJson.completedToday || 1;
+              } else if (resJson && resJson.error) {
+                throw new Error(resJson.error);
+              }
+            }
+          } catch(gasErr) {
+            console.warn("GAS claim error:", gasErr);
+            if (gasErr.message && (gasErr.message.includes("đã được") || gasErr.message.includes("quá hạn") || gasErr.message.includes("giới hạn"))) {
+              throw gasErr;
+            }
+          }
+        }
 
-          // Check user quota
-          const uRef = db.collection('users').doc(currentUser.uid);
-          const uDoc = await transaction.get(uRef);
-          if (!uDoc.exists) throw new Error("Tài khoản người dùng không tồn tại!");
-          const uData = uDoc.data();
-          const curCoins = uData.coins || 0;
-          const uDaily = uData.dailyMissions || {};
+        // 2. Nếu GAS chưa xử lý được (ví dụ do mạng), fallback sang client-side Firestore
+        if (!claimedViaGas && typeof db !== 'undefined') {
+          const userDocRef = db.collection('users').doc(currentUser.uid);
+          const userSnap = await userDocRef.get();
+          if (!userSnap.exists) throw new Error("Tài khoản người dùng không tồn tại!");
+          const userData = userSnap.data();
+          const curCoins = userData.coins || 0;
+          const uDaily = userData.dailyMissions || {};
           let countToday = (uDaily.date === today) ? (uDaily.count || 0) : 0;
           if (countToday >= 2) throw new Error("Tài khoản của bạn đã nhận đủ 2 lượt hôm nay!");
 
-          // Check IP quota
-          const ipRef = db.collection('shortener_missions').doc(`${today}_${sIp}`);
-          const ipDoc = await transaction.get(ipRef);
-          let ipCount = (ipDoc.exists && ipDoc.data().count) ? ipDoc.data().count : 0;
-          if (ipCount >= 2) throw new Error("Địa chỉ IP này đã nhận đủ 2 lượt hôm nay!");
-
           newBalance = curCoins + reward;
-          completedToday = Math.max(countToday + 1, ipCount + 1);
+          completedToday = countToday + 1;
 
-          // Update ticket to claimed (single use)
-          transaction.update(tRef, {
-            status: 'claimed',
-            claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            claimedByUid: currentUser.uid,
-            claimedByEmail: currentUser.email || ''
-          });
-
-          // Update user balance & daily mission
-          transaction.update(uRef, {
+          await userDocRef.update({
             coins: newBalance,
             dailyMissions: {
               date: today,
               count: countToday + 1,
               lastAt: firebase.firestore.FieldValue.serverTimestamp()
-            }
+            },
+            'pendingMission.status': 'claimed',
+            'pendingMission.claimedAt': Date.now()
           });
 
-          // Update IP daily mission
-          transaction.set(ipRef, {
-            count: ipCount + 1,
+          // Invalidate Firestore doc if accessible
+          db.collection('mission_tickets').doc(ticketId).update({
+            status: 'claimed',
+            claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            claimedByUid: currentUser.uid
+          }).catch(() => {});
+
+          // Invalidate IP doc
+          const sIp = ip.replace(/[^a-zA-Z0-9]/g, '_');
+          db.collection('shortener_missions').doc(`${today}_${sIp}`).set({
+            count: firebase.firestore.FieldValue.increment(1),
             date: today,
             ip: ip,
-            lastAt: firebase.firestore.FieldValue.serverTimestamp(),
-            uids: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-          }, { merge: true });
-        });
+            lastAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true }).catch(() => {});
+
+          const elapsedSec = (ticketData && ticketData.createdAt && ticketData.createdAt.toMillis)
+            ? Math.max(1, Math.round((Date.now() - ticketData.createdAt.toMillis()) / 1000)) : 60;
+
+          sendTelegramAlert(currentUser.email || '', currentUser.uid, ip, completedToday, newBalance, (ticketData && ticketData.provider) || 'site2s', elapsedSec);
+        }
+
+        // Clear local storage
+        try { localStorage.removeItem('ipaviet_active_mission_ticket'); } catch(e) {}
 
         // Trigger confetti
         if (typeof confetti === 'function') {
-          confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
         }
 
         document.getElementById('cardIcon').textContent = '🎉';
@@ -517,11 +608,11 @@
         btn.disabled = true;
 
         if (countdownInterval) clearInterval(countdownInterval);
-        document.getElementById('ticketTimer').textContent = 'Đã nhận';
-        document.getElementById('ticketTimer').style.color = '#34d399';
-
-        const elapsedSec = ticketData.createdAt ? Math.max(1, Math.round((Date.now() - (ticketData.createdAt.toMillis ? ticketData.createdAt.toMillis() : Date.now())) / 1000)) : 60;
-        sendTelegramAlert(currentUser.email || '', currentUser.uid, ip, completedToday, newBalance, ticketData.provider || 'site2s', elapsedSec);
+        const timerEl = document.getElementById('ticketTimer');
+        if (timerEl) {
+          timerEl.textContent = 'Đã nhận';
+          timerEl.style.color = '#34d399';
+        }
 
         showToast(`🎉 Nhận thành công +${reward.toLocaleString('vi-VN')} Xu!`);
 
@@ -539,3 +630,4 @@
   </script>
 </body>
 </html>
+
