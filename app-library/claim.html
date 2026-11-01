@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Nhận Thưởng Nhiệm Vụ — IPAVIET</title>
+  <meta name="theme-color" content="#0d1117">
+  <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/96/apple-app-store--v2.png">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #090d16;
+      --surface: #121826;
+      --card: rgba(22, 30, 49, 0.85);
+      --line: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #8b5cf6;
+      --success: #10b981;
+      --gold: #f59e0b;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .ambient-glow {
+      position: absolute;
+      width: 380px;
+      height: 380px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, rgba(16, 185, 129, 0.1) 50%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      filter: blur(50px);
+      z-index: 0;
+    }
+    .claim-card {
+      position: relative;
+      z-index: 1;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 440px;
+      padding: 32px 24px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      text-align: center;
+      animation: cardAppear .35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes cardAppear {
+      from { opacity: 0; transform: translateY(20px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .coin-badge {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 16px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(139, 92, 246, 0.2));
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      box-shadow: 0 10px 25px rgba(245, 158, 11, 0.25);
+      animation: pulse 2s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      margin-bottom: 6px;
+    }
+    p.subtitle {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+    .ticket-box {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 22px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ticket-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .ticket-row span { color: var(--muted); }
+    .ticket-row strong { color: var(--text); font-weight: 650; }
+    .reward-highlight {
+      color: #34d399 !important;
+      font-size: 17px;
+      font-weight: 800;
+    }
+    .timer-badge {
+      font-family: monospace;
+      font-weight: 700;
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.15);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    .btn-claim {
+      width: 100%;
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
+      transition: all .2s ease;
+    }
+    .btn-claim:hover:not(:disabled) {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+    .btn-claim:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn-claim:disabled {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-secondary {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 14px;
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all .15s ease;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+    }
+    .footer-note {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 14px;
+      line-height: 1.4;
+    }
+    #toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(18, 24, 38, 0.95);
+      border: 1px solid var(--line);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+  <div id="toast"></div>
+
+  <div class="claim-card" id="claimCard">
+    <div class="coin-badge" id="cardIcon">🪙</div>
+    <h1 id="claimTitle">Hoàn Thành Nhiệm Vụ!</h1>
+    <p class="subtitle" id="claimSubtitle">Bạn đã vượt link thành công. Bấm nút bên dưới để nhận ngay 1.000 Xu vào tài khoản.</p>
+
+    <div class="ticket-box">
+      <div class="ticket-row">
+        <span>Phần thưởng:</span>
+        <strong class="reward-highlight" id="ticketReward">+1.000 Xu</strong>
+      </div>
+      <div class="ticket-row">
+        <span>Thời hạn vé:</span>
+        <span class="timer-badge" id="ticketTimer">15:00</span>
+      </div>
+      <div class="ticket-row">
+        <span>Tài khoản nhận:</span>
+        <strong id="ticketAccount">Đang kiểm tra...</strong>
+      </div>
+    </div>
+
+    <button type="button" class="btn-claim" id="btnClaimAction" onclick="handleClaimTicket()">
+      <span>🎁 Nhận 1.000 Xu Ngay</span>
+    </button>
+    <a href="index.html" class="btn-secondary" id="btnBackLibrary">Quay Lại Kho Ứng Dụng</a>
+
+    <div class="footer-note" id="footerNote">
+      Mỗi vé chỉ nhận được 1 lần và tự động hủy sau khi nhận hoặc sau 15 phút.
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+      authDomain: "ipaviet-st.firebaseapp.com",
+      projectId: "ipaviet-st",
+      storageBucket: "ipaviet-st.firebasestorage.app",
+      messagingSenderId: "127619650916",
+      appId: "1:127619650916:web:fc8904c99804eeb7539671"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null;
+    let ticketData = null;
+    let ticketId = '';
+    let appId = '';
+    let countdownInterval = null;
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    function getTodayDateStr() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function startCountdown(expiresAt) {
+      if (countdownInterval) clearInterval(countdownInterval);
+      const timerEl = document.getElementById('ticketTimer');
+      if (!timerEl) return;
+
+      function update() {
+        const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+        if (remaining <= 0) {
+          timerEl.textContent = 'Hết hạn';
+          timerEl.style.color = '#ef4444';
+          const btn = document.getElementById('btnClaimAction');
+          if (btn && !btn.dataset.claimed) {
+            btn.disabled = true;
+            btn.innerHTML = '<span>Vé Đã Hết Hạn (Quá 15 Phút)</span>';
+          }
+          clearInterval(countdownInterval);
+          return;
+        }
+        const m = Math.floor(remaining / 60);
+        const s = remaining % 60;
+        timerEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }
+
+      update();
+      countdownInterval = setInterval(update, 1000);
+    }
+
+    async function sendTelegramAlert(email, uid, ip, completedCount, newBalance, provider, elapsedSec) {
+      try {
+        const sysDoc = await db.collection('system_config').doc('shortener_settings').get().catch(() => null);
+        const cfg = sysDoc && sysDoc.exists ? sysDoc.data() : {};
+        const botToken = (cfg.tele_bot_token || '').trim();
+        const chatId = (cfg.tele_chat_id || '').trim();
+        if (!botToken || !chatId) return;
+
+        let providerName = 'Site2S';
+        if (provider === 'link4m') providerName = 'Link4m';
+        else if (provider === 'yeumoney') providerName = 'YeuMoney';
+
+        const elapsedStr = elapsedSec ? `${elapsedSec}s` : 'Hoàn tất';
+        const nowStr = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+        const msg = [
+          '🚀 <b>NHIỆM VỤ NHẬN XU THÀNH CÔNG!</b>',
+          '',
+          `👤 <b>Người dùng:</b> <code>${email}</code> (UID: <code>${uid ? uid.substring(0, 8) + '...' : ''}</code>)`,
+          `🌐 <b>Địa chỉ IP:</b> <code>${ip}</code>`,
+          `🎯 <b>Lượt hoàn thành:</b> <b>${completedCount}/2 hôm nay</b>`,
+          `💰 <b>Thưởng nhiệm vụ:</b> <code>+1.000 Xu</code>`,
+          `🪙 <b>Tổng số dư ví:</b> <code>${newBalance.toLocaleString('vi-VN')} Xu</code>`,
+          `🔗 <b>Cổng rút gọn:</b> <b>${providerName}</b>`,
+          `⏱️ <b>Thời gian làm:</b> <code>${elapsedStr}</code>`,
+          `🕒 <b>Thời gian:</b> ${nowStr}`,
+          '',
+          '<i>🔔 Hệ thống vé 1 lần (Single-Use Token) — Hủy vé sau khi nhận.</i>'
+        ].join('\n');
+
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: msg,
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          }),
+          keepalive: true
+        }).catch(() => {});
+      } catch(e) {}
+    }
+
+    async function loadTicket() {
+      const urlParams = new URLSearchParams(window.location.search);
+      ticketId = urlParams.get('ticket') || urlParams.get('token') || '';
+      appId = urlParams.get('id') || '';
+
+      const btnBack = document.getElementById('btnBackLibrary');
+      if (btnBack && appId) {
+        btnBack.href = `app.html?id=${encodeURIComponent(appId)}`;
+        btnBack.textContent = 'Quay Lại Trang Ứng Dụng';
+      }
+
+      const accEl = document.getElementById('ticketAccount');
+      const btn = document.getElementById('btnClaimAction');
+
+      if (!ticketId) {
+        document.getElementById('claimTitle').textContent = 'Thiếu Thông Tin Vé';
+        document.getElementById('claimSubtitle').textContent = 'Không tìm thấy mã vé nhận thưởng. Vui lòng thực hiện lại nhiệm vụ từ kho ứng dụng!';
+        if (btn) { btn.disabled = true; btn.textContent = 'Vé Không Hợp Lệ'; }
+        return;
+      }
+
+      try {
+        const ticketDoc = await db.collection('mission_tickets').doc(ticketId).get();
+        if (!ticketDoc.exists) {
+          document.getElementById('claimTitle').textContent = 'Vé Không Tồn Tại';
+          document.getElementById('claimSubtitle').textContent = 'Mã vé nhận thưởng này không tồn tại hoặc đã bị hủy.';
+          if (btn) { btn.disabled = true; btn.textContent = 'Vé Không Hợp Lệ'; }
+          return;
+        }
+
+        ticketData = ticketDoc.data();
+
+        if (ticketData.status === 'claimed') {
+          document.getElementById('cardIcon').textContent = '✅';
+          document.getElementById('claimTitle').textContent = 'Vé Đã Được Nhận';
+          document.getElementById('claimSubtitle').textContent = 'Vé nhận thưởng này đã được sử dụng trước đó. Mỗi vé chỉ được nhận 1 lần duy nhất!';
+          if (btn) {
+            btn.disabled = true;
+            btn.dataset.claimed = "1";
+            btn.textContent = 'Đã Nhận Thưởng Rồi';
+          }
+          return;
+        }
+
+        const expiresAt = ticketData.expiresAt || 0;
+        if (Date.now() > expiresAt) {
+          document.getElementById('claimTitle').textContent = 'Vé Đã Hết Hạn';
+          document.getElementById('claimSubtitle').textContent = 'Vé nhận thưởng này đã quá hạn 15 phút. Vui lòng làm lại nhiệm vụ mới.';
+          if (btn) { btn.disabled = true; btn.textContent = 'Vé Đã Hết Hạn'; }
+          return;
+        }
+
+        startCountdown(expiresAt);
+
+        if (currentUser) {
+          if (accEl) accEl.textContent = currentUser.email || currentUser.displayName || 'Tài khoản của bạn';
+        } else {
+          if (accEl) accEl.textContent = 'Vui lòng đăng nhập';
+          if (btn) btn.innerHTML = '<span>Đăng Nhập Để Nhận Xu</span>';
+        }
+
+      } catch(err) {
+        showToast("Lỗi tải thông tin vé: " + err.message);
+      }
+    }
+
+    async function handleClaimTicket() {
+      if (!currentUser) {
+        showToast("Vui lòng đăng nhập tài khoản trước khi nhận xu!");
+        setTimeout(() => {
+          window.location.href = `../account.html?redirect=${encodeURIComponent(window.location.href)}`;
+        }, 800);
+        return;
+      }
+
+      if (!ticketData || !ticketId) {
+        showToast("Vé nhận thưởng không hợp lệ!");
+        return;
+      }
+
+      const btn = document.getElementById('btnClaimAction');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = '<span>Đang cộng xu...</span>';
+      btn.disabled = true;
+
+      const today = getTodayDateStr();
+      const ip = ticketData.ip || 'unknown';
+      const sIp = ip.replace(/[^a-zA-Z0-9]/g, '_');
+      const reward = ticketData.reward || 1000;
+
+      try {
+        let newBalance = 0;
+        let completedToday = 1;
+
+        await db.runTransaction(async (transaction) => {
+          const tRef = db.collection('mission_tickets').doc(ticketId);
+          const tDoc = await transaction.get(tRef);
+          if (!tDoc.exists) throw new Error("Vé không tồn tại!");
+          const tData = tDoc.data();
+          if (tData.status === 'claimed') throw new Error("Vé này đã được nhận rồi!");
+          if (Date.now() > (tData.expiresAt || 0)) throw new Error("Vé đã hết hạn!");
+
+          // Check user quota
+          const uRef = db.collection('users').doc(currentUser.uid);
+          const uDoc = await transaction.get(uRef);
+          if (!uDoc.exists) throw new Error("Tài khoản người dùng không tồn tại!");
+          const uData = uDoc.data();
+          const curCoins = uData.coins || 0;
+          const uDaily = uData.dailyMissions || {};
+          let countToday = (uDaily.date === today) ? (uDaily.count || 0) : 0;
+          if (countToday >= 2) throw new Error("Tài khoản của bạn đã nhận đủ 2 lượt hôm nay!");
+
+          // Check IP quota
+          const ipRef = db.collection('shortener_missions').doc(`${today}_${sIp}`);
+          const ipDoc = await transaction.get(ipRef);
+          let ipCount = (ipDoc.exists && ipDoc.data().count) ? ipDoc.data().count : 0;
+          if (ipCount >= 2) throw new Error("Địa chỉ IP này đã nhận đủ 2 lượt hôm nay!");
+
+          newBalance = curCoins + reward;
+          completedToday = Math.max(countToday + 1, ipCount + 1);
+
+          // Update ticket to claimed (single use)
+          transaction.update(tRef, {
+            status: 'claimed',
+            claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            claimedByUid: currentUser.uid,
+            claimedByEmail: currentUser.email || ''
+          });
+
+          // Update user balance & daily mission
+          transaction.update(uRef, {
+            coins: newBalance,
+            dailyMissions: {
+              date: today,
+              count: countToday + 1,
+              lastAt: firebase.firestore.FieldValue.serverTimestamp()
+            }
+          });
+
+          // Update IP daily mission
+          transaction.set(ipRef, {
+            count: ipCount + 1,
+            date: today,
+            ip: ip,
+            lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+            uids: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+          }, { merge: true });
+        });
+
+        // Trigger confetti
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+        }
+
+        document.getElementById('cardIcon').textContent = '🎉';
+        document.getElementById('claimTitle').textContent = 'Nhận Thưởng Thành Công!';
+        document.getElementById('claimSubtitle').innerHTML = `Đã cộng thành công <strong>+${reward.toLocaleString('vi-VN')} Xu</strong> vào tài khoản.<br>Số dư ví hiện tại: <strong style="color:#7c3aed;">${newBalance.toLocaleString('vi-VN')} Xu</strong>`;
+
+        btn.dataset.claimed = "1";
+        btn.innerHTML = '<span>✅ Đã Nhận Thành Công</span>';
+        btn.disabled = true;
+
+        if (countdownInterval) clearInterval(countdownInterval);
+        document.getElementById('ticketTimer').textContent = 'Đã nhận';
+        document.getElementById('ticketTimer').style.color = '#34d399';
+
+        const elapsedSec = ticketData.createdAt ? Math.max(1, Math.round((Date.now() - (ticketData.createdAt.toMillis ? ticketData.createdAt.toMillis() : Date.now())) / 1000)) : 60;
+        sendTelegramAlert(currentUser.email || '', currentUser.uid, ip, completedToday, newBalance, ticketData.provider || 'site2s', elapsedSec);
+
+        showToast(`🎉 Nhận thành công +${reward.toLocaleString('vi-VN')} Xu!`);
+
+      } catch(err) {
+        showToast("⚠️ " + (err.message || "Giao dịch thất bại"));
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+      }
+    }
+
+    auth.onAuthStateChanged(user => {
+      currentUser = user;
+      loadTicket();
+    });
+  </script>
+</body>
+</html>
