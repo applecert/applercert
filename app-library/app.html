@@ -261,7 +261,7 @@
                 </div>
                 <div class="dl-row-main">
                   <div class="dl-row-title">
-                    <strong id="coinsTitle">Tải Bằng Xu</strong>
+                    <strong id="coinsTitle">Tải File IPA (1.000 Xu)</strong>
                     <span class="badge-mini badge-purple" id="userCoinsBalanceBadge">1.000 Xu</span>
                   </div>
                   <div class="dl-row-desc" id="coinsSubText">Trừ 1.000 Xu · Tải file IPA trực tiếp không chờ đợi</div>
@@ -270,24 +270,22 @@
                   <button type="button" id="btnDownloadCoins" class="action-pill action-purple" onclick="buyWithCoins(this)">1.000 Xu</button>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <!-- Row 4: Free Download (Ads 60s) -->
-              <div class="dl-row dl-row-ads" id="rowAds">
-                <div class="dl-row-icon icon-ads">
-                  <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7m0-7-10 10M10 3H3v18h18v-7"/></svg>
+          <!-- Daily Mission Banner (Earn Coins with strict 2/day/IP limit) -->
+          <div class="daily-mission-banner" id="dailyMissionBanner" onclick="openMissionModal()">
+            <div class="mission-banner-left">
+              <div class="mission-badge-icon">🎁</div>
+              <div class="mission-banner-text">
+                <div class="mission-banner-title">
+                  <strong>Nhiệm Vụ Nhận Xu Miễn Phí</strong>
+                  <span class="mission-counter-pill" id="bannerMissionCounter">0/2 lượt hôm nay</span>
                 </div>
-                <div class="dl-row-main">
-                  <div class="dl-row-title">
-                    <strong id="adsTitle">Tải Miễn Phí (Vượt Link)</strong>
-                    <span class="badge-mini badge-green" id="adsBadge">Free</span>
-                  </div>
-                  <div class="dl-row-desc" id="adsSubText">Làm nhiệm vụ 60s để nhận link tải miễn phí 100%</div>
-                </div>
-                <div class="dl-row-action">
-                  <button type="button" id="btnDownloadAds" class="action-pill action-green" onclick="downloadFreeApp(this)">Miễn Phí</button>
-                </div>
+                <div class="mission-banner-desc">Vượt link nhận ngay +1.000 Xu/lượt vào ví (Dùng tải IPA hoặc đổi VIP)</div>
               </div>
             </div>
+            <button type="button" class="action-pill action-purple" style="pointer-events:none;">Nhận Xu</button>
           </div>
         </section>
 
@@ -426,6 +424,90 @@
     <img id="dialogImage" src="" alt="Ảnh xem trước phóng to" style="max-height:80vh;max-width:88vw;object-fit:contain;border-radius:12px;">
   </dialog>
 
+  <!-- ==================== DAILY MISSION MODAL ==================== -->
+  <dialog id="missionModal" class="mission-dialog" onclick="if(event.target===this) this.close();">
+    <div class="mission-dialog-inner">
+      <div class="mission-dialog-header">
+        <div class="mission-dialog-title">
+          <span class="gift-icon">🎁</span>
+          <div>
+            <h3>Nhiệm Vụ Nhận Xu Hàng Ngày</h3>
+            <p style="margin:2px 0 0;font-size:11.5px;color:var(--muted);">Nhận xu miễn phí để tải ứng dụng IPA hoặc nâng cấp VIP</p>
+          </div>
+        </div>
+        <button type="button" class="mission-dialog-close" onclick="document.getElementById('missionModal').close();" aria-label="Đóng">✕</button>
+      </div>
+
+      <!-- Quota Cards (2 per day per IP/UID) -->
+      <div class="mission-steps-grid">
+        <div class="mission-step-card" id="stepCard1">
+          <div class="mission-step-label">
+            <span>LƯỢT 1 HÔM NAY</span>
+            <span id="stepIcon1">⭕</span>
+          </div>
+          <div class="mission-step-reward">+1.000 Xu</div>
+          <div class="mission-step-status" id="stepStatus1">Sẵn sàng nhận</div>
+        </div>
+        <div class="mission-step-card" id="stepCard2">
+          <div class="mission-step-label">
+            <span>LƯỢT 2 HÔM NAY</span>
+            <span id="stepIcon2">⭕</span>
+          </div>
+          <div class="mission-step-reward">+1.000 Xu</div>
+          <div class="mission-step-status" id="stepStatus2">Chưa làm</div>
+        </div>
+      </div>
+
+      <!-- Device & IP Anti-Spam Status Box -->
+      <div class="mission-info-box">
+        <div class="mission-info-row">
+          <span>Hạn ngạch hôm nay:</span>
+          <strong id="modalQuotaText">0 / 2 lượt</strong>
+        </div>
+        <div class="mission-info-row">
+          <span>Địa chỉ IP của bạn:</span>
+          <span id="modalIpText" style="font-family:monospace;font-size:11px;">Đang kiểm tra...</span>
+        </div>
+        <div class="mission-info-row">
+          <span>Số dư ví hiện tại:</span>
+          <strong id="modalCurrentCoinsText">0 Xu</strong>
+        </div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:2px;border-top:1px dashed var(--line);padding-top:4px;">
+          🛡️ Giới hạn nghiêm ngặt tối đa <strong>2 lượt / 24h trên mỗi IP & tài khoản</strong> để bảo vệ cổng rút gọn không bị khoá spam.
+        </div>
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="mission-actions">
+        <button type="button" id="btnStartMission" class="btn-mission-primary" onclick="startDailyMission(this)">
+          <span>Bắt Đầu Nhiệm Vụ (+1.000 Xu)</span>
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="mission-rules-note" id="missionBtnNote">Hoàn thành xác thực 60s trên cổng rút gọn để nhận ngay 1.000 Xu vào tài khoản.</div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ==================== INSUFFICIENT COINS PROMPT DIALOG ==================== -->
+  <dialog id="coinPromptDialog" class="coin-prompt-dialog" onclick="if(event.target===this) this.close();">
+    <div class="coin-prompt-inner">
+      <div class="coin-prompt-icon">🪙</div>
+      <h3 class="coin-prompt-title">Số Dư Không Đủ (1.000 Xu)</h3>
+      <p class="coin-prompt-desc" id="coinPromptDesc">Bạn hiện có 0 Xu. Để tải file IPA này bạn cần 1.000 Xu. Bạn có thể làm nhiệm vụ miễn phí để nhận 1.000 Xu ngay bây giờ hoặc nạp thêm xu!</p>
+      <div class="coin-prompt-btns">
+        <button type="button" class="btn-mission-primary" onclick="document.getElementById('coinPromptDialog').close(); openMissionModal();">
+          🎁 Làm Nhiệm Vụ Nhận 1.000 Xu (Free)
+        </button>
+        <a href="../dichvu.html" class="action-pill action-purple" style="width:100%;text-align:center;padding:10px;border-radius:12px;">
+          Nạp Xu Qua Chuyển Khoản
+        </a>
+        <button type="button" class="quiet" onclick="document.getElementById('coinPromptDialog').close();" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:6px;">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- Toast Notification -->
   <div id="toast" style="display:none;"></div>
 
@@ -505,7 +587,7 @@
       tele_notify_enabled: false,
       tele_bot_token: '',
       tele_chat_id: '',
-      reward_per_pass: 500
+      reward_per_pass: 1000
     };
 
     let SHORTENER_CONFIG = (function() {
@@ -864,7 +946,509 @@
       setupRails();
     }
 
-    /* 4. Shortener Token Generation & Verification */
+    /* 4. Daily Mission System & Shortener Gateway */
+    let clientIpAddress = '';
+
+    async function fetchClientIp() {
+      if (clientIpAddress && clientIpAddress !== '127.0.0.1' && clientIpAddress !== '14.161.x.x') {
+        return clientIpAddress;
+      }
+      try {
+        const cached = sessionStorage.getItem('ipaviet_client_ip');
+        if (cached) {
+          clientIpAddress = cached;
+          return cached;
+        }
+      } catch(e) {}
+
+      try {
+        const controller = new AbortController();
+        const tId = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch('https://api64.ipify.org?format=json', { signal: controller.signal });
+        clearTimeout(tId);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.ip) {
+            clientIpAddress = data.ip;
+            sessionStorage.setItem('ipaviet_client_ip', data.ip);
+            return data.ip;
+          }
+        }
+      } catch(e) {}
+
+      try {
+        const res = await fetch('https://api.ipify.org?format=json');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.ip) {
+            clientIpAddress = data.ip;
+            sessionStorage.setItem('ipaviet_client_ip', data.ip);
+            return data.ip;
+          }
+        }
+      } catch(e) {}
+
+      clientIpAddress = '14.161.x.x';
+      return clientIpAddress;
+    }
+
+    function sanitizeIpForFirestore(ip) {
+      return (ip || 'unknown').replace(/[^a-zA-Z0-9]/g, '_');
+    }
+
+    async function getDailyMissionQuota(ip) {
+      const today = getTodayDateStr();
+      const sIp = sanitizeIpForFirestore(ip);
+      let userCount = 0;
+      let ipCount = 0;
+
+      // 1. Check user record in Firestore
+      if (currentUser && typeof db !== 'undefined') {
+        try {
+          const uDoc = await db.collection('users').doc(currentUser.uid).get();
+          if (uDoc.exists) {
+            const uData = uDoc.data();
+            const daily = uData.dailyMissions || {};
+            if (daily.date === today) {
+              userCount = parseInt(daily.count, 10) || 0;
+            }
+          }
+        } catch(e) {}
+      }
+
+      // 2. Check IP record in Firestore
+      if (typeof db !== 'undefined') {
+        try {
+          const ipDoc = await db.collection('shortener_missions').doc(`${today}_${sIp}`).get();
+          if (ipDoc.exists) {
+            ipCount = parseInt(ipDoc.data().count, 10) || 0;
+          }
+        } catch(e) {}
+      }
+
+      // 3. Check LocalStorage fallback
+      try {
+        const localIpKey = `ipaviet_ip_mission_${today}_${sIp}`;
+        const localIpCount = parseInt(localStorage.getItem(localIpKey) || '0', 10);
+        ipCount = Math.max(ipCount, localIpCount);
+
+        const localUserKey = `ipaviet_uid_mission_${today}_${(currentUser && currentUser.uid) || 'guest'}`;
+        const localUserCount = parseInt(localStorage.getItem(localUserKey) || '0', 10);
+        userCount = Math.max(userCount, localUserCount);
+      } catch(e) {}
+
+      const effectiveCount = Math.min(2, Math.max(userCount, ipCount));
+      const remaining = Math.max(0, 2 - effectiveCount);
+      const isLimitReached = effectiveCount >= 2;
+
+      return {
+        today,
+        ip,
+        sanitizedIp: sIp,
+        userCount,
+        ipCount,
+        completedToday: effectiveCount,
+        remaining,
+        isLimitReached
+      };
+    }
+
+    async function updateMissionModalUI(quota) {
+      if (!quota) {
+        const ip = await fetchClientIp();
+        quota = await getDailyMissionQuota(ip);
+      }
+
+      // Update banner pill
+      const bannerCounter = document.getElementById('bannerMissionCounter');
+      if (bannerCounter) {
+        bannerCounter.textContent = `${quota.completedToday}/2 lượt hôm nay`;
+        if (quota.isLimitReached) bannerCounter.classList.add('completed');
+        else bannerCounter.classList.remove('completed');
+      }
+
+      // Update modal fields
+      const qText = document.getElementById('modalQuotaText');
+      if (qText) qText.textContent = `${quota.completedToday} / 2 lượt`;
+
+      const ipText = document.getElementById('modalIpText');
+      if (ipText) ipText.textContent = `${quota.ip} ${quota.isLimitReached ? '(Đã hết lượt)' : '(Hợp lệ)'}`;
+
+      const coinText = document.getElementById('modalCurrentCoinsText');
+      if (coinText) coinText.textContent = `${currentCoins.toLocaleString('vi-VN')} Xu`;
+
+      // Update Step 1 & 2 cards
+      const step1 = document.getElementById('stepCard1');
+      const step2 = document.getElementById('stepCard2');
+      const sIcon1 = document.getElementById('stepIcon1');
+      const sIcon2 = document.getElementById('stepIcon2');
+      const sStat1 = document.getElementById('stepStatus1');
+      const sStat2 = document.getElementById('stepStatus2');
+
+      if (quota.completedToday >= 1) {
+        if (step1) { step1.className = 'mission-step-card done'; }
+        if (sIcon1) sIcon1.textContent = '✅';
+        if (sStat1) sStat1.textContent = 'Đã hoàn thành';
+      } else {
+        if (step1) { step1.className = 'mission-step-card active'; }
+        if (sIcon1) sIcon1.textContent = '⚡';
+        if (sStat1) sStat1.textContent = 'Sẵn sàng nhận';
+      }
+
+      if (quota.completedToday >= 2) {
+        if (step2) { step2.className = 'mission-step-card done'; }
+        if (sIcon2) sIcon2.textContent = '✅';
+        if (sStat2) sStat2.textContent = 'Đã hoàn thành';
+      } else if (quota.completedToday === 1) {
+        if (step2) { step2.className = 'mission-step-card active'; }
+        if (sIcon2) sIcon2.textContent = '⚡';
+        if (sStat2) sStat2.textContent = 'Sẵn sàng nhận';
+      } else {
+        if (step2) { step2.className = 'mission-step-card locked'; }
+        if (sIcon2) sIcon2.textContent = '🔒';
+        if (sStat2) sStat2.textContent = 'Chưa làm';
+      }
+
+      // Update Start Mission Button
+      const btn = document.getElementById('btnStartMission');
+      const note = document.getElementById('missionBtnNote');
+      if (!btn) return;
+
+      if (!currentUser) {
+        btn.innerHTML = `<span>Đăng Nhập Để Nhận Xu</span> <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>`;
+        btn.disabled = false;
+        if (note) note.textContent = "Vui lòng đăng nhập để hệ thống có thể cộng xu vào tài khoản của bạn.";
+      } else if (quota.isLimitReached) {
+        btn.innerHTML = `<span>Đã Đạt Tối Đa 2/2 Lượt Hôm Nay</span>`;
+        btn.disabled = true;
+        if (note) note.textContent = "Bạn đã hoàn thành đủ 2 lượt hôm nay cho IP & thiết bị này. Hãy quay lại vào ngày mai!";
+      } else {
+        const nextTurn = quota.completedToday + 1;
+        btn.innerHTML = `<span>Bắt Đầu Nhiệm Vụ Lượt ${nextTurn} (+1.000 Xu)</span> <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>`;
+        btn.disabled = false;
+        if (note) note.textContent = "Hoàn thành xác thực 60s trên cổng rút gọn để nhận ngay 1.000 Xu vào tài khoản.";
+      }
+    }
+
+    async function openMissionModal() {
+      const dlg = document.getElementById('missionModal');
+      if (!dlg) return;
+      dlg.showModal();
+
+      const ip = await fetchClientIp();
+      const quota = await getDailyMissionQuota(ip);
+      updateMissionModalUI(quota);
+    }
+
+    function createMissionToken(payload) {
+      const jsonStr = encodeURIComponent(JSON.stringify(payload));
+      return btoa(jsonStr).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function decodeMissionToken(tokenStr) {
+      if (!tokenStr) return null;
+      try {
+        let clean = decodeURIComponent(tokenStr).trim().replace(/ /g, '+').replace(/-/g, '+').replace(/_/g, '/');
+        while (clean.length % 4 !== 0) clean += '=';
+        return JSON.parse(decodeURIComponent(atob(clean)));
+      } catch(e) {
+        return null;
+      }
+    }
+
+    async function startDailyMission(btnEl) {
+      if (!currentUser) {
+        showToast("⚠️ Vui lòng đăng nhập tài khoản để nhận xu vào ví!");
+        setTimeout(() => { window.location.href = '../account.html'; }, 1000);
+        return;
+      }
+
+      const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
+      if (cfg.enabled === false || cfg.free_pass_locked) {
+        showToast("⚠️ Hệ thống nhiệm vụ nhận xu đang tạm bảo trì để nâng cấp!");
+        return;
+      }
+
+      const originalHtml = btnEl.innerHTML;
+      btnEl.innerHTML = `<span>Đang kiểm tra bảo mật...</span>`;
+      btnEl.disabled = true;
+
+      try {
+        const ip = await fetchClientIp();
+        const quota = await getDailyMissionQuota(ip);
+
+        if (quota.isLimitReached) {
+          showToast("⚠️ Địa chỉ IP hoặc tài khoản của bạn đã đạt tối đa 2/2 lượt hôm nay!");
+          updateMissionModalUI(quota);
+          btnEl.innerHTML = originalHtml;
+          return;
+        }
+
+        btnEl.innerHTML = `<span>Đang kết nối cổng nhiệm vụ...</span>`;
+
+        // Create mission token
+        const token = createMissionToken({
+          uid: currentUser.uid,
+          userEmail: currentUser.email || '',
+          ip: ip,
+          date: quota.today,
+          completedToday: quota.completedToday,
+          reward: parseInt(cfg.reward_per_pass, 10) || 1000,
+          provider: (cfg.provider || 'site2s').toLowerCase().trim(),
+          t: Date.now(),
+          nonce: Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
+        });
+
+        // Save pending
+        sessionStorage.setItem('ipaviet_pending_mission', JSON.stringify({
+          token,
+          ip,
+          t: Date.now(),
+          date: quota.today
+        }));
+
+        const origin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://ipaviet.site';
+        const returnUrl = `${origin}${window.location.pathname}?id=${encodeURIComponent((CURRENT_APP && CURRENT_APP._id) || '')}&mission_reward=1&token=${token}`;
+
+        const shortUrl = await getShortenedUrl(returnUrl);
+        if (shortUrl && typeof shortUrl === 'string' && shortUrl.startsWith('http')) {
+          showToast("Đang chuyển tiếp tới cổng vượt link nhận 1.000 Xu...");
+          setTimeout(() => { window.location.href = shortUrl; }, 350);
+          return;
+        }
+
+        const s2sToken = cfg.site2s_token || '9c105d1f5c6c770dcdf75101509cfba77b9ee5bd';
+        const fallbackUrl = `https://site2s.com/st?api=${encodeURIComponent(s2sToken)}&url=${encodeURIComponent(returnUrl)}`;
+        window.location.href = fallbackUrl;
+
+      } catch(err) {
+        showToast("Không thể khởi tạo nhiệm vụ. Vui lòng thử lại!");
+        btnEl.innerHTML = originalHtml;
+        btnEl.disabled = false;
+      }
+    }
+
+    async function sendMissionRewardTelegramNotification(payload, completedCount, newBalance) {
+      try {
+        let cfg = Object.assign({}, DEFAULT_SHORTENER_CONFIG, SHORTENER_CONFIG || {});
+        try {
+          const rawSaved = localStorage.getItem('ipaviet_shortener_config');
+          if (rawSaved) cfg = Object.assign({}, cfg, JSON.parse(rawSaved));
+        } catch(e) {}
+
+        const botToken = (cfg.tele_bot_token || '').trim();
+        const chatId = (cfg.tele_chat_id || '').trim();
+        if (!botToken || !chatId) return;
+
+        const isEnabled = (cfg.tele_notify_enabled === true || cfg.tele_notify_enabled === 'true') ||
+                          (cfg.tele_notify_enabled !== false && cfg.tele_notify_enabled !== 'false');
+        if (!isEnabled) return;
+
+        const providerKey = ((payload && payload.provider) || (cfg.provider || 'site2s')).toLowerCase().trim();
+        let providerName = 'Site2S';
+        if (providerKey === 'link4m') providerName = 'Link4m';
+        else if (providerKey === 'yeumoney') providerName = 'YeuMoney';
+
+        const reward = (payload && payload.reward) ? parseInt(payload.reward, 10) : (parseInt(cfg.reward_per_pass, 10) || 1000);
+        const rewardFormatted = `+${reward.toLocaleString('vi-VN')} Xu`;
+
+        let elapsedStr = 'Không xác định';
+        if (payload && payload.t) {
+          const elapsedSec = Math.max(1, Math.round((Date.now() - payload.t) / 1000));
+          if (elapsedSec < 60) {
+            elapsedStr = `${elapsedSec} giây`;
+          } else {
+            const m = Math.floor(elapsedSec / 60);
+            const s = elapsedSec % 60;
+            elapsedStr = `${m} phút ${s} giây (${elapsedSec}s)`;
+          }
+        }
+
+        const userEmail = (currentUser && currentUser.email) || (payload && payload.userEmail) || 'Chưa xác định';
+        const userId = (currentUser && currentUser.uid) || (payload && payload.uid) || '';
+        const ip = (payload && payload.ip) || clientIpAddress || 'Không rõ';
+
+        const ua = navigator.userAgent || '';
+        let deviceOS = 'Khác';
+        if (/iPhone|iPad|iPod/i.test(ua)) deviceOS = '📱 iOS (iPhone/iPad)';
+        else if (/Android/i.test(ua)) deviceOS = '🤖 Android';
+        else if (/Macintosh|Mac OS X/i.test(ua)) deviceOS = '💻 macOS';
+        else if (/Windows/i.test(ua)) deviceOS = '🖥️ Windows';
+
+        const nowStr = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+        const msg = [
+          '🚀 <b>NHIỆM VỤ NHẬN XU THÀNH CÔNG!</b>',
+          '',
+          `👤 <b>Người dùng:</b> <code>${userEmail}</code> (UID: <code>${userId ? userId.substring(0, 8) + '...' : 'Ẩn'}</code>)`,
+          `🌐 <b>Địa chỉ IP:</b> <code>${ip}</code>`,
+          `🎯 <b>Lượt hoàn thành:</b> <b>${completedCount}/2 hôm nay</b>`,
+          `💰 <b>Thưởng nhiệm vụ:</b> <code>${rewardFormatted}</code>`,
+          `🪙 <b>Tổng số dư ví:</b> <code>${newBalance.toLocaleString('vi-VN')} Xu</code>`,
+          `🔗 <b>Cổng rút gọn:</b> <b>${providerName}</b>`,
+          `⏱️ <b>Thời gian làm:</b> <code>${elapsedStr}</code>`,
+          `💻 <b>Thiết bị:</b> ${deviceOS}`,
+          `🕒 <b>Thời gian:</b> ${nowStr}`,
+          '',
+          '<i>🔔 Hệ thống chống spam & kiểm soát hạn ngạch 2 lượt/ngày/IP.</i>'
+        ].join('\n');
+
+        let sent = false;
+        try {
+          const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: msg,
+              parse_mode: 'HTML',
+              disable_web_page_preview: true
+            }),
+            keepalive: true
+          });
+          const resJson = await res.json().catch(() => null);
+          if (res.ok && resJson && resJson.ok) sent = true;
+        } catch(errDirect) {}
+
+        if (!sent && typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
+          try {
+            const proxyUrl = `${ANALYTICS_API_URL}?action=send_shortener_telegram&bot_token=${encodeURIComponent(botToken)}&chat_id=${encodeURIComponent(chatId)}&message=${encodeURIComponent(msg)}&t=${Date.now()}`;
+            await fetch(proxyUrl, { method: 'GET', mode: 'no-cors', keepalive: true });
+          } catch(e) {}
+        }
+      } catch(err) {}
+    }
+
+    async function handleMissionRewardReturn() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isMission = urlParams.get('mission_reward');
+      const token = urlParams.get('token');
+
+      if (isMission !== '1' || !token) return;
+
+      const payload = decodeMissionToken(token);
+      if (!payload || !payload.nonce || !payload.t) {
+        showToast("⚠️ Liên kết nhiệm vụ không hợp lệ hoặc đã hết hạn!");
+        return;
+      }
+
+      // Check age (< 2 hours)
+      const age = Date.now() - payload.t;
+      if (age < -300000 || age > 2 * 60 * 60 * 1000) {
+        showToast("⚠️ Liên kết nhiệm vụ đã hết hạn (quá 2 giờ)!");
+        return;
+      }
+
+      // Check replay attack via nonce
+      const nonceKey = 'ipaviet_used_mission_' + payload.nonce;
+      if (localStorage.getItem(nonceKey) || sessionStorage.getItem(nonceKey)) {
+        showToast("⚠️ Lượt hoàn thành này đã được nhận thưởng trước đó!");
+        return;
+      }
+
+      // Ensure user is signed in
+      const uid = payload.uid || (currentUser && currentUser.uid);
+      if (!uid) {
+        showToast("⚠️ Vui lòng đăng nhập để hệ thống cộng xu cho bạn!");
+        return;
+      }
+
+      const today = payload.date || getTodayDateStr();
+      const ip = payload.ip || (await fetchClientIp());
+      const sIp = sanitizeIpForFirestore(ip);
+      const reward = parseInt(payload.reward, 10) || 1000;
+
+      showToast("⏳ Đang xác thực nhiệm vụ và cộng xu vào tài khoản...");
+
+      try {
+        let newCompletedCount = 1;
+        let newBalance = currentCoins + reward;
+
+        if (typeof db !== 'undefined') {
+          // Check IP doc
+          const ipRef = db.collection('shortener_missions').doc(`${today}_${sIp}`);
+          const ipSnap = await ipRef.get();
+          const curIpCount = (ipSnap.exists && ipSnap.data().count) ? ipSnap.data().count : 0;
+          if (curIpCount >= 2) {
+            showToast("⚠️ Địa chỉ IP này đã đạt giới hạn tối đa 2 lượt nhận xu hôm nay!");
+            cleanQuery();
+            return;
+          }
+
+          // Run user transaction
+          const userRef = db.collection('users').doc(uid);
+          await db.runTransaction(async (transaction) => {
+            const uDoc = await transaction.get(userRef);
+            if (!uDoc.exists) throw new Error("Không tìm thấy tài khoản người dùng!");
+            const uData = uDoc.data();
+            const curCoins = uData.coins || 0;
+            const uDaily = uData.dailyMissions || {};
+
+            let countToday = 0;
+            if (uDaily.date === today) {
+              countToday = uDaily.count || 0;
+            }
+
+            if (countToday >= 2) {
+              throw new Error("Bạn đã nhận đủ tối đa 2 lượt hôm nay!");
+            }
+
+            newCompletedCount = Math.max(curIpCount + 1, countToday + 1);
+            newBalance = curCoins + reward;
+
+            transaction.update(userRef, {
+              coins: newBalance,
+              dailyMissions: {
+                date: today,
+                count: countToday + 1,
+                lastAt: firebase.firestore.FieldValue.serverTimestamp()
+              }
+            });
+
+            transaction.set(ipRef, {
+              count: curIpCount + 1,
+              date: today,
+              ip: ip,
+              lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+              uids: firebase.firestore.FieldValue.arrayUnion(uid)
+            }, { merge: true });
+          });
+        }
+
+        // Mark nonce as consumed
+        localStorage.setItem(nonceKey, Date.now().toString());
+        sessionStorage.setItem(nonceKey, Date.now().toString());
+
+        // Update local quota fallback
+        localStorage.setItem(`ipaviet_ip_mission_${today}_${sIp}`, newCompletedCount.toString());
+        localStorage.setItem(`ipaviet_uid_mission_${today}_${uid}`, newCompletedCount.toString());
+
+        currentCoins = newBalance;
+        updateUserBadge();
+
+        const quota = await getDailyMissionQuota(ip);
+        updateMissionModalUI(quota);
+
+        // Send Telegram alert
+        await sendMissionRewardTelegramNotification(payload, newCompletedCount, newBalance);
+
+        // Show celebratory toast
+        showToast(`🎉 Chúc mừng! Bạn đã nhận thành công +${reward.toLocaleString('vi-VN')} Xu! (Số dư ví: ${newBalance.toLocaleString('vi-VN')} Xu)`);
+
+        cleanQuery();
+
+      } catch(err) {
+        showToast("⚠️ " + (err.message || "Không thể cộng xu. Vui lòng thử lại!"));
+        cleanQuery();
+      }
+
+      function cleanQuery() {
+        const cleanUrl = window.location.pathname + (CURRENT_APP ? `?id=${encodeURIComponent(CURRENT_APP._id)}` : '');
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+
+    /* Legacy Free Pass backward compatibility */
     function createFreePassToken(app, rawLink) {
       const cfg = SHORTENER_CONFIG || DEFAULT_SHORTENER_CONFIG;
       const payload = {
@@ -911,8 +1495,8 @@
 
         const reward = (cfg.reward_per_pass !== undefined && cfg.reward_per_pass !== null)
           ? parseInt(cfg.reward_per_pass, 10) || 0
-          : 500;
-        const rewardFormatted = reward > 0 ? `+${reward.toLocaleString('vi-VN')}đ` : '0đ';
+          : 1000;
+        const rewardFormatted = reward > 0 ? `+${reward.toLocaleString('vi-VN')} Xu` : '0 Xu';
 
         let elapsedStr = 'Không xác định';
         if (payload && payload.t) {
@@ -1288,8 +1872,13 @@
         return;
       }
       if (currentCoins < 1000) {
-        showToast("Số dư của bạn không đủ (cần 1.000 Xu). Vui lòng nạp thêm!");
-        setTimeout(() => { window.location.href = '../dichvu.html'; }, 1200);
+        const missing = 1000 - (currentCoins || 0);
+        const descEl = document.getElementById('coinPromptDesc');
+        if (descEl) {
+          descEl.textContent = `Bạn hiện có ${(currentCoins || 0).toLocaleString('vi-VN')} Xu (Thiếu ${missing.toLocaleString('vi-VN')} Xu). Để tải file IPA này bạn cần 1.000 Xu. Bạn có thể làm nhiệm vụ nhận 1.000 Xu miễn phí hôm nay (tối đa 2 lượt/ngày) hoặc nạp thêm xu!`;
+        }
+        const dlg = document.getElementById('coinPromptDialog');
+        if (dlg) dlg.showModal();
         return;
       }
 
@@ -1634,10 +2223,10 @@
         }
 
         const missing = 1000 - (currentCoins || 0);
-        if (coinsSubText) coinsSubText.textContent = `Số dư: ${currentCoins.toLocaleString('vi-VN')} Xu (Thiếu ${missing.toLocaleString('vi-VN')} Xu)`;
+        if (coinsSubText) coinsSubText.textContent = `Số dư: ${currentCoins.toLocaleString('vi-VN')} Xu (Thiếu ${missing.toLocaleString('vi-VN')} Xu) · Nhận Xu Free`;
         if (userCoinsBadge) userCoinsBadge.textContent = `Thiếu ${missing.toLocaleString('vi-VN')} Xu`;
         if (btnCoins) {
-          btnCoins.textContent = 'Nạp Xu';
+          btnCoins.textContent = '1.000 Xu';
           btnCoins.className = 'action-pill action-purple';
         }
 
@@ -1667,6 +2256,10 @@
         if (mobileStickyBtn) mobileStickyBtn.textContent = 'Tải Về';
         if (mPrice) mPrice.textContent = 'Miễn phí';
       }
+
+      try {
+        fetchClientIp().then(ip => getDailyMissionQuota(ip)).then(q => updateMissionModalUI(q)).catch(() => {});
+      } catch(e) {}
     }
 
     /* 9. Theme Picker & Mobile Navigation */
@@ -1744,6 +2337,10 @@
 
     /* 11. Page Initialization & Data Resolver */
     window.addEventListener('DOMContentLoaded', async () => {
+      // Check for mission reward or free pass return immediately
+      handleMissionRewardReturn();
+      handleFreePassReturn();
+
       auth.onAuthStateChanged(async user => {
         currentUser = user;
         if (user) {
@@ -1755,6 +2352,7 @@
               isUserVip = Boolean(data.isVip || (data.vipUntil && data.vipUntil.toMillis && data.vipUntil.toMillis() > Date.now()));
             }
           } catch(e) {}
+          handleMissionRewardReturn();
         }
         updateUserBadge();
       });
