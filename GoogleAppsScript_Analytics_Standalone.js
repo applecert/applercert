@@ -706,21 +706,58 @@ function doGet(e) {
     // -------------------------------------------------------------
     // ACTION 6: QUẢN LÝ VÉ NHIỆM VỤ VƯỢT LINK (STANDALONE ANALYTICS)
     // -------------------------------------------------------------
+    if (action === 'get_mission_quota') {
+      var uid = e.parameter.uid || '';
+      var ip = e.parameter.ip || 'unknown';
+      var date = e.parameter.date || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd");
+
+      var sheetMissions = getOrCreateSheet(ss, "MissionTickets", [
+        "TicketId", "UID", "IP", "Date", "Reward", "Status", "CreatedAt", "ExpiresAt", "ClaimedAt", "Provider"
+      ]);
+      var mData = sheetMissions.getDataRange().getValues();
+      var countUid = 0;
+      var countIp = 0;
+      var cleanIp = ip ? String(ip).trim() : "";
+      var cleanUid = uid ? String(uid).trim() : "";
+
+      for (var mi = 1; mi < mData.length; mi++) {
+        var row = mData[mi];
+        var rowStatus = String(row[5] || '').toLowerCase().trim();
+        if (rowStatus === "claimed" && isSameDate(row[3], date)) {
+          var rowUid = String(row[1] || '').trim();
+          var rowIp = String(row[2] || '').trim();
+          if (cleanUid && rowUid === cleanUid) countUid++;
+          if (cleanIp && rowIp === cleanIp) countIp++;
+        }
+      }
+      var maxCompleted = Math.max(countUid, countIp);
+      return output.setContent(JSON.stringify({
+        success: true,
+        completedToday: maxCompleted,
+        countUid: countUid,
+        countIp: countIp,
+        maxQuota: 2,
+        remaining: Math.max(0, 2 - maxCompleted),
+        isLimitReached: maxCompleted >= 2
+      }));
+    }
+
     if (action === 'create_mission_ticket') {
       var ticketId = e.parameter.ticketId || ('tk_' + new Date().getTime().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
       var uid = e.parameter.uid || '';
       var ip = e.parameter.ip || 'unknown';
-      var date = e.parameter.date || Utilities.formatDate(new Date(), "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
+      var date = e.parameter.date || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd");
       var reward = parseInt(e.parameter.reward, 10) || 1000;
       var provider = e.parameter.provider || 'site2s';
       var expiresAt = Date.now() + 15 * 60 * 1000;
 
-      var sheetMissions = getOrCreateSheet(ss, "Mission_Tickets", [
-        "Ticket ID", "UID", "IP", "Ngày", "Phần Thưởng", "Trạng Thái", "Tạo Lúc", "Hết Hạn", "Nhận Lúc", "Cổng"
+      var sheetMissions = getOrCreateSheet(ss, "MissionTickets", [
+        "TicketId", "UID", "IP", "Date", "Reward", "Status", "CreatedAt", "ExpiresAt", "ClaimedAt", "Provider"
       ]);
       sheetMissions.appendRow([
         ticketId, uid, ip, date, reward, "pending", new Date().toISOString(), expiresAt, "", provider
       ]);
+      SpreadsheetApp.flush();
 
       return output.setContent(JSON.stringify({
         success: true,
@@ -734,16 +771,43 @@ function doGet(e) {
       var ticketId = e.parameter.ticketId || '';
       var uid = e.parameter.uid || '';
       var ip = e.parameter.ip || 'unknown';
-      var date = e.parameter.date || Utilities.formatDate(new Date(), "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
+      var date = e.parameter.date || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd");
       var reward = parseInt(e.parameter.reward, 10) || 1000;
 
-      var sheetMissions = getOrCreateSheet(ss, "Mission_Tickets", [
-        "Ticket ID", "UID", "IP", "Ngày", "Phần Thưởng", "Trạng Thái", "Tạo Lúc", "Hết Hạn", "Nhận Lúc", "Cổng"
+      var sheetMissions = getOrCreateSheet(ss, "MissionTickets", [
+        "TicketId", "UID", "IP", "Date", "Reward", "Status", "CreatedAt", "ExpiresAt", "ClaimedAt", "Provider"
       ]);
       var mData = sheetMissions.getDataRange().getValues();
+
+      // Kiểm tra hạn mức hôm nay trước khi cho claim
+      var countUid = 0;
+      var countIp = 0;
+      var cleanIp = ip ? String(ip).trim() : "";
+      var cleanUid = uid ? String(uid).trim() : "";
+
+      for (var mi = 1; mi < mData.length; mi++) {
+        var row = mData[mi];
+        var rowStatus = String(row[5] || '').toLowerCase().trim();
+        if (rowStatus === "claimed" && isSameDate(row[3], date)) {
+          var rowUid = String(row[1] || '').trim();
+          var rowIp = String(row[2] || '').trim();
+          if (cleanUid && rowUid === cleanUid) countUid++;
+          if (cleanIp && rowIp === cleanIp) countIp++;
+        }
+      }
+      var curCompleted = Math.max(countUid, countIp);
+      if (curCompleted >= 2) {
+        return output.setContent(JSON.stringify({
+          success: false,
+          error: "Hôm nay bạn hoặc IP (" + ip + ") đã hoàn thành tối đa 2/2 lượt!",
+          completedToday: curCompleted,
+          isLimitReached: true
+        }));
+      }
+
       var foundIdx = -1;
       for (var mi = 1; mi < mData.length; mi++) {
-        if (String(mData[mi][0]) === String(ticketId)) {
+        if (String(mData[mi][0]).trim() === String(ticketId).trim()) {
           foundIdx = mi + 1;
           break;
         }
@@ -756,37 +820,15 @@ function doGet(e) {
           ticketId, uid, ip, date, reward, "claimed", new Date().toISOString(), Date.now() + 15 * 60 * 1000, new Date().toISOString(), "Direct"
         ]);
       }
+      SpreadsheetApp.flush();
 
+      var newCompleted = Math.min(2, curCompleted + 1);
       return output.setContent(JSON.stringify({
         success: true,
         reward: reward,
+        completedToday: newCompleted,
+        isLimitReached: newCompleted >= 2,
         message: "Ghi nhận vé thành công!"
-      }));
-    }
-
-    if (action === 'get_mission_quota') {
-      var uid = e.parameter.uid || '';
-      var ip = e.parameter.ip || 'unknown';
-      var date = e.parameter.date || Utilities.formatDate(new Date(), "Asia/Ho_Chi_Minh", "yyyy-MM-dd");
-
-      var sheetMissions = getOrCreateSheet(ss, "Mission_Tickets", [
-        "Ticket ID", "UID", "IP", "Ngày", "Phần Thưởng", "Trạng Thái", "Tạo Lúc", "Hết Hạn", "Nhận Lúc", "Cổng"
-      ]);
-      var mData = sheetMissions.getDataRange().getValues();
-      var count = 0;
-      for (var mi = 1; mi < mData.length; mi++) {
-        if (String(mData[mi][3]) === String(date) && String(mData[mi][5]) === "claimed") {
-          if ((uid && String(mData[mi][1]) === String(uid)) || (ip && String(mData[mi][2]) === String(ip))) {
-            count++;
-          }
-        }
-      }
-      return output.setContent(JSON.stringify({
-        success: true,
-        completedToday: count,
-        maxQuota: 2,
-        remaining: Math.max(0, 2 - count),
-        isLimitReached: count >= 2
       }));
     }
 

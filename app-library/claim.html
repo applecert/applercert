@@ -533,18 +533,22 @@
                 reward = resJson.reward || reward;
                 completedToday = resJson.completedToday || 1;
               } else if (resJson && resJson.error) {
-                throw new Error(resJson.error);
+                // Backend GAS chủ động từ chối (hết hạn, quá 2/2 lượt, bị ban) -> Phải ném lỗi chặn ngay!
+                const err = new Error(resJson.error);
+                err.isLimitReached = !!resJson.isLimitReached;
+                throw err;
               }
             }
           } catch(gasErr) {
             console.warn("GAS claim error:", gasErr);
-            if (gasErr.message && (gasErr.message.includes("đã được") || gasErr.message.includes("quá hạn") || gasErr.message.includes("giới hạn"))) {
+            // Nếu GAS phản hồi lỗi nghiệp vụ (hoặc ném error từ resJson.error), bắt buộc ném ra ngoài không cho fallback
+            if (gasErr && gasErr.message && !gasErr.message.includes("Failed to fetch") && !gasErr.message.includes("NetworkError")) {
               throw gasErr;
             }
           }
         }
 
-        // 2. Nếu GAS chưa xử lý được (ví dụ do mạng), fallback sang client-side Firestore
+        // 2. Nếu GAS chưa xử lý được do mạng rớt, fallback sang client-side Firestore
         if (!claimedViaGas && typeof db !== 'undefined') {
           const userDocRef = db.collection('users').doc(currentUser.uid);
           const userSnap = await userDocRef.get();
@@ -553,7 +557,7 @@
           const curCoins = userData.coins || 0;
           const uDaily = userData.dailyMissions || {};
           let countToday = (uDaily.date === today) ? (uDaily.count || 0) : 0;
-          if (countToday >= 2) throw new Error("Tài khoản của bạn đã nhận đủ 2 lượt hôm nay!");
+          if (countToday >= 2) throw new Error("Tài khoản của bạn đã nhận đủ 2/2 lượt hôm nay!");
 
           newBalance = curCoins + reward;
           completedToday = countToday + 1;
@@ -591,8 +595,15 @@
           sendTelegramAlert(currentUser.email || '', currentUser.uid, ip, completedToday, newBalance, (ticketData && ticketData.provider) || 'site2s', elapsedSec);
         }
 
-        // Clear local storage
-        try { localStorage.removeItem('ipaviet_active_mission_ticket'); } catch(e) {}
+        // Cập nhật LocalStorage hạn mức ngay lập tức để đồng bộ sang trang app.html
+        try {
+          const sIp = (ip || '').replace(/[^a-zA-Z0-9]/g, '_');
+          localStorage.setItem(`ipaviet_ip_mission_${today}_${sIp}`, String(completedToday));
+          if (currentUser && currentUser.uid) {
+            localStorage.setItem(`ipaviet_uid_mission_${today}_${currentUser.uid}`, String(completedToday));
+          }
+          localStorage.removeItem('ipaviet_active_mission_ticket');
+        } catch(e) {}
 
         // Trigger confetti
         if (typeof confetti === 'function') {
@@ -617,9 +628,28 @@
         showToast(`🎉 Nhận thành công +${reward.toLocaleString('vi-VN')} Xu!`);
 
       } catch(err) {
-        showToast("⚠️ " + (err.message || "Giao dịch thất bại"));
-        btn.innerHTML = origHtml;
-        btn.disabled = false;
+        console.error("Claim ticket error:", err);
+        const errMsg = err.message || "Giao dịch thất bại";
+        showToast("⚠️ " + errMsg);
+
+        const isLimit = err.isLimitReached || errMsg.includes("2/2") || errMsg.includes("đã nhận đủ") || errMsg.includes("tối đa") || errMsg.includes("bị cấm");
+        if (isLimit) {
+          try {
+            const sIp = (ip || '').replace(/[^a-zA-Z0-9]/g, '_');
+            localStorage.setItem(`ipaviet_ip_mission_${today}_${sIp}`, '2');
+            if (currentUser && currentUser.uid) {
+              localStorage.setItem(`ipaviet_uid_mission_${today}_${currentUser.uid}`, '2');
+            }
+          } catch(e) {}
+
+          btn.innerHTML = '<span>🔒 Đã Đạt Hạn Mức 2/2 Lượt Hôm Nay</span>';
+          btn.disabled = true;
+          btn.classList.add('opacity-60', 'cursor-not-allowed');
+          document.getElementById('claimSubtitle').innerHTML = `<span style="color:#f87171; font-weight:600;">${errMsg}</span>`;
+        } else {
+          btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
       }
     }
 

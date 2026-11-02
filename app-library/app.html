@@ -1013,6 +1013,7 @@
       const sIp = sanitizeIpForFirestore(ip);
       let userCount = 0;
       let ipCount = 0;
+      let isBanned = false;
 
       // 1. Check user record in Firestore
       if (currentUser && typeof db !== 'undefined') {
@@ -1049,9 +1050,31 @@
         userCount = Math.max(userCount, localUserCount);
       } catch(e) {}
 
+      // 4. Check Google Apps Script (Thẩm định trực tiếp từ máy chủ Google Sheet)
+      const gasUrl = (typeof GOOGLE_API_URL !== 'undefined' && GOOGLE_API_URL) ? GOOGLE_API_URL : ANALYTICS_API_URL;
+      if (gasUrl) {
+        try {
+          const ctrl = new AbortController();
+          const tid = setTimeout(() => ctrl.abort(), 2500);
+          const gasRes = await fetch(`${gasUrl}?action=get_mission_quota&uid=${encodeURIComponent((currentUser && currentUser.uid) || '')}&ip=${encodeURIComponent(ip || '')}&date=${today}&t=${Date.now()}`, { signal: ctrl.signal });
+          clearTimeout(tid);
+          if (gasRes.ok) {
+            const gasData = await gasRes.json();
+            if (gasData && gasData.success) {
+              if (gasData.completedToday !== undefined) {
+                const gasVal = parseInt(gasData.completedToday, 10) || 0;
+                userCount = Math.max(userCount, gasData.countUid || 0, gasVal);
+                ipCount = Math.max(ipCount, gasData.countIp || 0, gasVal);
+              }
+              if (gasData.isBanned) isBanned = true;
+            }
+          }
+        } catch(e) {}
+      }
+
       const effectiveCount = Math.min(2, Math.max(userCount, ipCount));
       const remaining = Math.max(0, 2 - effectiveCount);
-      const isLimitReached = effectiveCount >= 2;
+      const isLimitReached = isBanned || effectiveCount >= 2;
 
       return {
         today,
@@ -1061,7 +1084,8 @@
         ipCount,
         completedToday: effectiveCount,
         remaining,
-        isLimitReached
+        isLimitReached,
+        isBanned
       };
     }
 
