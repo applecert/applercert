@@ -21,6 +21,10 @@
   <!-- JSZip for parsing and packing Apple Certificate ZIP packages -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+  <!-- SweetAlert2 Modal & Toast Engine -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -3030,6 +3034,14 @@
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toastContainer" class="fixed top-6 right-6 z-[300] space-y-2 pointer-events-none"></div>
 
+  <!-- ACTION CONFIRMATION MODAL -->
+  <div id="actionModal" class="fixed inset-0 z-[250] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeActionModal()"></div>
+    <div class="glass-card rounded-[28px] shadow-2xl border border-black/[0.08] w-full max-w-sm p-6 relative z-10 bg-white space-y-4">
+      <div id="actionModalContent"></div>
+    </div>
+  </div>
+
   <!-- MODAL: VISITOR TELEMETRY DETAIL -->
   <div id="modalVisitorDetail" class="fixed inset-0 z-[230] hidden flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeVisitorDetailModal()"></div>
@@ -3779,8 +3791,8 @@
       auth.signOut().then(() => window.location.reload());
     }
 
-    // Helper fetch with timeout (mặc định 6000ms để chống treo vĩnh viễn)
-    async function fetchWithTimeout(url, opts = {}, timeout = 6000) {
+    // Helper fetch with timeout (mặc định 12000ms để chống timeout giả khi Google Sheets chuyển hướng)
+    async function fetchWithTimeout(url, opts = {}, timeout = 12000) {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeout);
       try {
@@ -3872,7 +3884,7 @@
       // 1. Sổ quỹ thu ngân (Transactions) - Google Sheets
       (async () => {
         try {
-          const res = await fetchWithTimeout(`${GOOGLE_API_URL}?action=get_admin_data&pin=${encodeURIComponent(pin)}`, {}, 5000);
+          const res = await fetchWithTimeout(`${GOOGLE_API_URL}?action=get_admin_data&pin=${encodeURIComponent(pin)}`, {}, 12000);
           const data = await res.json();
           if (data && data.success && data.dataThuNgan) {
             let totalRev = 0;
@@ -3897,7 +3909,7 @@
       // 2. MMO Orders - Google Sheets
       (async () => {
         try {
-          const resOrders = await fetchWithTimeout(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${encodeURIComponent(pin)}`, {}, 5000);
+          const resOrders = await fetchWithTimeout(`${GOOGLE_API_URL}?action=admin_get_all_mmo_orders&pin=${encodeURIComponent(pin)}`, {}, 12000);
           const dataOrders = await resOrders.json();
           if (dataOrders && dataOrders.success) {
             AdminState.orders = dataOrders.data || [];
@@ -3915,7 +3927,7 @@
       // 3. KingMMO Products & Configs - Google Sheets
       (async () => {
         try {
-          const resP = await fetchWithTimeout(`${GOOGLE_API_URL}?action=get_kingmmo_products`, {}, 5000);
+          const resP = await fetchWithTimeout(`${GOOGLE_API_URL}?action=get_kingmmo_products`, {}, 12000);
           const dataP = await resP.json();
           if (dataP && dataP.success) {
             AdminState.products = dataP.kingmmoProducts || [];
@@ -3941,12 +3953,12 @@
         }
       })();
 
-      // 4. Fetch Users từ Firestore (với timeout 3.5s an toàn)
+      // 4. Fetch Users từ Firestore (với timeout 8s an toàn)
       (async () => {
         try {
           if (typeof db !== 'undefined' && db.collection) {
             const userSnapPromise = db.collection("users").get();
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500));
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
             const userSnap = await Promise.race([userSnapPromise, timeoutPromise]);
             if (userSnap && userSnap.docs) {
               AdminState.users = [];
@@ -3991,41 +4003,58 @@
     }
 
     function updateDashboardMetrics() {
-      document.getElementById('statUsers').innerText = AdminState.users.length.toLocaleString();
-      document.getElementById('statRevenue').innerText = (AdminState.totalRevenue || 0).toLocaleString('vi-VN') + "đ";
+      const statUsersEl = document.getElementById('statUsers');
+      if (statUsersEl) statUsersEl.innerText = (AdminState.users || []).length.toLocaleString();
 
-      let vipCount = AdminState.users.filter(u => u.vipExpire && u.vipExpire.toMillis && u.vipExpire.toMillis() > Date.now()).length;
-      document.getElementById('statVipCount').innerText = `${vipCount} thành viên VIP`;
+      const statRevEl = document.getElementById('statRevenue');
+      if (statRevEl) statRevEl.innerText = (AdminState.totalRevenue || 0).toLocaleString('vi-VN') + "đ";
 
-      let pendingOrders = AdminState.orders.filter(o => o.status === 'PENDING' && o.isPaid);
-      document.getElementById('statPendingMMO').innerText = pendingOrders.length;
+      let vipCount = 0;
+      if (Array.isArray(AdminState.users)) {
+        vipCount = AdminState.users.filter(u => {
+          if (!u.vipExpire) return false;
+          const expTime = (u.vipExpire.toMillis ? u.vipExpire.toMillis() : (u.vipExpire.seconds ? u.vipExpire.seconds * 1000 : new Date(u.vipExpire).getTime()));
+          return !isNaN(expTime) && expTime > Date.now();
+        }).length;
+      }
+      const statVipEl = document.getElementById('statVipCount');
+      if (statVipEl) statVipEl.innerText = `${vipCount} thành viên VIP`;
+
+      let pendingOrders = (AdminState.orders || []).filter(o => o.status === 'PENDING' && o.isPaid);
+      const statPendingMMOEl = document.getElementById('statPendingMMO');
+      if (statPendingMMOEl) statPendingMMOEl.innerText = pendingOrders.length;
       
       const badge = document.getElementById('badgeMMO');
-      if (pendingOrders.length > 0) {
-        badge.innerText = pendingOrders.length;
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
+      if (badge) {
+        if (pendingOrders.length > 0) {
+          badge.innerText = pendingOrders.length;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
       }
 
       // Check Low Stock Items
-      let lowStockItems = AdminState.products.filter(p => (parseInt(p.stock) || 0) < 10);
-      document.getElementById('statLowStock').innerText = lowStockItems.length;
+      let lowStockItems = (AdminState.products || []).filter(p => (parseInt(p.stock) || 0) < 10);
+      const statLowEl = document.getElementById('statLowStock');
+      if (statLowEl) statLowEl.innerText = lowStockItems.length;
 
       // Pending Queue Preview in Dashboard
       const dashPending = document.getElementById('dashPendingList');
-      if (pendingOrders.length === 0) {
-        dashPending.innerHTML = `<p class="text-center py-6 text-xs text-gray-400">Không có đơn hàng chờ duyệt.</p>`;
-      } else {
-        dashPending.innerHTML = pendingOrders.slice(0, 5).map(o => `
-          <div class="py-2.5 flex items-center justify-between text-xs">
-            <div>
-              <p class="font-bold text-gray-900">${escapeHTML(o.productName || o.productId)}</p>
-              <span class="text-[10px] text-gray-400 font-mono">${escapeHTML(o.orderId)} • SL: ${o.amount}</span>
+      if (dashPending) {
+        if (pendingOrders.length === 0) {
+          dashPending.innerHTML = `<p class="text-center py-6 text-xs text-gray-400">Không có đơn hàng chờ duyệt.</p>`;
+        } else {
+          dashPending.innerHTML = pendingOrders.slice(0, 5).map(o => `
+            <div class="py-2.5 flex items-center justify-between text-xs">
+              <div>
+                <p class="font-bold text-gray-900">${escapeHTML(o.productName || o.productId)}</p>
+                <span class="text-[10px] text-gray-400 font-mono">${escapeHTML(o.orderId)} • SL: ${o.amount}</span>
+              </div>
+              <span class="font-bold text-rose-600">${(parseInt(o.price) || 0).toLocaleString()}đ</span>
             </div>
-            <span class="font-bold text-rose-600">${(parseInt(o.price) || 0).toLocaleString()}đ</span>
-          </div>
-        `).join('');
+          `).join('');
+        }
       }
     }
 
@@ -4118,11 +4147,12 @@
     // ==========================================
     function renderUserTable() {
       const tbody = document.getElementById('userTableBody');
+      if (!tbody) return;
       const q = (document.getElementById('searchUserInput')?.value || '').toLowerCase().trim();
 
-      let filtered = AdminState.users;
+      let filtered = AdminState.users || [];
       if (q) {
-        filtered = filtered.filter(u => (u.email || '').toLowerCase().includes(q) || u.uid.toLowerCase().includes(q));
+        filtered = filtered.filter(u => (u.email || '').toLowerCase().includes(q) || (u.uid || '').toLowerCase().includes(q));
       }
 
       if (filtered.length === 0) {
@@ -4131,9 +4161,17 @@
       }
 
       tbody.innerHTML = filtered.map(u => {
-        let isVip = u.vipExpire && u.vipExpire.toMillis && u.vipExpire.toMillis() > Date.now();
+        let isVip = false;
+        let vipDateStr = '-';
+        if (u.vipExpire) {
+          const expTime = (u.vipExpire.toMillis ? u.vipExpire.toMillis() : (u.vipExpire.seconds ? u.vipExpire.seconds * 1000 : new Date(u.vipExpire).getTime()));
+          if (!isNaN(expTime) && expTime > Date.now()) {
+            isVip = true;
+            vipDateStr = new Date(expTime).toLocaleDateString('vi-VN');
+          }
+        }
         let vipBadge = isVip 
-          ? `<span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">VIP: ${new Date(u.vipExpire.toMillis()).toLocaleDateString('vi-VN')}</span>`
+          ? `<span class="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-[10px] font-bold border border-amber-200">VIP: ${vipDateStr}</span>`
           : `<span class="text-gray-400 text-[11px]">-</span>`;
 
         return `
@@ -4154,11 +4192,34 @@
       }).join('');
     }
 
+    let currentTxFilter = 'ALL';
+    function filterTransactions(type) {
+      currentTxFilter = type;
+      ['ALL', 'CLAIMED', 'PENDING'].forEach(f => {
+        const el = document.getElementById('filterTx_' + f);
+        if (el) {
+          if (f === type) {
+            el.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-gray-900 text-white shadow-2xs whitespace-nowrap";
+          } else {
+            el.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-black/[0.04] text-gray-600 hover:text-gray-900 border border-black/[0.05] whitespace-nowrap transition";
+          }
+        }
+      });
+      renderTransactions();
+    }
+
     function renderTransactions() {
       const tbody = document.getElementById('txTableBody');
+      if (!tbody) return;
       const q = (document.getElementById('searchTxInput')?.value || '').toLowerCase().trim();
 
-      let filtered = AdminState.transactions;
+      let filtered = AdminState.transactions || [];
+      if (currentTxFilter === 'CLAIMED') {
+        filtered = filtered.filter(t => t.status === 'CLAIMED');
+      } else if (currentTxFilter === 'PENDING') {
+        filtered = filtered.filter(t => t.status !== 'CLAIMED');
+      }
+
       if (q) {
         filtered = filtered.filter(t => (t.orderId || '').toLowerCase().includes(q) || (t.uid || '').toLowerCase().includes(q));
       }
@@ -4197,10 +4258,12 @@
       currentMmoFilter = type;
       ['PENDING_PAID', 'COMPLETED', 'ALL'].forEach(f => {
         const el = document.getElementById('filter_' + f);
-        if (f === type) {
-          el.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-gray-900 text-white shadow-sm whitespace-nowrap";
-        } else {
-          el.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-gray-600 border border-gray-200 whitespace-nowrap";
+        if (el) {
+          if (f === type) {
+            el.className = "px-4 py-1.5 rounded-full text-xs font-bold bg-gray-900 text-white shadow-sm whitespace-nowrap";
+          } else {
+            el.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-gray-600 border border-gray-200 whitespace-nowrap";
+          }
         }
       });
       renderMMOOrders();
@@ -4209,13 +4272,28 @@
     function renderMMOOrders() {
       const tbody = document.getElementById('mmoOrdersBody');
       const mobileList = document.getElementById('mmoOrdersMobileList');
+      if (!tbody) return;
       const q = (document.getElementById('searchMmoInput')?.value || '').toLowerCase().trim();
 
-      let filtered = AdminState.orders.filter(o => {
+      let filtered = (AdminState.orders || []).filter(o => {
         if (currentMmoFilter === 'PENDING_PAID') return o.status === 'PENDING' && o.isPaid;
         if (currentMmoFilter === 'COMPLETED') return o.status === 'COMPLETED';
         return true;
       });
+
+      if (q) {
+        filtered = filtered.filter(o => 
+          (o.orderId || '').toLowerCase().includes(q) || 
+          (o.uid || '').toLowerCase().includes(q) || 
+          (o.productName || '').toLowerCase().includes(q)
+        );
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-gray-400">Không tìm thấy đơn hàng nào.</td></tr>`;
+        if (mobileList) mobileList.innerHTML = `<p class="p-8 text-center text-gray-400 text-xs">Không có đơn hàng nào.</p>`;
+        return;
+      }
 
       if (q) {
         filtered = filtered.filter(o => 
@@ -5147,6 +5225,48 @@
       if (tabId === 'analytics') {
         loadAppAnalytics(false);
         loadVisitorLogs(false);
+      }
+
+      if (tabId === 'shortcuts') {
+        if (!AdminState.shortcuts || !AdminState.shortcuts.length) loadShortcutsData().catch(() => {});
+        else renderShortcutsTable();
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
+      }
+
+      if (tabId === 'ai_knowledge') {
+        if (!AdminState.aiKnowledge || !AdminState.aiKnowledge.length) loadAIKnowledgeData().catch(() => {});
+        else renderAIKnowledgeTable();
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
+      }
+
+      if (tabId === 'audit') {
+        loadAuditLogs().catch(() => {});
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
+      }
+
+      if (tabId === 'system_settings') {
+        loadSystemSettings();
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
+      }
+
+      if (tabId === 'users') {
+        renderUserTable();
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
+      }
+
+      if (tabId === 'transactions') {
+        renderTransactions();
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
+      }
+
+      if (tabId === 'mmo_orders') {
+        renderMMOOrders();
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
+      }
+
+      if (tabId === 'mmo_products') {
+        renderConfigTable();
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
       }
 
       if (window.innerWidth < 768) toggleSidebar(false);
@@ -6778,10 +6898,10 @@
     function jumpToCustomerInUsersTab() {
       if (!AdminState.selectedChatUid) return;
       switchTab('users');
-      const search = document.getElementById('searchUsers');
+      const search = document.getElementById('searchUserInput') || document.getElementById('searchUsers');
       if (search) {
         search.value = AdminState.selectedChatUid;
-        filterUsers();
+        renderUserTable();
       }
     }
 
@@ -6834,6 +6954,12 @@
     // ==========================================
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
+      if (!container) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ toast: true, position: 'top-end', icon: type === 'error' ? 'error' : 'success', title: message, timer: 2000, showConfirmButton: false });
+        }
+        return;
+      }
       const toast = document.createElement('div');
       
       const colors = {
@@ -6857,6 +6983,22 @@
 
     function renderActionModal(type, title, desc, onConfirm) {
       const content = document.getElementById('actionModalContent');
+      const modal = document.getElementById('actionModal');
+      if (!content || !modal) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            title: title,
+            html: desc,
+            icon: type === 'confirm' ? 'warning' : 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Đồng Ý',
+            cancelButtonText: 'Hủy'
+          }).then((r) => {
+            if (r.isConfirmed && typeof onConfirm === 'function') onConfirm();
+          });
+        }
+        return;
+      }
       content.innerHTML = `
         <h3 class="text-base font-bold text-gray-900">${escapeHTML(title)}</h3>
         <p class="text-xs text-gray-500 leading-relaxed mt-2">${desc}</p>
@@ -6865,12 +7007,19 @@
           <button id="btnActionConfirm" class="flex-1 py-2.5 bg-appleBlue text-white font-bold rounded-xl text-xs shadow-md">Đồng Ý</button>
         </div>
       `;
-      document.getElementById('actionModal').classList.remove('hidden');
-      document.getElementById('btnActionConfirm').onclick = onConfirm;
+      modal.classList.remove('hidden');
+      const btn = document.getElementById('btnActionConfirm');
+      if (btn) {
+        btn.onclick = () => {
+          closeActionModal();
+          if (typeof onConfirm === 'function') onConfirm();
+        };
+      }
     }
 
     function closeActionModal() {
-      document.getElementById('actionModal').classList.add('hidden');
+      const modal = document.getElementById('actionModal');
+      if (modal) modal.classList.add('hidden');
     }
 
     // ==========================================
@@ -10853,7 +11002,7 @@ Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, t�
 
       // Tự động làm mới danh sách khách trực tuyến mỗi 25 giây khi admin đang xem tab Thống Kê
       setInterval(() => {
-        const sec = document.getElementById('analyticsSection');
+        const sec = document.getElementById('tab-analytics');
         if (sec && !sec.classList.contains('hidden') && !document.hidden) {
           loadVisitorLogs(false);
         }
