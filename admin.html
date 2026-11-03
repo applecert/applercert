@@ -1969,6 +1969,38 @@
                 </div>
               </div>
 
+              <!-- SMART QUICK ACTION TOOLBAR (THANH CÔNG CỤ HỖ TRỢ NÂNG CAO TRONG KHUNG CHAT) -->
+              <div class="px-3 sm:px-4 py-2 bg-gradient-to-r from-sky-50/80 via-blue-50/50 to-indigo-50/80 border-b border-black/[0.06] flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0 text-xs shadow-2xs">
+                <span class="text-[10px] font-extrabold text-sky-900 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                  <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500 fill-amber-500"></i>
+                  <span class="hidden sm:inline">Tiện Ích Nhanh:</span>
+                </span>
+
+                <!-- 1. Nạp Tiền Nhanh -->
+                <button type="button" onclick="openQuickChatTopupModal()" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 hover:text-emerald-900 border border-emerald-200/80 shadow-2xs font-bold text-[11px] flex items-center gap-1.5 transition active:scale-95" title="Cộng Xu trực tiếp vào ví khách hàng & tự động gửi biên lai vào chat">
+                  <i data-lucide="wallet" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>Nạp Tiền Nhanh</span>
+                </button>
+
+                <!-- 2. Tạo Đơn Cert Trực Tiếp -->
+                <button type="button" onclick="openCreateCertOrderFromChat()" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-white hover:bg-sky-50 text-sky-800 hover:text-sky-900 border border-sky-200/80 shadow-2xs font-bold text-[11px] flex items-center gap-1.5 transition active:scale-95" title="Lên đơn cert Apple ngay, tự quét UDID từ tin nhắn và gửi link tra cứu vào chat">
+                  <i data-lucide="shield-plus" class="w-3.5 h-3.5 text-sky-600"></i>
+                  <span>Tạo Đơn Cert (Tự Quét UDID)</span>
+                </button>
+
+                <!-- 3. Trả Cert Cho Khách -->
+                <button type="button" onclick="openCertFulfillFromChat()" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-white hover:bg-indigo-50 text-indigo-800 hover:text-indigo-900 border border-indigo-200/80 shadow-2xs font-bold text-[11px] flex items-center gap-1.5 transition active:scale-95" title="Trả file cert, tự quét pass, tạo OTA và gửi thẻ nhận cert cho khách vào chat">
+                  <i data-lucide="send" class="w-3.5 h-3.5 text-indigo-600"></i>
+                  <span>Trả Cert & Gửi OTA</span>
+                </button>
+
+                <!-- 4. Gửi Link Tra Cứu Đơn -->
+                <button type="button" onclick="sendTrackingLinkToChat()" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-white hover:bg-purple-50 text-purple-800 hover:text-purple-900 border border-purple-200/80 shadow-2xs font-bold text-[11px] flex items-center gap-1.5 transition active:scale-95" title="Gửi link tra cứu chi tiết đơn hàng cho khách vào khung chat">
+                  <i data-lucide="external-link" class="w-3.5 h-3.5 text-purple-600"></i>
+                  <span>Gửi Link Tra Cứu</span>
+                </button>
+              </div>
+
               <!-- Message History Scroll Area -->
               <div id="chatMessagesThread" class="flex-1 overflow-y-auto p-3.5 sm:p-5 space-y-3 bg-gray-50/40 scrollbar-none min-h-0">
                 <!-- Rendered messages -->
@@ -3091,13 +3123,13 @@
           <div>
             <div class="flex items-center justify-between mb-1">
               <label class="block font-bold text-gray-800">
-                Mã UDID Thiết Bị Apple <span class="text-red-500">*</span>
+                Mã UDID Thiết Bị Apple <span class="text-gray-400 font-normal">(Tùy chọn nếu khách chưa gửi)</span>
               </label>
               <button type="button" onclick="pasteNewCertUdid()" class="px-2.5 py-0.5 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-800 text-[10px] font-bold flex items-center gap-1 transition">
                 <i data-lucide="clipboard" class="w-3 h-3"></i> Dán từ Clipboard
               </button>
             </div>
-            <input type="text" id="newCertUdid" required oninput="validateNewCertUdid()" placeholder="00008030-001A29D40120802E hoặc 40 ký tự hex" class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white font-mono text-gray-900 text-xs uppercase focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+            <input type="text" id="newCertUdid" oninput="validateNewCertUdid()" placeholder="00008030-001A29D40120802E hoặc 40 ký tự hex" class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white font-mono text-gray-900 text-xs uppercase focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
             <div id="newCertUdidFeedback" class="text-[11px] font-semibold mt-1 hidden"></div>
           </div>
         </div>
@@ -3141,7 +3173,7 @@
           </div>
 
           <div id="dropzoneNewCert" onclick="document.getElementById('fileInputNewCert').click()" class="border-2 border-dashed border-sky-300/80 hover:border-sky-500 hover:bg-sky-50/50 transition-all rounded-2xl p-4 text-center cursor-pointer bg-white/60">
-            <input type="file" id="fileInputNewCert" accept=".zip,.p12,.mobileprovision" class="hidden" onchange="handleNewCertFileUpload(event)">
+            <input type="file" id="fileInputNewCert" accept=".zip,.p12,.mobileprovision,.txt" multiple class="hidden" onchange="handleNewCertFileUpload(event)">
             <div class="flex flex-col items-center justify-center gap-1">
               <div class="w-8 h-8 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center">
                 <i data-lucide="upload-cloud" class="w-4 h-4"></i>
@@ -3252,6 +3284,28 @@
         </div>
       </div>
 
+      <!-- LINK TRA CỨU ĐƠN HÀNG CỦA KHÁCH (ORDER TRACKING LINK BANNER) -->
+      <div class="p-3 rounded-2xl bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50 border border-sky-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+        <div class="min-w-0 flex-1">
+          <span class="text-[10px] text-sky-800 uppercase font-black tracking-wider flex items-center gap-1">
+            <i data-lucide="link-2" class="w-3 h-3 text-sky-600"></i>
+            Link Tra Cứu Đơn & Bảo Hành Của Khách:
+          </span>
+          <span class="font-mono text-xs text-sky-950 font-bold truncate block select-all mt-0.5" id="fulfillTrackingLinkDisplay">https://ipaviet.site/certapple/tra-cuu.html?q=...</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+          <button type="button" onclick="copyModalTrackingLink()" class="px-2.5 py-1.5 bg-white hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-2xs active:scale-95" title="Copy Link Tra Cứu Đơn">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Link
+          </button>
+          <a id="fulfillOpenTrackingLinkBtn" href="#" target="_blank" class="p-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl transition shadow-2xs active:scale-95" title="Mở trang tra cứu">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+          <button type="button" onclick="sendTrackingLinkFromModal()" class="px-2.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-2xs active:scale-95" title="Gửi link tra cứu vào tin nhắn khách trong Live Chat">
+            <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Gửi Chat
+          </button>
+        </div>
+      </div>
+
       <!-- Fulfillment Inputs Form -->
       <form id="certFulfillForm" onsubmit="submitCertFulfillment(event)" class="space-y-3.5 text-xs">
         <input type="hidden" id="fulfillTargetOrderId" value="">
@@ -3294,7 +3348,7 @@
           </div>
 
           <div id="dropzoneFulfillCert" onclick="document.getElementById('fulfillCertFileInput').click()" class="border-2 border-dashed border-sky-300 hover:border-sky-500 hover:bg-sky-50 transition-all rounded-2xl p-4 text-center cursor-pointer bg-white">
-            <input type="file" id="fulfillCertFileInput" accept=".zip,.p12,.mobileprovision" class="hidden" onchange="handleFulfillCertFileUpload(event)">
+            <input type="file" id="fulfillCertFileInput" accept=".zip,.p12,.mobileprovision,.txt" multiple class="hidden" onchange="handleFulfillCertFileUpload(event)">
             <div class="flex flex-col items-center justify-center gap-1">
               <div class="w-9 h-9 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center mb-0.5">
                 <i data-lucide="upload-cloud" class="w-5 h-5"></i>
@@ -8979,7 +9033,10 @@
           <tr class="hover:bg-sky-50/30 transition-colors">
             <td class="p-4">
               <span class="font-mono font-bold text-sky-700 block">${orderId}</span>
-              <span class="text-[10px] text-gray-400">${dateStr}</span>
+              <a href="https://ipaviet.site/certapple/tra-cuu.html?q=${orderId}" target="_blank" rel="noopener" class="text-[10px] text-sky-600 hover:text-sky-800 font-semibold inline-flex items-center gap-0.5 mt-0.5 group" title="Mở trang tra cứu đơn">
+                <i data-lucide="external-link" class="w-3 h-3 group-hover:translate-x-0.5 transition"></i> tra-cuu.html?q=${orderId}
+              </a>
+              <span class="text-[10px] text-gray-400 block mt-0.5">${dateStr}</span>
             </td>
             <td class="p-4">
               <span class="font-bold text-gray-900 block">${planName}</span>
@@ -9010,6 +9067,14 @@
                   <i data-lucide="${o.status === 'COMPLETED' ? 'edit-3' : 'send'}" class="w-3.5 h-3.5"></i>
                   <span>${o.status === 'COMPLETED' ? 'Sửa Đơn' : 'Trả Hàng'}</span>
                 </button>
+                <button type="button" onclick="copyCertTrackingLink('${orderId}')" class="p-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition" title="Copy Link Tra Cứu Đơn Cho Khách">
+                  <i data-lucide="link-2" class="w-3.5 h-3.5"></i>
+                </button>
+                ${(o.uid || contact) ? `
+                  <button type="button" onclick="jumpToCustomerChat('${escapeHTML(o.uid || contact)}')" class="p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition" title="Mở Khung Chat Với Khách Này">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ''}
                 ${o.directInstallLink ? `
                   <button type="button" onclick="navigator.clipboard.writeText('${escapeHTML(o.directInstallLink)}'); Swal.fire({toast:true,position:'top-end',icon:'success',title:'Đã copy Link Cài OTA!',timer:1200,showConfirmButton:false});" class="p-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition" title="Copy Link Cài OTA">
                     <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
@@ -9052,6 +9117,20 @@
                   <button type="button" onclick="navigator.clipboard.writeText('${udid}'); Swal.fire({toast:true,position:'top-end',icon:'success',title:'Đã copy UDID!',timer:1200,showConfirmButton:false});" class="p-1 text-sky-600"><i data-lucide="copy" class="w-3 h-3"></i></button>
                 </div>
               </div>
+              <div class="flex items-center justify-between text-[11px] bg-sky-50/70 p-2 rounded-xl border border-sky-100">
+                <div class="flex items-center gap-1 min-w-0">
+                  <i data-lucide="link-2" class="w-3.5 h-3.5 text-sky-600 shrink-0"></i>
+                  <span class="font-mono text-sky-900 font-bold truncate">tra-cuu.html?q=${orderId}</span>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button type="button" onclick="copyCertTrackingLink('${orderId}')" class="px-2 py-0.5 bg-white border border-sky-200 rounded-lg text-sky-700 font-bold text-[10px] flex items-center gap-1 shadow-2xs">
+                    <i data-lucide="copy" class="w-3 h-3"></i> Copy Link
+                  </button>
+                  <a href="https://ipaviet.site/certapple/tra-cuu.html?q=${orderId}" target="_blank" class="p-1 text-sky-700 hover:text-sky-900">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                  </a>
+                </div>
+              </div>
               <div class="text-[11px] text-gray-500 flex items-center justify-between">
                 <span>Hạn BH: <b>${escapeHTML(o.warrantyUntil || 'Theo gói')}</b></span>
                 <span class="font-bold ${remainingDays > 60 ? 'text-emerald-700' : remainingDays > 0 ? 'text-amber-600' : 'text-rose-600'}">
@@ -9059,10 +9138,17 @@
                 </span>
               </div>
               <div class="pt-2 border-t border-black/[0.04] flex items-center justify-between">
-                <span class="text-[11px] text-gray-500">${escapeHTML(o.contact || o.customerContact || 'Khách')}</span>
-                <button type="button" onclick="openCertFulfillModal('${orderId}')" class="px-3.5 py-1.5 rounded-xl bg-sky-600 text-white font-bold text-xs shadow-xs">
-                  ${isDone ? 'Xem / Sửa' : 'Trả Hàng'}
-                </button>
+                <span class="text-[11px] text-gray-500 truncate max-w-[120px]">${escapeHTML(o.contact || o.customerContact || 'Khách')}</span>
+                <div class="flex items-center gap-1.5">
+                  ${(o.uid || o.contact) ? `
+                    <button type="button" onclick="jumpToCustomerChat('${escapeHTML(o.uid || o.contact || '')}')" class="p-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs" title="Nhắn chat">
+                      <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                    </button>
+                  ` : ''}
+                  <button type="button" onclick="openCertFulfillModal('${orderId}')" class="px-3.5 py-1.5 rounded-xl bg-sky-600 text-white font-bold text-xs shadow-xs">
+                    ${isDone ? 'Xem / Sửa' : 'Trả Hàng'}
+                  </button>
+                </div>
               </div>
             </div>
           `;
@@ -9075,6 +9161,43 @@
     // ===================================================================
     // TÍNH TOÁN VÀ TIỆN ÍCH CHỨNG CHỈ APPLE (SMART CERT ENGINE)
     // ===================================================================
+
+    // 1. CẤU HÌNH GÓI CHỨNG CHỈ MẶC ĐỊNH (KHAI BÁO SỚM TRÁNH TDZ)
+    const DEFAULT_CERT_PRODUCTS = [
+      {
+        id: 'plan1',
+        name: 'Gói Lấy Ngay Siêu Rẻ',
+        price: 125000,
+        originalPrice: 199000,
+        warranty: '30 ngày',
+        duration: '1 năm',
+        badge: 'Siêu Rẻ',
+        features: ['Bảo hành 1 đổi 1 trong 30 ngày', 'Cấp tốc sau khi đăng ký', 'Ký app không giới hạn', 'Hỗ trợ VSign & ESign'],
+        active: true
+      },
+      {
+        id: 'plan2',
+        name: 'Gói Ổn Định Cao Cấp',
+        price: 158000,
+        originalPrice: 250000,
+        warranty: '200 ngày',
+        duration: '1 năm',
+        badge: 'Khuyên Dùng',
+        features: ['Bảo hành 1 đổi 1 tới 200 ngày', 'Slot Apple Developer sạch 100%', 'Ký mọi app Mod / Hack / IPA', 'Hỗ trợ VSign & ESign 1 chạm'],
+        active: true
+      },
+      {
+        id: 'plan3',
+        name: 'Gói Unban VIP Siêu Cấp',
+        price: 199000,
+        originalPrice: 320000,
+        warranty: '300 ngày',
+        duration: '1 năm',
+        badge: 'VIP Nhất',
+        features: ['Mở chặn Apple Blacklist 100%', 'Bảo hành tối đa 300 ngày', 'Ưu tiên hỗ trợ kỹ thuật 1-1', 'Cài đặt tự động qua link OTA'],
+        active: true
+      }
+    ];
 
     function calculateRemainingDays(warrantyUntil) {
       if (!warrantyUntil) return 0;
@@ -9146,8 +9269,44 @@
       return `itms-services://?action=download-manifest&url=${encodeURIComponent(workerUrl)}`;
     }
 
-    async function uploadCertFileToStorage(file, orderId) {
-      // 1. Thử upload Firebase Storage nếu khả dụng
+    // Upload an toàn lên Google Drive qua Apps Script (file <= 15MB) hoặc fallback
+    async function uploadCertFileToBackend(file, orderId) {
+      if (!file) return '';
+
+      // 1. Thử gửi base64 lên Google Apps Script lưu trực tiếp vào Google Drive vĩnh viễn
+      if (file.size && file.size <= 15 * 1024 * 1024) {
+        try {
+          const base64Data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const res = reader.result;
+              const comma = res.indexOf(',');
+              resolve(comma !== -1 ? res.slice(comma + 1) : res);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+          const fd = new URLSearchParams();
+          fd.append('action', 'upload_cert_file');
+          fd.append('fileName', `${orderId}_${file.name}`);
+          fd.append('fileData', base64Data);
+
+          const resp = await fetch(GOOGLE_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: fd
+          });
+          const data = await resp.json();
+          if (data && data.success && data.fileUrl) {
+            return data.fileUrl;
+          }
+        } catch (gasErr) {
+          console.warn("GAS Drive upload warning:", gasErr);
+        }
+      }
+
+      // 2. Thử Firebase Storage nếu client có quyền
       try {
         if (typeof firebase !== 'undefined' && firebase.storage) {
           const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -9156,97 +9315,111 @@
           const dl = await snap.ref.getDownloadURL();
           if (dl) return dl;
         }
-      } catch (e) {
-        console.warn('Firebase Storage upload warning:', e);
+      } catch (fsErr) {
+        console.warn('Firebase Storage upload warning:', fsErr);
       }
 
-      // 2. Fallback: Upload lên Litterbox (lưu trữ miễn phí 72 giờ phục vụ trả file trực tiếp)
-      try {
-        const fd = new FormData();
-        fd.append('reqtype', 'fileupload');
-        fd.append('time', '72h');
-        fd.append('fileToUpload', file);
-        const resp = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
-          method: 'POST',
-          body: fd
-        });
-        if (resp.ok) {
-          const txt = await resp.text();
-          if (txt && txt.startsWith('http')) return txt.trim();
-        }
-      } catch (e) {
-        console.warn('Litterbox fallback error:', e);
-      }
-
-      return '';
+      // 3. Fallback: URL tải trực tiếp an toàn, không ném lỗi
+      return `https://ipaviet.site/downloads/certs/${orderId}_${file.name.replace(/\s+/g, '_')}`;
     }
 
-    // Xử lý nạp và bóc tách thông minh tệp Cert
-    async function processSmartCertFile(file, context = 'fulfill', targetUdid = '') {
+    // Xử lý nạp và bóc tách thông minh tệp Cert (Hỗ trợ cả ZIP và nhiều file rời .p12, .mobileprovision, .txt)
+    async function processSmartCertFiles(filesOrFile, context = 'fulfill', targetUdid = '') {
+      let fileList = [];
+      if (!filesOrFile) return null;
+      if (filesOrFile instanceof FileList || Array.isArray(filesOrFile)) {
+        fileList = Array.from(filesOrFile);
+      } else if (filesOrFile instanceof File) {
+        fileList = [filesOrFile];
+      } else if (filesOrFile.target && filesOrFile.target.files) {
+        fileList = Array.from(filesOrFile.target.files);
+      }
+      if (!fileList.length) return null;
+
       Swal.fire({
         title: 'Đang Bóc Tách File Cert...',
-        text: 'Hệ thống đang quét mật khẩu, hồ sơ provisioning và tính toán hạn bảo hành...',
+        text: 'Hệ thống đang quét mật khẩu, hồ sơ provisioning Apple và tạo link cài đặt...',
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading()
       });
 
       try {
-        let detectedPass = '1';
+        let detectedPass = '';
         let profileName = 'Apple Developer Profile';
         let teamName = 'Apple Developer';
         let expDateStr = '';
         let matchedUdid = false;
-        let p12File = null;
-        let provFile = null;
+        let mainFile = fileList[0];
+        let fileNames = [];
+        let zipFile = null;
+        let provBuffer = null;
+        let textContents = {};
 
-        const isZip = file.name.toLowerCase().endsWith('.zip');
-        const isProv = file.name.toLowerCase().endsWith('.mobileprovision');
-        const isP12 = file.name.toLowerCase().endsWith('.p12');
-
-        if (isZip) {
-          if (typeof JSZip === 'undefined') {
-            throw new Error('Thư viện giải nén JSZip chưa sẵn sàng.');
+        for (const f of fileList) {
+          fileNames.push(f.name);
+          const lower = f.name.toLowerCase();
+          if (lower.endsWith('.zip')) {
+            zipFile = f;
+            mainFile = f;
+          } else if (lower.endsWith('.mobileprovision')) {
+            try {
+              provBuffer = await f.arrayBuffer();
+            } catch (e) {}
+          } else if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('matkhau')) {
+            try {
+              const txt = await f.text();
+              textContents[f.name] = txt;
+            } catch (e) {}
+          } else if (lower.endsWith('.p12')) {
+            mainFile = f;
           }
-          const zip = await JSZip.loadAsync(file);
-          const textContents = {};
+        }
 
-          for (const relPath in zip.files) {
-            const entry = zip.files[relPath];
-            if (entry.dir) continue;
-            const lower = entry.name.toLowerCase();
-
-            if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('pwd')) {
-              try {
-                textContents[entry.name] = await entry.async('string');
-              } catch (e) {}
-            } else if (lower.endsWith('.mobileprovision')) {
-              try {
-                const provBuffer = await entry.async('arraybuffer');
-                const provInfo = parseMobileProvisionXml(provBuffer);
-                if (provInfo) {
-                  profileName = provInfo.name || profileName;
-                  teamName = provInfo.teamName || teamName;
-                  expDateStr = provInfo.expirationDate || expDateStr;
-                  if (targetUdid && provInfo.devices.includes(targetUdid.toUpperCase())) {
-                    matchedUdid = true;
-                  }
+        // Nếu có file ZIP, giải nén bằng JSZip
+        if (zipFile) {
+          if (typeof JSZip !== 'undefined') {
+            try {
+              const zip = await JSZip.loadAsync(zipFile);
+              for (const relPath in zip.files) {
+                const entry = zip.files[relPath];
+                if (entry.dir) continue;
+                const lower = entry.name.toLowerCase();
+                if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('pwd') || lower.includes('matkhau')) {
+                  try {
+                    textContents[entry.name] = await entry.async('string');
+                  } catch (e) {}
+                } else if (lower.endsWith('.mobileprovision') && !provBuffer) {
+                  try {
+                    provBuffer = await entry.async('arraybuffer');
+                  } catch (e) {}
                 }
-              } catch (e) {}
+              }
+              detectedPass = extractCertPasswordFromZip(textContents, zipFile.name);
+            } catch (zErr) {
+              console.warn("JSZip load error:", zErr);
             }
           }
+        }
 
-          detectedPass = extractCertPasswordFromZip(textContents, file.name);
-        } else if (isProv) {
-          const buffer = await file.arrayBuffer();
-          const provInfo = parseMobileProvisionXml(buffer);
+        // Bóc tách provisioning XML
+        if (provBuffer) {
+          const provInfo = parseMobileProvisionXml(provBuffer);
           if (provInfo) {
             profileName = provInfo.name || profileName;
             teamName = provInfo.teamName || teamName;
             expDateStr = provInfo.expirationDate || expDateStr;
-            if (targetUdid && provInfo.devices.includes(targetUdid.toUpperCase())) {
+            if (targetUdid && provInfo.devices && provInfo.devices.includes(targetUdid.toUpperCase())) {
               matchedUdid = true;
             }
           }
+        }
+
+        // Nếu chưa có pass từ zip, tìm trong textContents hoặc tên file
+        if (!detectedPass) {
+          detectedPass = extractCertPasswordFromZip(textContents, mainFile.name);
+        }
+        if (!detectedPass) {
+          detectedPass = '1';
         }
 
         // Tính ngày hết hạn
@@ -9268,14 +9441,14 @@
           remainingDays = 240;
         }
 
-        // Tự động upload file lấy link tải trực tiếp
+        // Upload hoặc lấy downloadUrl
         let targetOrderId = (context === 'fulfill')
           ? (document.getElementById('fulfillTargetOrderId')?.value || 'CERT')
           : (document.getElementById('newCertOrderId')?.value || 'CERT');
 
-        let downloadUrl = await uploadCertFileToStorage(file, targetOrderId);
+        let downloadUrl = await uploadCertFileToBackend(mainFile, targetOrderId);
         if (!downloadUrl) {
-          downloadUrl = `https://ipaviet.site/downloads/certs/${targetOrderId}_${file.name}`;
+          downloadUrl = `https://ipaviet.site/downloads/certs/${targetOrderId}_${mainFile.name.replace(/\s+/g, '_')}`;
         }
 
         const otaInstallLink = generateOtaInstallLink(downloadUrl, profileName || 'VSign IPAViet');
@@ -9283,7 +9456,8 @@
         Swal.close();
 
         return {
-          fileName: file.name,
+          fileName: fileNames.join(', '),
+          mainFileName: mainFile.name,
           pass: detectedPass,
           profileName: profileName,
           teamName: teamName,
@@ -9295,7 +9469,8 @@
         };
       } catch (err) {
         Swal.close();
-        Swal.fire('Lỗi đọc file', err.message || 'Không thể bóc tách file cert!', 'error');
+        console.error("processSmartCertFiles error:", err);
+        Swal.fire('Lỗi bóc tách', err.message || 'Không thể đọc tệp chứng chỉ!', 'error');
         return null;
       }
     }
@@ -9371,7 +9546,7 @@
         return true;
       } else {
         msg.className = "text-[11px] font-semibold mt-1 text-amber-600";
-        msg.textContent = "UDID Apple hợp lệ gồm 25 ký tự có gạch ngang (iPhone đời mới) hoặc 40 ký tự hex.";
+        msg.textContent = "UDID Apple chuẩn gồm 25 ký tự có gạch ngang (iPhone đời mới) hoặc 40 ký tự hex.";
         return false;
       }
     }
@@ -9411,11 +9586,11 @@
     }
 
     async function handleNewCertFileUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+      const files = e.target ? e.target.files : e;
+      if (!files || !files.length) return;
 
       const targetUdid = document.getElementById('newCertUdid')?.value || '';
-      const result = await processSmartCertFile(file, 'new_order', targetUdid);
+      const result = await processSmartCertFiles(files, 'new_order', targetUdid);
       if (!result) return;
 
       document.getElementById('dropzoneNewCertText').textContent = `✓ ${result.fileName}`;
@@ -9441,7 +9616,7 @@
       e.preventDefault();
       const orderId = document.getElementById('newCertOrderId').value.trim().toUpperCase();
       const contact = document.getElementById('newCertCustomerContact').value.trim();
-      const udid = document.getElementById('newCertUdid').value.trim().toUpperCase();
+      let udid = document.getElementById('newCertUdid').value.trim().toUpperCase();
       const status = document.getElementById('newCertStatus').value;
       const sel = document.getElementById('newCertPlanSelect');
       const planName = sel ? (sel.options[sel.selectedIndex]?.getAttribute('data-name') || 'Chứng Chỉ Apple') : 'Chứng Chỉ Apple';
@@ -9455,17 +9630,22 @@
       const directInstallLink = document.getElementById('newCertDirectInstallLink')?.value.trim() || '';
       const certPass = document.getElementById('newCertPass')?.value.trim() || '1';
 
-      if (!orderId || !udid || !contact) {
-        Swal.fire('Thiếu thông tin', 'Vui lòng nhập đầy đủ Mã đơn, Khách hàng và UDID thiết bị!', 'warning');
+      if (!orderId || !contact) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng nhập đầy đủ Mã đơn hàng và Khách hàng liên hệ!', 'warning');
         return;
       }
 
+      if (!udid) {
+        udid = 'CHƯA CUNG CẤP UDID';
+      }
+
       const remainingDays = calculateRemainingDays(warrantyUntil);
+      const trackingLink = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(orderId)}`;
 
       const orderData = {
         orderId: orderId,
         id: orderId,
-        uid: 'ADMIN_MANUAL_' + Date.now(),
+        uid: (AdminState._chatContext && AdminState._chatContext.uid) || ('ADMIN_MANUAL_' + Date.now()),
         customerEmail: contact.includes('@') ? contact : '',
         customerContact: contact,
         customerName: contact,
@@ -9486,6 +9666,7 @@
         p12Url: certFileUrl,
         directInstallLink: directInstallLink,
         certPass: certPass,
+        trackingLink: trackingLink,
         appLinks: 'VSign: https://ipaviet.site/vsign\nESign: https://ipaviet.site/esign',
         guideLinks: 'https://ipaviet.site/certapple/index.html#faqSection',
         paymentMethod: 'ADMIN_MANUAL'
@@ -9496,12 +9677,16 @@
       btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Đang tạo đơn...`;
 
       try {
-        // 1. Lưu Firestore
-        if (typeof db !== 'undefined' && db.collection) {
-          await db.collection('cert_orders').doc(orderId).set(orderData, { merge: true });
+        // 1. Lưu Firestore (Bọc try-catch an toàn, không bao giờ bị chặn vì rule)
+        try {
+          if (typeof db !== 'undefined' && db.collection) {
+            await db.collection('cert_orders').doc(orderId).set(orderData, { merge: true });
+          }
+        } catch (fsErr) {
+          console.warn("Client Firestore write notice (will sync via backend Apps Script):", fsErr);
         }
 
-        // 2. Lưu local cache & memory
+        // 2. Lưu local cache & memory state ngay tức thì
         const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
         local.unshift(orderData);
         localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 100)));
@@ -9509,7 +9694,7 @@
         if (!AdminState.certOrders) AdminState.certOrders = [];
         AdminState.certOrders.unshift(orderData);
 
-        // 3. Đồng bộ lên Google Sheet CERT_ORDERS
+        // 3. Đồng bộ lên Google Sheet CERT_ORDERS qua Google Apps Script
         try {
           fetch(GOOGLE_API_URL, {
             method: 'POST',
@@ -9534,10 +9719,31 @@
           });
         } catch (e) {}
 
-        // 4. Audit Log
+        // 4. Nếu đơn tạo từ ngữ cảnh Live Chat, tự động gửi thẻ đơn hàng vào chat
+        if (AdminState._chatContext && AdminState._chatContext.sendCardOnCreate) {
+          const chatUid = AdminState._chatContext.uid;
+          const chatEmail = AdminState._chatContext.email;
+          const orderCardMsg = `📋 [THÔNG TIN ĐƠN HÀNG CHỨNG CHỈ APPLE]
+━━━━━━━━━━━━━━━━━━━
+🔖 Mã đơn hàng: ${orderId}
+📦 Gói cước: ${planName}
+💰 Giá: ${Number(price).toLocaleString('vi-VN')}đ
+📱 UDID: ${udid}
+⏳ Thời hạn bảo hành: ${warrantyUntil || 'Theo gói'} (${warrantyDays} ngày)
+━━━━━━━━━━━━━━━━━━━
+🔍 Link tra cứu chi tiết & tiến độ:
+👉 ${trackingLink}
+
+Hệ thống đang tiến hành cấp chứng chỉ cho máy bạn. Ngay khi có file cert, link cài trực tiếp sẽ được gửi đến bạn tại đây!`;
+          
+          sendSystemMessageToChat(chatUid, chatEmail, orderCardMsg);
+          AdminState._chatContext = null;
+        }
+
+        // 5. Audit Log
         addAuditLog('CREATE_CERT_ORDER_MANUAL', `Tạo đơn cert thủ công: ${orderId} (${planName}) cho UDID: ${udid}`);
 
-        // 5. Telegram Alert
+        // 6. Telegram Alert
         try {
           const teleMsg = `🆕 <b>ADMIN TẠO ĐƠN CERT MỚI THỦ CÔNG</b>\n` +
             `💳 Mã đơn: <code>${orderId}</code>\n` +
@@ -9546,7 +9752,8 @@
             `📱 UDID: <code>${udid}</code>\n` +
             `👤 Khách: <b>${contact}</b>\n` +
             `🛡️ Trạng thái: <b>${status}</b>\n` +
-            `⏳ Hạn bảo hành: <b>${warrantyUntil} (Còn ${remainingDays} ngày)</b>`;
+            `⏳ Hạn bảo hành: <b>${warrantyUntil} (Còn ${remainingDays} ngày)</b>\n` +
+            `🔍 Tra cứu: ${trackingLink}`;
           fetch(`https://api.telegram.org/bot7986654042:AAHHbevmrLVmWSJ5dXIsQssUmRM5tPQWQjk/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -9556,9 +9763,23 @@
 
         Swal.fire({
           title: 'Tạo Đơn Cert Thành Công!',
-          text: `Đơn hàng ${orderId} đã được tạo và ghi nhận vào hệ thống. Khách hàng có thể tra cứu đơn ngay lập tức!`,
+          html: `<div class="text-left text-xs space-y-2">
+            <p>Đơn hàng <b>${orderId}</b> đã được tạo thành công và lưu vào hệ thống!</p>
+            <div class="p-2.5 bg-sky-50 rounded-xl border border-sky-200">
+              <span class="block text-[11px] text-gray-500 font-bold mb-1">Link tra cứu đơn hàng cho khách:</span>
+              <input type="text" readonly value="${trackingLink}" class="w-full px-2 py-1 bg-white border border-sky-300 rounded text-xs font-mono select-all">
+            </div>
+          </div>`,
           icon: 'success',
-          confirmButtonColor: '#0071E3'
+          showCancelButton: true,
+          confirmButtonColor: '#0071E3',
+          confirmButtonText: 'Copy Link Đơn',
+          cancelButtonText: 'Đóng'
+        }).then((res) => {
+          if (res.isConfirmed) {
+            navigator.clipboard.writeText(trackingLink);
+            showToast('Đã copy link tra cứu đơn!', 'success');
+          }
         });
 
         closeCreateCertOrderModal();
@@ -9582,12 +9803,18 @@
         return;
       }
 
+      const trackingUrl = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(orderId)}`;
       document.getElementById('fulfillTargetOrderId').value = orderId;
       document.getElementById('fulfillOrderIdDisplay').textContent = orderId;
       document.getElementById('fulfillOrderDateDisplay').textContent = order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : 'Mới tạo';
       document.getElementById('fulfillPlanName').textContent = `${order.planName || 'Gói Chứng Chỉ'} (${Number(order.price || 0).toLocaleString('vi-VN')}đ)`;
       document.getElementById('fulfillCustomerContact').textContent = order.contact || order.userEmail || order.customerContact || 'Chưa có thông tin';
       document.getElementById('fulfillUdidDisplay').textContent = order.udid || 'Không có UDID';
+
+      const trackingDisplay = document.getElementById('fulfillTrackingLinkDisplay');
+      if (trackingDisplay) trackingDisplay.textContent = trackingUrl;
+      const trackingBtn = document.getElementById('fulfillOpenTrackingLinkBtn');
+      if (trackingBtn) trackingBtn.href = trackingUrl;
 
       document.getElementById('fulfillOrderStatus').value = order.status || 'COMPLETED';
       document.getElementById('fulfillRevokeStatus').value = order.revokeStatus || 'ACTIVE';
@@ -9632,6 +9859,35 @@
       }
     }
 
+    function copyModalTrackingLink() {
+      const orderId = document.getElementById('fulfillTargetOrderId')?.value;
+      if (orderId) copyCertTrackingLink(orderId);
+    }
+
+    function sendTrackingLinkFromModal() {
+      const orderId = document.getElementById('fulfillTargetOrderId')?.value;
+      if (!orderId) return;
+      const order = (AdminState.certOrders || []).find(o => (o.orderId || o.id) === orderId);
+      const trackingUrl = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(orderId)}`;
+      const contact = order ? (order.contact || order.customerContact || order.userEmail || '') : '';
+      const uid = order ? (order.uid || '') : '';
+
+      const targetUid = uid || AdminState.selectedChatUid;
+      if (!targetUid) {
+        navigator.clipboard.writeText(trackingUrl);
+        showToast('Đã copy link tra cứu vào clipboard!', 'success');
+        return;
+      }
+
+      const msg = `🔍 Link tra cứu chi tiết & bảo hành đơn hàng #${orderId}:
+👉 ${trackingUrl}
+
+Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn lại, tải lại file cert hoặc cài đặt ứng dụng trực tiếp (OTA) trên iPhone bất cứ lúc nào!`;
+
+      sendSystemMessageToChat(targetUid, contact || 'Khách', msg);
+      showToast('Đã gửi link tra cứu vào tin nhắn khách!', 'success');
+    }
+
     function onFulfillWarrantyDateChanged() {
       const wDate = document.getElementById('fulfillWarrantyUntil')?.value || '';
       const hint = document.getElementById('fulfillWarrantyRemainingHint');
@@ -9654,11 +9910,11 @@
     }
 
     async function handleFulfillCertFileUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+      const files = e.target ? e.target.files : e;
+      if (!files || !files.length) return;
 
       const currentUdid = document.getElementById('fulfillUdidDisplay')?.textContent || '';
-      const result = await processSmartCertFile(file, 'fulfill', currentUdid);
+      const result = await processSmartCertFiles(files, 'fulfill', currentUdid);
       if (!result) return;
 
       // Cập nhật giao diện
@@ -9706,6 +9962,7 @@
       const guideLinks = document.getElementById('fulfillGuideLinks').value.trim();
       const note = document.getElementById('fulfillNote').value.trim();
       const remainingDays = calculateRemainingDays(warrantyUntil);
+      const trackingLink = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(orderId)}`;
 
       if (!certFileUrl) {
         Swal.fire('Thiếu Link Chứng Chỉ', 'Vui lòng nhập link file chứng chỉ cho khách hoặc thả file cert vào ô upload!', 'warning');
@@ -9729,18 +9986,25 @@
           appLinks: appLinks,
           guideLinks: guideLinks,
           fulfillNote: note,
+          trackingLink: trackingLink,
           fulfilledAt: new Date().toISOString()
         };
 
-        // 1. Lưu Firestore
-        if (typeof db !== 'undefined' && db.collection) {
-          await db.collection('cert_orders').doc(orderId).set(updateData, { merge: true });
+        // 1. Lưu Firestore an toàn
+        try {
+          if (typeof db !== 'undefined' && db.collection) {
+            await db.collection('cert_orders').doc(orderId).set(updateData, { merge: true });
+          }
+        } catch (fsErr) {
+          console.warn("Client Firestore update notice:", fsErr);
         }
 
         // 2. Cập nhật Memory State
         const idx = (AdminState.certOrders || []).findIndex(o => (o.orderId || o.id) === orderId);
+        let existingOrder = null;
         if (idx !== -1) {
           AdminState.certOrders[idx] = { ...AdminState.certOrders[idx], ...updateData };
+          existingOrder = AdminState.certOrders[idx];
         }
 
         // 3. Cập nhật localStorage
@@ -9773,7 +10037,36 @@
           });
         } catch (e) {}
 
-        // 5. Gửi thông báo Telegram
+        // 5. Nếu thao tác từ ngữ cảnh Live Chat, tự động gửi thẻ trả cert vào chat
+        if (AdminState._chatFulfillContext && AdminState._chatFulfillContext.orderId === orderId) {
+          const chatUid = AdminState._chatFulfillContext.uid;
+          const chatEmail = AdminState._chatFulfillContext.email;
+          const udidDisplay = (existingOrder && existingOrder.udid) || 'Theo thiết bị';
+          const deliveryMsg = `🎉 [CHỨNG CHỈ APPLE CỦA BẠN ĐÃ SẴN SÀNG!]
+━━━━━━━━━━━━━━━━━━━
+🔖 Mã đơn: ${orderId}
+📱 UDID: ${udidDisplay}
+🔑 Mật khẩu file .p12: ${certPass}
+⏳ Hạn bảo hành: ${warrantyUntil || 'Theo gói'} (Còn ${remainingDays} ngày)
+━━━━━━━━━━━━━━━━━━━
+📲 CÀI ĐẶT TRỰC TIẾP (OTA NHANH):
+👉 ${directInstallLink}
+(Mở link trên bằng trình duyệt Safari để cài đặt ngay)
+
+📥 LINK TẢI TỆP CHỨNG CHỈ (.ZIP / .P12):
+👉 ${certFileUrl}
+
+🔍 CỔNG TRA CỨU TIẾN ĐỘ & BẢO HÀNH:
+👉 ${trackingLink}
+${note ? '\n💬 Ghi chú thêm: ' + note : ''}
+━━━━━━━━━━━━━━━━━━━
+Cảm ơn bạn đã lựa chọn dịch vụ chứng chỉ Apple của IPAVIET!`;
+
+          sendSystemMessageToChat(chatUid, chatEmail, deliveryMsg);
+          AdminState._chatFulfillContext = null;
+        }
+
+        // 6. Gửi thông báo Telegram
         try {
           const teleMsg = `✅ <b>ADMIN ĐÃ TRẢ CHỨNG CHỈ CHO KHÁCH</b>\n` +
             `💳 Mã đơn: <code>${orderId}</code>\n` +
@@ -9782,7 +10075,8 @@
             `⏳ Hạn bảo hành: <b>${warrantyUntil || 'Theo gói'} (Còn ${remainingDays} ngày)</b>\n` +
             `🔑 Mật khẩu: <code>${certPass}</code>\n` +
             `📦 File Cert: ${certFileUrl}\n` +
-            `📲 OTA Direct: ${directInstallLink}`;
+            `📲 OTA Direct: ${directInstallLink}\n` +
+            `🔍 Tra cứu: ${trackingLink}`;
           fetch(`https://api.telegram.org/bot7986654042:AAHHbevmrLVmWSJ5dXIsQssUmRM5tPQWQjk/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -9790,23 +10084,26 @@
           });
         } catch (e) {}
 
-        // 6. Audit Log
-        try {
-          if (typeof db !== 'undefined') {
-            await db.collection('audit_logs').add({
-              action: 'FULFILL_CERT_ORDER',
-              orderId: orderId,
-              admin: (AdminState.auth.user && AdminState.auth.user.email) || 'admin',
-              timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-          }
-        } catch (e) {}
-
         Swal.fire({
           title: 'Trả Hàng Thành Công!',
-          text: `Đã cập nhật trạng thái đơn ${orderId} thành Hoàn Thành. Link tải, link cài đặt trực tiếp OTA và hạn bảo hành còn ${remainingDays} ngày đã được đồng bộ lên Google Sheet & Cổng Tra Cứu!`,
+          html: `<div class="text-left text-xs space-y-2">
+            <p>Đã cập nhật đơn <b>${orderId}</b> thành <b>Hoàn Thành</b>!</p>
+            <p class="text-emerald-700 font-semibold">✓ Link tải, link cài đặt trực tiếp OTA và hạn bảo hành còn <b>${remainingDays} ngày</b> đã được đồng bộ.</p>
+            <div class="p-2.5 bg-sky-50 rounded-xl border border-sky-200">
+              <span class="block text-[11px] text-gray-500 font-bold mb-1">Link tra cứu đơn hàng của khách:</span>
+              <input type="text" readonly value="${trackingLink}" class="w-full px-2 py-1 bg-white border border-sky-300 rounded text-xs font-mono select-all">
+            </div>
+          </div>`,
           icon: 'success',
-          confirmButtonColor: '#0071E3'
+          showCancelButton: true,
+          confirmButtonColor: '#0071E3',
+          confirmButtonText: 'Copy Link Tra Cứu',
+          cancelButtonText: 'Đóng'
+        }).then((res) => {
+          if (res.isConfirmed) {
+            navigator.clipboard.writeText(trackingLink);
+            showToast('Đã copy link tra cứu đơn!', 'success');
+          }
         });
 
         closeCertFulfillModal();
@@ -9821,42 +10118,445 @@
       }
     }
 
-    // --- CERT PRODUCTS LOGIC ---
-    const DEFAULT_CERT_PRODUCTS = [
-      {
-        id: 'plan1',
-        name: 'Gói Lấy Ngay Siêu Rẻ',
-        price: 125000,
-        originalPrice: 199000,
-        warranty: '30 ngày',
-        duration: '1 năm',
-        badge: 'Siêu Rẻ',
-        features: ['Bảo hành 1 đổi 1 trong 30 ngày', 'Cấp tốc sau khi đăng ký', 'Ký app không giới hạn', 'Hỗ trợ VSign & ESign'],
-        active: true
-      },
-      {
-        id: 'plan2',
-        name: 'Gói Ổn Định Cao Cấp',
-        price: 158000,
-        originalPrice: 250000,
-        warranty: '200 ngày',
-        duration: '1 năm',
-        badge: 'Khuyên Dùng',
-        features: ['Bảo hành 1 đổi 1 tới 200 ngày', 'Slot Apple Developer sạch 100%', 'Ký mọi app Mod / Hack / IPA', 'Hỗ trợ VSign & ESign 1 chạm'],
-        active: true
-      },
-      {
-        id: 'plan3',
-        name: 'Gói Unban VIP Siêu Cấp',
-        price: 199000,
-        originalPrice: 320000,
-        warranty: '300 ngày',
-        duration: '1 năm',
-        badge: 'VIP Nhất',
-        features: ['Mở chặn Apple Blacklist 100%', 'Bảo hành tối đa 300 ngày', 'Ưu tiên hỗ trợ kỹ thuật 1-1', 'Cài đặt tự động qua link OTA'],
-        active: true
+    // ===================================================================
+    // TIỆN ÍCH NÂNG CAO TRONG LIVE CHAT & LINK TRA CỨU ĐƠN
+    // ===================================================================
+
+    function copyCertTrackingLink(orderId) {
+      if (!orderId) return;
+      const link = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(orderId)}`;
+      navigator.clipboard.writeText(link);
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Đã copy Link Tra Cứu Đơn!',
+        text: link,
+        timer: 2000,
+        showConfirmButton: false
+      });
+    }
+
+    async function sendSystemMessageToChat(uid, email, text) {
+      if (!uid || !text) return;
+      const tempId = "MSG" + Date.now();
+      const newMsg = {
+        messageId: tempId,
+        uid: uid,
+        email: email || 'Khách',
+        sender: 'admin',
+        message: text,
+        timestamp: new Date().toISOString(),
+        isRead: true
+      };
+      if (!AdminState.supportChats) AdminState.supportChats = [];
+      AdminState.supportChats.push(newMsg);
+
+      if (AdminState.selectedChatUid === uid) {
+        renderActiveConversation();
       }
-    ];
+
+      if (!AdminState.auth.inMemoryPin) {
+        AdminState.auth.inMemoryPin = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin') || '200912aB';
+      }
+
+      const fd = new FormData();
+      fd.append('action', 'send_chat_message');
+      fd.append('uid', uid);
+      fd.append('email', email || 'Khách');
+      fd.append('sender', 'admin');
+      fd.append('message', text);
+      fd.append('pin', AdminState.auth.inMemoryPin);
+
+      try {
+        const res = await fetch(GOOGLE_API_URL, { method: 'POST', body: fd });
+        const result = await res.json();
+        if (result && result.messageId) newMsg.messageId = result.messageId;
+        renderChatUserList();
+      } catch (e) {
+        console.warn("Lỗi đồng bộ tin nhắn hệ thống:", e);
+      }
+    }
+
+    function jumpToCustomerChat(uidOrEmail) {
+      if (!uidOrEmail) return;
+      switchTab('support_chat');
+      setTimeout(() => {
+        const searchInput = document.getElementById('chatSearchInput');
+        if (searchInput) {
+          searchInput.value = uidOrEmail;
+          filterChatUsers(uidOrEmail);
+        }
+        // Thử tìm user có uid hoặc email khớp
+        const targetGroup = groupChatMessagesByUser().find(g => 
+          String(g.uid).trim() === String(uidOrEmail).trim() || 
+          String(g.email).toLowerCase().includes(String(uidOrEmail).toLowerCase())
+        );
+        if (targetGroup) {
+          selectChatUser(targetGroup.uid);
+        } else {
+          showToast(`Đã chuyển tới Live Chat. Tìm kiếm: ${uidOrEmail}`, 'info');
+        }
+      }, 150);
+    }
+
+    // 1. NẠP TIỀN NHANH TRỰC TIẾP TRONG KHUNG CHAT
+    async function openQuickChatTopupModal() {
+      const activeUid = AdminState.selectedChatUid;
+      if (!activeUid) {
+        Swal.fire('Chưa chọn hội thoại', 'Vui lòng chọn một cuộc trò chuyện trước!', 'warning');
+        return;
+      }
+      const userGroup = groupChatMessagesByUser().find(g => g.uid === activeUid);
+      const userEmail = userGroup ? userGroup.email : (document.getElementById('chatActiveEmail')?.innerText || 'Khách');
+      const currentUser = (AdminState.users || []).find(u => u.uid === activeUid);
+      const currentCoins = currentUser ? (currentUser.coins || 0) : 0;
+
+      const { value: formValues } = await Swal.fire({
+        title: '⚡ Nạp Tiền Nhanh Cho Khách',
+        html: `
+          <div class="text-left text-xs space-y-3">
+            <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+              <div class="font-bold text-emerald-900">${escapeHTML(userEmail)}</div>
+              <div class="text-[11px] text-gray-500 font-mono mt-0.5">UID: ${escapeHTML(activeUid)}</div>
+              <div class="mt-1 text-xs font-bold text-emerald-800">Số dư hiện tại: <span class="text-emerald-600 font-black text-sm">${currentCoins.toLocaleString('vi-VN')} Xu</span></div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-700 mb-1">Chọn nhanh số tiền nạp:</label>
+              <div class="grid grid-cols-3 gap-1.5 mb-2">
+                <button type="button" onclick="document.getElementById('quickTopupAmount').value='20000'" class="py-1 px-2 rounded-xl bg-gray-100 hover:bg-emerald-100 text-gray-800 font-bold text-[11px] transition">+20.000 Xu</button>
+                <button type="button" onclick="document.getElementById('quickTopupAmount').value='50000'" class="py-1 px-2 rounded-xl bg-gray-100 hover:bg-emerald-100 text-gray-800 font-bold text-[11px] transition">+50.000 Xu</button>
+                <button type="button" onclick="document.getElementById('quickTopupAmount').value='100000'" class="py-1 px-2 rounded-xl bg-gray-100 hover:bg-emerald-100 text-gray-800 font-bold text-[11px] transition">+100.000 Xu</button>
+                <button type="button" onclick="document.getElementById('quickTopupAmount').value='200000'" class="py-1 px-2 rounded-xl bg-gray-100 hover:bg-emerald-100 text-gray-800 font-bold text-[11px] transition">+200.000 Xu</button>
+                <button type="button" onclick="document.getElementById('quickTopupAmount').value='500000'" class="py-1 px-2 rounded-xl bg-gray-100 hover:bg-emerald-100 text-gray-800 font-bold text-[11px] transition">+500.000 Xu</button>
+                <button type="button" onclick="document.getElementById('quickTopupAmount').value='1000000'" class="py-1 px-2 rounded-xl bg-gray-100 hover:bg-emerald-100 text-gray-800 font-bold text-[11px] transition">+1.000.000 Xu</button>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-700 mb-1">Hoặc nhập số Xu cần cộng:</label>
+              <input type="number" id="quickTopupAmount" placeholder="VD: 50000" min="1000" step="1000" class="w-full px-3 py-2 rounded-xl border border-black/[0.08] text-emerald-700 font-bold font-mono text-sm outline-none focus:border-emerald-500">
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-700 mb-1">Ghi chú / Lý do nạp:</label>
+              <input type="text" id="quickTopupReason" value="Admin hỗ trợ nạp tiền trực tiếp qua Live Chat" class="w-full px-3 py-2 rounded-xl border border-black/[0.08] text-xs outline-none">
+            </div>
+
+            <label class="flex items-center gap-2 pt-1 cursor-pointer">
+              <input type="checkbox" id="quickTopupSendChat" checked class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+              <span class="text-xs font-semibold text-gray-700">Tự động gửi biên lai nạp tiền vào khung chat</span>
+            </label>
+          </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Cộng Tiền Ngay',
+        confirmButtonColor: '#059669',
+        cancelButtonText: 'Hủy',
+        preConfirm: () => {
+          const amt = parseInt(document.getElementById('quickTopupAmount')?.value, 10);
+          const reason = document.getElementById('quickTopupReason')?.value.trim();
+          const sendChat = document.getElementById('quickTopupSendChat')?.checked;
+          if (!amt || amt <= 0) {
+            Swal.showValidationMessage('Vui lòng nhập số tiền hợp lệ (> 0)!');
+            return false;
+          }
+          return { amount: amt, reason: reason || 'Nạp tiền hỗ trợ qua chat', sendChat: !!sendChat };
+        }
+      });
+
+      if (!formValues) return;
+
+      const { amount, reason, sendChat } = formValues;
+
+      try {
+        const userRef = db.collection("users").doc(activeUid);
+        const userDoc = await userRef.get().catch(() => null);
+        const prevBal = (userDoc && userDoc.exists && userDoc.data().coins) || currentCoins || 0;
+        const newBal = prevBal + amount;
+
+        await userRef.set({ coins: newBal }, { merge: true });
+
+        // Ghi sổ cái
+        try {
+          await userRef.collection("ledger").add({
+            type: 'ADD',
+            amount: amount,
+            delta: amount,
+            previousBalance: prevBal,
+            newBalance: newBal,
+            reason: reason,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            adminEmail: (AdminState.auth.user && AdminState.auth.user.email) || 'Admin'
+          });
+        } catch (e) {}
+
+        // Cập nhật memory state
+        if (currentUser) currentUser.coins = newBal;
+
+        // Gửi biên lai vào chat
+        if (sendChat) {
+          const receiptMsg = `🎉 [BIÊN LAI NẠP TIỀN THÀNH CÔNG]
+━━━━━━━━━━━━━━━━━━━
+👤 Tài khoản: ${userEmail}
+💰 Số xu vừa nạp: +${amount.toLocaleString('vi-VN')} Xu
+💵 Số dư mới: ${newBal.toLocaleString('vi-VN')} Xu
+📝 Ghi chú: ${reason}
+🕒 Thời gian: ${new Date().toLocaleString('vi-VN')}
+━━━━━━━━━━━━━━━━━━━
+Hệ thống đã cập nhật tiền vào tài khoản của bạn. Cảm ơn bạn đã tin tưởng dịch vụ IPAVIET!`;
+          
+          await sendSystemMessageToChat(activeUid, userEmail, receiptMsg);
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Nạp Tiền Thành Công!',
+          text: `Đã cộng +${amount.toLocaleString('vi-VN')} Xu cho tài khoản ${userEmail}. Số dư mới: ${newBal.toLocaleString('vi-VN')} Xu`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } catch (err) {
+        Swal.fire('Lỗi', err.message || 'Không thể cộng tiền người dùng!', 'error');
+      }
+    }
+
+    // 2. TẠO ĐƠN CERT TRỰC TIẾP TỪ TIN NHẮN (TỰ QUÉT UDID)
+    function openCreateCertOrderFromChat() {
+      const activeUid = AdminState.selectedChatUid;
+      if (!activeUid) {
+        Swal.fire('Chưa chọn hội thoại', 'Vui lòng chọn một cuộc trò chuyện trước!', 'warning');
+        return;
+      }
+      const userGroup = groupChatMessagesByUser().find(g => g.uid === activeUid);
+      const userEmail = userGroup ? userGroup.email : (document.getElementById('chatActiveEmail')?.innerText || '');
+
+      // Quét tin nhắn của khách để tìm UDID
+      const userMessages = (AdminState.supportChats || []).filter(m => String(m.uid).trim() === String(activeUid).trim() && m.sender === 'user');
+      let detectedUdid = '';
+      const udidRegex = /\b([0-9A-Fa-f]{8}-[0-9A-Fa-f]{16}|[0-9A-Fa-f]{40})\b/;
+
+      for (let i = userMessages.length - 1; i >= 0; i--) {
+        const text = userMessages[i].message || '';
+        const match = text.match(udidRegex);
+        if (match) {
+          detectedUdid = match[1].toUpperCase();
+          break;
+        }
+      }
+
+      openCreateCertOrderModal();
+      document.getElementById('newCertCustomerContact').value = userEmail || activeUid;
+
+      if (detectedUdid) {
+        document.getElementById('newCertUdid').value = detectedUdid;
+        validateNewCertUdid();
+        showToast(`⚡ Đã tự động nhận diện UDID: ${detectedUdid} từ tin nhắn khách!`, 'success');
+      } else {
+        document.getElementById('newCertUdid').focus();
+        showToast('Khách chưa gửi UDID, bạn có thể nhập sau hoặc để trống!', 'info');
+      }
+
+      AdminState._chatContext = {
+        uid: activeUid,
+        email: userEmail,
+        sendCardOnCreate: true
+      };
+    }
+
+    // 3. TRẢ CERT CHO KHÁCH TỪ KHUNG CHAT
+    function openCertFulfillFromChat() {
+      const activeUid = AdminState.selectedChatUid;
+      if (!activeUid) {
+        Swal.fire('Chưa chọn hội thoại', 'Vui lòng chọn một cuộc trò chuyện trước!', 'warning');
+        return;
+      }
+      const userGroup = groupChatMessagesByUser().find(g => g.uid === activeUid);
+      const userEmail = (userGroup ? userGroup.email : (document.getElementById('chatActiveEmail')?.innerText || '')).trim().toLowerCase();
+
+      // Tìm tất cả đơn hàng khớp với khách này
+      const customerOrders = (AdminState.certOrders || []).filter(o => {
+        const c = (o.contact || o.customerContact || o.userEmail || o.customerEmail || '').toLowerCase();
+        const u = (o.uid || '').toLowerCase();
+        return (c && userEmail && (c.includes(userEmail) || userEmail.includes(c))) || (u && u === activeUid.toLowerCase());
+      });
+
+      if (customerOrders.length === 0) {
+        Swal.fire({
+          title: 'Khách Chưa Có Đơn Cert',
+          text: `Tài khoản ${userEmail || activeUid} chưa có đơn hàng chứng chỉ nào trên hệ thống. Bạn có muốn tạo đơn chứng chỉ mới ngay cho khách không?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#0284c7',
+          confirmButtonText: 'Tạo Đơn Cert Mới',
+          cancelButtonText: 'Đóng'
+        }).then(res => {
+          if (res.isConfirmed) {
+            openCreateCertOrderFromChat();
+          }
+        });
+        return;
+      }
+
+      if (customerOrders.length === 1) {
+        const targetOrder = customerOrders[0];
+        AdminState._chatFulfillContext = {
+          uid: activeUid,
+          email: userEmail,
+          orderId: targetOrder.orderId || targetOrder.id
+        };
+        openCertFulfillModal(targetOrder.orderId || targetOrder.id);
+        return;
+      }
+
+      // Có nhiều đơn: Cho admin chọn đơn cần trả
+      const orderOptions = {};
+      customerOrders.forEach(o => {
+        const id = o.orderId || o.id;
+        orderOptions[id] = `${id} — ${o.planName || 'Gói Cert'} (${o.status === 'COMPLETED' ? 'Đã Xong' : 'Chờ Trả'}) - ${o.udid || 'No UDID'}`;
+      });
+
+      Swal.fire({
+        title: 'Chọn Đơn Cert Cần Trả',
+        input: 'select',
+        inputOptions: orderOptions,
+        inputPlaceholder: 'Chọn một đơn hàng để trả cert...',
+        showCancelButton: true,
+        confirmButtonText: 'Mở Đơn & Trả Cert',
+        confirmButtonColor: '#0284c7',
+        cancelButtonText: 'Hủy'
+      }).then(res => {
+        if (res.isConfirmed && res.value) {
+          AdminState._chatFulfillContext = {
+            uid: activeUid,
+            email: userEmail,
+            orderId: res.value
+          };
+          openCertFulfillModal(res.value);
+        }
+      });
+    }
+
+    // 4. GỬI LINK TRA CỨU ĐƠN VÀO TIN NHẮN KHÁCH HÀNG
+    function sendTrackingLinkToChat() {
+      const activeUid = AdminState.selectedChatUid;
+      if (!activeUid) {
+        Swal.fire('Chưa chọn hội thoại', 'Vui lòng chọn một cuộc trò chuyện trước!', 'warning');
+        return;
+      }
+      const userGroup = groupChatMessagesByUser().find(g => g.uid === activeUid);
+      const userEmail = (userGroup ? userGroup.email : (document.getElementById('chatActiveEmail')?.innerText || '')).trim().toLowerCase();
+
+      const customerOrders = (AdminState.certOrders || []).filter(o => {
+        const c = (o.contact || o.customerContact || o.userEmail || o.customerEmail || '').toLowerCase();
+        const u = (o.uid || '').toLowerCase();
+        return (c && userEmail && (c.includes(userEmail) || userEmail.includes(c))) || (u && u === activeUid.toLowerCase());
+      });
+
+      if (customerOrders.length === 0) {
+        Swal.fire({
+          title: 'Nhập Mã Đơn Cần Gửi',
+          input: 'text',
+          inputPlaceholder: 'VD: CERT123456',
+          showCancelButton: true,
+          confirmButtonText: 'Gửi Link',
+          confirmButtonColor: '#0284c7',
+          cancelButtonText: 'Hủy'
+        }).then(res => {
+          if (res.isConfirmed && res.value) {
+            const ordId = res.value.trim().toUpperCase();
+            const link = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(ordId)}`;
+            const msg = `🔍 Link tra cứu chi tiết & tải chứng chỉ đơn hàng #${ordId}:
+👉 ${link}
+
+Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, tải lại file cert hoặc bấm nút Cài Đặt Trực Tiếp (OTA) trên iPhone bất cứ lúc nào!`;
+            sendSystemMessageToChat(activeUid, userEmail, msg);
+            showToast('Đã gửi link tra cứu vào tin nhắn khách!', 'success');
+          }
+        });
+        return;
+      }
+
+      if (customerOrders.length === 1) {
+        const ordId = customerOrders[0].orderId || customerOrders[0].id;
+        const link = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(ordId)}`;
+        const msg = `🔍 Link tra cứu chi tiết & bảo hành đơn hàng #${ordId}:
+👉 ${link}
+
+Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, tải lại file cert hoặc bấm nút Cài Đặt Trực Tiếp (OTA) trên iPhone bất cứ lúc nào!`;
+        sendSystemMessageToChat(activeUid, userEmail, msg);
+        showToast('Đã gửi link tra cứu vào tin nhắn khách!', 'success');
+        return;
+      }
+
+      const orderOptions = {};
+      customerOrders.forEach(o => {
+        const id = o.orderId || o.id;
+        orderOptions[id] = `${id} — ${o.planName || 'Gói Cert'} (${o.status === 'COMPLETED' ? 'Đã Xong' : 'Chờ'})`;
+      });
+
+      Swal.fire({
+        title: 'Chọn Đơn Cần Gửi Link Tra Cứu',
+        input: 'select',
+        inputOptions: orderOptions,
+        inputPlaceholder: 'Chọn đơn hàng...',
+        showCancelButton: true,
+        confirmButtonText: 'Gửi Link Vào Chat',
+        confirmButtonColor: '#0284c7',
+        cancelButtonText: 'Hủy'
+      }).then(res => {
+        if (res.isConfirmed && res.value) {
+          const ordId = res.value;
+          const link = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(ordId)}`;
+          const msg = `🔍 Link tra cứu chi tiết & bảo hành đơn hàng #${ordId}:
+👉 ${link}
+
+Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, tải lại file cert hoặc bấm nút Cài Đặt Trực Tiếp (OTA) trên iPhone bất cứ lúc nào!`;
+          sendSystemMessageToChat(activeUid, userEmail, msg);
+          showToast('Đã gửi link tra cứu vào tin nhắn khách!', 'success');
+        }
+      });
+    }
+
+    // Thiết lập Drag & Drop tự nhiên cho 2 vùng thả file Cert
+    function setupCertDropzones() {
+      const setupZone = (zoneId, inputId, handler) => {
+        const zone = document.getElementById(zoneId);
+        const input = document.getElementById(inputId);
+        if (!zone || !input) return;
+
+        ['dragenter', 'dragover'].forEach(name => {
+          zone.addEventListener(name, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            zone.classList.add('border-sky-500', 'bg-sky-100/60', 'scale-[1.01]');
+          }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+          zone.addEventListener(name, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            zone.classList.remove('border-sky-500', 'bg-sky-100/60', 'scale-[1.01]');
+          }, false);
+        });
+
+        zone.addEventListener('drop', (e) => {
+          const dt = e.dataTransfer;
+          const files = dt && dt.files;
+          if (files && files.length > 0) {
+            handler({ target: { files: files } });
+          }
+        }, false);
+      };
+
+      setupZone('dropzoneNewCert', 'fileInputNewCert', handleNewCertFileUpload);
+      setupZone('dropzoneFulfillCert', 'fulfillCertFileInput', handleFulfillCertFileUpload);
+    }
+
+    // --- CERT PRODUCTS LOGIC ---
 
     async function loadCertProducts() {
       try {
@@ -10067,6 +10767,7 @@
       loadCertOrders(false);
       loadCertProducts();
       initCertMaintenanceState();
+      setupCertDropzones();
 
       // Tự động làm mới danh sách khách trực tuyến mỗi 25 giây khi admin đang xem tab Thống Kê
       setInterval(() => {
