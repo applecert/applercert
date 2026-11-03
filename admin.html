@@ -16,6 +16,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+
+  <!-- JSZip for parsing and packing Apple Certificate ZIP packages -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <script>
     tailwind.config = {
@@ -1357,7 +1361,10 @@
             <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <input type="text" id="searchCertInput" oninput="renderCertOrders()" placeholder="Tìm Mã Đơn, UDID, Khách..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 rounded-2xl text-xs outline-none transition shadow-2xs">
           </div>
-          <div class="flex items-center gap-2 w-full md:w-auto">
+          <div class="flex items-center gap-2 w-full md:w-auto flex-wrap">
+            <button onclick="openCreateCertOrderModal()" class="px-4 py-2 bg-gradient-to-r from-sky-600 to-blue-600 hover:brightness-110 text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md shadow-sky-600/20 border border-white/10">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Lên Đơn Cert Mới
+            </button>
             <button onclick="loadCertOrders(true)" class="px-4 py-2 bg-black/[0.04] hover:bg-black/[0.08] text-gray-700 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 border border-black/[0.05]">
               <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Làm Mới
             </button>
@@ -3030,7 +3037,172 @@
     </div>
   </div>
 
-  <!-- MODAL: TRẢ HÀNG CHO KHÁCH (FULFILL CERTIFICATE ORDER) -->
+  <!-- MODAL: LÊN ĐƠN CERT MỚI CHO KHÁCH (MANUAL CERT ORDER CREATION) -->
+  <div id="modalCreateCertOrder" class="fixed inset-0 z-[230] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeCreateCertOrderModal()"></div>
+    <div class="glass-card rounded-[32px] shadow-2xl border border-black/[0.08] w-full max-w-xl p-6 relative z-10 space-y-4 max-h-[92vh] overflow-y-auto scrollbar-none">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 text-white flex items-center justify-center shadow-apple shrink-0">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-gray-900 tracking-tight">Tạo Đơn Hàng Chứng Chỉ Apple Mới</h3>
+            <div class="text-[11px] text-gray-500 font-medium mt-0.5">Lên đơn trực tiếp cho khách & tự động ghi nhận hệ thống</div>
+          </div>
+        </div>
+        <button type="button" onclick="closeCreateCertOrderModal()" class="w-8 h-8 rounded-xl bg-black/[0.03] hover:bg-black/[0.06] text-gray-500 flex items-center justify-center transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="formCreateCertOrder" onsubmit="submitCreateCertOrder(event)" class="space-y-4 text-xs">
+        <!-- 1. Mã đơn & Trạng thái -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1 flex items-center justify-between">
+              <span>Mã Đơn Hàng <span class="text-red-500">*</span></span>
+              <button type="button" onclick="refreshNewCertOrderId()" class="text-sky-600 hover:text-sky-700 text-[11px] font-semibold flex items-center gap-1">
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i> Tạo Mã Khác
+              </button>
+            </label>
+            <input type="text" id="newCertOrderId" required class="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] bg-white font-mono font-bold text-sky-700 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Trạng Thái Đơn Ban Đầu</label>
+            <select id="newCertStatus" class="w-full px-3 py-2.5 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+              <option value="PAID_PROCESSING" selected>⏳ Đã Thanh Toán (Chờ Cấp Cert)</option>
+              <option value="COMPLETED">✓ Đã Có File (Hoàn Thành Luôn)</option>
+              <option value="PENDING">⚠️ Chờ Khách Chuyển Khoản</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 2. Thông tin khách hàng & UDID -->
+        <div class="p-3.5 rounded-2xl bg-sky-50/50 border border-sky-100 space-y-3">
+          <div>
+            <label class="block font-bold text-gray-800 mb-1">Khách Hàng / Thông Tin Liên Hệ <span class="text-red-500">*</span></label>
+            <input type="text" id="newCertCustomerContact" required placeholder="SĐT, Telegram (@username), Zalo hoặc Email khách..." class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block font-bold text-gray-800">
+                Mã UDID Thiết Bị Apple <span class="text-red-500">*</span>
+              </label>
+              <button type="button" onclick="pasteNewCertUdid()" class="px-2.5 py-0.5 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-800 text-[10px] font-bold flex items-center gap-1 transition">
+                <i data-lucide="clipboard" class="w-3 h-3"></i> Dán từ Clipboard
+              </button>
+            </div>
+            <input type="text" id="newCertUdid" required oninput="validateNewCertUdid()" placeholder="00008030-001A29D40120802E hoặc 40 ký tự hex" class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white font-mono text-gray-900 text-xs uppercase focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+            <div id="newCertUdidFeedback" class="text-[11px] font-semibold mt-1 hidden"></div>
+          </div>
+        </div>
+
+        <!-- 3. Chọn Gói Cước & Giá -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div class="sm:col-span-2">
+            <label class="block font-bold text-gray-700 mb-1">Gói Cước Chứng Chỉ</label>
+            <select id="newCertPlanSelect" onchange="onNewCertPlanChange()" class="w-full px-3 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Giá Tiền (VNĐ)</label>
+            <input type="number" id="newCertPrice" required min="0" step="1000" class="w-full px-3 py-2 rounded-xl border border-black/[0.08] bg-white text-appleBlue font-mono font-bold text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+          </div>
+        </div>
+
+        <!-- 4. Thời Hạn Bảo Hành -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Số Ngày Bảo Hành</label>
+            <div class="relative">
+              <input type="number" id="newCertWarrantyDays" value="240" min="1" max="1000" oninput="updateNewCertWarrantyDateFromDays()" class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[10px]">NGÀY</span>
+            </div>
+          </div>
+          <div>
+            <label class="block font-bold text-gray-700 mb-1">Hạn Bảo Hành Đến Ngày</label>
+            <input type="date" id="newCertWarrantyUntil" class="w-full px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+          </div>
+        </div>
+
+        <!-- 5. Tùy Chọn: Nạp Tệp Cert Ngay Khi Tạo (Nếu Đã Có) -->
+        <div class="p-3.5 rounded-2xl bg-black/[0.02] border border-black/[0.06] space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-gray-800 text-xs flex items-center gap-1.5">
+              <i data-lucide="file-archive" class="w-4 h-4 text-sky-600"></i>
+              Nạp File Cert Luôn (Tùy Chọn — Tự động quét mật khẩu & OTA)
+            </span>
+          </div>
+
+          <div id="dropzoneNewCert" onclick="document.getElementById('fileInputNewCert').click()" class="border-2 border-dashed border-sky-300/80 hover:border-sky-500 hover:bg-sky-50/50 transition-all rounded-2xl p-4 text-center cursor-pointer bg-white/60">
+            <input type="file" id="fileInputNewCert" accept=".zip,.p12,.mobileprovision" class="hidden" onchange="handleNewCertFileUpload(event)">
+            <div class="flex flex-col items-center justify-center gap-1">
+              <div class="w-8 h-8 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center">
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+              </div>
+              <span class="text-xs font-bold text-gray-800" id="dropzoneNewCertText">Kéo thả file .ZIP hoặc .P12 & .Mobileprovision vào đây</span>
+              <span class="text-[10px] text-gray-400">Tự động đọc mật khẩu từ pass.txt, quét ngày hết hạn Apple Dev & tạo OTA Link</span>
+            </div>
+          </div>
+
+          <!-- Smart Extracted Info (Hidden by default) -->
+          <div id="newCertExtractedBox" class="hidden p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-1.5">
+            <div class="font-bold flex items-center gap-1.5 text-emerald-800">
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+              <span>Đã quét và bóc tách thành công thông tin chứng chỉ!</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1 text-[11px] pt-1 border-t border-emerald-200/60">
+              <div>• File: <span id="newCertFileName" class="font-semibold text-gray-800"></span></div>
+              <div>• Mật khẩu: <span id="newCertDetectedPass" class="font-mono font-bold text-emerald-700">1</span></div>
+              <div>• Profile: <span id="newCertProfileName" class="font-semibold text-gray-800"></span></div>
+              <div>• Hết hạn: <span id="newCertExpDate" class="font-semibold text-gray-800"></span></div>
+            </div>
+          </div>
+
+          <!-- Delivery Inputs (Cert URL, Pass, Direct Install Link) -->
+          <div id="newCertDeliveryFields" class="space-y-2 pt-1 hidden">
+            <div>
+              <label class="block font-semibold text-gray-700 mb-0.5 text-[11px]">Link Tải Chứng Chỉ (.ZIP / .P12)</label>
+              <input type="url" id="newCertFileUrl" placeholder="https://..." class="w-full px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-xs font-mono outline-none">
+            </div>
+            <div>
+              <label class="block font-semibold text-gray-700 mb-0.5 text-[11px]">Link Cài Trực Tiếp (OTA / itms-services)</label>
+              <input type="text" id="newCertDirectInstallLink" placeholder="itms-services://..." class="w-full px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-xs font-mono outline-none">
+            </div>
+            <div>
+              <label class="block font-semibold text-gray-700 mb-0.5 text-[11px]">Mật Khẩu Cert (.p12)</label>
+              <input type="text" id="newCertPass" value="1" class="w-full px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-xs font-mono outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Ghi chú -->
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">Ghi Chú Đơn Hàng (Tùy chọn)</label>
+          <textarea id="newCertNote" rows="2" placeholder="Ví dụ: Khách hẹn trả cert sau 2 tiếng, cần ký app ngân hàng..." class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none"></textarea>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-black/[0.06]">
+          <button type="button" onclick="closeCreateCertOrderModal()" class="px-4 py-2.5 rounded-xl border border-black/[0.08] hover:bg-black/[0.04] text-gray-700 font-bold transition">
+            Hủy
+          </button>
+          <button type="submit" id="btnSubmitCreateCert" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:brightness-110 text-white font-bold shadow-md shadow-sky-600/20 transition active:scale-95 flex items-center gap-1.5">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Tạo Đơn Hàng Cert</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: TRẢ HÀNG CHO KHÁCH (FULFILL CERTIFICATE ORDER - SMART AUTOMATION) -->
   <div id="modalCertFulfill" class="fixed inset-0 z-[230] hidden flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeCertFulfillModal()"></div>
     <div class="glass-card rounded-[32px] shadow-2xl border border-black/[0.08] w-full max-w-xl p-6 relative z-10 space-y-4 max-h-[92vh] overflow-y-auto scrollbar-none">
@@ -3042,7 +3214,7 @@
             <i data-lucide="shield-check" class="w-5 h-5"></i>
           </div>
           <div>
-            <h3 class="font-bold text-base text-gray-900 tracking-tight">Chi Tiết Đơn Hàng & Trả Cert</h3>
+            <h3 class="font-bold text-base text-gray-900 tracking-tight">Chi Tiết Đơn Hàng & Trả Cert Thông Minh</h3>
             <div class="text-[11px] text-gray-500 font-mono mt-0.5" id="fulfillOrderIdDisplay">CERT-XXXX</div>
           </div>
         </div>
@@ -3087,9 +3259,9 @@
         <!-- Trạng Thái & Hạn Bảo Hành -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-2xl bg-black/[0.02] border border-black/[0.06]">
           <div>
-            <label class="block font-bold text-gray-700 mb-1">Trạng thái Done</label>
+            <label class="block font-bold text-gray-700 mb-1">Trạng thái Đơn</label>
             <select id="fulfillOrderStatus" class="w-full px-3 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
-              <option value="COMPLETED">✓ Hoàn Thành (Done)</option>
+              <option value="COMPLETED" selected>✓ Hoàn Thành (Done)</option>
               <option value="PAID_PROCESSING">⏳ Đang Xử Lý</option>
               <option value="PENDING">⚠️ Chờ Duyệt</option>
               <option value="CANCELLED">✗ Đã Hủy</option>
@@ -3098,40 +3270,94 @@
           <div>
             <label class="block font-bold text-gray-700 mb-1">Thu Hồi (Revoke)?</label>
             <select id="fulfillRevokeStatus" class="w-full px-3 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
-              <option value="ACTIVE">🟢 Chưa Thu Hồi</option>
+              <option value="ACTIVE" selected>🟢 Chưa Thu Hồi</option>
               <option value="REVOKED">🔴 ĐÃ BỊ THU HỒI</option>
             </select>
           </div>
           <div>
             <label class="block font-bold text-gray-700 mb-1">Bảo Hành Đến Ngày</label>
-            <input type="date" id="fulfillWarrantyUntil" class="w-full px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+            <input type="date" id="fulfillWarrantyUntil" onchange="onFulfillWarrantyDateChanged()" class="w-full px-3 py-1.5 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+            <span id="fulfillWarrantyRemainingHint" class="text-[10px] text-sky-700 font-bold block mt-1">Còn: -- ngày bảo hành</span>
           </div>
         </div>
 
-        <!-- 2. Phần Trả Hàng -->
+        <!-- 2. Phần Trả Hàng Tự Động Thông Minh (File Dropzone) -->
+        <div class="p-3.5 rounded-2xl bg-sky-50/50 border border-sky-100 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-gray-800 text-xs flex items-center gap-1.5">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
+              <span>Trả Nhanh Thông Minh (Chỉ cần thả file Cert vào đây)</span>
+            </span>
+            <span class="text-[10px] text-sky-700 font-bold bg-sky-100/80 px-2 py-0.5 rounded-full">
+              Tự quét pass & tạo OTA
+            </span>
+          </div>
+
+          <div id="dropzoneFulfillCert" onclick="document.getElementById('fulfillCertFileInput').click()" class="border-2 border-dashed border-sky-300 hover:border-sky-500 hover:bg-sky-50 transition-all rounded-2xl p-4 text-center cursor-pointer bg-white">
+            <input type="file" id="fulfillCertFileInput" accept=".zip,.p12,.mobileprovision" class="hidden" onchange="handleFulfillCertFileUpload(event)">
+            <div class="flex flex-col items-center justify-center gap-1">
+              <div class="w-9 h-9 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center mb-0.5">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+              </div>
+              <span class="text-xs font-bold text-gray-800" id="dropzoneFulfillText">Kéo thả file .ZIP hoặc .P12 / .Mobileprovision vào đây</span>
+              <span class="text-[10px] text-gray-400">Tự động phát hiện password, bóc tách UDID & tính hạn bảo hành còn bao nhiêu ngày</span>
+            </div>
+          </div>
+
+          <!-- Extraction Feedback Banner -->
+          <div id="fulfillExtractedBox" class="hidden p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="font-bold flex items-center gap-1.5 text-emerald-800">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                <span id="fulfillScanSummaryTitle">Đã bóc tách thông tin chứng chỉ thành công!</span>
+              </div>
+              <span id="fulfillWarrantyDaysBadge" class="px-2.5 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 text-[10px] font-black">
+                Còn -- ngày BH
+              </span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] pt-1.5 border-t border-emerald-200/60">
+              <div>📦 Tệp: <span id="fulfillExtractedFileName" class="font-semibold text-gray-800"></span></div>
+              <div>🔑 Mật khẩu: <span id="fulfillExtractedPass" class="font-mono font-bold text-emerald-700">1</span></div>
+              <div class="truncate">📋 Hồ sơ: <span id="fulfillExtractedProfileName" class="font-semibold text-gray-800"></span></div>
+              <div>🏢 Apple Team: <span id="fulfillExtractedTeamName" class="font-semibold text-gray-800"></span></div>
+              <div>📅 Hết hạn Apple: <span id="fulfillExtractedExpDate" class="font-semibold text-gray-800"></span></div>
+              <div id="fulfillUdidMatchStatus" class="font-semibold text-emerald-700">✓ UDID khớp với đơn hàng</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Chi Tiết Link Trả Hàng (Tự Động Điền hoặc Tùy Chỉnh) -->
         <div class="space-y-3 pt-1">
           <div class="font-bold text-gray-900 text-xs flex items-center gap-1.5">
             <i data-lucide="package-check" class="w-4 h-4 text-sky-600"></i>
-            <span>Dữ Liệu Trả Hàng Cho Khách (Hiển thị ngay trên cổng tra cứu)</span>
+            <span>Dữ Liệu Trả Hàng Cho Khách (Tự động điền & đồng bộ Google Sheets)</span>
           </div>
 
           <div>
             <label class="block font-semibold text-gray-700 mb-1 flex items-center justify-between">
-              <span>Link File Chứng Chỉ (P12 / Provision hoặc File ZIP) <span class="text-red-500">*</span></span>
+              <span>Link Tải Tệp Chứng Chỉ (P12 / Provision hoặc File ZIP) <span class="text-red-500">*</span></span>
               <span class="text-[10px] text-gray-400 font-normal">Drive, Mediafire, Mega, Direct URL...</span>
             </label>
-            <input type="url" id="fulfillCertFileUrl" required placeholder="https://drive.google.com/file/d/... hoặc link tải file cert" class="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none">
+            <input type="url" id="fulfillCertFileUrl" required oninput="autoUpdateDirectInstallLink()" placeholder="https://drive.google.com/file/d/... hoặc link tải file cert" class="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none font-mono">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1 flex items-center justify-between">
+              <span>Link Cài Đặt Trực Tiếp (OTA / itms-services)</span>
+              <span class="text-[10px] text-emerald-600 font-bold">Khách bấm cài ngay trên iPhone</span>
+            </label>
+            <input type="text" id="fulfillDirectInstallUrl" placeholder="itms-services://?action=download-manifest&url=..." class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none font-mono">
           </div>
 
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Mật khẩu chứng chỉ (.p12 password)</label>
-            <input type="text" id="fulfillCertPass" value="1" placeholder="Mặc định: 1" class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none font-mono">
+            <input type="text" id="fulfillCertPass" value="1" placeholder="Mặc định: 1" class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none font-mono font-bold">
           </div>
 
           <div>
             <label class="block font-semibold text-gray-700 mb-1 flex items-center justify-between">
               <span>Link Cài Các App Ký (VSign, ESign, Scarlet...)</span>
-              <span class="text-[10px] text-gray-400 font-normal">Mỗi link một dòng hoặc cách nhau dấu phẩy</span>
+              <span class="text-[10px] text-gray-400 font-normal">Mỗi link một dòng</span>
             </label>
             <textarea id="fulfillAppLinks" rows="2" placeholder="https://ipaviet.site/vsign hoặc https://esign.yyyue.xyz..." class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none font-mono"></textarea>
           </div>
@@ -3141,12 +3367,12 @@
               <span>Link Các Hướng Dẫn Kèm Theo</span>
               <span class="text-[10px] text-gray-400 font-normal">Hướng dẫn cài cert, hướng dẫn ký IPA...</span>
             </label>
-            <textarea id="fulfillGuideLinks" rows="2" placeholder="https://ipaviet.site/huong-dan-vsign hoặc link video..." class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none"></textarea>
+            <textarea id="fulfillGuideLinks" rows="2" placeholder="https://ipaviet.site/certapple/index.html#faqSection..." class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none"></textarea>
           </div>
 
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Ghi chú thêm gửi khách (Tùy chọn)</label>
-            <textarea id="fulfillNote" rows="2" placeholder="Ví dụ: Chứng chỉ đã sẵn sàng, bạn có thể bấm nút Nhập VSign để cài đặt..." class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none"></textarea>
+            <textarea id="fulfillNote" rows="2" placeholder="Ví dụ: Chứng chỉ đã sẵn sàng, bạn có thể bấm nút Cài Đặt Trực Tiếp để cài ngay..." class="w-full px-3.5 py-2 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none"></textarea>
           </div>
         </div>
 
@@ -8717,10 +8943,11 @@
         const planName = escapeHTML(o.planName || 'Chứng Chỉ Apple');
         const price = Number(o.price || 0).toLocaleString('vi-VN') + 'đ';
         const udid = escapeHTML(o.udid || 'Chưa cung cấp');
-        const contact = escapeHTML(o.contact || o.userEmail || 'Khách');
+        const contact = escapeHTML(o.contact || o.userEmail || o.customerContact || 'Khách');
         const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A';
         const isRevoked = o.revokeStatus === 'REVOKED';
         const warrantyDate = o.warrantyUntil ? escapeHTML(o.warrantyUntil) : (o.warrantyDays ? `+${o.warrantyDays} ngày` : 'Theo gói');
+        const remainingDays = calculateRemainingDays(o.warrantyUntil || '');
 
         let statusBadge = '';
         if (o.status === 'COMPLETED') {
@@ -8736,6 +8963,17 @@
         const revokeBadge = isRevoked 
           ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200">🔴 ĐÃ THU HỒI</span>`
           : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">🟢 Hoạt Động</span>`;
+
+        let remainingDaysBadge = '';
+        if (o.warrantyUntil) {
+          if (remainingDays > 60) {
+            remainingDaysBadge = `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Còn ${remainingDays} ngày</span>`;
+          } else if (remainingDays > 0) {
+            remainingDaysBadge = `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Còn ${remainingDays} ngày</span>`;
+          } else {
+            remainingDaysBadge = `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">Hết hạn BH</span>`;
+          }
+        }
 
         return `
           <tr class="hover:bg-sky-50/30 transition-colors">
@@ -8759,18 +8997,24 @@
             <td class="p-4 text-center">
               ${revokeBadge}
             </td>
-            <td class="p-4 text-center font-mono text-[11px] font-semibold text-gray-700">
-              ${warrantyDate}
+            <td class="p-4 text-center">
+              <div class="font-mono text-[11px] font-semibold text-gray-700">${warrantyDate}</div>
+              ${remainingDaysBadge}
             </td>
             <td class="p-4 text-center">
               ${statusBadge}
             </td>
             <td class="p-4 text-right">
-              <div class="flex items-center justify-end gap-1.5">
+              <div class="flex items-center justify-end gap-1.5 flex-wrap">
                 <button type="button" onclick="openCertFulfillModal('${orderId}')" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:brightness-110 text-white font-bold text-[11px] shadow-xs transition active:scale-95 flex items-center gap-1">
                   <i data-lucide="${o.status === 'COMPLETED' ? 'edit-3' : 'send'}" class="w-3.5 h-3.5"></i>
                   <span>${o.status === 'COMPLETED' ? 'Sửa Đơn' : 'Trả Hàng'}</span>
                 </button>
+                ${o.directInstallLink ? `
+                  <button type="button" onclick="navigator.clipboard.writeText('${escapeHTML(o.directInstallLink)}'); Swal.fire({toast:true,position:'top-end',icon:'success',title:'Đã copy Link Cài OTA!',timer:1200,showConfirmButton:false});" class="p-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition" title="Copy Link Cài OTA">
+                    <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ''}
               </div>
             </td>
           </tr>
@@ -8786,6 +9030,7 @@
           const udid = escapeHTML(o.udid || 'Chưa có');
           const isDone = o.status === 'COMPLETED';
           const isRevoked = o.revokeStatus === 'REVOKED';
+          const remainingDays = calculateRemainingDays(o.warrantyUntil || '');
 
           return `
             <div class="glass-card p-4 rounded-2xl border border-black/[0.06] shadow-apple space-y-2.5">
@@ -8807,8 +9052,14 @@
                   <button type="button" onclick="navigator.clipboard.writeText('${udid}'); Swal.fire({toast:true,position:'top-end',icon:'success',title:'Đã copy UDID!',timer:1200,showConfirmButton:false});" class="p-1 text-sky-600"><i data-lucide="copy" class="w-3 h-3"></i></button>
                 </div>
               </div>
+              <div class="text-[11px] text-gray-500 flex items-center justify-between">
+                <span>Hạn BH: <b>${escapeHTML(o.warrantyUntil || 'Theo gói')}</b></span>
+                <span class="font-bold ${remainingDays > 60 ? 'text-emerald-700' : remainingDays > 0 ? 'text-amber-600' : 'text-rose-600'}">
+                  ${o.warrantyUntil ? `Còn ${remainingDays} ngày` : ''}
+                </span>
+              </div>
               <div class="pt-2 border-t border-black/[0.04] flex items-center justify-between">
-                <span class="text-[11px] text-gray-500">${escapeHTML(o.contact || 'Khách')}</span>
+                <span class="text-[11px] text-gray-500">${escapeHTML(o.contact || o.customerContact || 'Khách')}</span>
                 <button type="button" onclick="openCertFulfillModal('${orderId}')" class="px-3.5 py-1.5 rounded-xl bg-sky-600 text-white font-bold text-xs shadow-xs">
                   ${isDone ? 'Xem / Sửa' : 'Trả Hàng'}
                 </button>
@@ -8821,6 +9072,509 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    // ===================================================================
+    // TÍNH TOÁN VÀ TIỆN ÍCH CHỨNG CHỈ APPLE (SMART CERT ENGINE)
+    // ===================================================================
+
+    function calculateRemainingDays(warrantyUntil) {
+      if (!warrantyUntil) return 0;
+      let targetDate;
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(warrantyUntil)) {
+        const p = warrantyUntil.split('/');
+        targetDate = new Date(p[2], p[1] - 1, p[0]);
+      } else {
+        targetDate = new Date(warrantyUntil);
+      }
+      if (isNaN(targetDate.getTime())) return 0;
+      const now = new Date();
+      const startNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startTarget = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+      return Math.max(0, Math.ceil((startTarget - startNow) / 86400000));
+    }
+
+    function parseMobileProvisionXml(strOrBuffer) {
+      let str = '';
+      if (typeof strOrBuffer === 'string') {
+        str = strOrBuffer;
+      } else {
+        const bytes = new Uint8Array(strOrBuffer);
+        for (let i = 0; i < bytes.length; i++) {
+          str += String.fromCharCode(bytes[i]);
+        }
+      }
+      const xmlStart = str.indexOf('<?xml');
+      const xmlEnd = str.indexOf('</plist>');
+      if (xmlStart === -1 || xmlEnd === -1) return null;
+      const plistXml = str.substring(xmlStart, xmlEnd + 8);
+      const nameMatch = plistXml.match(/<key>Name<\/key>\s*<string>([^<]+)<\/string>/i);
+      const teamMatch = plistXml.match(/<key>TeamName<\/key>\s*<string>([^<]+)<\/string>/i);
+      const expMatch = plistXml.match(/<key>ExpirationDate<\/key>\s*<date>([^<]+)<\/date>/i);
+      const devices = [];
+      const devicesMatch = plistXml.match(/<key>ProvisionedDevices<\/key>\s*<array>([\s\S]*?)<\/array>/i);
+      if (devicesMatch) {
+        const devMatches = devicesMatch[1].matchAll(/<string>([^<]+)<\/string>/gi);
+        for (const m of devMatches) devices.push(m[1].trim().toUpperCase());
+      }
+      return {
+        name: nameMatch ? nameMatch[1] : '',
+        teamName: teamMatch ? teamMatch[1] : '',
+        expirationDate: expMatch ? expMatch[1] : '',
+        devices: devices
+      };
+    }
+
+    function extractCertPasswordFromZip(files, zipName) {
+      for (const name in files) {
+        const lower = name.toLowerCase();
+        if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('pwd') || lower.includes('matkhau')) {
+          const text = files[name];
+          const match = text.match(/(?:mật\s*khẩu|mat\s*khau|pass(?:word)?|pwd)[\s:=]+([^\r\n,;]+)/i);
+          if (match && match[1].trim()) return match[1].trim();
+          const firstLine = text.trim().split(/\r?\n/)[0].trim();
+          if (firstLine && firstLine.length <= 40 && !firstLine.includes(' ')) return firstLine;
+        }
+      }
+      if (zipName) {
+        const fnMatch = zipName.match(/pass[_\-\s]*([a-zA-Z0-9\.\_]+)/i);
+        if (fnMatch && fnMatch[1]) return fnMatch[1].replace(/\.zip$/i, '');
+      }
+      return '1';
+    }
+
+    function generateOtaInstallLink(fileUrl, appTitle = 'VSign IPAViet') {
+      const workerUrl = `https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=${encodeURIComponent(fileUrl || 'https://raw.githubusercontent.com/applecert/applercert/main/vsign.ipa')}&name=${encodeURIComponent(appTitle)}&bundle=com.ipaviet.vsign&version=5.0`;
+      return `itms-services://?action=download-manifest&url=${encodeURIComponent(workerUrl)}`;
+    }
+
+    async function uploadCertFileToStorage(file, orderId) {
+      // 1. Thử upload Firebase Storage nếu khả dụng
+      try {
+        if (typeof firebase !== 'undefined' && firebase.storage) {
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const storageRef = firebase.storage().ref(`certificates/${orderId}/${Date.now()}_${safeName}`);
+          const snap = await storageRef.put(file);
+          const dl = await snap.ref.getDownloadURL();
+          if (dl) return dl;
+        }
+      } catch (e) {
+        console.warn('Firebase Storage upload warning:', e);
+      }
+
+      // 2. Fallback: Upload lên Litterbox (lưu trữ miễn phí 72 giờ phục vụ trả file trực tiếp)
+      try {
+        const fd = new FormData();
+        fd.append('reqtype', 'fileupload');
+        fd.append('time', '72h');
+        fd.append('fileToUpload', file);
+        const resp = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+          method: 'POST',
+          body: fd
+        });
+        if (resp.ok) {
+          const txt = await resp.text();
+          if (txt && txt.startsWith('http')) return txt.trim();
+        }
+      } catch (e) {
+        console.warn('Litterbox fallback error:', e);
+      }
+
+      return '';
+    }
+
+    // Xử lý nạp và bóc tách thông minh tệp Cert
+    async function processSmartCertFile(file, context = 'fulfill', targetUdid = '') {
+      Swal.fire({
+        title: 'Đang Bóc Tách File Cert...',
+        text: 'Hệ thống đang quét mật khẩu, hồ sơ provisioning và tính toán hạn bảo hành...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        let detectedPass = '1';
+        let profileName = 'Apple Developer Profile';
+        let teamName = 'Apple Developer';
+        let expDateStr = '';
+        let matchedUdid = false;
+        let p12File = null;
+        let provFile = null;
+
+        const isZip = file.name.toLowerCase().endsWith('.zip');
+        const isProv = file.name.toLowerCase().endsWith('.mobileprovision');
+        const isP12 = file.name.toLowerCase().endsWith('.p12');
+
+        if (isZip) {
+          if (typeof JSZip === 'undefined') {
+            throw new Error('Thư viện giải nén JSZip chưa sẵn sàng.');
+          }
+          const zip = await JSZip.loadAsync(file);
+          const textContents = {};
+
+          for (const relPath in zip.files) {
+            const entry = zip.files[relPath];
+            if (entry.dir) continue;
+            const lower = entry.name.toLowerCase();
+
+            if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('pwd')) {
+              try {
+                textContents[entry.name] = await entry.async('string');
+              } catch (e) {}
+            } else if (lower.endsWith('.mobileprovision')) {
+              try {
+                const provBuffer = await entry.async('arraybuffer');
+                const provInfo = parseMobileProvisionXml(provBuffer);
+                if (provInfo) {
+                  profileName = provInfo.name || profileName;
+                  teamName = provInfo.teamName || teamName;
+                  expDateStr = provInfo.expirationDate || expDateStr;
+                  if (targetUdid && provInfo.devices.includes(targetUdid.toUpperCase())) {
+                    matchedUdid = true;
+                  }
+                }
+              } catch (e) {}
+            }
+          }
+
+          detectedPass = extractCertPasswordFromZip(textContents, file.name);
+        } else if (isProv) {
+          const buffer = await file.arrayBuffer();
+          const provInfo = parseMobileProvisionXml(buffer);
+          if (provInfo) {
+            profileName = provInfo.name || profileName;
+            teamName = provInfo.teamName || teamName;
+            expDateStr = provInfo.expirationDate || expDateStr;
+            if (targetUdid && provInfo.devices.includes(targetUdid.toUpperCase())) {
+              matchedUdid = true;
+            }
+          }
+        }
+
+        // Tính ngày hết hạn
+        let formattedExpDate = '';
+        let remainingDays = 240;
+        if (expDateStr) {
+          try {
+            const d = new Date(expDateStr);
+            if (!isNaN(d.getTime())) {
+              formattedExpDate = d.toISOString().split('T')[0];
+              remainingDays = calculateRemainingDays(formattedExpDate);
+            }
+          } catch (e) {}
+        }
+        if (!formattedExpDate) {
+          const d = new Date();
+          d.setDate(d.getDate() + 240);
+          formattedExpDate = d.toISOString().split('T')[0];
+          remainingDays = 240;
+        }
+
+        // Tự động upload file lấy link tải trực tiếp
+        let targetOrderId = (context === 'fulfill')
+          ? (document.getElementById('fulfillTargetOrderId')?.value || 'CERT')
+          : (document.getElementById('newCertOrderId')?.value || 'CERT');
+
+        let downloadUrl = await uploadCertFileToStorage(file, targetOrderId);
+        if (!downloadUrl) {
+          downloadUrl = `https://ipaviet.site/downloads/certs/${targetOrderId}_${file.name}`;
+        }
+
+        const otaInstallLink = generateOtaInstallLink(downloadUrl, profileName || 'VSign IPAViet');
+
+        Swal.close();
+
+        return {
+          fileName: file.name,
+          pass: detectedPass,
+          profileName: profileName,
+          teamName: teamName,
+          warrantyUntil: formattedExpDate,
+          remainingDays: remainingDays,
+          matchedUdid: matchedUdid,
+          downloadUrl: downloadUrl,
+          otaInstallLink: otaInstallLink
+        };
+      } catch (err) {
+        Swal.close();
+        Swal.fire('Lỗi đọc file', err.message || 'Không thể bóc tách file cert!', 'error');
+        return null;
+      }
+    }
+
+    // --- LOGIC CHO MODAL LÊN ĐƠN MỚI ---
+
+    function openCreateCertOrderModal() {
+      refreshNewCertOrderId();
+      populateNewCertPlanOptions();
+      document.getElementById('newCertCustomerContact').value = '';
+      document.getElementById('newCertUdid').value = '';
+      document.getElementById('newCertNote').value = '';
+      document.getElementById('newCertStatus').value = 'PAID_PROCESSING';
+      document.getElementById('newCertUdidFeedback').classList.add('hidden');
+      document.getElementById('newCertExtractedBox').classList.add('hidden');
+      document.getElementById('newCertDeliveryFields').classList.add('hidden');
+      document.getElementById('newCertFileUrl').value = '';
+      document.getElementById('newCertDirectInstallLink').value = '';
+      document.getElementById('newCertPass').value = '1';
+      document.getElementById('dropzoneNewCertText').textContent = 'Kéo thả file .ZIP hoặc .P12 & .Mobileprovision vào đây';
+
+      // Mặc định 240 ngày
+      document.getElementById('newCertWarrantyDays').value = '240';
+      updateNewCertWarrantyDateFromDays();
+
+      const modal = document.getElementById('modalCreateCertOrder');
+      if (modal) modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeCreateCertOrderModal() {
+      const modal = document.getElementById('modalCreateCertOrder');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function refreshNewCertOrderId() {
+      const input = document.getElementById('newCertOrderId');
+      if (input) {
+        input.value = 'CERT' + Math.floor(100000 + Math.random() * 900000);
+      }
+    }
+
+    async function pasteNewCertUdid() {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          const input = document.getElementById('newCertUdid');
+          input.value = text.trim().toUpperCase();
+          validateNewCertUdid();
+        }
+      } catch (e) {
+        Swal.fire('Chú ý', 'Vui lòng cấp quyền clipboard hoặc nhập tay trực tiếp!', 'info');
+      }
+    }
+
+    function validateNewCertUdid() {
+      const input = document.getElementById('newCertUdid');
+      const msg = document.getElementById('newCertUdidFeedback');
+      if (!input || !msg) return false;
+      const val = input.value.trim().toUpperCase();
+      input.value = val;
+      const is25 = /^[0-9A-F]{8}-[0-9A-F]{16}$/i.test(val);
+      const is40 = /^[0-9A-F]{40}$/i.test(val);
+      if (!val) {
+        msg.classList.add('hidden');
+        return false;
+      }
+      msg.classList.remove('hidden');
+      if (is25 || is40) {
+        msg.className = "text-[11px] font-semibold mt-1 text-emerald-600 flex items-center gap-1";
+        msg.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 inline"></i> Mã UDID Apple hợp lệ 100%.';
+        if (window.lucide) lucide.createIcons();
+        return true;
+      } else {
+        msg.className = "text-[11px] font-semibold mt-1 text-amber-600";
+        msg.textContent = "UDID Apple hợp lệ gồm 25 ký tự có gạch ngang (iPhone đời mới) hoặc 40 ký tự hex.";
+        return false;
+      }
+    }
+
+    function populateNewCertPlanOptions() {
+      const sel = document.getElementById('newCertPlanSelect');
+      if (!sel) return;
+      const plans = (AdminState.certProducts && AdminState.certProducts.length) ? AdminState.certProducts : DEFAULT_CERT_PRODUCTS;
+      
+      sel.innerHTML = plans.map(p => {
+        return `<option value="${p.id}" data-price="${p.price}" data-warranty="${p.warranty || '240 ngày'}" data-name="${p.name}">
+          ${p.name} — ${Number(p.price).toLocaleString('vi-VN')}đ (${p.warranty || '240 ngày'})
+        </option>`;
+      }).join('') + `<option value="custom" data-price="180000" data-warranty="240 ngày" data-name="Gói Cert Tùy Chỉnh">⚙️ Gói Tùy Chỉnh (Nhập giá riêng)...</option>`;
+
+      onNewCertPlanChange();
+    }
+
+    function onNewCertPlanChange() {
+      const sel = document.getElementById('newCertPlanSelect');
+      if (!sel) return;
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt) return;
+      const price = opt.getAttribute('data-price') || '180000';
+      const warranty = opt.getAttribute('data-warranty') || '240 ngày';
+      document.getElementById('newCertPrice').value = price;
+      const days = parseInt(warranty, 10) || 240;
+      document.getElementById('newCertWarrantyDays').value = days;
+      updateNewCertWarrantyDateFromDays();
+    }
+
+    function updateNewCertWarrantyDateFromDays() {
+      const days = parseInt(document.getElementById('newCertWarrantyDays')?.value, 10) || 240;
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      document.getElementById('newCertWarrantyUntil').value = d.toISOString().split('T')[0];
+    }
+
+    async function handleNewCertFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const targetUdid = document.getElementById('newCertUdid')?.value || '';
+      const result = await processSmartCertFile(file, 'new_order', targetUdid);
+      if (!result) return;
+
+      document.getElementById('dropzoneNewCertText').textContent = `✓ ${result.fileName}`;
+      document.getElementById('newCertFileName').textContent = result.fileName;
+      document.getElementById('newCertDetectedPass').textContent = result.pass;
+      document.getElementById('newCertProfileName').textContent = result.profileName;
+      document.getElementById('newCertExpDate').textContent = `${result.warrantyUntil} (${result.remainingDays} ngày)`;
+
+      document.getElementById('newCertExtractedBox').classList.remove('hidden');
+      document.getElementById('newCertDeliveryFields').classList.remove('hidden');
+
+      document.getElementById('newCertFileUrl').value = result.downloadUrl;
+      document.getElementById('newCertDirectInstallLink').value = result.otaInstallLink;
+      document.getElementById('newCertPass').value = result.pass;
+      document.getElementById('newCertWarrantyUntil').value = result.warrantyUntil;
+      document.getElementById('newCertWarrantyDays').value = result.remainingDays;
+      document.getElementById('newCertStatus').value = 'COMPLETED';
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function submitCreateCertOrder(e) {
+      e.preventDefault();
+      const orderId = document.getElementById('newCertOrderId').value.trim().toUpperCase();
+      const contact = document.getElementById('newCertCustomerContact').value.trim();
+      const udid = document.getElementById('newCertUdid').value.trim().toUpperCase();
+      const status = document.getElementById('newCertStatus').value;
+      const sel = document.getElementById('newCertPlanSelect');
+      const planName = sel ? (sel.options[sel.selectedIndex]?.getAttribute('data-name') || 'Chứng Chỉ Apple') : 'Chứng Chỉ Apple';
+      const planId = sel ? sel.value : 'TIME24hPRO';
+      const price = parseInt(document.getElementById('newCertPrice').value, 10) || 0;
+      const warrantyDays = parseInt(document.getElementById('newCertWarrantyDays').value, 10) || 240;
+      const warrantyUntil = document.getElementById('newCertWarrantyUntil').value;
+      const note = document.getElementById('newCertNote').value.trim();
+      
+      const certFileUrl = document.getElementById('newCertFileUrl')?.value.trim() || '';
+      const directInstallLink = document.getElementById('newCertDirectInstallLink')?.value.trim() || '';
+      const certPass = document.getElementById('newCertPass')?.value.trim() || '1';
+
+      if (!orderId || !udid || !contact) {
+        Swal.fire('Thiếu thông tin', 'Vui lòng nhập đầy đủ Mã đơn, Khách hàng và UDID thiết bị!', 'warning');
+        return;
+      }
+
+      const remainingDays = calculateRemainingDays(warrantyUntil);
+
+      const orderData = {
+        orderId: orderId,
+        id: orderId,
+        uid: 'ADMIN_MANUAL_' + Date.now(),
+        customerEmail: contact.includes('@') ? contact : '',
+        customerContact: contact,
+        customerName: contact,
+        contact: contact,
+        planId: planId,
+        planName: planName,
+        productName: planName,
+        price: price,
+        udid: udid,
+        note: note,
+        createdAt: new Date().toISOString(),
+        status: status,
+        revokeStatus: 'ACTIVE',
+        warrantyUntil: warrantyUntil,
+        warrantyDays: warrantyDays,
+        remainingDays: remainingDays,
+        certFileUrl: certFileUrl,
+        p12Url: certFileUrl,
+        directInstallLink: directInstallLink,
+        certPass: certPass,
+        appLinks: 'VSign: https://ipaviet.site/vsign\nESign: https://ipaviet.site/esign',
+        guideLinks: 'https://ipaviet.site/certapple/index.html#faqSection',
+        paymentMethod: 'ADMIN_MANUAL'
+      };
+
+      const btn = document.getElementById('btnSubmitCreateCert');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Đang tạo đơn...`;
+
+      try {
+        // 1. Lưu Firestore
+        if (typeof db !== 'undefined' && db.collection) {
+          await db.collection('cert_orders').doc(orderId).set(orderData, { merge: true });
+        }
+
+        // 2. Lưu local cache & memory
+        const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
+        local.unshift(orderData);
+        localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 100)));
+
+        if (!AdminState.certOrders) AdminState.certOrders = [];
+        AdminState.certOrders.unshift(orderData);
+
+        // 3. Đồng bộ lên Google Sheet CERT_ORDERS
+        try {
+          fetch(GOOGLE_API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              action: 'create_cert_order',
+              orderId: orderId,
+              uid: orderData.uid,
+              productName: planName,
+              planName: planName,
+              price: price,
+              udid: udid,
+              customerName: contact,
+              customerContact: contact,
+              warrantyUntil: warrantyUntil,
+              warrantyDays: warrantyDays,
+              remainingDays: remainingDays,
+              status: status,
+              note: note
+            })
+          });
+        } catch (e) {}
+
+        // 4. Audit Log
+        addAuditLog('CREATE_CERT_ORDER_MANUAL', `Tạo đơn cert thủ công: ${orderId} (${planName}) cho UDID: ${udid}`);
+
+        // 5. Telegram Alert
+        try {
+          const teleMsg = `🆕 <b>ADMIN TẠO ĐƠN CERT MỚI THỦ CÔNG</b>\n` +
+            `💳 Mã đơn: <code>${orderId}</code>\n` +
+            `📦 Gói: <b>${planName}</b>\n` +
+            `💰 Giá tiền: <b>${price.toLocaleString('vi-VN')}đ</b>\n` +
+            `📱 UDID: <code>${udid}</code>\n` +
+            `👤 Khách: <b>${contact}</b>\n` +
+            `🛡️ Trạng thái: <b>${status}</b>\n` +
+            `⏳ Hạn bảo hành: <b>${warrantyUntil} (Còn ${remainingDays} ngày)</b>`;
+          fetch(`https://api.telegram.org/bot7986654042:AAHHbevmrLVmWSJ5dXIsQssUmRM5tPQWQjk/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: '8103429932', text: teleMsg, parse_mode: 'HTML' })
+          });
+        } catch (e) {}
+
+        Swal.fire({
+          title: 'Tạo Đơn Cert Thành Công!',
+          text: `Đơn hàng ${orderId} đã được tạo và ghi nhận vào hệ thống. Khách hàng có thể tra cứu đơn ngay lập tức!`,
+          icon: 'success',
+          confirmButtonColor: '#0071E3'
+        });
+
+        closeCreateCertOrderModal();
+        renderCertOrders();
+        updateCertBadge();
+      } catch (err) {
+        Swal.fire('Lỗi', err.message || 'Không thể tạo đơn hàng!', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="plus-circle" class="w-4 h-4"></i> <span>Tạo Đơn Hàng Cert</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    // --- LOGIC CHO MODAL TRẢ HÀNG THÔNG MINH ---
+
     function openCertFulfillModal(orderId) {
       const order = (AdminState.certOrders || []).find(o => (o.orderId || o.id) === orderId);
       if (!order) {
@@ -8832,7 +9586,7 @@
       document.getElementById('fulfillOrderIdDisplay').textContent = orderId;
       document.getElementById('fulfillOrderDateDisplay').textContent = order.createdAt ? new Date(order.createdAt).toLocaleString('vi-VN') : 'Mới tạo';
       document.getElementById('fulfillPlanName').textContent = `${order.planName || 'Gói Chứng Chỉ'} (${Number(order.price || 0).toLocaleString('vi-VN')}đ)`;
-      document.getElementById('fulfillCustomerContact').textContent = order.contact || order.userEmail || 'Chưa có thông tin';
+      document.getElementById('fulfillCustomerContact').textContent = order.contact || order.userEmail || order.customerContact || 'Chưa có thông tin';
       document.getElementById('fulfillUdidDisplay').textContent = order.udid || 'Không có UDID';
 
       document.getElementById('fulfillOrderStatus').value = order.status || 'COMPLETED';
@@ -8846,13 +9600,19 @@
         wDate = d.toISOString().split('T')[0];
       }
       document.getElementById('fulfillWarrantyUntil').value = wDate;
+      onFulfillWarrantyDateChanged();
 
       // Delivery fields
       document.getElementById('fulfillCertFileUrl').value = order.certFileUrl || order.p12Url || '';
       document.getElementById('fulfillCertPass').value = order.certPass || '1';
+      document.getElementById('fulfillDirectInstallUrl').value = order.directInstallLink || (order.certFileUrl ? generateOtaInstallLink(order.certFileUrl) : '');
       document.getElementById('fulfillAppLinks').value = order.appLinks || 'https://ipaviet.site/app-library/index.html\nhttps://ipaviet.site/vsign';
       document.getElementById('fulfillGuideLinks').value = order.guideLinks || 'https://ipaviet.site/certapple/index.html#faqSection\nHướng dẫn ký: Mở VSign -> Quản lý chứng chỉ -> Nhập tệp .p12 và .mobileprovision';
       document.getElementById('fulfillNote').value = order.fulfillNote || '';
+
+      // Reset dropzone state
+      document.getElementById('dropzoneFulfillText').textContent = 'Kéo thả file .ZIP hoặc .P12 / .Mobileprovision vào đây';
+      document.getElementById('fulfillExtractedBox').classList.add('hidden');
 
       const modal = document.getElementById('modalCertFulfill');
       if (modal) modal.classList.remove('hidden');
@@ -8872,10 +9632,72 @@
       }
     }
 
+    function onFulfillWarrantyDateChanged() {
+      const wDate = document.getElementById('fulfillWarrantyUntil')?.value || '';
+      const hint = document.getElementById('fulfillWarrantyRemainingHint');
+      if (!hint) return;
+      if (!wDate) {
+        hint.textContent = 'Còn: -- ngày bảo hành';
+        return;
+      }
+      const days = calculateRemainingDays(wDate);
+      hint.textContent = `Còn: ${days} ngày bảo hành`;
+      hint.className = `text-[10px] font-bold block mt-1 ${days > 60 ? 'text-emerald-600' : days > 0 ? 'text-amber-600' : 'text-rose-600'}`;
+    }
+
+    function autoUpdateDirectInstallLink() {
+      const fileUrl = document.getElementById('fulfillCertFileUrl')?.value.trim() || '';
+      const otaInput = document.getElementById('fulfillDirectInstallUrl');
+      if (otaInput && fileUrl && !otaInput.value) {
+        otaInput.value = generateOtaInstallLink(fileUrl);
+      }
+    }
+
+    async function handleFulfillCertFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const currentUdid = document.getElementById('fulfillUdidDisplay')?.textContent || '';
+      const result = await processSmartCertFile(file, 'fulfill', currentUdid);
+      if (!result) return;
+
+      // Cập nhật giao diện
+      document.getElementById('dropzoneFulfillText').textContent = `✓ ${result.fileName}`;
+      document.getElementById('fulfillExtractedFileName').textContent = result.fileName;
+      document.getElementById('fulfillExtractedPass').textContent = result.pass;
+      document.getElementById('fulfillExtractedProfileName').textContent = result.profileName;
+      document.getElementById('fulfillExtractedTeamName').textContent = result.teamName;
+      document.getElementById('fulfillExtractedExpDate').textContent = result.warrantyUntil;
+      document.getElementById('fulfillWarrantyDaysBadge').textContent = `Còn ${result.remainingDays} ngày BH`;
+
+      const udidMatchStatus = document.getElementById('fulfillUdidMatchStatus');
+      if (result.matchedUdid) {
+        udidMatchStatus.className = "font-semibold text-emerald-700";
+        udidMatchStatus.innerHTML = "✓ UDID thiết bị khớp 100% trong hồ sơ Apple!";
+      } else {
+        udidMatchStatus.className = "font-semibold text-amber-700";
+        udidMatchStatus.innerHTML = "ℹ️ Hồ sơ Apple Profile đã nạp thành công";
+      }
+
+      document.getElementById('fulfillExtractedBox').classList.remove('hidden');
+
+      // Tự động điền các trường biểu mẫu
+      document.getElementById('fulfillCertFileUrl').value = result.downloadUrl;
+      document.getElementById('fulfillDirectInstallUrl').value = result.otaInstallLink;
+      document.getElementById('fulfillCertPass').value = result.pass;
+      document.getElementById('fulfillWarrantyUntil').value = result.warrantyUntil;
+      document.getElementById('fulfillOrderStatus').value = 'COMPLETED';
+      document.getElementById('fulfillRevokeStatus').value = 'ACTIVE';
+      onFulfillWarrantyDateChanged();
+
+      if (window.lucide) lucide.createIcons();
+    }
+
     async function submitCertFulfillment(e) {
       e.preventDefault();
       const orderId = document.getElementById('fulfillTargetOrderId').value;
       const certFileUrl = document.getElementById('fulfillCertFileUrl').value.trim();
+      const directInstallLink = document.getElementById('fulfillDirectInstallUrl').value.trim() || generateOtaInstallLink(certFileUrl);
       const certPass = document.getElementById('fulfillCertPass').value.trim() || '1';
       const status = document.getElementById('fulfillOrderStatus').value;
       const revokeStatus = document.getElementById('fulfillRevokeStatus').value;
@@ -8883,23 +9705,26 @@
       const appLinks = document.getElementById('fulfillAppLinks').value.trim();
       const guideLinks = document.getElementById('fulfillGuideLinks').value.trim();
       const note = document.getElementById('fulfillNote').value.trim();
+      const remainingDays = calculateRemainingDays(warrantyUntil);
 
       if (!certFileUrl) {
-        Swal.fire('Thiếu Link Chứng Chỉ', 'Vui lòng nhập link file chứng chỉ cho khách!', 'warning');
+        Swal.fire('Thiếu Link Chứng Chỉ', 'Vui lòng nhập link file chứng chỉ cho khách hoặc thả file cert vào ô upload!', 'warning');
         return;
       }
 
       const btn = document.getElementById('btnSubmitFulfill');
       btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Đang lưu...`;
+      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Đang lưu & đồng bộ...`;
 
       try {
         const updateData = {
           status: status,
           revokeStatus: revokeStatus,
           warrantyUntil: warrantyUntil,
+          remainingDays: remainingDays,
           certFileUrl: certFileUrl,
           p12Url: certFileUrl,
+          directInstallLink: directInstallLink,
           certPass: certPass,
           appLinks: appLinks,
           guideLinks: guideLinks,
@@ -8907,17 +9732,18 @@
           fulfilledAt: new Date().toISOString()
         };
 
+        // 1. Lưu Firestore
         if (typeof db !== 'undefined' && db.collection) {
           await db.collection('cert_orders').doc(orderId).set(updateData, { merge: true });
         }
 
-        // Update in memory
+        // 2. Cập nhật Memory State
         const idx = (AdminState.certOrders || []).findIndex(o => (o.orderId || o.id) === orderId);
         if (idx !== -1) {
           AdminState.certOrders[idx] = { ...AdminState.certOrders[idx], ...updateData };
         }
 
-        // Update in localStorage
+        // 3. Cập nhật localStorage
         const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
         const lIdx = local.findIndex(o => (o.orderId || o.id) === orderId);
         if (lIdx !== -1) {
@@ -8925,22 +9751,46 @@
           localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local));
         }
 
-        // Send Telegram alert
+        // 4. Đồng bộ lên Google Sheet CERT_ORDERS qua Google Apps Script
         try {
-          const teleMsg = `✅ <b>ADMIN ĐÃ CẬP NHẬT TRẢ CERT</b>\n` +
+          fetch(GOOGLE_API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              action: 'fulfill_cert_order',
+              pin: AdminState.auth.inMemoryPin || '200912aB',
+              orderId: orderId,
+              status: status,
+              revokeStatus: revokeStatus,
+              warrantyUntil: warrantyUntil,
+              remainingDays: remainingDays,
+              certFileUrl: certFileUrl,
+              directInstallLink: directInstallLink,
+              certPass: certPass,
+              fulfillNote: note
+            })
+          });
+        } catch (e) {}
+
+        // 5. Gửi thông báo Telegram
+        try {
+          const teleMsg = `✅ <b>ADMIN ĐÃ TRẢ CHỨNG CHỈ CHO KHÁCH</b>\n` +
             `💳 Mã đơn: <code>${orderId}</code>\n` +
             `🛡️ Trạng thái: <b>${status}</b>\n` +
             `⚠️ Thu hồi: <b>${revokeStatus === 'REVOKED' ? 'ĐÃ THU HỒI' : 'HOẠT ĐỘNG TỐT'}</b>\n` +
-            `⏳ Hạn bảo hành: <b>${warrantyUntil || 'Theo gói'}</b>\n` +
-            `🔗 File Cert: ${certFileUrl}`;
+            `⏳ Hạn bảo hành: <b>${warrantyUntil || 'Theo gói'} (Còn ${remainingDays} ngày)</b>\n` +
+            `🔑 Mật khẩu: <code>${certPass}</code>\n` +
+            `📦 File Cert: ${certFileUrl}\n` +
+            `📲 OTA Direct: ${directInstallLink}`;
           fetch(`https://api.telegram.org/bot7986654042:AAHHbevmrLVmWSJ5dXIsQssUmRM5tPQWQjk/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: '8103429932', text: teleMsg, parse_mode: 'HTML' })
           });
-        } catch(e) {}
+        } catch (e) {}
 
-        // Audit log
+        // 6. Audit Log
         try {
           if (typeof db !== 'undefined') {
             await db.collection('audit_logs').add({
@@ -8950,11 +9800,11 @@
               timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
           }
-        } catch(e) {}
+        } catch (e) {}
 
         Swal.fire({
-          title: 'Lưu Trả Hàng Thành Công!',
-          text: `Đã cập nhật trạng thái đơn ${orderId}. Khách hàng có thể tra cứu và nhận file cert ngay lập tức!`,
+          title: 'Trả Hàng Thành Công!',
+          text: `Đã cập nhật trạng thái đơn ${orderId} thành Hoàn Thành. Link tải, link cài đặt trực tiếp OTA và hạn bảo hành còn ${remainingDays} ngày đã được đồng bộ lên Google Sheet & Cổng Tra Cứu!`,
           icon: 'success',
           confirmButtonColor: '#0071E3'
         });

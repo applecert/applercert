@@ -198,12 +198,12 @@
 
   <script>
     const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyDummyKeyForCertAppleProduction",
-      authDomain: "applercert.firebaseapp.com",
-      projectId: "applercert",
-      storageBucket: "applercert.appspot.com",
-      messagingSenderId: "1029384756",
-      appId: "1:1029384756:web:abcdef123456"
+      apiKey: "AIzaSyBJ9UhdejvlE-cOBdeOIHCIl8pgSbUTwgs",
+      authDomain: "ipaviet-st.firebaseapp.com",
+      projectId: "ipaviet-st",
+      storageBucket: "ipaviet-st.firebasestorage.app",
+      messagingSenderId: "127619650916",
+      appId: "1:127619650916:web:fc8904c99804eeb7539671"
     };
 
     let db;
@@ -422,41 +422,109 @@
 
       orders.forEach(ord => {
         const isDone = (ord.status === 'COMPLETED');
-        let statusBadge = '<span class="badge tt-cho-tra">Chờ cấp cert</span>';
+        const isPaid = (ord.status === 'PAID_PROCESSING' || ord.status === 'PROCESSING' || isDone);
+        const isRevoked = (ord.revokeStatus === 'REVOKED');
+        
+        let statusBadge = '<span class="badge tt-cho-tra">Chờ thanh toán</span>';
         if (isDone) {
-          statusBadge = '<span class="badge tt-xong">Hoàn tất</span>';
-        } else if (ord.status === 'PROCESSING') {
-          statusBadge = '<span class="badge tt-dang-cap">Đang cấp cert</span>';
+          statusBadge = '<span class="badge tt-xong" style="background:rgba(48,209,88,0.15);color:#30d158;border:1px solid rgba(48,209,88,0.3);">✓ Hoàn tất</span>';
+        } else if (isPaid) {
+          statusBadge = '<span class="badge tt-dang-cap" style="background:rgba(10,132,255,0.15);color:#0a84ff;border:1px solid rgba(10,132,255,0.3);">⏳ Chờ cấp cert</span>';
+        } else if (ord.status === 'CANCELLED') {
+          statusBadge = '<span class="badge" style="background:rgba(255,69,58,0.15);color:#ff453a;border:1px solid rgba(255,69,58,0.3);">Đã hủy</span>';
+        }
+
+        // Tính ngày bảo hành còn lại
+        let remainingDays = 0;
+        if (ord.remainingDays !== undefined && !isNaN(parseInt(ord.remainingDays))) {
+          remainingDays = parseInt(ord.remainingDays);
+        } else if (ord.warrantyUntil) {
+          try {
+            let targetDate;
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(ord.warrantyUntil)) {
+              const p = ord.warrantyUntil.split('/');
+              targetDate = new Date(p[2], p[1] - 1, p[0]);
+            } else {
+              targetDate = new Date(ord.warrantyUntil);
+            }
+            if (!isNaN(targetDate.getTime())) {
+              const now = new Date();
+              const diff = Math.ceil((targetDate - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+              remainingDays = Math.max(0, diff);
+            }
+          } catch(e) {}
         }
 
         let fulfillHtml = '';
         if (ord.certFileUrl || ord.p12Url) {
           const dlUrl = ord.certFileUrl || ord.p12Url;
           const pass = ord.certPass || '1';
+          const otaUrl = ord.directInstallLink || `itms-services://?action=download-manifest&url=${encodeURIComponent('https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=https%3A%2F%2Fraw.githubusercontent.com%2Fapplecert%2Fapplercert%2Fmain%2Fvsign.ipa&name=VSign%20IPAViet&bundle=com.ipaviet.vsign&version=5.0')}`;
+
           fulfillHtml = `
-            <div class="mt-4 p-4 rounded-xl border border-separator bg-surface-2 space-y-3">
-              <p class="font-bold text-green text-subhead flex items-center gap-1.5">✓ Tệp chứng chỉ Apple Developer đã sẵn sàng</p>
-              <a href="${dlUrl}" target="_blank" class="ios-btn ios-btn-filled w-full text-center block font-bold">Tải về tệp (.P12 / .Zip)</a>
-              <div class="flex items-center justify-between text-subhead bg-surface p-2.5 rounded-lg border border-separator">
-                <span class="text-label-2">Mật khẩu chứng chỉ:</span>
+            <div class="mt-4 p-4 rounded-2xl border border-separator bg-surface-2 space-y-3">
+              <div class="flex items-center justify-between">
+                <p class="font-bold text-green text-subhead flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                  Tệp chứng chỉ Apple Developer đã sẵn sàng!
+                </p>
+                <span class="text-caption font-bold px-2 py-0.5 rounded-full ${remainingDays > 30 ? 'bg-green/10 text-green' : remainingDays > 0 ? 'bg-amber-500/10 text-amber-500' : 'bg-red/10 text-red'}">
+                  Còn ${remainingDays} ngày BH
+                </span>
+              </div>
+
+              <!-- Nút Cài Đặt Trực Tiếp OTA -->
+              <a href="${otaUrl}" class="ios-btn ios-btn-filled w-full text-center block font-bold text-callout shadow-sm" style="background: linear-gradient(135deg, #0A84FF, #0071E3);">
+                📲 Cài Đặt Trực Tiếp Lên Máy (OTA)
+              </a>
+
+              <!-- Nút Tải Tệp ZIP / P12 -->
+              <a href="${dlUrl}" target="_blank" class="ios-btn ios-btn-filled w-full text-center block font-bold text-callout" style="background: var(--flame-on-fill, #e10e0e);">
+                📦 Tải Tệp Chứng Chỉ (.ZIP / .P12)
+              </a>
+
+              <!-- Mật khẩu Cert -->
+              <div class="flex items-center justify-between text-subhead bg-surface p-3 rounded-xl border border-separator">
+                <span class="text-label-2 font-medium">Mật khẩu chứng chỉ (.p12):</span>
                 <div class="flex items-center gap-2">
-                  <strong class="font-mono text-flame font-bold">${pass}</strong>
-                  <button type="button" onclick="copyText('${pass}', 'Đã sao chép mật khẩu!')" class="text-caption text-flame hover:underline font-bold">Copy</button>
+                  <strong class="font-mono text-flame font-bold text-base">${pass}</strong>
+                  <button type="button" onclick="copyText('${pass}', 'Đã sao chép mật khẩu: ${pass}')" class="text-caption text-flame hover:underline font-bold px-2 py-1 rounded bg-flame/10">Copy</button>
                 </div>
+              </div>
+
+              <!-- Hướng dẫn sử dụng nhanh -->
+              <div class="pt-2 border-t border-separator/60 flex items-center justify-between text-caption text-label-2">
+                <span>Cần hỗ trợ nhập VSign/ESign?</span>
+                <a href="https://t.me/ipaviet" target="_blank" class="text-flame font-bold hover:underline">Hỗ trợ kỹ thuật 24/7</a>
               </div>
             </div>
           `;
         } else {
           fulfillHtml = `
-            <div class="mt-4 p-3.5 rounded-xl border border-separator bg-surface-2 text-subhead text-label-2">
-              <p class="font-semibold text-label mb-1">Đang xử lý cấp chứng chỉ</p>
-              Hệ thống đang tiến hành ký và đăng ký UDID với Apple Developer. Tệp P12 và MobileProvision sẽ được cập nhật tự động tại đây.
+            <div class="mt-4 p-4 rounded-2xl border border-separator bg-surface-2 text-subhead text-label-2 space-y-2">
+              <div class="flex items-center gap-2 text-label font-bold">
+                <div class="w-2.5 h-2.5 rounded-full bg-appleBlue animate-pulse"></div>
+                Đang xử lý cấp chứng chỉ Apple
+              </div>
+              <p class="text-footnote leading-relaxed">
+                Hệ thống đang tiến hành kích hoạt UDID thiết bị lên Apple Developer Center. Ngay khi hoàn tất, tệp .P12, .Mobileprovision và link cài trực tiếp sẽ tự động xuất hiện tại đây.
+              </p>
+              <div class="pt-2 flex items-center justify-between text-caption border-t border-separator/60">
+                <span>Thời gian dự kiến: 2 - 24 giờ</span>
+                <button type="button" onclick="location.reload()" class="text-flame font-bold hover:underline">Tải lại trang</button>
+              </div>
             </div>
           `;
         }
 
+        const revokeWarningHtml = isRevoked ? `
+          <div class="mb-3 p-3 rounded-xl bg-red/10 border border-red/30 text-red text-footnote font-bold flex items-center gap-2">
+            <span>🔴 Chứng chỉ này đã được ghi nhận thu hồi. Đang kích hoạt chế độ bảo hành 1 đổi 1 miễn phí cho thiết bị của bạn.</span>
+          </div>
+        ` : '';
+
         const card = document.createElement('div');
-        card.className = 'ios-window mb-4';
+        card.className = 'ios-window mb-5';
         card.innerHTML = `
           <div class="ios-window-bar relative">
             <span class="relative z-10 flex shrink-0 items-center gap-2" aria-hidden="true">
@@ -469,6 +537,7 @@
             </p>
           </div>
           <div class="p-5">
+            ${revokeWarningHtml}
             <div class="flex items-center justify-between mb-3">
               <div>
                 <strong class="font-mono text-headline text-label font-bold">${ord.orderId || ord.id}</strong>
@@ -478,16 +547,22 @@
             </div>
             <div class="space-y-2 text-subhead border-t border-separator pt-3 text-label-2">
               <div class="flex justify-between items-center">
-                <span>Mã UDID:</span>
-                <span class="font-mono text-label text-xs">${ord.udid || '—'}</span>
+                <span>Mã UDID Thiết Bị:</span>
+                <span class="font-mono text-label text-xs font-bold">${ord.udid || '—'}</span>
               </div>
               <div class="flex justify-between items-center">
-                <span>Email nhận:</span>
-                <span class="text-label text-footnote">${ord.customerEmail || '—'}</span>
+                <span>Khách hàng / Liên hệ:</span>
+                <span class="text-label text-footnote">${ord.customerContact || ord.customerEmail || '—'}</span>
               </div>
               <div class="flex justify-between items-center">
-                <span>Bảo hành:</span>
-                <strong class="text-green text-footnote">${ord.warrantyUntil || 'Theo gói'}</strong>
+                <span>Hạn bảo hành:</span>
+                <span class="text-label text-footnote font-bold">${ord.warrantyUntil || 'Theo gói'}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span>Thời gian bảo hành còn lại:</span>
+                <strong class="${remainingDays > 30 ? 'text-green' : remainingDays > 0 ? 'text-amber-500' : 'text-red'} text-footnote font-bold">
+                  ${remainingDays > 0 ? `Còn ${remainingDays} ngày (1 Đổi 1)` : 'Hết hạn bảo hành'}
+                </strong>
               </div>
             </div>
             ${fulfillHtml}

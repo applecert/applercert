@@ -764,6 +764,7 @@
         msg.style.color = '#30D158';
         msg.innerHTML = '✓ Mã UDID phần cứng Apple hợp lệ.';
         localStorage.setItem('ipaviet_user_udid', val);
+        autoSyncPendingOrder();
         return true;
       } else {
         msg.style.display = 'block';
@@ -825,6 +826,107 @@
       return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
+    // Tự động ghi nhận đơn tạm vào Firestore và Google Sheet ngay khi tạo hoặc nhập UDID
+    let orderListenerUnsub = null;
+    async function autoSyncPendingOrder() {
+      const input = document.getElementById('inputUdid');
+      const udid = input ? input.value.trim().toUpperCase() : '';
+      const contact = document.getElementById('inputContact')?.value.trim() || '';
+      const note = document.getElementById('inputNote')?.value.trim() || '';
+      const warrantyDate = calculateWarrantyDate(currentOrder.warranty);
+
+      const pendingOrder = {
+        orderId: currentOrder.orderId,
+        uid: 'CLIENT_' + (localStorage.getItem('ipaviet_client_uid') || Date.now()),
+        customerEmail: contact || 'guest@ipaviet.site',
+        customerName: contact || 'Khách Hàng',
+        customerContact: contact,
+        planId: currentOrder.planId,
+        planName: currentOrder.planName,
+        productName: currentOrder.planName,
+        price: currentOrder.price,
+        amount: 1,
+        udid: udid,
+        note: note,
+        createdAt: currentOrder.createdAt || new Date().toISOString(),
+        status: 'PENDING',
+        revokeStatus: 'ACTIVE',
+        warrantyUntil: warrantyDate,
+        certPass: '1',
+        paymentMethod: 'VIETQR_BIDV_AUTO'
+      };
+      currentOrder.createdAt = pendingOrder.createdAt;
+
+      try {
+        if (typeof db !== 'undefined' && db.collection) {
+          await db.collection('cert_orders').doc(currentOrder.orderId).set(pendingOrder, { merge: true });
+        }
+
+        // Đồng bộ lên Google Sheet CERT_ORDERS
+        fetch(GOOGLE_API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            action: 'buy_cert_pending',
+            orderId: pendingOrder.orderId,
+            uid: pendingOrder.uid,
+            productName: pendingOrder.planName,
+            planName: pendingOrder.planName,
+            price: pendingOrder.price,
+            udid: pendingOrder.udid,
+            customerName: pendingOrder.customerName,
+            customerContact: pendingOrder.customerContact,
+            warrantyUntil: pendingOrder.warrantyUntil,
+            note: pendingOrder.note,
+            status: 'PENDING'
+          })
+        }).catch(() => {});
+      } catch(e) {}
+
+      // Lắng nghe realtime từ Firestore: nếu tiền vào và status thành PAID_PROCESSING
+      listenForOrderPayment();
+    }
+
+    function listenForOrderPayment() {
+      if (orderListenerUnsub || typeof db === 'undefined' || !db.collection) return;
+      try {
+        orderListenerUnsub = db.collection('cert_orders').doc(currentOrder.orderId).onSnapshot(doc => {
+          if (!doc.exists) return;
+          const data = doc.data();
+          if (data && (data.status === 'PAID_PROCESSING' || data.status === 'COMPLETED')) {
+            // Khách chuyển khoản thành công và webhook đã xác nhận!
+            const viewSuccess = document.getElementById('viewOrderSuccess');
+            if (viewSuccess && viewSuccess.style.display !== 'block') {
+              // Lưu vào local cache
+              const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
+              if (!local.find(o => (o.orderId || o.id) === currentOrder.orderId)) {
+                local.unshift(data);
+                localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 50)));
+              }
+
+              document.getElementById('viewCheckoutForm').style.display = 'none';
+              viewSuccess.style.display = 'block';
+
+              document.getElementById('receiptOrderId').textContent = data.orderId || currentOrder.orderId;
+              document.getElementById('receiptPlanName').textContent = data.planName || currentOrder.planName;
+              document.getElementById('receiptUdid').textContent = data.udid || (document.getElementById('inputUdid')?.value || '');
+              document.getElementById('receiptWarranty').textContent = data.warrantyUntil || calculateWarrantyDate(currentOrder.warranty);
+              document.getElementById('btnCheckOrderStatus').href = `tra-cuu.html?q=${data.orderId || currentOrder.orderId}`;
+
+              Swal.fire({
+                title: '🎉 Thanh Toán Thành Công!',
+                text: 'Hệ thống đã tự động nhận diện chuyển khoản từ tài khoản BIDV của bạn! Đơn hàng đang được Apple Developer xử lý cấp chứng chỉ.',
+                icon: 'success',
+                confirmButtonColor: '#0A84FF',
+                confirmButtonText: 'Xem Biên Lai'
+              });
+            }
+          }
+        });
+      } catch(e) {}
+    }
+
     async function confirmOrderPayment() {
       const input = document.getElementById('inputUdid');
       const udid = input ? input.value.trim().toUpperCase() : '';
@@ -856,7 +958,7 @@
         amount: 1,
         udid: udid,
         note: note,
-        createdAt: new Date().toISOString(),
+        createdAt: currentOrder.createdAt || new Date().toISOString(),
         status: 'PAID_PROCESSING',
         revokeStatus: 'ACTIVE',
         warrantyUntil: warrantyDate,
@@ -879,7 +981,7 @@
         local.unshift(orderData);
         localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 50)));
 
-        // 3. Post to Google Sheet CERTAPPLE
+        // 3. Post to Google Sheet CERT_ORDERS
         try {
           fetch(GOOGLE_API_URL, {
             method: 'POST',
@@ -887,13 +989,18 @@
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
               action: 'buy_cert_pending',
+              orderId: orderData.orderId,
               uid: orderData.uid,
-              productId: orderData.planId,
               productName: orderData.productName,
+              planName: orderData.planName,
               price: orderData.price,
               amount: 1,
               udid: orderData.udid,
-              orderId: orderData.orderId
+              customerName: orderData.customerName,
+              customerContact: orderData.customerContact,
+              warrantyUntil: orderData.warrantyUntil,
+              note: orderData.note,
+              status: 'PAID_PROCESSING'
             })
           });
         } catch(e) {}
@@ -929,7 +1036,7 @@
         document.getElementById('receiptPlanName').textContent = orderData.planName;
         document.getElementById('receiptUdid').textContent = orderData.udid;
         document.getElementById('receiptWarranty').textContent = orderData.warrantyUntil;
-        document.getElementById('btnCheckOrderStatus').href = `index.html?order=${orderData.orderId}`;
+        document.getElementById('btnCheckOrderStatus').href = `tra-cuu.html?q=${orderData.orderId}`;
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch(err) {
@@ -941,6 +1048,7 @@
       lucide.createIcons();
       loadPlanFromContext();
       startTimer(15 * 60);
+      autoSyncPendingOrder();
     });
   </script>
 </body>
