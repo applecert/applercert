@@ -2572,7 +2572,7 @@
                 handleP12Upload(e) {
                     const file = e.target.files[0];
                     if (!file) return;
-                    this.p12 = file;
+                    this.p12 = new File([file], file.name, { type: 'application/x-pkcs12' });
                     if (this.mobileprovision) this.saveCertToVault(this.p12, this.mobileprovision);
                 },
                 triggerMpUpload() {
@@ -2581,7 +2581,7 @@
                 handleMpUpload(e) {
                     const file = e.target.files[0];
                     if (!file) return;
-                    this.mobileprovision = file;
+                    this.mobileprovision = new File([file], file.name, { type: 'application/octet-stream' });
                     if (this.p12) this.saveCertToVault(this.p12, this.mobileprovision);
                 },
 
@@ -2678,8 +2678,11 @@
 
                     const fd = new FormData();
                     fd.append('ipa', this.ipa, this.ipa.name);
-                    fd.append('p12', this.p12, this.p12.name);
-                    fd.append('mp', this.mobileprovision, this.mobileprovision.name);
+                    // Đảm bảo MIME type hợp lệ tuyệt đối cho P12 và Mobileprovision (Tránh lỗi "Invalid P12 MIME" trên các trình duyệt Cốc Cốc / Safari)
+                    const p12Blob = new Blob([await this.p12.arrayBuffer()], { type: 'application/x-pkcs12' });
+                    const mpBlob = new Blob([await this.mobileprovision.arrayBuffer()], { type: 'application/octet-stream' });
+                    fd.append('p12', p12Blob, this.p12.name);
+                    fd.append('mp', mpBlob, this.mobileprovision.name);
                     fd.append('password', this.password || '');
                     if (this.customAppName) fd.append('app_name', this.customAppName);
                     if (this.customBundleId) fd.append('bundle_id', this.customBundleId);

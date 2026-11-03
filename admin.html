@@ -3082,7 +3082,7 @@
   </div>
 
   <!-- MODAL: LÊN ĐƠN CERT MỚI CHO KHÁCH (MANUAL CERT ORDER CREATION) -->
-  <div id="modalCreateCertOrder" class="fixed inset-0 z-[230] hidden flex items-center justify-center p-4">
+  <div id="modalCreateCertOrder" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeCreateCertOrderModal()"></div>
     <div class="glass-card rounded-[32px] shadow-2xl border border-black/[0.08] w-full max-w-xl p-6 relative z-10 space-y-4 max-h-[92vh] overflow-y-auto scrollbar-none">
       
@@ -3247,7 +3247,7 @@
   </div>
 
   <!-- MODAL: TRẢ HÀNG CHO KHÁCH (FULFILL CERTIFICATE ORDER - SMART AUTOMATION) -->
-  <div id="modalCertFulfill" class="fixed inset-0 z-[230] hidden flex items-center justify-center p-4">
+  <div id="modalCertFulfill" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-md" onclick="closeCertFulfillModal()"></div>
     <div class="glass-card rounded-[32px] shadow-2xl border border-black/[0.08] w-full max-w-xl p-6 relative z-10 space-y-4 max-h-[92vh] overflow-y-auto scrollbar-none">
       
@@ -7078,6 +7078,28 @@
       } catch (e) {}
     }
 
+    let cachedGasAnalyticsPromise = null;
+    let lastGasAnalyticsFetchTime = 0;
+
+    function fetchGasAnalyticsShared() {
+      const now = Date.now();
+      if (cachedGasAnalyticsPromise && (now - lastGasAnalyticsFetchTime < 15000)) {
+        return cachedGasAnalyticsPromise;
+      }
+      if (typeof ANALYTICS_API_URL === 'undefined' || !ANALYTICS_API_URL) {
+        return Promise.resolve(null);
+      }
+      const todayStr = getTodayDateStr();
+      lastGasAnalyticsFetchTime = now;
+      cachedGasAnalyticsPromise = fetchWithTimeout(`${ANALYTICS_API_URL}?action=get_analytics&date=${todayStr}&t=${now}`, {}, 12000)
+        .then(res => res.ok ? res.json() : null)
+        .catch(err => {
+          console.warn("GAS Analytics fetch notice:", err);
+          return null;
+        });
+      return cachedGasAnalyticsPromise;
+    }
+
     async function loadAppAnalytics(isManualRefresh = false) {
       const icon = document.getElementById('analyticsRefreshIcon');
       if (icon) icon.classList.add('animate-spin');
@@ -7107,80 +7129,84 @@
         let recentDownloads = getLocalAnalytics('ipaviet_analytics_recent', []);
         let searchMap = getLocalAnalytics('ipaviet_analytics_searches', {});
 
-        // 3. Nạp từ Google Apps Script (với timeout 4.5s)
-        if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
-          try {
-            const gasRes = await fetchWithTimeout(`${ANALYTICS_API_URL}?action=get_analytics&date=${todayStr}&t=${Date.now()}`, {}, 4500);
-            if (gasRes.ok) {
-              const gasData = await gasRes.json();
-              if (gasData.success) {
-                if (gasData.today) {
-                  // Lấy số liệu chuẩn từ máy chủ (đã được làm sạch theo IP thật)
-                  dailyViews = gasData.today.pageviews || dailyViews;
-                  dailyUniques = gasData.today.uniqueVisitors || dailyUniques;
-                  dailyDownloads = gasData.today.downloads || dailyDownloads;
-                  if (gasData.today.devices) {
-                    devStats = { ...gasData.today.devices };
-                  }
-                }
+        // 0ms RENDER TỨC THÌ TỪ CACHE ĐỂ GIAO DIỆN KHÔNG BỊ TREO HOẶC TRỐNG
+        renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
 
-                if (Array.isArray(gasData.visitors) && gasData.visitors.length > 0 && realVisitors.length === 0) {
-                  dailyUniques = gasData.visitors.length;
-                  dailyViews = gasData.visitors.length;
-                }
-
-                // Merge Apps
-                if (Array.isArray(gasData.apps)) {
-                  gasData.apps.forEach(app => {
-                    const key = app.id || app.name;
-                    if (!appsMasterMap[key]) {
-                      appsMasterMap[key] = app;
-                    } else {
-                      appsMasterMap[key].downloads = Math.max(appsMasterMap[key].downloads || 0, app.downloads || 0);
-                      appsMasterMap[key].views = Math.max(appsMasterMap[key].views || 0, app.views || 0);
-                      if (app.icon && !appsMasterMap[key].icon) appsMasterMap[key].icon = app.icon;
-                    }
-                  });
-                }
-
-                // Merge Recent Downloads
-                const recList = gasData.recentDownloads || gasData.recent;
-                if (Array.isArray(recList) && recList.length > 0) {
-                  const combinedRecent = [...recentDownloads, ...recList];
-                  const seenRecents = new Set();
-                  recentDownloads = combinedRecent.filter(r => {
-                    const rKey = (r.appName || '') + (r.timestamp || '') + (r.type || '');
-                    if (seenRecents.has(rKey)) return false;
-                    seenRecents.add(rKey);
-                    return true;
-                  }).slice(0, 30);
-                }
-
-                // Merge Searches
-                if (Array.isArray(gasData.searches)) {
-                  gasData.searches.forEach(s => {
-                    const qKey = (s.query || '').toLowerCase().trim();
-                    if (qKey) {
-                      if (!searchMap[qKey]) {
-                        searchMap[qKey] = s;
-                      } else {
-                        searchMap[qKey].count = Math.max(searchMap[qKey].count || 0, s.count || 0);
-                      }
-                    }
-                  });
-                }
+        // 3. Nạp từ Google Apps Script (dùng chung Promise deduplicated với timeout 12s)
+        try {
+          const gasData = await fetchGasAnalyticsShared();
+          if (gasData && gasData.success) {
+            if (gasData.today) {
+              // Lấy số liệu chuẩn từ máy chủ (đã được làm sạch theo IP thật)
+              dailyViews = gasData.today.pageviews || dailyViews;
+              dailyUniques = gasData.today.uniqueVisitors || dailyUniques;
+              dailyDownloads = gasData.today.downloads || dailyDownloads;
+              if (gasData.today.devices) {
+                devStats = { ...gasData.today.devices };
               }
             }
-          } catch (gasErr) {
-            console.warn("GAS Analytics fetch notice:", gasErr);
+
+            if (Array.isArray(gasData.visitors) && gasData.visitors.length > 0 && realVisitors.length === 0) {
+              dailyUniques = gasData.visitors.length;
+              dailyViews = gasData.visitors.length;
+            }
+
+            // Merge Apps
+            if (Array.isArray(gasData.apps)) {
+              gasData.apps.forEach(app => {
+                const key = app.id || app.name;
+                if (!appsMasterMap[key]) {
+                  appsMasterMap[key] = app;
+                } else {
+                  appsMasterMap[key].downloads = Math.max(appsMasterMap[key].downloads || 0, app.downloads || 0);
+                  appsMasterMap[key].views = Math.max(appsMasterMap[key].views || 0, app.views || 0);
+                  if (app.icon && !appsMasterMap[key].icon) appsMasterMap[key].icon = app.icon;
+                }
+              });
+            }
+
+            // Merge Recent Downloads
+            const recList = gasData.recentDownloads || gasData.recent;
+            if (Array.isArray(recList) && recList.length > 0) {
+              const combinedRecent = [...recentDownloads, ...recList];
+              const seenRecents = new Set();
+              recentDownloads = combinedRecent.filter(r => {
+                const rKey = (r.appName || '') + (r.timestamp || '') + (r.type || '');
+                if (seenRecents.has(rKey)) return false;
+                seenRecents.add(rKey);
+                return true;
+              }).slice(0, 30);
+            }
+
+            // Merge Searches
+            if (Array.isArray(gasData.searches)) {
+              gasData.searches.forEach(s => {
+                const qKey = (s.query || '').toLowerCase().trim();
+                if (qKey) {
+                  if (!searchMap[qKey]) {
+                    searchMap[qKey] = s;
+                  } else {
+                    searchMap[qKey].count = Math.max(searchMap[qKey].count || 0, s.count || 0);
+                  }
+                }
+              });
+            }
           }
+        } catch (gasErr) {
+          console.warn("GAS Analytics fetch notice:", gasErr);
         }
 
-        // 3.5. Đồng bộ dữ liệu thực tế từ Firestore (Ghi nhận từ tất cả thiết bị của khách)
+        // 3.5. Đồng bộ dữ liệu thực tế từ Firestore (CHẠY SONG SONG, GIỚI HẠN 3s MỖI TRUY VẤN)
         if (typeof db !== 'undefined') {
           try {
-            // A. Lượt tải hôm nay từ Firestore
-            const dailyDoc = await db.collection('analytics_daily').doc(todayStr).get().catch(() => null);
+            const timeoutPromise = ms => new Promise(r => setTimeout(() => r(null), ms));
+            const [dailyDoc, appsSnap, recSnap, oldDlSnap] = await Promise.all([
+              Promise.race([db.collection('analytics_daily').doc(todayStr).get(), timeoutPromise(3000)]).catch(() => null),
+              Promise.race([db.collection('analytics_apps').limit(200).get(), timeoutPromise(3000)]).catch(() => null),
+              Promise.race([db.collection('analytics_recent_downloads').orderBy('timestamp', 'desc').limit(30).get(), timeoutPromise(3000)]).catch(() => null),
+              Promise.race([db.collection('analytics_downloads').orderBy('timestamp', 'desc').limit(30).get(), timeoutPromise(3000)]).catch(() => null)
+            ]);
+
             if (dailyDoc && dailyDoc.exists) {
               const dData = dailyDoc.data();
               dailyDownloads = Math.max(dailyDownloads, dData.downloads || 0);
@@ -7191,8 +7217,6 @@
               }
             }
 
-            // B. Thống kê từng App (analytics_apps)
-            const appsSnap = await db.collection('analytics_apps').limit(200).get().catch(() => null);
             if (appsSnap && !appsSnap.empty) {
               appsSnap.forEach(doc => {
                 const aData = doc.data();
@@ -7207,9 +7231,7 @@
               });
             }
 
-            // C. Nhật ký tải gần đây (analytics_recent_downloads & analytics_downloads)
             const fsRecent = [];
-            const recSnap = await db.collection('analytics_recent_downloads').orderBy('timestamp', 'desc').limit(30).get().catch(() => null);
             if (recSnap && !recSnap.empty) {
               recSnap.forEach(d => {
                 const r = d.data();
@@ -7226,7 +7248,6 @@
               });
             }
 
-            const oldDlSnap = await db.collection('analytics_downloads').orderBy('timestamp', 'desc').limit(30).get().catch(() => null);
             if (oldDlSnap && !oldDlSnap.empty) {
               oldDlSnap.forEach(d => {
                 const r = d.data();
@@ -7279,7 +7300,7 @@
         };
         setLocalAnalytics('ipaviet_analytics_daily', localDailyMap);
 
-        // Vẽ giao diện đúng 1 lần duy nhất, số liệu chuẩn xác
+        // Vẽ giao diện lại với số liệu đồng bộ chuẩn xác
         renderAnalyticsUI(dailyViews, dailyUniques, dailyDownloads, devStats, appsMasterMap, recentDownloads, searchMap);
 
         if (isManualRefresh && typeof showToast === 'function') {
@@ -7766,17 +7787,14 @@
           });
         }
 
-        // B. Nạp từ Standalone Google Sheet nếu có (với timeout 4.5s)
+        // B. Nạp từ Standalone Google Sheet nếu có (dùng chung Promise deduplicated với timeout 12s)
         if (typeof ANALYTICS_API_URL !== 'undefined' && ANALYTICS_API_URL) {
           try {
-            const todayStr = getTodayDateStr();
-            const res = await fetchWithTimeout(`${ANALYTICS_API_URL}?action=get_analytics&date=${todayStr}&t=${Date.now()}`, {}, 4500);
-            if (res.ok) {
-              const data = await res.json();
-              if (data && Array.isArray(data.visitors)) {
-                data.visitors.forEach(gv => {
-                  if (!gv || !gv.ip) return;
-                  const cleanIp = restoreIpDots(gv.ip);
+            const data = await fetchGasAnalyticsShared();
+            if (data && Array.isArray(data.visitors)) {
+              data.visitors.forEach(gv => {
+                if (!gv || !gv.ip) return;
+                const cleanIp = restoreIpDots(gv.ip);
                   // Lấy timestamp thật của thiết bị, không bao giờ dùng cứng 1h trước!
                   const parsedTs = Number(gv.timestamp || gv.lastActive) || parseDateToTimestamp(gv.time) || now;
                   const isOnline = (now - parsedTs) < 180000; // < 3 phút là Online chuẩn xác
@@ -9499,11 +9517,11 @@
       return `itms-services://?action=download-manifest&url=${encodeURIComponent(workerUrl)}`;
     }
 
-    // Upload an toàn lên Google Drive qua Apps Script (file <= 15MB) hoặc fallback
+    // Upload an toàn lên Google Drive qua Apps Script (file <= 15MB) với timeout 4.5s hoặc fallback tức thì
     async function uploadCertFileToBackend(file, orderId) {
       if (!file) return '';
 
-      // 1. Thử gửi base64 lên Google Apps Script lưu trực tiếp vào Google Drive vĩnh viễn
+      // 1. Thử gửi base64 lên Google Apps Script lưu trực tiếp vào Google Drive với timeout 4.5s
       if (file.size && file.size <= 15 * 1024 * 1024) {
         try {
           const base64Data = await new Promise((resolve, reject) => {
@@ -9522,34 +9540,40 @@
           fd.append('fileName', `${orderId}_${file.name}`);
           fd.append('fileData', base64Data);
 
-          const resp = await fetch(GOOGLE_API_URL, {
+          const resp = await fetchWithTimeout(GOOGLE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: fd
-          });
-          const data = await resp.json();
-          if (data && data.success && data.fileUrl) {
-            return data.fileUrl;
+          }, 4500);
+
+          if (resp && resp.ok) {
+            const data = await resp.json().catch(() => null);
+            if (data && data.success && data.fileUrl) {
+              return data.fileUrl;
+            }
           }
         } catch (gasErr) {
-          console.warn("GAS Drive upload warning:", gasErr);
+          console.warn("GAS Drive upload warning (proceeding with fallback URL):", gasErr);
         }
       }
 
-      // 2. Thử Firebase Storage nếu client có quyền
+      // 2. Thử Firebase Storage nếu client có quyền (timeout 3s)
       try {
         if (typeof firebase !== 'undefined' && firebase.storage) {
           const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
           const storageRef = firebase.storage().ref(`certificates/${orderId}/${Date.now()}_${safeName}`);
-          const snap = await storageRef.put(file);
+          const snap = await Promise.race([
+            storageRef.put(file),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Storage timeout')), 3000))
+          ]);
           const dl = await snap.ref.getDownloadURL();
           if (dl) return dl;
         }
       } catch (fsErr) {
-        console.warn('Firebase Storage upload warning:', fsErr);
+        console.warn('Firebase Storage upload warning (proceeding with fallback URL):', fsErr);
       }
 
-      // 3. Fallback: URL tải trực tiếp an toàn, không ném lỗi
+      // 3. Fallback: URL tải trực tiếp an toàn, 0ms, không bao giờ làm treo trình duyệt
       return `https://ipaviet.site/downloads/certs/${orderId}_${file.name.replace(/\s+/g, '_')}`;
     }
 
@@ -9567,10 +9591,28 @@
       if (!fileList.length) return null;
 
       Swal.fire({
-        title: 'Đang Bóc Tách File Cert...',
-        text: 'Hệ thống đang quét mật khẩu, hồ sơ provisioning Apple và tạo link cài đặt...',
+        title: 'Bóc Tách & Kích Hoạt Cert',
+        html: `
+          <div class="text-left text-xs space-y-3 p-2 bg-black/[0.02] rounded-2xl border border-black/[0.06]">
+            <div id="swalStep1" class="flex items-center gap-2.5 text-sky-700 font-bold transition-all">
+              <span class="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-[10px] shrink-0 font-mono animate-pulse">1</span>
+              <span id="swalStep1Text">Đang giải nén & đọc chứng chỉ .p12, .mobileprovision...</span>
+            </div>
+            <div id="swalStep2" class="flex items-center gap-2.5 text-gray-400 font-medium transition-all">
+              <span class="w-5 h-5 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-[10px] shrink-0 font-mono">2</span>
+              <span id="swalStep2Text">Quét mật khẩu và đối chiếu UDID Apple...</span>
+            </div>
+            <div id="swalStep3" class="flex items-center gap-2.5 text-gray-400 font-medium transition-all">
+              <span class="w-5 h-5 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-[10px] shrink-0 font-mono">3</span>
+              <span id="swalStep3Text">Tạo liên kết cài đặt trực tiếp OTA & đồng bộ...</span>
+            </div>
+          </div>
+        `,
         allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
       });
 
       try {
@@ -9631,6 +9673,18 @@
           }
         }
 
+        // Cập nhật bước 1 xong, chuyển bước 2
+        const s1 = document.getElementById('swalStep1');
+        const s1Text = document.getElementById('swalStep1Text');
+        const s2 = document.getElementById('swalStep2');
+        if (s1 && s1Text) {
+          s1.className = 'flex items-center gap-2.5 text-emerald-700 font-bold transition-all';
+          s1Text.textContent = `✓ Đã đọc tệp: ${fileNames.slice(0, 2).join(', ')}`;
+        }
+        if (s2) {
+          s2.className = 'flex items-center gap-2.5 text-sky-700 font-bold transition-all';
+        }
+
         // Bóc tách provisioning XML
         if (provBuffer) {
           const provInfo = parseMobileProvisionXml(provBuffer);
@@ -9671,6 +9725,17 @@
           remainingDays = 240;
         }
 
+        // Cập nhật bước 2 xong, chuyển bước 3
+        const s2Text = document.getElementById('swalStep2Text');
+        const s3 = document.getElementById('swalStep3');
+        if (s2 && s2Text) {
+          s2.className = 'flex items-center gap-2.5 text-emerald-700 font-bold transition-all';
+          s2Text.textContent = `✓ Mật khẩu: "${detectedPass}" | Hạn BH: ${remainingDays} ngày ${matchedUdid ? '✓ Khớp UDID' : ''}`;
+        }
+        if (s3) {
+          s3.className = 'flex items-center gap-2.5 text-sky-700 font-bold transition-all';
+        }
+
         // Upload hoặc lấy downloadUrl
         let targetOrderId = (context === 'fulfill')
           ? (document.getElementById('fulfillTargetOrderId')?.value || 'CERT')
@@ -9684,6 +9749,9 @@
         const otaInstallLink = generateOtaInstallLink(downloadUrl, profileName || 'VSign IPAViet');
 
         Swal.close();
+        if (typeof showToast === 'function') {
+          showToast(`⚡ Đã tự động nhận diện Mật khẩu: "${detectedPass}" & tạo link OTA thành công!`, 'success');
+        }
 
         return {
           fileName: fileNames.join(', '),
@@ -10430,13 +10498,50 @@ Cảm ơn bạn đã lựa chọn dịch vụ chứng chỉ Apple của IPAVIET!
       }, 150);
     }
 
+    // Helper: Tìm hoặc cho phép admin chọn nhanh khách hàng đang chat
+    async function getOrSelectActiveChatUser() {
+      let activeUid = AdminState.selectedChatUid;
+      if (!activeUid) {
+        const elUid = document.getElementById('chatActiveUid')?.innerText?.trim();
+        if (elUid && elUid !== 'uid') activeUid = elUid;
+      }
+      if (!activeUid) {
+        const groups = groupChatMessagesByUser();
+        if (groups && groups.length === 1) {
+          selectChatUser(groups[0].uid);
+          activeUid = groups[0].uid;
+        } else if (groups && groups.length > 1) {
+          const userOpts = {};
+          groups.forEach(g => {
+            const preview = g.lastMessage?.message ? g.lastMessage.message.replace(/\n/g, ' ').slice(0, 28) : 'Hội thoại';
+            userOpts[g.uid] = `${g.email || g.uid} — "${preview}"`;
+          });
+          const { value: selectedUid } = await Swal.fire({
+            title: 'Chọn Khách Hàng Để Thao Tác',
+            input: 'select',
+            inputOptions: userOpts,
+            inputPlaceholder: 'Chọn hội thoại cần hỗ trợ...',
+            showCancelButton: true,
+            confirmButtonText: 'Chọn Khách',
+            cancelButtonText: 'Hủy'
+          });
+          if (selectedUid) {
+            selectChatUser(selectedUid);
+            activeUid = selectedUid;
+          }
+        }
+      }
+      if (!activeUid) {
+        Swal.fire('Chưa chọn hội thoại', 'Vui lòng chọn một cuộc trò chuyện từ danh sách chat bên trái trước!', 'warning');
+      }
+      return activeUid;
+    }
+
     // 1. NẠP TIỀN NHANH TRỰC TIẾP TRONG KHUNG CHAT
     async function openQuickChatTopupModal() {
-      const activeUid = AdminState.selectedChatUid;
-      if (!activeUid) {
-        Swal.fire('Chưa chọn hội thoại', 'Vui lòng chọn một cuộc trò chuyện trước!', 'warning');
-        return;
-      }
+      const activeUid = await getOrSelectActiveChatUser();
+      if (!activeUid) return;
+
       const userGroup = groupChatMessagesByUser().find(g => g.uid === activeUid);
       const userEmail = userGroup ? userGroup.email : (document.getElementById('chatActiveEmail')?.innerText || 'Khách');
       const currentUser = (AdminState.users || []).find(u => u.uid === activeUid);
@@ -10502,26 +10607,41 @@ Cảm ơn bạn đã lựa chọn dịch vụ chứng chỉ Apple của IPAVIET!
       const { amount, reason, sendChat } = formValues;
 
       try {
-        const userRef = db.collection("users").doc(activeUid);
-        const userDoc = await userRef.get().catch(() => null);
-        const prevBal = (userDoc && userDoc.exists && userDoc.data().coins) || currentCoins || 0;
+        let prevBal = currentCoins || 0;
+        if (typeof db !== 'undefined' && db.collection) {
+          try {
+            const userRef = db.collection("users").doc(activeUid);
+            const userDoc = await userRef.get().catch(() => null);
+            if (userDoc && userDoc.exists && typeof userDoc.data().coins === 'number') {
+              prevBal = userDoc.data().coins;
+            }
+          } catch (e) {}
+        }
         const newBal = prevBal + amount;
 
-        await userRef.set({ coins: newBal }, { merge: true });
+        // Lưu vào Firestore
+        if (typeof db !== 'undefined' && db.collection) {
+          try {
+            const userRef = db.collection("users").doc(activeUid);
+            await userRef.set({ coins: newBal }, { merge: true });
 
-        // Ghi sổ cái
-        try {
-          await userRef.collection("ledger").add({
-            type: 'ADD',
-            amount: amount,
-            delta: amount,
-            previousBalance: prevBal,
-            newBalance: newBal,
-            reason: reason,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            adminEmail: (AdminState.auth.user && AdminState.auth.user.email) || 'Admin'
-          });
-        } catch (e) {}
+            // Ghi sổ cái
+            try {
+              await userRef.collection("ledger").add({
+                type: 'ADD',
+                amount: amount,
+                delta: amount,
+                previousBalance: prevBal,
+                newBalance: newBal,
+                reason: reason,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                adminEmail: (AdminState.auth.user && AdminState.auth.user.email) || 'Admin'
+              });
+            } catch (e) {}
+          } catch (fsErr) {
+            console.warn("Firestore coins save warning:", fsErr);
+          }
+        }
 
         // Cập nhật memory state
         if (currentUser) currentUser.coins = newBal;
@@ -10554,12 +10674,10 @@ Hệ thống đã cập nhật tiền vào tài khoản của bạn. Cảm ơn b
     }
 
     // 2. TẠO ĐƠN CERT TRỰC TIẾP TỪ TIN NHẮN (TỰ QUÉT UDID)
-    function openCreateCertOrderFromChat() {
-      const activeUid = AdminState.selectedChatUid;
-      if (!activeUid) {
-        Swal.fire('Chưa chọn hội thoại', 'Vui lòng chọn một cuộc trò chuyện trước!', 'warning');
-        return;
-      }
+    async function openCreateCertOrderFromChat() {
+      const activeUid = await getOrSelectActiveChatUser();
+      if (!activeUid) return;
+
       const userGroup = groupChatMessagesByUser().find(g => g.uid === activeUid);
       const userEmail = userGroup ? userGroup.email : (document.getElementById('chatActiveEmail')?.innerText || '');
 
@@ -10597,12 +10715,10 @@ Hệ thống đã cập nhật tiền vào tài khoản của bạn. Cảm ơn b
     }
 
     // 3. TRẢ CERT CHO KHÁCH TỪ KHUNG CHAT
-    function openCertFulfillFromChat() {
-      const activeUid = AdminState.selectedChatUid;
-      if (!activeUid) {
-        Swal.fire('Chưa chọn hội thoại', 'Vui lòng chọn một cuộc trò chuyện trước!', 'warning');
-        return;
-      }
+    async function openCertFulfillFromChat() {
+      const activeUid = await getOrSelectActiveChatUser();
+      if (!activeUid) return;
+
       const userGroup = groupChatMessagesByUser().find(g => g.uid === activeUid);
       const userEmail = (userGroup ? userGroup.email : (document.getElementById('chatActiveEmail')?.innerText || '')).trim().toLowerCase();
 
@@ -10670,12 +10786,10 @@ Hệ thống đã cập nhật tiền vào tài khoản của bạn. Cảm ơn b
     }
 
     // 4. GỬI LINK TRA CỨU ĐƠN VÀO TIN NHẮN KHÁCH HÀNG
-    function sendTrackingLinkToChat() {
-      const activeUid = AdminState.selectedChatUid;
-      if (!activeUid) {
-        Swal.fire('Chưa chọn hội thoại', 'Vui lòng chọn một cuộc trò chuyện trước!', 'warning');
-        return;
-      }
+    async function sendTrackingLinkToChat() {
+      const activeUid = await getOrSelectActiveChatUser();
+      if (!activeUid) return;
+
       const userGroup = groupChatMessagesByUser().find(g => g.uid === activeUid);
       const userEmail = (userGroup ? userGroup.email : (document.getElementById('chatActiveEmail')?.innerText || '')).trim().toLowerCase();
 

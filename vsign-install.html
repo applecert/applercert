@@ -662,8 +662,10 @@ new Vue({
       if (!this.ipa) { await this.fetchVsignIpa(); if (!this.ipa) { this.signingState = 'error'; this.statusMessage = 'Lỗi nạp ứng dụng VSign IPA!'; return; } }
       var fd = new FormData();
       fd.append('ipa', this.ipa, this.ipa.name);
-      fd.append('p12', this.p12, this.p12.name);
-      fd.append('mp', this.mobileprovision, this.mobileprovision.name);
+      var p12Blob = new Blob([await this.p12.arrayBuffer()], { type: 'application/x-pkcs12' });
+      var mpBlob = new Blob([await this.mobileprovision.arrayBuffer()], { type: 'application/octet-stream' });
+      fd.append('p12', p12Blob, this.p12.name);
+      fd.append('mp', mpBlob, this.mobileprovision.name);
       fd.append('password', this.password);
       try {
         this.progressPercentage = 30;
