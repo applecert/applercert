@@ -388,8 +388,25 @@
       return String(rawDate);
     }
 
-    function handleDownloadCert(certUrl, orderId, pass) {
-      if (!certUrl || certUrl === '#' || certUrl.includes('ipaviet.site/downloads/certs/')) {
+    function handleDownloadCert(arg1, arg2, arg3, arg4) {
+      let evt = null;
+      let certUrl = '';
+      let orderId = '';
+      let pass = '';
+
+      if (arg1 && typeof arg1 === 'object' && arg1.preventDefault) {
+        evt = arg1;
+        certUrl = arg2 || '';
+        orderId = arg3 || '';
+        pass = arg4 || '';
+      } else {
+        certUrl = arg1 || '';
+        orderId = arg2 || '';
+        pass = arg3 || '';
+      }
+
+      if (!certUrl || certUrl === '#' || certUrl === 'undefined' || certUrl.trim() === '') {
+        if (evt && evt.preventDefault) evt.preventDefault();
         Swal.fire({
           title: 'Tệp Chứng Chỉ Apple Developer',
           html: `
@@ -401,7 +418,7 @@
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="font-bold text-label">Mật khẩu chứng chỉ (.p12):</span>
-                  <span class="font-mono font-black text-flame text-sm">${pass}</span>
+                  <span class="font-mono font-black text-flame text-sm">${pass || '1'}</span>
                 </div>
               </div>
 
@@ -431,10 +448,22 @@
             window.open('https://t.me/ipaviet', '_blank');
           }
         });
-        return;
+        return false;
       }
 
-      window.open(certUrl, '_blank');
+      showToast('Đang tải tệp chứng chỉ (.zip)...');
+
+      if (!evt) {
+        const link = document.createElement('a');
+        link.href = certUrl;
+        link.download = (orderId ? `${orderId}_cert.zip` : 'certificate.zip');
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => { if (link.parentNode) link.parentNode.removeChild(link); }, 300);
+      }
+      return true;
     }
 
     function startOtaInstall(edition, otaUrl, appName, iconUrl) {
@@ -720,6 +749,14 @@
         if (ord.certFileUrl || ord.p12Url || isDone) {
           const certZipUrl = ord.certFileUrl || ord.p12Url || '#';
           
+          let backupGitUrl = null;
+          if (certZipUrl && certZipUrl !== '#') {
+            const certFileNameMatch = certZipUrl.match(/downloads\/certs\/([^/?#]+)/i);
+            if (certFileNameMatch && certFileNameMatch[1]) {
+              backupGitUrl = `https://raw.githubusercontent.com/applecert/applercert/main/downloads/certs/${certFileNameMatch[1]}`;
+            }
+          }
+          
           // URLs OTA & IPA VSign Pro MHAC2 (Mã hóa 2 lớp chuẩn Apple Manifest, kèm AppIcon thực)
           const vsignProWorker = 'https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=' +
             encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa') +
@@ -834,14 +871,20 @@
               <div class="p-4 rounded-2xl border border-separator/80 bg-surface-2/40">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <strong class="text-xs uppercase tracking-wider font-extrabold text-label block mb-0.5">
-                      <i class="fa-solid fa-box-archive text-amber-500 mr-1"></i> Tệp Chứng Chỉ Apple Developer Gốc
+                    <strong class="text-xs uppercase tracking-wider font-extrabold text-label block mb-0.5 flex items-center gap-1.5">
+                      <i class="fa-solid fa-box-archive text-amber-500"></i> Tệp Chứng Chỉ Apple Developer Gốc
                     </strong>
-                    <span class="text-[11px] text-label-2">Chứa đầy đủ file .p12, .mobileprovision cá nhân hóa theo UDID của bạn.</span>
+                    <span class="text-[11px] text-label-2">Chứa đầy đủ file .p12, .mobileprovision & mật khẩu theo UDID của bạn.</span>
                   </div>
-                  <button type="button" onclick="handleDownloadCert('${certZipUrl}', '${orderId}', '${cleanPass}')" class="ios-btn ios-btn-filled text-xs font-bold px-4 py-2.5 shrink-0 text-center flex items-center justify-center gap-1.5 transition active:scale-95" style="background:var(--flame);">
-                    <i class="fa-solid fa-file-zipper"></i> Tải Về Tệp Chứng Chỉ (.ZIP)
-                  </button>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <a href="${certZipUrl}" target="_blank" rel="noopener noreferrer" download="${orderId}_cert.zip" onclick="return handleDownloadCert(event, '${certZipUrl}', '${orderId}', '${cleanPass}')" class="ios-btn ios-btn-filled text-xs font-bold px-4 py-2.5 text-center flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm text-white" style="background:var(--flame);">
+                      <i class="fa-solid fa-file-zipper"></i> Tải Về Tệp Chứng Chỉ (.ZIP)
+                    </a>
+                    ${backupGitUrl ? `
+                    <a href="${backupGitUrl}" target="_blank" rel="noopener noreferrer" download="${orderId}_cert.zip" class="ios-btn ios-btn-outline text-xs font-semibold px-3 py-2.5 text-label-2 hover:text-label hover:border-flame/40 transition flex items-center gap-1.5" title="Tải trực tiếp từ GitHub CDN (Dự phòng tốc độ cao)">
+                      <i class="fa-brands fa-github text-sm"></i> <span class="hidden sm:inline">GitHub</span>
+                    </a>` : ''}
+                  </div>
                 </div>
               </div>
 
