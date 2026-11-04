@@ -388,6 +388,55 @@
       return String(rawDate);
     }
 
+    function handleDownloadCert(certUrl, orderId, pass) {
+      if (!certUrl || certUrl === '#' || certUrl.includes('ipaviet.site/downloads/certs/')) {
+        Swal.fire({
+          title: 'Tệp Chứng Chỉ Apple Developer',
+          html: `
+            <div class="text-left space-y-3.5 text-xs text-label-2">
+              <div class="p-3 bg-fill/50 rounded-2xl border border-separator space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-label">Mã đơn hàng:</span>
+                  <span class="font-mono font-bold text-appleBlue">${orderId}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-label">Mật khẩu chứng chỉ (.p12):</span>
+                  <span class="font-mono font-black text-flame text-sm">${pass}</span>
+                </div>
+              </div>
+
+              <div class="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-700 space-y-1">
+                <div class="font-bold flex items-center gap-1.5 text-xs text-blue-800">
+                  <i class="fa-solid fa-mobile-screen-button"></i> Khuyên dùng: Cài trực tiếp OTA
+                </div>
+                <p class="text-[11px] leading-relaxed">
+                  Bạn có thể bấm nút <strong>"Cài Đặt VSign Pro (OTA)"</strong> ở trên để ứng dụng tự động cài đặt thẳng lên màn hình chính máy bạn mà không cần tải file .zip về giải nén thủ công!
+                </p>
+              </div>
+
+              <p class="leading-relaxed">
+                Nếu bạn cần tệp gốc (.p12 & .mobileprovision) để lưu trữ trên máy tính hoặc ký qua ESign, vui lòng bấm nút bên dưới để nhận link Google Drive tải trực tiếp từ kỹ thuật viên trong 1 phút!
+              </p>
+            </div>
+          `,
+          showCancelButton: true,
+          confirmButtonText: '<i class="fa-brands fa-telegram mr-1.5"></i> Nhận link Drive qua Telegram',
+          cancelButtonText: 'Đóng',
+          confirmButtonColor: '#229ED9',
+          customClass: {
+            popup: 'rounded-3xl border border-separator shadow-2xl p-5',
+          }
+        }).then((res) => {
+          if (res.isConfirmed) {
+            window.open('https://t.me/ipaviet', '_blank');
+          }
+        });
+        return;
+      }
+
+      window.open(certUrl, '_blank');
+    }
+
     function startOtaInstall(edition, otaUrl, appName, iconUrl) {
       if (navigator.vibrate) navigator.vibrate(60);
 
@@ -678,7 +727,7 @@
             '&bundle=com.ipaviet.vsignpro&version=2.0&icon=' +
             encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-pro-icon.png');
           const vsignProOtaUrl = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(vsignProWorker);
-          const vsignProIpaUrl = `../VSign-Pro-MHAC2.ipa`;
+          const vsignProIpaUrl = `https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa`;
 
           // URLs OTA & IPA VSign Standard (Bản Tiêu Chuẩn)
           const vsignStdWorker = 'https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=' +
@@ -687,7 +736,7 @@
             '&bundle=com.vsign.app&version=2.0&icon=' +
             encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-std-icon.png');
           const vsignStdOtaUrl = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(vsignStdWorker);
-          const vsignStdIpaUrl = `../VSign-Standard.ipa`;
+          const vsignStdIpaUrl = `https://raw.githubusercontent.com/applecert/applercert/main/VSign-Standard.ipa`;
 
           fulfillHtml = `
             <div class="space-y-4 pt-2">
@@ -790,9 +839,9 @@
                     </strong>
                     <span class="text-[11px] text-label-2">Chứa đầy đủ file .p12, .mobileprovision cá nhân hóa theo UDID của bạn.</span>
                   </div>
-                  <a href="${certZipUrl}" target="_blank" class="ios-btn ios-btn-filled text-xs font-bold px-4 py-2.5 shrink-0 text-center flex items-center justify-center gap-1.5 transition active:scale-95" style="background:var(--flame);">
+                  <button type="button" onclick="handleDownloadCert('${certZipUrl}', '${orderId}', '${cleanPass}')" class="ios-btn ios-btn-filled text-xs font-bold px-4 py-2.5 shrink-0 text-center flex items-center justify-center gap-1.5 transition active:scale-95" style="background:var(--flame);">
                     <i class="fa-solid fa-file-zipper"></i> Tải Về Tệp Chứng Chỉ (.ZIP)
-                  </a>
+                  </button>
                 </div>
               </div>
 
@@ -803,7 +852,7 @@
                 </span>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <!-- App IPAVIET User -->
-                  <a href="../AppIPAVIET_user.ipa" download="AppIPAVIET_user.ipa" class="p-3 rounded-xl border border-separator/80 bg-surface hover:border-flame/50 transition flex items-center gap-3 group">
+                  <a href="https://raw.githubusercontent.com/applecert/applercert/main/AppIPAVIET_user.ipa" download="AppIPAVIET_user.ipa" class="p-3 rounded-xl border border-separator/80 bg-surface hover:border-flame/50 transition flex items-center gap-3 group">
                     <div class="w-8 h-8 rounded-lg bg-flame/10 text-flame flex items-center justify-center shrink-0 group-hover:scale-105 transition">
                       <i class="fa-brands fa-apple text-sm"></i>
                     </div>
@@ -815,7 +864,7 @@
                   </a>
 
                   <!-- Cấu hình Anti-Revoke DNS -->
-                  <a href="../dns-anti-revoke-ipaviet.mobileconfig" class="p-3 rounded-xl border border-separator/80 bg-surface hover:border-emerald-500/50 transition flex items-center gap-3 group">
+                  <a href="https://raw.githubusercontent.com/applecert/applercert/main/dns-anti-revoke-ipaviet.mobileconfig" class="p-3 rounded-xl border border-separator/80 bg-surface hover:border-emerald-500/50 transition flex items-center gap-3 group">
                     <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
                       <i class="fa-solid fa-shield-halved text-sm"></i>
                     </div>
