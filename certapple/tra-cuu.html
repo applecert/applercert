@@ -388,6 +388,106 @@
       return String(rawDate);
     }
 
+    function startOtaInstall(edition, otaUrl, appName, iconUrl) {
+      if (navigator.vibrate) navigator.vibrate(60);
+
+      const btnId = (edition === 'pro') ? 'btnOtaPro' : 'btnOtaStd';
+      const btn = document.getElementById(btnId);
+      const originalHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Đang gửi lệnh...';
+      }
+
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      Swal.fire({
+        title: '',
+        html: `
+          <div class="text-left space-y-4">
+            <!-- App Header -->
+            <div class="flex items-center gap-3.5 p-3 bg-fill/50 rounded-2xl border border-separator/80">
+              <img src="${iconUrl}" class="w-14 h-14 rounded-[14px] shadow-md border border-separator/80 shrink-0 object-cover" alt="${appName}">
+              <div class="min-w-0 flex-1">
+                <h4 class="font-black text-sm text-label leading-tight">${appName}</h4>
+                <p class="text-[11px] text-label-2 mt-0.5">Cài đặt trực tiếp qua giao thức OTA Apple</p>
+                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-500 mt-0.5">
+                  <i class="fa-solid fa-circle-check"></i> Chứng chỉ Apple Developer hợp lệ
+                </span>
+              </div>
+            </div>
+
+            <!-- Progress Bar & Status -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs font-semibold text-label-2">
+                <span id="otaProgressText">Đang kết nối máy chủ Apple...</span>
+                <span id="otaProgressVal" class="font-mono font-bold text-blue-500">25%</span>
+              </div>
+              <div class="w-full h-2.5 rounded-full bg-fill overflow-hidden border border-separator/40">
+                <div id="otaProgressBar" class="h-full bg-gradient-to-r from-blue-600 to-sky-400 transition-all duration-300 rounded-full" style="width: 25%"></div>
+              </div>
+            </div>
+
+            <!-- Hướng dẫn 3 bước thao tác trên iPhone -->
+            <div class="space-y-2 text-xs bg-fill/40 p-3 rounded-xl border border-separator/70 text-label-2">
+              <div class="flex items-start gap-2">
+                <span class="w-5 h-5 rounded-full bg-blue-500/10 text-blue-600 font-black text-[11px] flex items-center justify-center shrink-0">1</span>
+                <span>Bấm <strong>"Cài đặt" (Install)</strong> khi cửa sổ thông báo của Apple hiện lên màn hình.</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="w-5 h-5 rounded-full bg-blue-500/10 text-blue-600 font-black text-[11px] flex items-center justify-center shrink-0">2</span>
+                <span>Vuốt về <strong>Màn hình chính (Home Screen)</strong> để xem biểu tượng xoay tải ứng dụng.</span>
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="w-5 h-5 rounded-full bg-blue-500/10 text-blue-600 font-black text-[11px] flex items-center justify-center shrink-0">3</span>
+                <span>Nếu báo lỗi <em>"Chưa tin cậy"</em>: Vào <strong>Cài đặt > Cài đặt chung > Quản lý VPN & Thiết bị</strong> bấm <strong>Tin cậy</strong>.</span>
+              </div>
+            </div>
+
+            ${!isIos ? `
+              <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 text-[11px] font-medium flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-xs shrink-0"></i>
+                <span>Bạn đang mở trên máy tính/Android. Tính năng cài OTA chỉ kích hoạt trên iPhone/iPad mở bằng Safari. Trên thiết bị này bạn hãy tải file <strong>.IPA</strong> ở nút bên dưới!</span>
+              </div>
+            ` : ''}
+          </div>
+        `,
+        showConfirmButton: true,
+        confirmButtonText: 'Đã hiểu & Kiểm tra màn hình',
+        confirmButtonColor: '#0A84FF',
+        customClass: {
+          popup: 'rounded-3xl border border-separator shadow-2xl p-5',
+        }
+      });
+
+      // Animate progress
+      setTimeout(() => {
+        const t = document.getElementById('otaProgressText');
+        const v = document.getElementById('otaProgressVal');
+        const b = document.getElementById('otaProgressBar');
+        if (t) t.textContent = 'Đang tải gói Plist Apple Manifest...';
+        if (v) v.textContent = '65%';
+        if (b) b.style.width = '65%';
+      }, 350);
+
+      setTimeout(() => {
+        const t = document.getElementById('otaProgressText');
+        const v = document.getElementById('otaProgressVal');
+        const b = document.getElementById('otaProgressBar');
+        if (t) t.textContent = 'Đã gửi lệnh cài đặt! Vui lòng chọn "Cài đặt"';
+        if (v) v.textContent = '100%';
+        if (b) b.style.width = '100%';
+
+        // Dispatch OTA protocol to iOS
+        window.location.href = otaUrl;
+
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+        }
+      }, 750);
+    }
+
     // Handle Lookup Submit
     async function handleLookupSubmit(e) {
       if (e) e.preventDefault();
@@ -571,12 +671,22 @@
         if (ord.certFileUrl || ord.p12Url || isDone) {
           const certZipUrl = ord.certFileUrl || ord.p12Url || '#';
           
-          // URLs OTA & IPA VSign Pro MHAC2
-          const vsignProOtaUrl = ord.directInstallLink || `itms-services://?action=download-manifest&url=${encodeURIComponent('https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=https%3A%2F%2Fraw.githubusercontent.com%2Fapplecert%2Fapplercert%2Fmain%2FVSign-Pro-MHAC2.ipa&name=VSign%20Pro%20MHAC2&bundle=com.ipaviet.vsignpro&version=2.0')}`;
+          // URLs OTA & IPA VSign Pro MHAC2 (Mã hóa 2 lớp chuẩn Apple Manifest, kèm AppIcon thực)
+          const vsignProWorker = 'https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=' +
+            encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa') +
+            '&name=' + encodeURIComponent('VSign Pro MHAC2') +
+            '&bundle=com.ipaviet.vsignpro&version=2.0&icon=' +
+            encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-pro-icon.png');
+          const vsignProOtaUrl = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(vsignProWorker);
           const vsignProIpaUrl = `../VSign-Pro-MHAC2.ipa`;
 
           // URLs OTA & IPA VSign Standard (Bản Tiêu Chuẩn)
-          const vsignStdOtaUrl = `itms-services://?action=download-manifest&url=${encodeURIComponent('https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=https%3A%2F%2Fraw.githubusercontent.com%2Fapplecert%2Fapplercert%2Fmain%2FVSign-Standard.ipa&name=VSign%20Standard&bundle=com.vsign.app&version=2.0')}`;
+          const vsignStdWorker = 'https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=' +
+            encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/VSign-Standard.ipa') +
+            '&name=' + encodeURIComponent('VSign Tiêu Chuẩn') +
+            '&bundle=com.vsign.app&version=2.0&icon=' +
+            encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-std-icon.png');
+          const vsignStdOtaUrl = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(vsignStdWorker);
           const vsignStdIpaUrl = `../VSign-Standard.ipa`;
 
           fulfillHtml = `
@@ -610,45 +720,60 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <!-- BẢN 1: VSIGN PRO MHAC2 -->
-                  <div class="p-4 rounded-2xl border-2 border-appleBlue/30 bg-appleBlue/5 relative flex flex-col justify-between shadow-sm">
-                    <div class="absolute -top-2.5 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-appleBlue text-white shadow-sm flex items-center gap-1">
-                      <i class="fa-solid fa-star text-[9px]"></i> Khuyên Dùng
-                    </div>
+                  <div class="p-4 sm:p-5 rounded-2xl border-2 border-blue-500/30 bg-blue-500/[0.04] flex flex-col justify-between shadow-sm relative overflow-hidden">
                     <div>
-                      <div class="flex items-center gap-2 mb-1.5">
-                        <span class="w-7 h-7 rounded-lg bg-appleBlue text-white flex items-center justify-center text-xs font-black">PRO</span>
-                        <strong class="text-sm font-black text-label">VSign Pro MHAC2</strong>
+                      <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                          <img src="assets/vsign-pro-icon.png" class="w-12 h-12 rounded-[13px] shadow-md border border-separator/80 object-cover shrink-0" alt="VSign Pro">
+                          <div>
+                            <strong class="text-sm sm:text-base font-black text-label tracking-tight block">VSign Pro MHAC2</strong>
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wide bg-blue-600 text-white mt-0.5 shadow-sm">
+                              <i class="fa-solid fa-bolt text-[8px]"></i> 120Hz · Mod Mach-O
+                            </span>
+                          </div>
+                        </div>
+                        <span class="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-500/15 text-blue-600 border border-blue-500/30">
+                          Khuyên dùng ⭐
+                        </span>
                       </div>
-                      <p class="text-[11px] text-label-2 leading-relaxed mb-3">
-                        Tối ưu ProMotion 120Hz mượt mà, hỗ trợ Mod Mach-O, anticheat bypass chống văng nâng cao cho iPhone/iPad đời mới.
+                      <p class="text-[11px] text-label-2 leading-relaxed mb-4">
+                        Tối ưu ProMotion 120Hz siêu mượt, hỗ trợ Mod Mach-O, anticheat bypass chống văng nâng cao cho iPhone/iPad đời mới.
                       </p>
                     </div>
                     <div class="space-y-2 pt-2 border-t border-separator/60">
-                      <a href="${vsignProOtaUrl}" class="ios-btn ios-btn-filled w-full text-center block font-bold text-xs py-2.5 shadow-sm transition active:scale-95" style="background: linear-gradient(135deg, #0A84FF, #0071E3);">
-                        <i class="fa-solid fa-cloud-arrow-down mr-1"></i> Cài Đặt VSign Pro (OTA)
-                      </a>
-                      <a href="${vsignProIpaUrl}" download="VSign-Pro-MHAC2.ipa" class="ios-btn ios-btn-outline w-full text-center block font-semibold text-[11px] py-1.5 hover:bg-fill transition">
+                      <button type="button" id="btnOtaPro" onclick="startOtaInstall('pro', '${vsignProOtaUrl}', 'VSign Pro MHAC2', 'assets/vsign-pro-icon.png')" class="ios-btn ios-btn-filled w-full text-center block font-bold text-xs py-2.5 shadow-sm transition active:scale-95 text-white" style="background: linear-gradient(135deg, #0A84FF, #0071E3);">
+                        <i class="fa-solid fa-cloud-arrow-down mr-1.5"></i> Cài Đặt VSign Pro (OTA)
+                      </button>
+                      <a href="${vsignProIpaUrl}" download="VSign-Pro-MHAC2.ipa" class="ios-btn ios-btn-outline w-full text-center block font-semibold text-[11px] py-1.5 hover:bg-fill transition text-label">
                         <i class="fa-solid fa-file-arrow-down mr-1"></i> Tải Tệp VSign-Pro-MHAC2.ipa
                       </a>
                     </div>
                   </div>
 
                   <!-- BẢN 2: VSIGN STANDARD (BẢN TIÊU CHUẨN) -->
-                  <div class="p-4 rounded-2xl border border-separator/90 bg-surface flex flex-col justify-between shadow-sm">
+                  <div class="p-4 sm:p-5 rounded-2xl border border-separator/90 bg-surface flex flex-col justify-between shadow-sm relative overflow-hidden">
                     <div>
-                      <div class="flex items-center gap-2 mb-1.5">
-                        <span class="w-7 h-7 rounded-lg bg-fill text-label flex items-center justify-center text-xs font-black">STD</span>
-                        <strong class="text-sm font-bold text-label">VSign Tiêu Chuẩn</strong>
+                      <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                          <img src="assets/vsign-std-icon.png" class="w-12 h-12 rounded-[13px] shadow-md border border-separator/80 object-cover shrink-0" alt="VSign Standard">
+                          <div>
+                            <strong class="text-sm sm:text-base font-bold text-label tracking-tight block">VSign Tiêu Chuẩn</strong>
+                            <span class="block text-[11px] font-medium text-label-3 mt-0.5">Bản chuẩn gốc siêu nhẹ</span>
+                          </div>
+                        </div>
+                        <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-fill text-label-2 border border-separator">
+                          Chuẩn 4.9MB
+                        </span>
                       </div>
-                      <p class="text-[11px] text-label-2 leading-relaxed mb-3">
+                      <p class="text-[11px] text-label-2 leading-relaxed mb-4">
                         Dung lượng siêu nhẹ chỉ 4.9MB, độ tương thích 100% trên mọi thế hệ máy & mọi phiên bản iOS (iOS 12 đến iOS 18+).
                       </p>
                     </div>
                     <div class="space-y-2 pt-2 border-t border-separator/60">
-                      <a href="${vsignStdOtaUrl}" class="ios-btn ios-btn-outline w-full text-center block font-bold text-xs py-2.5 bg-fill hover:bg-fill/80 text-label transition active:scale-95">
-                        <i class="fa-solid fa-download mr-1"></i> Cài Đặt VSign Thường (OTA)
-                      </a>
-                      <a href="${vsignStdIpaUrl}" download="VSign-Standard.ipa" class="ios-btn ios-btn-outline w-full text-center block font-semibold text-[11px] py-1.5 hover:bg-fill transition">
+                      <button type="button" id="btnOtaStd" onclick="startOtaInstall('std', '${vsignStdOtaUrl}', 'VSign Tiêu Chuẩn', 'assets/vsign-std-icon.png')" class="ios-btn ios-btn-outline w-full text-center block font-bold text-xs py-2.5 bg-fill hover:bg-fill/80 text-label transition active:scale-95">
+                        <i class="fa-solid fa-download mr-1.5"></i> Cài Đặt VSign Thường (OTA)
+                      </button>
+                      <a href="${vsignStdIpaUrl}" download="VSign-Standard.ipa" class="ios-btn ios-btn-outline w-full text-center block font-semibold text-[11px] py-1.5 hover:bg-fill transition text-label">
                         <i class="fa-solid fa-file-arrow-down mr-1"></i> Tải Tệp VSign-Standard.ipa
                       </a>
                     </div>
