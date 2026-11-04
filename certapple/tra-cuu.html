@@ -747,7 +747,15 @@
 
         let fulfillHtml = '';
         if (ord.certFileUrl || ord.p12Url || isDone) {
-          const certZipUrl = ord.certFileUrl || ord.p12Url || '#';
+          let certZipUrl = (ord.certFileUrl || ord.p12Url || '').trim();
+          // Nếu đơn đã Hoàn Tất (COMPLETED) mà link bị trống trong Google Sheet, tự động trỏ đến tệp chuẩn của đơn
+          if (!certZipUrl || certZipUrl === '#' || certZipUrl === 'undefined') {
+            if (isDone && orderId && orderId !== 'CERT-UNKNOWN') {
+              certZipUrl = `https://ipaviet.site/downloads/certs/${orderId}_cert.zip`;
+            } else {
+              certZipUrl = '#';
+            }
+          }
           
           let backupGitUrl = null;
           if (certZipUrl && certZipUrl !== '#') {

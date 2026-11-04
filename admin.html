@@ -10300,6 +10300,30 @@
               note: note
             })
           });
+
+          // Nếu đã có file cert nạp kèm, gọi thêm fulfill_cert_order để đảm bảo Google Sheet cập nhật đủ link tải
+          if (certFileUrl) {
+            setTimeout(() => {
+              fetch(GOOGLE_API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                  action: 'fulfill_cert_order',
+                  pin: AdminState.auth.inMemoryPin || '200912aB',
+                  orderId: orderId,
+                  status: status || 'COMPLETED',
+                  revokeStatus: 'ACTIVE',
+                  warrantyUntil: warrantyUntil,
+                  remainingDays: remainingDays,
+                  certFileUrl: certFileUrl,
+                  directInstallLink: directInstallLink,
+                  certPass: certPass,
+                  fulfillNote: note
+                })
+              });
+            }, 500);
+          }
         } catch (e) {}
 
         // 4. Nếu đơn tạo từ ngữ cảnh Live Chat, tự động gửi thẻ đơn hàng vào chat
