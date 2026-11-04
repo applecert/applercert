@@ -9493,20 +9493,37 @@
       };
     }
 
+    function cleanCertPassword(raw) {
+      if (!raw) return '1';
+      let s = String(raw).trim();
+      const prefixRegex = /^(?:hồ\s*sơ|chứng\s*chỉ|certificate|cert|mật\s*khẩu\s*(?:cert|p12)?|mat\s*khau|password|pass|pwd|code)[\s:=]+/i;
+      while (prefixRegex.test(s)) {
+        s = s.replace(prefixRegex, '').trim();
+      }
+      s = s.replace(/^["'`]|["'`]$/g, '').trim();
+      return s || '1';
+    }
+
     function extractCertPasswordFromZip(files, zipName) {
       for (const name in files) {
         const lower = name.toLowerCase();
         if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('pwd') || lower.includes('matkhau')) {
           const text = files[name];
           const match = text.match(/(?:mật\s*khẩu|mat\s*khau|pass(?:word)?|pwd)[\s:=]+([^\r\n,;]+)/i);
-          if (match && match[1].trim()) return match[1].trim();
-          const firstLine = text.trim().split(/\r?\n/)[0].trim();
-          if (firstLine && firstLine.length <= 40 && !firstLine.includes(' ')) return firstLine;
+          if (match && match[1].trim()) return cleanCertPassword(match[1].trim());
+          const lines = text.trim().split(/\r?\n/);
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed) {
+              const cleaned = cleanCertPassword(trimmed);
+              if (cleaned && cleaned.length <= 40 && !cleaned.includes(' ')) return cleaned;
+            }
+          }
         }
       }
       if (zipName) {
         const fnMatch = zipName.match(/pass[_\-\s]*([a-zA-Z0-9\.\_]+)/i);
-        if (fnMatch && fnMatch[1]) return fnMatch[1].replace(/\.zip$/i, '');
+        if (fnMatch && fnMatch[1]) return cleanCertPassword(fnMatch[1].replace(/\.zip$/i, ''));
       }
       return '1';
     }
@@ -9925,7 +9942,7 @@
       
       const certFileUrl = document.getElementById('newCertFileUrl')?.value.trim() || '';
       const directInstallLink = document.getElementById('newCertDirectInstallLink')?.value.trim() || '';
-      const certPass = document.getElementById('newCertPass')?.value.trim() || '1';
+      const certPass = cleanCertPassword(document.getElementById('newCertPass')?.value);
 
       if (!orderId || !contact) {
         Swal.fire('Thiếu thông tin', 'Vui lòng nhập đầy đủ Mã đơn hàng và Khách hàng liên hệ!', 'warning');
@@ -9999,6 +10016,7 @@
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
               action: 'create_cert_order',
+              pin: AdminState.auth.inMemoryPin || '200912aB',
               orderId: orderId,
               uid: orderData.uid,
               productName: planName,
@@ -10010,6 +10028,9 @@
               warrantyUntil: warrantyUntil,
               warrantyDays: warrantyDays,
               remainingDays: remainingDays,
+              certFileUrl: certFileUrl,
+              directInstallLink: directInstallLink,
+              certPass: certPass,
               status: status,
               note: note
             })
@@ -10251,7 +10272,7 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
       const orderId = document.getElementById('fulfillTargetOrderId').value;
       const certFileUrl = document.getElementById('fulfillCertFileUrl').value.trim();
       const directInstallLink = document.getElementById('fulfillDirectInstallUrl').value.trim() || generateOtaInstallLink(certFileUrl);
-      const certPass = document.getElementById('fulfillCertPass').value.trim() || '1';
+      const certPass = cleanCertPassword(document.getElementById('fulfillCertPass').value);
       const status = document.getElementById('fulfillOrderStatus').value;
       const revokeStatus = document.getElementById('fulfillRevokeStatus').value;
       const warrantyUntil = document.getElementById('fulfillWarrantyUntil').value;
