@@ -1366,6 +1366,11 @@
             <input type="text" id="searchCertInput" oninput="renderCertOrders()" placeholder="Tìm Mã Đơn, UDID, Khách..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 rounded-2xl text-xs outline-none transition shadow-2xs">
           </div>
           <div class="flex items-center gap-2 w-full md:w-auto flex-wrap">
+            <button onclick="openGitHubDeployModal()" id="btnGitHubStatus" class="px-3.5 py-2 bg-white/90 hover:bg-white text-gray-800 rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 border border-black/[0.08] shadow-2xs" title="Cấu hình GitHub Token để tự động tải file lên">
+              <i data-lucide="github" class="w-3.5 h-3.5 text-gray-700"></i>
+              <span>Auto-Upload GitHub:</span>
+              <span id="badgeGitHubIndicator" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200">Kiểm tra...</span>
+            </button>
             <button onclick="openCreateCertOrderModal()" class="px-4 py-2 bg-gradient-to-r from-sky-600 to-blue-600 hover:brightness-110 text-white rounded-2xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md shadow-sky-600/20 border border-white/10">
               <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Lên Đơn Cert Mới
             </button>
@@ -3182,6 +3187,9 @@
               <i data-lucide="file-archive" class="w-4 h-4 text-sky-600"></i>
               Nạp File Cert Luôn (Tùy Chọn — Tự động quét mật khẩu & OTA)
             </span>
+            <button type="button" onclick="openGitHubDeployModal()" class="text-[10px] text-sky-700 hover:text-sky-900 font-bold bg-sky-100 hover:bg-sky-200 px-2 py-0.5 rounded-full transition flex items-center gap-1">
+              <i data-lucide="github" class="w-3 h-3"></i> <span>Tự động GitHub</span>
+            </button>
           </div>
 
           <div id="dropzoneNewCert" onclick="document.getElementById('fileInputNewCert').click()" class="border-2 border-dashed border-sky-300/80 hover:border-sky-500 hover:bg-sky-50/50 transition-all rounded-2xl p-4 text-center cursor-pointer bg-white/60">
@@ -3354,9 +3362,9 @@
               <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
               <span>Trả Nhanh Thông Minh (Chỉ cần thả file Cert vào đây)</span>
             </span>
-            <span class="text-[10px] text-sky-700 font-bold bg-sky-100/80 px-2 py-0.5 rounded-full">
-              Tự quét pass & tạo OTA
-            </span>
+            <button type="button" onclick="openGitHubDeployModal()" class="text-[10px] text-sky-700 hover:text-sky-900 font-bold bg-sky-100 hover:bg-sky-200 px-2.5 py-0.5 rounded-full transition flex items-center gap-1 border border-sky-200/80">
+              <i data-lucide="github" class="w-3 h-3"></i> <span id="fulfillGitHubStatusText">Auto-GitHub: Kiểm tra</span>
+            </button>
           </div>
 
           <div id="dropzoneFulfillCert" onclick="document.getElementById('fulfillCertFileInput').click()" class="border-2 border-dashed border-sky-300 hover:border-sky-500 hover:bg-sky-50 transition-all rounded-2xl p-4 text-center cursor-pointer bg-white">
@@ -9534,11 +9542,256 @@
       return `itms-services://?action=download-manifest&url=${encodeURIComponent(workerUrl)}`;
     }
 
-    // Upload an toàn lên Google Drive qua Apps Script (file <= 15MB) với timeout 4.5s hoặc fallback tức thì
+    // ===================================================================
+    // TỰ ĐỘNG ĐẨY CHỨNG CHỈ LÊN GITHUB REST API (applecert/applercert)
+    // ===================================================================
+    const GITHUB_REPO_OWNER = 'applecert';
+    const GITHUB_REPO_NAME = 'applercert';
+    const GITHUB_REPO_BRANCH = 'main';
+
+    function getGitHubToken() {
+      return (localStorage.getItem('ipaviet_github_token') || '').trim();
+    }
+
+    function setGitHubToken(token) {
+      if (token && token.trim()) {
+        localStorage.setItem('ipaviet_github_token', token.trim());
+      } else {
+        localStorage.removeItem('ipaviet_github_token');
+      }
+      updateGitHubStatusBadge();
+    }
+
+    async function verifyGitHubToken(token) {
+      if (!token) return { success: false, message: 'Chưa nhập Token!' };
+      try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}`, {
+          headers: {
+            'Authorization': `Bearer ${token.trim()}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (!res.ok) {
+          if (res.status === 401) return { success: false, message: 'Token không đúng hoặc đã hết hạn (HTTP 401).' };
+          if (res.status === 404) return { success: false, message: 'Không tìm thấy kho applecert/applercert hoặc token thiếu quyền repo (HTTP 404).' };
+          return { success: false, message: `Lỗi kết nối GitHub (HTTP ${res.status}).` };
+        }
+        const data = await res.json();
+        const canPush = data.permissions ? data.permissions.push : true;
+        return {
+          success: true,
+          repo: data.full_name,
+          canPush: canPush,
+          message: canPush ? 'Kết nối thành công! Đã xác nhận quyền ghi (push).' : 'Cảnh báo: Token chỉ có quyền đọc, không có quyền ghi.'
+        };
+      } catch (err) {
+        return { success: false, message: err.message || 'Lỗi mạng khi kiểm tra GitHub Token.' };
+      }
+    }
+
+    async function uploadFileToGitHubRepo(blobOrFile, targetPath, commitMessage) {
+      const token = getGitHubToken();
+      if (!token) {
+        throw new Error('Chưa cấu hình GitHub Token');
+      }
+
+      // Đọc sang chuỗi Base64
+      const base64Data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const res = reader.result;
+          const comma = res.indexOf(',');
+          resolve(comma !== -1 ? res.slice(comma + 1) : res);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blobOrFile);
+      });
+
+      const apiUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${targetPath}`;
+
+      // 1. Kiểm tra file cũ để lấy SHA nếu đã tồn tại (để cập nhật đè không bị lỗi 422)
+      let existingSha = null;
+      try {
+        const checkRes = await fetch(apiUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (checkData && checkData.sha) {
+            existingSha = checkData.sha;
+          }
+        }
+      } catch (e) {
+        console.warn("GitHub check sha warning:", e);
+      }
+
+      // 2. Commit file lên GitHub
+      const putBody = {
+        message: commitMessage || `Auto upload ${targetPath} via Admin.OS`,
+        content: base64Data,
+        branch: GITHUB_REPO_BRANCH
+      };
+      if (existingSha) {
+        putBody.sha = existingSha;
+      }
+
+      const putRes = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(putBody)
+      });
+
+      if (!putRes.ok) {
+        const errData = await putRes.json().catch(() => ({}));
+        throw new Error(errData.message || `Lỗi đẩy GitHub (HTTP ${putRes.status})`);
+      }
+
+      const resultData = await putRes.json();
+      return {
+        success: true,
+        path: targetPath,
+        sha: resultData.content ? resultData.content.sha : null,
+        downloadUrl: `https://ipaviet.site/${targetPath}`,
+        rawGitUrl: `https://raw.githubusercontent.com/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/${GITHUB_REPO_BRANCH}/${targetPath}`
+      };
+    }
+
+    function updateGitHubStatusBadge() {
+      const badge = document.getElementById('badgeGitHubIndicator');
+      const fulfillText = document.getElementById('fulfillGitHubStatusText');
+      const token = getGitHubToken();
+      if (badge) {
+        if (token) {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200';
+          badge.innerHTML = '🟢 Auto-Upload: BẬT';
+        } else {
+          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200';
+          badge.innerHTML = '⚪ Chưa Cài Token';
+        }
+      }
+      if (fulfillText) {
+        fulfillText.textContent = token ? '🟢 Auto-GitHub: BẬT' : '⚪ Cài GitHub Token';
+      }
+    }
+
+    function openGitHubDeployModal() {
+      const currentToken = getGitHubToken();
+      const hasToken = !!currentToken;
+      const maskedToken = hasToken ? (currentToken.slice(0, 4) + '••••••••••••••••' + currentToken.slice(-4)) : '';
+
+      Swal.fire({
+        title: '<div class="flex items-center justify-center gap-2 text-gray-900 font-black text-base"><i data-lucide="github" class="w-5 h-5"></i> Cấu Hình Tự Động Đẩy GitHub</div>',
+        html: `
+          <div class="text-left space-y-3.5 text-xs text-gray-600">
+            <div class="p-3.5 rounded-2xl border ${hasToken ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900' : 'bg-amber-50/70 border-amber-200 text-amber-900'} space-y-1">
+              <div class="font-bold flex items-center gap-1.5 text-xs">
+                <span class="w-2 h-2 rounded-full ${hasToken ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}"></span>
+                ${hasToken ? 'Hệ thống đã kết nối với repo applecert/applercert' : 'Chưa cấu hình Token tự động'}
+              </div>
+              <p class="text-[11px] leading-relaxed text-gray-600">
+                ${hasToken 
+                  ? `Token đang lưu: <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-gray-200 font-bold">${maskedToken}</code>. Mỗi khi bạn thả file Cert vào đơn, hệ thống sẽ tự động commit và tạo link tải ngay tức thì.`
+                  : 'Sau khi dán token, mỗi khi bạn <strong>Trả Đơn</strong> hoặc <strong>Lên Đơn Cert</strong>, hệ thống sẽ <strong>tự động tải file thẳng lên GitHub & Vercel</strong> trong 1 giây mà bạn không cần phải làm thủ công nữa!'}
+              </p>
+            </div>
+
+            <div>
+              <label class="block font-bold text-gray-800 mb-1">GitHub Personal Access Token (PAT):</label>
+              <input type="password" id="swalGitHubTokenInput" value="${currentToken}" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 text-xs font-mono outline-none">
+            </div>
+
+            <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-1.5 text-[11px]">
+              <div class="font-bold text-gray-800">📌 Hướng dẫn tạo Token (chỉ mất 20 giây - làm 1 lần duy nhất):</div>
+              <ol class="list-decimal list-inside space-y-1 text-gray-600">
+                <li>Bấm vào liên kết này: <a href="https://github.com/settings/tokens/new?scopes=repo&description=IPAVIET_Cert_AutoUpload" target="_blank" class="text-sky-600 hover:underline font-bold">Mở trang tạo Token GitHub (đã chọn sẵn quyền repo)</a></li>
+                <li>Cuộn xuống dưới cùng bấm nút màu xanh <strong>"Generate token"</strong>.</li>
+                <li>Copy mã token (bắt đầu bằng <code>ghp_</code>) rồi dán vào ô bên trên và bấm <strong>Lưu & Kiểm Tra</strong>.</li>
+              </ol>
+            </div>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Lưu & Kiểm Tra Kết Nối',
+        cancelButtonText: hasToken ? 'Xóa Token' : 'Đóng',
+        confirmButtonColor: '#0A84FF',
+        cancelButtonColor: hasToken ? '#EF4444' : '#6B7280',
+        customClass: {
+          popup: 'rounded-3xl border border-black/[0.08] shadow-2xl p-5 max-w-lg',
+        },
+        didOpen: () => {
+          if (window.lucide) lucide.createIcons();
+        },
+        preConfirm: async () => {
+          const val = document.getElementById('swalGitHubTokenInput')?.value.trim();
+          if (!val) {
+            Swal.showValidationMessage('Vui lòng nhập GitHub Token!');
+            return false;
+          }
+          Swal.showLoading();
+          const test = await verifyGitHubToken(val);
+          if (!test.success) {
+            Swal.showValidationMessage(test.message);
+            return false;
+          }
+          return val;
+        }
+      }).then((res) => {
+        if (res.isConfirmed && res.value) {
+          setGitHubToken(res.value);
+          Swal.fire({
+            icon: 'success',
+            title: 'Đã kích hoạt Tự Động Đẩy GitHub!',
+            text: 'Từ bây giờ, mọi tệp chứng chỉ bạn nạp trên trang Admin sẽ được tự động đóng gói và đẩy trực tiếp lên GitHub & Vercel!',
+            confirmButtonColor: '#0A84FF',
+            customClass: { popup: 'rounded-3xl p-5' }
+          });
+        } else if (res.dismiss === Swal.DismissReason.cancel && hasToken) {
+          setGitHubToken('');
+          Swal.fire({
+            icon: 'info',
+            title: 'Đã xóa Token',
+            text: 'Đã hủy chế độ tự động đẩy GitHub.',
+            confirmButtonColor: '#0A84FF',
+            customClass: { popup: 'rounded-3xl p-5' }
+          });
+        }
+      });
+    }
+
+    // Upload an toàn tự động: Ưu tiên GitHub API trực tiếp, sau đó tới GAS & Fallback
     async function uploadCertFileToBackend(file, orderId) {
       if (!file) return '';
 
-      // 1. Thử gửi base64 lên Google Apps Script lưu trực tiếp vào Google Drive với timeout 4.5s
+      const targetFileName = `${orderId}_cert.zip`;
+      const targetPath = `downloads/certs/${targetFileName}`;
+      const token = getGitHubToken();
+
+      // 1. Tự động commit và đẩy thẳng lên GitHub nếu đã cấu hình Token
+      if (token) {
+        try {
+          const s3Text = document.getElementById('swalStep3Text');
+          if (s3Text) s3Text.textContent = `Đang tự động đẩy tệp lên GitHub (applecert/applercert)...`;
+
+          const ghRes = await uploadFileToGitHubRepo(file, targetPath, `Auto upload cert for order ${orderId} via Admin`);
+          if (ghRes && ghRes.success) {
+            if (s3Text) s3Text.textContent = `✓ Đã tự động đẩy lên GitHub & Vercel thành công!`;
+            return ghRes.downloadUrl;
+          }
+        } catch (ghErr) {
+          console.warn("GitHub upload warning (falling back):", ghErr);
+          const s3Text = document.getElementById('swalStep3Text');
+          if (s3Text) s3Text.textContent = `⚠️ Lỗi GitHub: ${ghErr.message} (Chuyển sang link dự phòng)`;
+        }
+      }
+
+      // 2. Thử gửi base64 lên Google Apps Script lưu trực tiếp vào Google Drive với timeout 3.5s
       if (file.size && file.size <= 15 * 1024 * 1024) {
         try {
           const base64Data = await new Promise((resolve, reject) => {
@@ -9554,14 +9807,14 @@
 
           const fd = new URLSearchParams();
           fd.append('action', 'upload_cert_file');
-          fd.append('fileName', `${orderId}_${file.name}`);
+          fd.append('fileName', targetFileName);
           fd.append('fileData', base64Data);
 
           const resp = await fetchWithTimeout(GOOGLE_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: fd
-          }, 4500);
+          }, 3500);
 
           if (resp && resp.ok) {
             const data = await resp.json().catch(() => null);
@@ -9574,24 +9827,8 @@
         }
       }
 
-      // 2. Thử Firebase Storage nếu client có quyền (timeout 3s)
-      try {
-        if (typeof firebase !== 'undefined' && firebase.storage) {
-          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-          const storageRef = firebase.storage().ref(`certificates/${orderId}/${Date.now()}_${safeName}`);
-          const snap = await Promise.race([
-            storageRef.put(file),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Storage timeout')), 3000))
-          ]);
-          const dl = await snap.ref.getDownloadURL();
-          if (dl) return dl;
-        }
-      } catch (fsErr) {
-        console.warn('Firebase Storage upload warning (proceeding with fallback URL):', fsErr);
-      }
-
       // 3. Fallback: URL tải trực tiếp an toàn, 0ms, không bao giờ làm treo trình duyệt
-      return `https://ipaviet.site/downloads/certs/${orderId}_${file.name.replace(/\s+/g, '_')}`;
+      return `https://ipaviet.site/downloads/certs/${targetFileName}`;
     }
 
     // Xử lý nạp và bóc tách thông minh tệp Cert (Hỗ trợ cả ZIP và nhiều file rời .p12, .mobileprovision, .txt)
@@ -9642,6 +9879,8 @@
         let fileNames = [];
         let zipFile = null;
         let provBuffer = null;
+        let p12File = null;
+        let p12Buffer = null;
         let textContents = {};
 
         for (const f of fileList) {
@@ -9660,7 +9899,11 @@
               textContents[f.name] = txt;
             } catch (e) {}
           } else if (lower.endsWith('.p12')) {
+            p12File = f;
             mainFile = f;
+            try {
+              p12Buffer = await f.arrayBuffer();
+            } catch (e) {}
           }
         }
 
@@ -9758,16 +10001,37 @@
           ? (document.getElementById('fulfillTargetOrderId')?.value || 'CERT')
           : (document.getElementById('newCertOrderId')?.value || 'CERT');
 
-        let downloadUrl = await uploadCertFileToBackend(mainFile, targetOrderId);
+        // Nếu người dùng nạp file lẻ (.p12 và .mobileprovision) mà chưa đóng gói ZIP, tự động đóng gói ZIP chuẩn
+        if (!zipFile && p12Buffer && provBuffer && typeof JSZip !== 'undefined') {
+          try {
+            const autoZip = new JSZip();
+            autoZip.file('cert.p12', p12Buffer);
+            autoZip.file('cert.mobileprovision', provBuffer);
+            autoZip.file('password.txt', `Password certificate: ${detectedPass}`);
+            const zipBlob = await autoZip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+            zipBlob.name = `${targetOrderId}_cert.zip`;
+            zipFile = zipBlob;
+            mainFile = zipBlob;
+          } catch (zipErr) {
+            console.warn("JSZip auto-bundle warning:", zipErr);
+          }
+        }
+
+        let downloadUrl = await uploadCertFileToBackend(zipFile || mainFile, targetOrderId);
         if (!downloadUrl) {
-          downloadUrl = `https://ipaviet.site/downloads/certs/${targetOrderId}_${mainFile.name.replace(/\s+/g, '_')}`;
+          downloadUrl = `https://ipaviet.site/downloads/certs/${targetOrderId}_cert.zip`;
         }
 
         const otaInstallLink = generateOtaInstallLink(downloadUrl, profileName || 'VSign IPAViet');
 
         Swal.close();
         if (typeof showToast === 'function') {
-          showToast(`⚡ Đã tự động nhận diện Mật khẩu: "${detectedPass}" & tạo link OTA thành công! Bạn có thể dán link Google Drive vào ô Link Tải để khách tải file gốc ổn định nhất.`, 'success');
+          const hasGh = !!getGitHubToken();
+          if (hasGh) {
+            showToast(`⚡ Đã tự động đóng gói, tải lên GitHub/Vercel & quét pass: "${detectedPass}" thành công!`, 'success');
+          } else {
+            showToast(`⚡ Đã tự động nhận diện pass: "${detectedPass}". (Gợi ý: Cài GitHub Token để file tự đẩy lên server)`, 'info');
+          }
         }
 
         return {
@@ -11134,6 +11398,7 @@ Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, t�
       loadCertProducts();
       initCertMaintenanceState();
       setupCertDropzones();
+      updateGitHubStatusBadge();
 
       // Tự động làm mới danh sách khách trực tuyến mỗi 25 giây khi admin đang xem tab Thống Kê
       setInterval(() => {
