@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Danh sách Super Admin email
+    function isSuperAdmin() {
+      return request.auth != null && 
+        (request.auth.token.email in [
+          'mquitran@gmail.com',
+          'tchy432@gmail.com',
+          'applecert.vn@gmail.com'
+        ] || request.auth.token.admin == true);
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      // Người dùng chỉ được đọc hồ sơ của chính mình hoặc Super Admin
+      allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
+      
+      // Tạo tài khoản mới: cấm tự gán coins > 0 hoặc vip = true
+      allow create: if request.auth != null && request.auth.uid == userId
+        && (!request.resource.data.keys().hasAny(['vip', 'isAdmin', 'role']) || request.resource.data.vip == false)
+        && (!request.resource.data.keys().hasAny(['coins']) || request.resource.data.coins == 0);
+
+      // Cập nhật hồ sơ: CẤM tuyệt đối Client tự sửa trường coins, vip, role, isAdmin
+      allow update: if isSuperAdmin() || (
+        request.auth != null && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coins', 'vip', 'isAdmin', 'role'])
+      );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    // 2. Chứng Chỉ Apple Orders (cert_orders)
+    match /cert_orders/{orderId} {
+      // Cho phép tra cứu đơn công khai hoặc qua authentication
+      allow read: if true;
+
+      // Khách hàng tạo đơn mới: Trạng thái bắt buộc phải là PENDING hoặc PENDING_PAYMENT
+      allow create: if isSuperAdmin() || (
+        request.resource.data.status in ['PENDING', 'PENDING_PAYMENT']
+      );
+
+      // CẬP NHẬT ĐƠN HÀNG: Chỉ Admin mới có quyền duyệt tiền hoặc trả file Cert!
+      // Chặn hoàn toàn việc khách tự sửa status thành COMPLETED hoặc PAID_PROCESSING
+      allow update: if isSuperAdmin();
+
+      allow delete: if isSuperAdmin();
+    }
+
+    // 3. Đơn Hàng MMO (mmo_orders)
+    match /mmo_orders/{orderId} {
+      allow read: if isSuperAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow create: if isSuperAdmin() || (request.auth != null && request.resource.data.uid == request.auth.uid);
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // 4. Kho Ứng Dụng IPA (app_library & catalog)
+    match /app_library/{appId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+    match /apps/{appId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // 5. Thống Kê & Hành Vi Khách Hàng (analytics & telemetry)
+    match /analytics/{docId} {
+      allow read: if isSuperAdmin();
+      allow create: if true; // Ghi nhận telemetry
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // 6. Cấu Hình Hệ Thống (system_configs)
+    match /system_configs/{configId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // Mặc định: Chặn tất cả các đường dẫn khác
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+  }
+}

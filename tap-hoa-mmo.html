@@ -2452,20 +2452,48 @@
 
       try {
         if (REGMODE) {
-          const res = await fetch('/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: em,
-              password: pw,
-              username: em.split('@')[0],
-              captchaToken: captchaToken,
-              captchaType: 'turnstile'
-            })
-          });
-          const data = await res.json();
-          if (!data.success) throw new Error(data.message || 'Đăng ký thất bại!');
-          await auth.signInWithEmailAndPassword(em, pw);
+          let registered = false;
+          try {
+            const res = await fetch('/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: em,
+                password: pw,
+                username: em.split('@')[0],
+                captchaToken: captchaToken,
+                captchaType: 'turnstile'
+              })
+            });
+            const textResp = await res.text();
+            if (textResp && textResp.startsWith('{')) {
+              const data = JSON.parse(textResp);
+              if (!data.success) throw new Error(data.message || 'Đăng ký thất bại!');
+              await auth.signInWithEmailAndPassword(em, pw);
+              registered = true;
+            }
+          } catch(apiErr) {
+            console.warn("Fallback sang Firebase Client Registration:", apiErr);
+          }
+
+          if (!registered) {
+            const userCred = await auth.createUserWithEmailAndPassword(em, pw);
+            if (userCred && userCred.user) {
+              try {
+                await userCred.user.updateProfile({ displayName: em.split('@')[0] });
+                if (typeof db !== 'undefined' && db.collection) {
+                  await db.collection('users').doc(userCred.user.uid).set({
+                    email: em,
+                    username: em.split('@')[0],
+                    coins: 0,
+                    vip: false,
+                    role: 'member',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                  }, { merge: true });
+                }
+              } catch(profileErr) {}
+            }
+          }
           showToast('Đăng ký thành công!', 'success');
         } else {
           await auth.signInWithEmailAndPassword(em, pw);

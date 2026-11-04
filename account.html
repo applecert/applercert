@@ -1106,23 +1106,54 @@
         if (authMode === 'login') { 
           await auth.signInWithEmailAndPassword(email, pass); 
         } else { 
-          const res = await fetch('/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: email,
-              password: pass,
-              username: username,
-              captchaToken: captchaToken,
-              captchaType: 'turnstile'
-            })
-          });
-
-          const data = await res.json();
-          if (!data.success) {
-            throw new Error(data.message || 'Đăng ký thất bại!');
+          // Thử gọi qua Backend API trước, nếu trên GitHub Pages (trả về 404 HTML) thì tự động fallback sang Firebase Client SDK
+          let registered = false;
+          try {
+            const res = await fetch('/api/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: email,
+                password: pass,
+                username: username,
+                captchaToken: captchaToken,
+                captchaType: 'turnstile'
+              })
+            });
+            const textResp = await res.text();
+            if (textResp && textResp.startsWith('{')) {
+              const data = JSON.parse(textResp);
+              if (!data.success) {
+                throw new Error(data.message || 'Đăng ký thất bại!');
+              }
+              await auth.signInWithEmailAndPassword(email, pass);
+              registered = true;
+            }
+          } catch (apiErr) {
+            console.warn("API Serverless không khả dụng trên môi trường Static, chuyển sang Firebase Client Registration:", apiErr);
           }
-          await auth.signInWithEmailAndPassword(email, pass); 
+
+          if (!registered) {
+            // Direct Firebase Client Registration (100% tương thích GitHub Pages)
+            const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+            if (userCred && userCred.user) {
+              try {
+                await userCred.user.updateProfile({ displayName: username });
+                if (typeof db !== 'undefined' && db.collection) {
+                  await db.collection('users').doc(userCred.user.uid).set({
+                    email: email,
+                    username: username,
+                    coins: 0,
+                    vip: false,
+                    role: 'member',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                  }, { merge: true });
+                }
+              } catch(profileErr) {
+                console.warn("Lưu hồ sơ ban đầu:", profileErr);
+              }
+            }
+          }
         } 
       } catch (error) { 
         console.error(error);

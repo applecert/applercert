@@ -252,8 +252,8 @@
             Mã PIN Máy Chủ
           </label>
           <div class="relative">
-            <input type="password" id="serverPin" maxlength="16" placeholder="Nhập PIN máy chủ..." 
-              value="200912aB"
+            <input type="password" id="serverPin" maxlength="16" placeholder="Nhập PIN bảo mật..." 
+              value="" autocomplete="off"
               onkeydown="if(event.key==='Enter') verifyServerPin()"
               class="w-full text-center font-mono font-bold text-white bg-black/40 border border-white/15 px-4 py-3.5 rounded-2xl outline-none focus:border-appleBlue focus:ring-4 focus:ring-appleBlue/25 text-lg tracking-wider transition-all placeholder-white/30 backdrop-blur-md">
             <button type="button" onclick="togglePinVisibility()" title="Ẩn/Hiện PIN" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-1.5 transition">
@@ -285,9 +285,12 @@
         <span id="btnGoogleLoginText">Đăng nhập tài khoản Google</span>
       </button>
 
-      <!-- Bottom Hint / 1-Click Fill -->
+      <!-- Bottom Security Status & Sign-Out -->
       <div class="mt-4 pt-3.5 border-t border-white/10 flex items-center justify-between text-[11px] text-white/50">
-        <span>PIN máy chủ: <button type="button" onclick="fillQuickPin('200912aB')" class="text-sky-400 font-mono font-bold underline hover:text-sky-300">200912aB</button></span>
+        <span class="flex items-center gap-1.5 text-white/60">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Bảo mật hệ thống Admin</span>
+        </span>
         <button type="button" onclick="logoutAdmin()" class="text-rose-400 hover:text-rose-300 hover:underline">Đăng xuất</button>
       </div>
 
@@ -3943,9 +3946,7 @@
     }
 
     function fillQuickPin(val) {
-      const pinEl = document.getElementById('serverPin');
-      if (pinEl) pinEl.value = val;
-      verifyServerPin();
+      // Disabled for security
     }
 
     async function verifyServerPin() {
@@ -4021,11 +4022,11 @@
       if (window.lucide) lucide.createIcons();
     });
 
-    // Tự động mở khóa ngay nếu phiên trước đã nhớ mã PIN chuẩn
+    // Tự động mở khóa an toàn trong phiên làm việc hiện tại (Session Only)
     (function checkInitialAutoUnlock() {
       try { loadCachedAdminDataInstant(); } catch(e) {}
-      const savedPin = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin') || localStorage.getItem('admin_verified_pin');
-      if (savedPin === MASTER_SERVER_PIN) {
+      const savedPin = sessionStorage.getItem('admin_session_pin');
+      if (savedPin && savedPin === MASTER_SERVER_PIN) {
         setTimeout(() => {
           unlockDashboard(MASTER_SERVER_PIN);
         }, 100);
@@ -10635,11 +10636,7 @@ Hệ thống đang tiến hành cấp chứng chỉ cho máy bạn. Ngay khi có
             `🛡️ Trạng thái: <b>${status}</b>\n` +
             `⏳ Hạn bảo hành: <b>${warrantyUntil} (Còn ${remainingDays} ngày)</b>\n` +
             `🔍 Tra cứu: ${trackingLink}`;
-          fetch(`https://api.telegram.org/bot7986654042:AAHHbevmrLVmWSJ5dXIsQssUmRM5tPQWQjk/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: '8103429932', text: teleMsg, parse_mode: 'HTML' })
-          });
+          fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(teleMsg)}`, { mode: 'no-cors' });
         } catch (e) {}
 
         Swal.fire({
@@ -10958,11 +10955,7 @@ Cảm ơn bạn đã lựa chọn dịch vụ chứng chỉ Apple của IPAVIET!
             `📦 File Cert: ${certFileUrl}\n` +
             `📲 OTA Direct: ${directInstallLink}\n` +
             `🔍 Tra cứu: ${trackingLink}`;
-          fetch(`https://api.telegram.org/bot7986654042:AAHHbevmrLVmWSJ5dXIsQssUmRM5tPQWQjk/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: '8103429932', text: teleMsg, parse_mode: 'HTML' })
-          });
+          fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(teleMsg)}`, { mode: 'no-cors' });
         } catch (e) {}
 
         Swal.fire({
