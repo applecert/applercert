@@ -125,6 +125,18 @@
     .pt-safe {
       padding-top: env(safe-area-inset-top, 0px);
     }
+
+    /* Lucian [017] Tilting Preset Amount Chips */
+    .amount-preset-chip {
+      transition: transform 0.25s cubic-bezier(0.34, 1.45, 0.64, 1), box-shadow 0.25s, border-color 0.25s;
+    }
+    .amount-preset-chip:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px -4px rgba(0, 113, 227, 0.25);
+    }
+    .amount-preset-chip:active {
+      transform: scale(0.95);
+    }
   </style>
 
   <script>
@@ -600,13 +612,12 @@
           holder.innerText = (user.displayName || user.email || 'TRAN NGUYEN MINH QUI').toUpperCase();
         }
 
-        // Live balance subscription
+        // Live balance subscription with Lucian [018] Rolling Odometer
         db.collection("users").doc(user.uid).onSnapshot(doc => {
           if (doc.exists) {
             const coins = doc.data().coins || 0;
-            const formatted = coins.toLocaleString() + "đ";
             const h = document.getElementById('headerCoins');
-            if (h) h.innerText = formatted;
+            if (h) animateOdometer(h, coins, 'đ');
           }
         });
 
@@ -1013,6 +1024,30 @@
       } else {
         textEl.innerText = 'Trở lại';
       }
+    }
+
+    /* ─── Lucian [018] Rolling Odometer Stepper ─── */
+    function animateOdometer(el, endVal, suffix = '', duration = 800) {
+      if (!el) return;
+      const startVal = parseInt((el.textContent || '0').replace(/[^0-9]/g, ''), 10) || 0;
+      if (startVal === endVal) {
+        el.textContent = endVal.toLocaleString('vi-VN') + suffix;
+        return;
+      }
+      const startTime = performance.now();
+      function updateNumber(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const currentVal = Math.round(startVal + (endVal - startVal) * ease);
+        el.textContent = currentVal.toLocaleString('vi-VN') + suffix;
+        if (progress < 1) {
+          requestAnimationFrame(updateNumber);
+        } else {
+          el.textContent = endVal.toLocaleString('vi-VN') + suffix;
+        }
+      }
+      requestAnimationFrame(updateNumber);
     }
 
     document.addEventListener('DOMContentLoaded', () => {

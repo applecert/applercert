@@ -19,6 +19,105 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+  <!-- Lucian UX/UI Styles -->
+  <style>
+    /* Lucian [012] Bookmark Ribbon Button */
+    .u012-ribbon-btn {
+      position: relative;
+      transition: transform 0.3s cubic-bezier(0.34, 1.45, 0.64, 1), color 0.3s ease;
+    }
+    .u012-ribbon-btn:active {
+      transform: scale(0.92);
+    }
+    .u012-ribbon-btn.is-saved {
+      color: #F59E0B !important;
+      background: rgba(245, 158, 11, 0.15) !important;
+      border-color: rgba(245, 158, 11, 0.4) !important;
+    }
+    .u012-ribbon-btn.is-saved svg {
+      fill: #F59E0B;
+    }
+
+    /* Lucian [016] & [261] Rating Hub */
+    .u016-review-hub {
+      margin-top: 24px;
+    }
+    .u016-rating-box {
+      border-radius: 20px;
+      padding: 20px 24px;
+      background: rgba(125, 125, 125, 0.05);
+      border: 1px solid rgba(125, 125, 125, 0.12);
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .u016-rating-left {
+      text-align: center;
+      min-width: 130px;
+    }
+    .u016-score {
+      font-size: 44px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1;
+      display: block;
+    }
+    .u016-stars {
+      display: inline-flex;
+      gap: 3px;
+      margin: 8px 0 4px;
+      font-size: 20px;
+      color: #d1d5db;
+      cursor: pointer;
+    }
+    .u016-stars .star {
+      transition: transform 0.2s cubic-bezier(0.34, 1.45, 0.64, 1), color 0.2s;
+    }
+    .u016-stars .star:hover {
+      transform: scale(1.25);
+    }
+    .u016-stars .star.on {
+      color: #F59E0B;
+    }
+    .u016-rating-left small {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .u261-bars {
+      flex: 1;
+      min-width: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .u261-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .u261-track {
+      flex: 1;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(125, 125, 125, 0.15);
+      overflow: hidden;
+      position: relative;
+    }
+    .u261-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: #F59E0B;
+      transition: width 0.8s cubic-bezier(0.34, 1.45, 0.64, 1);
+    }
+  </style>
 </head>
 <body class="has-sidebar">
   <!-- ══ SVG GRADIENT DEFS (Exact match from index.html for glowing neon logo) ══ -->
@@ -196,6 +295,10 @@
                 <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                 Ký VSign
               </a>
+              <!-- Lucian [012] Bookmark Ribbon Button -->
+              <button type="button" class="icon-button u012-ribbon-btn" id="btnFavoriteApp" onclick="toggleFavoriteApp(this)" aria-label="Lưu vào yêu thích" title="Lưu yêu thích">
+                <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              </button>
               <button type="button" class="icon-button" onclick="handleShareApp()" aria-label="Chia sẻ">
                 <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 8H4v13h16V8h-4M12 16V2m-4 4 4-4 4 4"/></svg>
               </button>
@@ -211,6 +314,30 @@
           <div><small>NHÀ PHÁT TRIỂN</small><strong id="factDev">IPAVIET Studio</strong></div>
           <div><small>PHIÊN BẢN</small><strong id="factVersion">1.0</strong></div>
           <div><small>DUNG LƯỢNG</small><strong id="factSize">--</strong></div>
+        </section>
+
+        <!-- Lucian [016] Interactive Star Rating & [261] Review Star Bars -->
+        <section class="detail-section u016-review-hub" aria-label="Đánh giá & Xếp hạng">
+          <div class="u016-rating-box">
+            <div class="u016-rating-left">
+              <span class="u016-score" id="u016Score">4.9</span>
+              <div class="u016-stars" id="u016InteractiveStars" onclick="rateAppInteractive(event)">
+                <span class="star on" data-val="1">★</span>
+                <span class="star on" data-val="2">★</span>
+                <span class="star on" data-val="3">★</span>
+                <span class="star on" data-val="4">★</span>
+                <span class="star on" data-val="5">★</span>
+              </div>
+              <small id="u016Votes">1.280 lượt xếp hạng</small>
+            </div>
+            <div class="u261-bars">
+              <div class="u261-row"><span>5★</span><div class="u261-track"><div class="u261-fill" style="width: 88%;"></div></div></div>
+              <div class="u261-row"><span>4★</span><div class="u261-track"><div class="u261-fill" style="width: 9%;"></div></div></div>
+              <div class="u261-row"><span>3★</span><div class="u261-track"><div class="u261-fill" style="width: 2%;"></div></div></div>
+              <div class="u261-row"><span>2★</span><div class="u261-track"><div class="u261-fill" style="width: 0.6%;"></div></div></div>
+              <div class="u261-row"><span>1★</span><div class="u261-track"><div class="u261-fill" style="width: 0.4%;"></div></div></div>
+            </div>
+          </div>
         </section>
 
         <!-- DOWNLOAD HUB: Apple Inset Grouped Table (Compact, Sleek & Smart) -->
@@ -2647,6 +2774,36 @@
       showToast("Không tìm thấy thông tin ứng dụng này trong kho.");
       setTimeout(() => { window.location.href = 'index.html'; }, 2000);
     });
+
+    /* ─── Lucian [012] Bookmark Ribbon & [016] Interactive Rating ─── */
+    function toggleFavoriteApp(btn) {
+      if (!btn) return;
+      const isSaved = btn.classList.toggle('is-saved');
+      if (isSaved) {
+        showToast('Đã lưu ứng dụng vào danh sách yêu thích!');
+        if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+        }
+      } else {
+        showToast('Đã bỏ lưu khỏi danh sách yêu thích.');
+      }
+    }
+
+    function rateAppInteractive(e) {
+      const star = e.target.closest('.star');
+      if (!star) return;
+      const val = parseInt(star.getAttribute('data-val'), 10) || 5;
+      const stars = document.querySelectorAll('#u016InteractiveStars .star');
+      stars.forEach(s => {
+        const sVal = parseInt(s.getAttribute('data-val'), 10);
+        s.classList.toggle('on', sVal <= val);
+      });
+      const scoreEl = document.getElementById('u016Score');
+      if (scoreEl) scoreEl.textContent = val.toFixed(1);
+      showToast(`Cảm ơn bạn đã xếp hạng ${val} sao cho ứng dụng!`);
+      if (navigator.vibrate) navigator.vibrate(40);
+    }
   </script>
 </body>
 </html>

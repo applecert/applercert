@@ -301,6 +301,140 @@
       backdrop-filter: blur(10px);
       display: none;
     }
+
+    /* ─── Lucian [372] Fill-to-level-up XP Bar ─── */
+    .u372-card {
+      position: relative;
+      margin: 18px 0;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(0, 113, 227, 0.12));
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      text-align: left;
+      overflow: hidden;
+    }
+    .u372-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .u372-av {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #0071e3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+    }
+    .u372-ring {
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 2px solid #FFD43B;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .u372-card.is-up .u372-ring {
+      animation: u372-ring .9s ease-out;
+    }
+    .u372-card.is-up .u372-ring:nth-child(2) {
+      animation-delay: .2s;
+    }
+    @keyframes u372-ring {
+      from { transform: scale(.8); opacity: 1; }
+      to { transform: scale(2.2); opacity: 0; }
+    }
+    .u372-info b {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .u372-info span {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .u372-lvl {
+      margin-left: auto;
+      text-align: right;
+    }
+    .u372-lvl small {
+      display: block;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+    }
+    .u372-lvl-val {
+      font-size: 16px;
+      font-weight: 900;
+      color: #FFD43B;
+    }
+    .u372-bar-wrap {
+      position: relative;
+      margin-top: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+    .u372-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #7c3aed, #0071e3 70%, #34d399);
+      transition: width .6s cubic-bezier(0.3, 1.2, 0.5, 1);
+      position: relative;
+    }
+    .u372-bar-fill::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.6) 50%, transparent 70%);
+      transform: translateX(-100%);
+    }
+    .u372-card.is-gain .u372-bar-fill::after {
+      animation: u372-shine .8s ease-out;
+    }
+    @keyframes u372-shine {
+      to { transform: translateX(100%); }
+    }
+    .u372-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .u372-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.6);
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #FCC419, #FF922B);
+      color: #3B1F00;
+      font-size: 12px;
+      font-weight: 900;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s, transform .45s cubic-bezier(.3,1.8,.5,1);
+      box-shadow: 0 8px 20px rgba(252, 196, 25, 0.5);
+      z-index: 5;
+    }
+    .u372-card.is-up .u372-banner {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
   </style>
 </head>
 <body>
@@ -346,6 +480,33 @@
         <span>Tài khoản nhận:</span>
         <strong id="ticketAccount">Đang kiểm tra...</strong>
       </div>
+    </div>
+
+    <!-- Lucian [372] Fill-to-level-up XP Bar -->
+    <div class="u372-card" id="u372LevelBar">
+      <div class="u372-head">
+        <div class="u372-av">
+          <span id="u372AvatarChar">⭐</span>
+          <span class="u372-ring"></span>
+          <span class="u372-ring"></span>
+        </div>
+        <div class="u372-info">
+          <b id="u372RankTitle">Tiến Độ Tích Lũy VIP</b>
+          <span id="u372MissionSub">Nhiệm Vụ Hàng Ngày</span>
+        </div>
+        <div class="u372-lvl">
+          <small>CẤP ĐỘ</small>
+          <span class="u372-lvl-val" id="u372LevelNum">Lv.1</span>
+        </div>
+      </div>
+      <div class="u372-bar-wrap">
+        <div class="u372-bar-fill" id="u372BarFill" style="width: 25%;"></div>
+      </div>
+      <div class="u372-meta">
+        <span id="u372XpText">500 / 2.000 XP</span>
+        <span id="u372NextText">Còn 1.500 XP lên cấp</span>
+      </div>
+      <div class="u372-banner" id="u372Banner">🎉 CẤP ĐỘ MỚI ĐÃ MỞ KHÓA!</div>
     </div>
 
     <button type="button" class="btn-claim" id="btnClaimAction" onclick="handleClaimTicket()">
@@ -613,6 +774,37 @@
         el.textContent = 'Chuỗi hôm nay: 1/2 hoàn thành (Nhận thêm 1 lượt nữa!)';
       } else {
         el.textContent = 'Chuỗi hôm nay: Sẵn sàng nhận lượt 1/2 (+1.000 Xu)';
+      }
+
+      // Lucian [372] XP Level Bar Update
+      const barFill = document.getElementById('u372BarFill');
+      const xpText = document.getElementById('u372XpText');
+      const nextText = document.getElementById('u372NextText');
+      const lvlNum = document.getElementById('u372LevelNum');
+      const rankTitle = document.getElementById('u372RankTitle');
+      const card = document.getElementById('u372LevelBar');
+      if (barFill && card) {
+        card.classList.remove('is-gain');
+        void card.offsetWidth;
+        card.classList.add('is-gain');
+        if (completed >= 2) {
+          barFill.style.width = '100%';
+          if (xpText) xpText.textContent = '2.000 / 2.000 XP (Đạt chỉ tiêu ngày)';
+          if (nextText) nextText.textContent = 'Cấp tối đa hôm nay! 🎉';
+          if (lvlNum) lvlNum.textContent = 'Lv.2';
+          if (rankTitle) rankTitle.textContent = 'VIP Chiến Binh';
+          card.classList.add('is-up');
+        } else if (completed === 1) {
+          barFill.style.width = '50%';
+          if (xpText) xpText.textContent = '1.000 / 2.000 XP';
+          if (nextText) nextText.textContent = 'Còn 1.000 XP lên Lv.2';
+          if (lvlNum) lvlNum.textContent = 'Lv.1';
+        } else {
+          barFill.style.width = '10%';
+          if (xpText) xpText.textContent = '0 / 2.000 XP';
+          if (nextText) nextText.textContent = 'Còn 2.000 XP lên Lv.2';
+          if (lvlNum) lvlNum.textContent = 'Lv.1';
+        }
       }
     }
 

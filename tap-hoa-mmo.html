@@ -184,6 +184,25 @@
     .pb-safe {
       padding-bottom: env(safe-area-inset-bottom, 16px);
     }
+
+    /* Lucian [051] Add-to-Cart Flying Arc Badge */
+    .u051-fly-badge {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 28px;
+      height: 28px;
+      margin: -14px 0 0 -14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0071e3, #30b0c7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0, 113, 227, 0.4);
+      z-index: 99999;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="bg-bgLight dark:bg-bgDark text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200 overflow-x-hidden max-w-full">
@@ -2043,23 +2062,88 @@
       if (e) e.stopPropagation();
       const p = PRODS.find(x => String(x.id) === String(id));
       if (!p) return;
-      addToCartObject(p, 1);
+      addToCartObject(p, 1, e?.currentTarget || e?.target);
     }
 
-    function addCartFromModal() {
+    function addCartFromModal(e) {
       if (!CUR) return;
       const qty = parseInt(document.getElementById('dQty').value) || 1;
-      addToCartObject(CUR, qty);
+      const btn = (e && e.currentTarget) ? e.currentTarget : document.getElementById('dAddCartBtn');
+      addToCartObject(CUR, qty, btn);
       closeDetailModal();
     }
 
-    function addToCartObject(prod, qty) {
+    function addToCartObject(prod, qty, sourceEl) {
       const ex = CART.find(i => String(i.id) === String(prod.id));
       if (ex) ex.qty += qty;
       else CART.push({ ...prod, qty });
       localStorage.setItem('mmo_cart', JSON.stringify(CART));
       updateCartBadge();
+      animateFlyToCart(sourceEl);
       showToast(`Đã thêm ${qty}× ${prod.name} vào giỏ hàng!`, 'success');
+    }
+
+    /* ─── Lucian [051] Add-to-Cart Flying Arc Badge ─── */
+    function animateFlyToCart(sourceEl) {
+      try {
+        const targetCart = (window.innerWidth >= 640)
+          ? document.getElementById('cartBadgeCount')?.parentElement
+          : document.getElementById('mobileCartDot')?.parentElement;
+        if (!targetCart) return;
+
+        const srcRect = sourceEl && sourceEl.getBoundingClientRect
+          ? sourceEl.getBoundingClientRect()
+          : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 20, height: 20 };
+        const tarRect = targetCart.getBoundingClientRect();
+
+        const fly = document.createElement('div');
+        fly.className = 'u051-fly-badge';
+        fly.innerHTML = '<i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>';
+        document.body.appendChild(fly);
+        if (window.lucide) lucide.createIcons();
+
+        const sx = srcRect.left + srcRect.width / 2;
+        const sy = srcRect.top + srcRect.height / 2;
+        const ex = tarRect.left + tarRect.width / 2;
+        const ey = tarRect.top + tarRect.height / 2;
+
+        const kf = [];
+        const steps = 14;
+        for (let k = 0; k <= steps; k++) {
+          const t = k / steps;
+          const x = sx + (ex - sx) * t;
+          const y = sy + (ey - sy) * t - Math.sin(t * Math.PI) * 90;
+          const scale = 1.3 - t * 0.7;
+          const rot = t * 360;
+          kf.push({
+            transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${rot.toFixed(1)}deg) scale(${scale.toFixed(2)})`,
+            opacity: t > 0.9 ? 0 : 1
+          });
+        }
+
+        fly.animate(kf, { duration: 650, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)' }).onfinish = () => {
+          fly.remove();
+          targetCart.animate([
+            { transform: 'none' },
+            { transform: 'rotate(-14deg) scale(1.15)' },
+            { transform: 'rotate(10deg)' },
+            { transform: 'none' }
+          ], { duration: 450, easing: 'ease-out' });
+
+          const badge = (window.innerWidth >= 640)
+            ? document.getElementById('cartBadgeCount')
+            : document.getElementById('mobileCartDot');
+          if (badge) {
+            badge.animate([
+              { transform: 'scale(1)' },
+              { transform: 'scale(1.55)' },
+              { transform: 'scale(1)' }
+            ], { duration: 350, easing: 'cubic-bezier(0.34, 1.5, 0.64, 1)' });
+          }
+        };
+      } catch (err) {
+        console.warn('Fly cart anim notice:', err);
+      }
     }
 
     function updateCartBadge() {
