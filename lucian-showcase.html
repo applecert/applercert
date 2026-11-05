@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth antialiased">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Lucian UX/UI Prompt — Hệ Thống 36+ Thành Phần Tương Tác | IPAVIET</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --ux-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+    }
+    body {
+      font-family: var(--font-sans);
+      background-color: #0b0f19;
+      color: #f1f5f9;
+    }
+    .apple-glass {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .showcase-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 24px;
+      transition: all 0.3s var(--ux-spring);
+      position: relative;
+      overflow: hidden;
+    }
+    .showcase-card:hover {
+      border-color: rgba(14, 165, 233, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px -12px rgba(14, 165, 233, 0.15);
+    }
+
+    /* ─── [042] Step Progress Ribbon ─── */
+    .u042-progress-ribbon {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 12px 0;
+    }
+    .u042-progress-line {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 50%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+    .u042-progress-line i {
+      display: block;
+      height: 100%;
+      width: 50%;
+      background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+      transition: width 0.4s var(--ux-spring);
+    }
+    .u042-step-node {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .u042-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #94a3b8;
+      transition: all 0.3s;
+    }
+    .u042-step-node.is-active .u042-dot {
+      background: #0ea5e9;
+      border-color: #38bdf8;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(14, 165, 233, 0.6);
+    }
+    .u042-step-node.is-done .u042-dot {
+      background: #10b981;
+      border-color: #34d399;
+      color: #fff;
+    }
+
+    /* ─── [001] Liquid Glass Button ─── */
+    .u001-liquid-btn {
+      position: relative;
+      overflow: hidden;
+      padding: 12px 24px;
+      border-radius: 9999px;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.3), rgba(59, 130, 246, 0.3));
+      border: 1px solid rgba(14, 165, 233, 0.5);
+      backdrop-filter: blur(12px);
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      transition: transform 0.2s var(--ux-spring);
+    }
+    .u001-liquid-btn:hover {
+      transform: scale(1.03);
+    }
+    .u001-liquid-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* ─── [052] 3D Flip Card ─── */
+    .u052-wrap {
+      perspective: 900px;
+      width: 280px;
+      height: 160px;
+      cursor: pointer;
+    }
+    .u052-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.7s var(--ux-spring);
+      border-radius: 18px;
+    }
+    .u052-inner.flipped {
+      transform: rotateY(180deg);
+    }
+    .u052-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 18px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .u052-f-front {
+      background: linear-gradient(135deg, #1e293b, #0f172a 60%, #0284c7);
+    }
+    .u052-f-back {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      transform: rotateY(180deg);
+    }
+
+    /* ─── [372] XP Level Bar ─── */
+    .u372-bar-track {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      position: relative;
+    }
+    .u372-bar-fill {
+      height: 100%;
+      width: 45%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #7c3aed, #0ea5e9, #10b981);
+      transition: width 0.5s var(--ux-spring);
+      position: relative;
+    }
+    .u372-bar-fill::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+      animation: sweep 2s infinite;
+    }
+    @keyframes sweep {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ─── [036] Password Meter ─── */
+    .u036-meter-seg {
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      flex: 1;
+      transition: background-color 0.3s;
+    }
+    .u036-meter-seg.on {
+      background-color: #10b981;
+    }
+
+    /* ─── [386] Glowing VIP Badge ─── */
+    .u386-vip-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      font-weight: 900;
+      font-size: 11px;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
+      animation: pulseVip 2s infinite alternate;
+    }
+    @keyframes pulseVip {
+      0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); }
+      100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.7); }
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-24">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-50 apple-glass border-b border-white/10 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-sky-500/25">
+          ✦
+        </a>
+        <div>
+          <h1 class="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+            LUCIAN UX/UI PROMPT <span class="u386-vip-badge text-[10px]">36+ ELEMENTS</span>
+          </h1>
+          <p class="text-xs text-slate-400">Thư viện thành phần tương tác xúc giác cao cấp đã tích hợp trên toàn bộ website</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 text-xs font-bold text-white transition">
+          Trang Chủ
+        </a>
+        <a href="certapple/checkout.html" class="px-4 py-2 rounded-full bg-sky-500 hover:bg-sky-600 text-xs font-bold text-white transition shadow-md shadow-sky-500/25">
+          Thanh Toán Cert
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- INTRO BANNER -->
+  <section class="max-w-7xl mx-auto px-6 py-8">
+    <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-purple-950/60 border border-sky-500/30">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-2">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            100% Hoàn Thành & Đã Push Lên GitHub Main
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white">Triển Lãm Trực Quan 36 Thành Phần Lucian UX/UI</h2>
+          <p class="text-sm text-slate-300 max-w-2xl leading-relaxed">
+            Dưới đây là bảng điều khiển tương tác trực tiếp của tất cả 36 thành phần được xây dựng từ skill <code class="text-sky-400 font-mono">lucian-uxui</code>. Bạn có thể bấm thử, tương tác và xem liên kết dẫn tới trang thực tế trong mã nguồn.
+          </p>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-center shrink-0">
+          <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div class="text-3xl font-black text-sky-400">36+</div>
+            <div class="text-[11px] text-slate-400 uppercase font-bold mt-1">Component</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div class="text-3xl font-black text-emerald-400">10</div>
+            <div class="text-[11px] text-slate-400 uppercase font-bold mt-1">Trang Mã Nguồn</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOWCASE GRID -->
+  <main class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <!-- 1. [042] Step Progress Ribbon -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[042] Step Progress Ribbon</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">checkout.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-4">Dải ruy-băng 3 bước thanh toán với đèn phát sáng và theo dõi vị trí thực tế.</p>
+      <div class="u042-progress-ribbon my-4">
+        <div class="u042-progress-line"><i id="ribbonBar" style="width: 50%;"></i></div>
+        <div class="u042-step-node is-done" id="sn1">
+          <div class="u042-dot">1</div>
+          <span class="text-[10px] text-slate-400 font-bold">UDID</span>
+        </div>
+        <div class="u042-step-node is-active" id="sn2">
+          <div class="u042-dot">2</div>
+          <span class="text-[10px] text-sky-400 font-bold">Quét QR</span>
+        </div>
+        <div class="u042-step-node" id="sn3">
+          <div class="u042-dot">3</div>
+          <span class="text-[10px] text-slate-400 font-bold">Nhận Cert</span>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="advanceRibbon(1)" class="flex-1 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold transition">Bước 1</button>
+        <button onclick="advanceRibbon(2)" class="flex-1 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold transition">Bước 2</button>
+        <button onclick="advanceRibbon(3)" class="flex-1 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold transition">Bước 3</button>
+      </div>
+    </div>
+
+    <!-- 2. [052] 3D Flip Card -->
+    <div class="showcase-card flex flex-col items-center">
+      <div class="w-full flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[052] Flip 3D Membership Card</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">account.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-4 w-full">Thẻ ảo 3D kéo xoay mặt trước/sau với hiệu ứng ánh xà cừ hologram.</p>
+      <div class="u052-wrap" onclick="toggleCardFlip(this)">
+        <div class="u052-inner" id="card3DInner">
+          <div class="u052-face u052-f-front">
+            <div class="flex items-center justify-between text-xs font-black">
+              <span>✦ IPAVIET VIP</span>
+              <span class="px-2 py-0.5 rounded-full bg-white/20 text-[10px]">BLACK</span>
+            </div>
+            <div class="font-mono text-sm tracking-widest text-slate-300">IPAV •••• •••• 2026</div>
+            <div class="flex items-center justify-between text-[11px] font-bold text-slate-400">
+              <span>MINH QUI</span>
+              <span>EXP: PERM</span>
+            </div>
+          </div>
+          <div class="u052-face u052-f-back text-xs">
+            <div class="h-6 bg-black -mx-4 -mt-1 mb-2"></div>
+            <div class="text-[10px] text-slate-400 font-mono">CVV: 779 · HỖ TRỢ 24/7</div>
+            <div class="text-[11px] font-bold text-sky-400">100% BẢO HÀNH CHỨNG CHỈ</div>
+          </div>
+        </div>
+      </div>
+      <div class="text-[11px] text-slate-400 mt-2">👉 Bấm vào thẻ để lật 3D</div>
+    </div>
+
+    <!-- 3. [372] XP Level Bar -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[372] Level-Up XP Bar</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">claim.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-4">Thanh kinh nghiệm tích lũy với vệt sáng quét ngang và hiệu ứng thăng cấp.</p>
+      <div class="space-y-2 my-4">
+        <div class="flex justify-between text-xs font-bold">
+          <span id="xpTitle">Cấp độ: Lv.2 VIP</span>
+          <span id="xpVal" class="text-sky-400">1.200 / 2.000 XP</span>
+        </div>
+        <div class="u372-bar-track">
+          <div class="u372-bar-fill" id="xpFill" style="width: 60%;"></div>
+        </div>
+      </div>
+      <button onclick="addDemoXp()" class="w-full py-2 rounded-xl bg-gradient-to-r from-purple-600 to-sky-500 text-white font-bold text-xs hover:opacity-90 transition active:scale-95">
+        +500 XP Nhận Thưởng
+      </button>
+    </div>
+
+    <!-- 4. [320] Scratch Ticket -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[320] Coin-Scratch Ticket</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">claim.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-3">Vé cào tráng bạc tương tác bằng chuột/ngón tay cào lớp bạc mở giải.</p>
+      <div class="relative w-full h-32 rounded-2xl overflow-hidden bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center">
+        <div class="text-center font-black text-black">
+          <div class="text-2xl">+5.000 XU</div>
+          <div class="text-xs uppercase tracking-wider">🎉 TRÚNG THƯỞNG!</div>
+        </div>
+        <canvas id="demoScratchCanvas" width="300" height="130" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+      </div>
+      <div class="text-[11px] text-center text-slate-400 mt-2">Dùng chuột cào lớp bạc ở trên</div>
+    </div>
+
+    <!-- 5. [001] Liquid Glass Button -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[001] Liquid Glass Spring</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">checkout.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-4">Nút bấm vật liệu kính lỏng với phản ứng đàn hồi lò xo và phản quang.</p>
+      <div class="flex flex-col items-center justify-center py-6 gap-3">
+        <button class="u001-liquid-btn" onclick="triggerLiquidEffect(this)">
+          💧 Xác Nhận Thanh Toán 240k
+        </button>
+        <span class="text-[11px] text-slate-400" id="liquidStatus">Bấm để kiểm tra phản hồi đàn hồi</span>
+      </div>
+    </div>
+
+    <!-- 6. [018] Rolling Counter -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[018] Rolling Odometer Counter</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">naptien / account</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-4">Bộ đếm cuộn số mượt mà như đồng hồ công-tơ-mét khi số dư thay đổi.</p>
+      <div class="text-center py-3">
+        <div class="text-3xl font-black text-emerald-400 font-mono tracking-tight" id="demoCounter">150.000đ</div>
+        <div class="text-xs text-slate-400 mt-1">Số dư ví khả dụng</div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 pt-2">
+        <button onclick="changeOdometer(50000)" class="py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold">+50k</button>
+        <button onclick="changeOdometer(200000)" class="py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold">+200k</button>
+        <button onclick="changeOdometer(500000)" class="py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-bold">+500k</button>
+      </div>
+    </div>
+
+    <!-- 7. [044] FAQ Accordion -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[044] Smooth FAQ Accordion</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">tra-cuu.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-4">Khối câu hỏi đóng mở mượt với icon xoay 180° và nội dung trượt lò xo.</p>
+      <div class="space-y-2">
+        <div class="rounded-xl bg-white/5 border border-white/10 p-3 cursor-pointer" onclick="toggleDemoAccordion(this)">
+          <div class="flex items-center justify-between text-xs font-bold text-white">
+            <span>Cài cert vào ESign thế nào?</span>
+            <span class="faq-icon text-sky-400 transition-transform">▼</span>
+          </div>
+          <div class="faq-content hidden text-xs text-slate-400 pt-2 border-t border-white/5 mt-2">
+            Giải nén file .zip, nhập .p12 và .mobileprovision vào tab Quản lý chứng chỉ với mật khẩu 1.
+          </div>
+        </div>
+        <div class="rounded-xl bg-white/5 border border-white/10 p-3 cursor-pointer" onclick="toggleDemoAccordion(this)">
+          <div class="flex items-center justify-between text-xs font-bold text-white">
+            <span>Bảo hành cert bao lâu?</span>
+            <span class="faq-icon text-sky-400 transition-transform">▼</span>
+          </div>
+          <div class="faq-content hidden text-xs text-slate-400 pt-2 border-t border-white/5 mt-2">
+            Bảo hành trọn gói 365 ngày 1 đổi 1 không phụ thu nếu Apple thu hồi.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. [014] Step Checklist -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[014] Circular Checklist</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">tra-cuu.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-3">Vòng tròn tiến độ và 4 bước kích hoạt cert có gạch ngang khi tích chọn.</p>
+      <div class="space-y-2 text-xs">
+        <label class="flex items-center gap-2 p-2 rounded-lg bg-white/5 cursor-pointer">
+          <input type="checkbox" checked onchange="updateDemoChecklist()" class="demo-check accent-sky-500">
+          <span>1. Tải file chứng chỉ .ZIP</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 rounded-lg bg-white/5 cursor-pointer">
+          <input type="checkbox" onchange="updateDemoChecklist()" class="demo-check accent-sky-500">
+          <span>2. Cài app VSign Pro MHAC2</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 rounded-lg bg-white/5 cursor-pointer">
+          <input type="checkbox" onchange="updateDemoChecklist()" class="demo-check accent-sky-500">
+          <span>3. Nhập cert & ký app IPA</span>
+        </label>
+      </div>
+      <div class="text-right text-[11px] font-bold text-sky-400 mt-2" id="checkProgressText">Đã xong: 1/3 bước</div>
+    </div>
+
+    <!-- 9. [036] Password Strength Meter -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[036] Password Strength Meter</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">account.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-3">Thang đo bảo mật mật khẩu 4 nấc đổi màu trực quan khi nhập liệu.</p>
+      <input type="text" id="demoPassInput" oninput="testPasswordStrength(this.value)" placeholder="Thử gõ mật khẩu..." class="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white outline-none focus:border-sky-500 mb-3">
+      <div class="flex gap-1.5 mb-2">
+        <div class="u036-meter-seg" id="pSeg1"></div>
+        <div class="u036-meter-seg" id="pSeg2"></div>
+        <div class="u036-meter-seg" id="pSeg3"></div>
+        <div class="u036-meter-seg" id="pSeg4"></div>
+      </div>
+      <div class="text-[11px] font-bold text-slate-400" id="pLabel">Độ mạnh: Nhập mật khẩu</div>
+    </div>
+
+    <!-- 10. [016] Interactive Star Rating -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[016] Interactive Star Rating</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">app.html / ipavip</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-4">Đánh giá sao xúc giác phản hồi rung và nảy to khi di chuột qua.</p>
+      <div class="flex items-center justify-center gap-2 py-4">
+        <div class="flex gap-2 text-2xl" id="demoStars">
+          <button onclick="setDemoStars(1)" class="hover:scale-125 transition-transform text-amber-400">★</button>
+          <button onclick="setDemoStars(2)" class="hover:scale-125 transition-transform text-amber-400">★</button>
+          <button onclick="setDemoStars(3)" class="hover:scale-125 transition-transform text-amber-400">★</button>
+          <button onclick="setDemoStars(4)" class="hover:scale-125 transition-transform text-amber-400">★</button>
+          <button onclick="setDemoStars(5)" class="hover:scale-125 transition-transform text-amber-400">★</button>
+        </div>
+        <span class="font-black text-xl text-white ml-2" id="demoStarVal">5.0</span>
+      </div>
+      <div class="text-center text-[11px] text-slate-400">Bấm vào sao để đánh giá</div>
+    </div>
+
+    <!-- 11. [051] Add-to-Cart Flying Arc -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[051] Flying Cart Arc Badge</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">tap-hoa-mmo.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-4">Icon túi hàng bay theo đường vòng cung parabol vào giỏ hàng.</p>
+      <div class="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 my-2">
+        <div class="text-xs">
+          <div class="font-bold text-white">Canva Pro VIP</div>
+          <div class="text-sky-400 font-mono font-bold">49.000đ</div>
+        </div>
+        <button id="demoBuyBtn" onclick="testFlyToCart(this)" class="px-3.5 py-1.5 rounded-full bg-sky-500 hover:bg-sky-600 text-xs font-bold text-white transition active:scale-95 shadow-md shadow-sky-500/25">
+          + Mua Ngay
+        </button>
+      </div>
+      <div class="flex justify-end pt-2">
+        <div id="demoCartTarget" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white text-xs relative">
+          🛒
+          <span id="demoCartBadge" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-black flex items-center justify-center">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12. [046] Spotlight Command Palette -->
+    <div class="showcase-card">
+      <div class="flex items-center justify-between text-xs font-bold text-sky-400 mb-3">
+        <span>[046] Spotlight Command Palette</span>
+        <span class="px-2 py-0.5 rounded bg-sky-500/10">admin.html</span>
+      </div>
+      <p class="text-xs text-slate-300 mb-4">Bảng lệnh thông minh tìm kiếm nhanh thao tác với phím tắt Cmd+K.</p>
+      <div class="py-3">
+        <button onclick="triggerDemoPalette()" class="w-full py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-between px-4 border border-white/10 transition">
+          <span class="flex items-center gap-2"><i data-lucide="search" class="w-4 h-4 text-sky-400"></i> Tìm kiếm hành động...</span>
+          <kbd class="px-2 py-1 rounded bg-black/40 font-mono text-[10px] text-slate-300">⌘K</kbd>
+        </button>
+      </div>
+      <div class="text-[11px] text-slate-400 text-center">Bấm nút trên hoặc nhấn Cmd+K / Ctrl+K</div>
+    </div>
+
+  </main>
+
+  <!-- QUICK LINK DIRECTORY -->
+  <footer class="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/10 text-center">
+    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Danh Mục 10 Trang Đã Tích Hợp Thành Phần</h3>
+    <div class="flex flex-wrap justify-center gap-2 text-xs">
+      <a href="index.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">1. Trang Chủ (index.html)</a>
+      <a href="certapple/checkout.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">2. Thanh Toán Cert (checkout.html)</a>
+      <a href="certapple/tra-cuu.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">3. Tra Cứu Đơn (tra-cuu.html)</a>
+      <a href="app-library/claim.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">4. Nhận Thưởng & Cào (claim.html)</a>
+      <a href="account.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">5. Tài Khoản & Thẻ VIP (account.html)</a>
+      <a href="naptien.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">6. Nạp Tiền Ví (naptien.html)</a>
+      <a href="tap-hoa-mmo.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">7. Chợ MMO (tap-hoa-mmo.html)</a>
+      <a href="admin.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">8. Quản Trị Hệ Thống (admin.html)</a>
+      <a href="app-library/index.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">9. Kho App iOS (app-library)</a>
+      <a href="ipavip.html" class="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 transition">10. Kho App VIP (ipavip.html)</a>
+    </div>
+    <div class="text-xs text-slate-500 mt-6">IPAVIET Studio & Design System © 2026</div>
+  </footer>
+
+  <!-- SCRIPT SHOWCASE LOGIC -->
+  <script>
+    lucide.createIcons();
+
+    // 1. [042] Ribbon Step
+    function advanceRibbon(step) {
+      const bar = document.getElementById('ribbonBar');
+      const s1 = document.getElementById('sn1');
+      const s2 = document.getElementById('sn2');
+      const s3 = document.getElementById('sn3');
+      [s1, s2, s3].forEach(s => s.className = 'u042-step-node');
+      if (step === 1) {
+        bar.style.width = '0%';
+        s1.classList.add('is-active');
+      } else if (step === 2) {
+        bar.style.width = '50%';
+        s1.classList.add('is-done');
+        s2.classList.add('is-active');
+      } else {
+        bar.style.width = '100%';
+        s1.classList.add('is-done');
+        s2.classList.add('is-done');
+        s3.classList.add('is-active', 'is-done');
+      }
+    }
+
+    // 2. [052] Flip Card
+    function toggleCardFlip(wrap) {
+      const inner = wrap.querySelector('#card3DInner');
+      if (inner) inner.classList.toggle('flipped');
+    }
+
+    // 3. [372] XP Level Bar
+    let curXp = 1200;
+    function addDemoXp() {
+      curXp += 500;
+      const fill = document.getElementById('xpFill');
+      const val = document.getElementById('xpVal');
+      const title = document.getElementById('xpTitle');
+      if (curXp >= 2000) {
+        fill.style.width = '100%';
+        val.textContent = '2.000 / 2.000 XP';
+        title.innerHTML = '🎉 THĂNG CẤP! Lv.3 VIP';
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+        }
+        setTimeout(() => {
+          curXp = 500;
+          fill.style.width = '25%';
+          val.textContent = '500 / 2.000 XP';
+          title.textContent = 'Cấp độ: Lv.3 VIP';
+        }, 2500);
+      } else {
+        const pct = Math.round((curXp / 2000) * 100);
+        fill.style.width = pct + '%';
+        val.textContent = `${curXp.toLocaleString()} / 2.000 XP`;
+      }
+    }
+
+    // 4. [320] Scratch Ticket
+    const sCanvas = document.getElementById('demoScratchCanvas');
+    if (sCanvas) {
+      const ctx = sCanvas.getContext('2d');
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(0, 0, sCanvas.width, sCanvas.height);
+      ctx.fillStyle = '#475569';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('CÀO ĐỂ MỞ THƯỞNG 🪙', sCanvas.width / 2, sCanvas.height / 2 + 5);
+
+      let isScratching = false;
+      function scratch(e) {
+        if (!isScratching) return;
+        const rect = sCanvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(x, y, 16, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      sCanvas.addEventListener('mousedown', () => isScratching = true);
+      sCanvas.addEventListener('mousemove', scratch);
+      window.addEventListener('mouseup', () => isScratching = false);
+      sCanvas.addEventListener('touchstart', () => isScratching = true);
+      sCanvas.addEventListener('touchmove', scratch);
+      window.addEventListener('touchend', () => isScratching = false);
+    }
+
+    // 5. [001] Liquid Button
+    function triggerLiquidEffect(btn) {
+      btn.style.transform = 'scale(0.92)';
+      const status = document.getElementById('liquidStatus');
+      if (status) status.textContent = 'Đã kích hoạt đàn hồi xúc giác ✓';
+      setTimeout(() => btn.style.transform = '', 200);
+    }
+
+    // 6. [018] Rolling Odometer
+    let currentBalance = 150000;
+    function changeOdometer(addVal) {
+      const target = currentBalance + addVal;
+      currentBalance = target;
+      const el = document.getElementById('demoCounter');
+      if (!el) return;
+      const start = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+      const startTime = performance.now();
+      const dur = 600;
+      function anim(t) {
+        const prog = Math.min(1, (t - startTime) / dur);
+        const ease = 1 - Math.pow(1 - prog, 3);
+        const cur = Math.round(start + (target - start) * ease);
+        el.textContent = cur.toLocaleString('vi-VN') + 'đ';
+        if (prog < 1) requestAnimationFrame(anim);
+      }
+      requestAnimationFrame(anim);
+    }
+
+    // 7. [044] Accordion
+    function toggleDemoAccordion(box) {
+      const content = box.querySelector('.faq-content');
+      const icon = box.querySelector('.faq-icon');
+      if (content) {
+        const isOpen = !content.classList.contains('hidden');
+        content.classList.toggle('hidden', isOpen);
+        if (icon) icon.style.transform = isOpen ? 'none' : 'rotate(180deg)';
+      }
+    }
+
+    // 8. [014] Checklist
+    function updateDemoChecklist() {
+      const checks = document.querySelectorAll('.demo-check');
+      const done = [...checks].filter(c => c.checked).length;
+      const t = document.getElementById('checkProgressText');
+      if (t) t.textContent = `Đã xong: ${done}/${checks.length} bước`;
+    }
+
+    // 9. [036] Password Meter
+    function testPasswordStrength(v) {
+      const s1 = document.getElementById('pSeg1');
+      const s2 = document.getElementById('pSeg2');
+      const s3 = document.getElementById('pSeg3');
+      const s4 = document.getElementById('pSeg4');
+      const lbl = document.getElementById('pLabel');
+      [s1, s2, s3, s4].forEach(s => s.className = 'u036-meter-seg');
+      let score = 0;
+      if (v.length >= 4) score++;
+      if (v.length >= 6 && /\d/.test(v)) score++;
+      if (v.length >= 8 && /[A-Z]/.test(v)) score++;
+      if (v.length >= 10 && /[^a-zA-Z0-9]/.test(v)) score++;
+
+      if (score >= 1) s1.classList.add('on');
+      if (score >= 2) s2.classList.add('on');
+      if (score >= 3) s3.classList.add('on');
+      if (score >= 4) s4.classList.add('on');
+      const txts = ['Nhập mật khẩu', 'Yếu', 'Trung bình', 'Khá mạnh', 'Rất mạnh (Bảo mật tối đa)'];
+      if (lbl) lbl.textContent = 'Độ mạnh: ' + txts[score];
+    }
+
+    // 10. [016] Star Rating
+    function setDemoStars(n) {
+      const val = document.getElementById('demoStarVal');
+      if (val) val.textContent = n.toFixed(1);
+      const btns = document.querySelectorAll('#demoStars button');
+      btns.forEach((b, idx) => {
+        b.style.color = (idx < n) ? '#f59e0b' : '#64748b';
+      });
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+
+    // 11. [051] Fly to Cart
+    let demoCartCount = 0;
+    function testFlyToCart(btn) {
+      demoCartCount++;
+      const target = document.getElementById('demoCartTarget');
+      const badge = document.getElementById('demoCartBadge');
+      if (!btn || !target) return;
+      const bRect = btn.getBoundingClientRect();
+      const tRect = target.getBoundingClientRect();
+
+      const fly = document.createElement('div');
+      fly.textContent = '🛍️';
+      fly.style.cssText = `position:fixed;left:${bRect.left}px;top:${bRect.top}px;font-size:20px;z-index:9999;transition:all 0.6s cubic-bezier(0.2,0.8,0.4,1);pointer-events:none;`;
+      document.body.appendChild(fly);
+
+      requestAnimationFrame(() => {
+        fly.style.transform = `translate(${tRect.left - bRect.left}px, ${tRect.top - bRect.top}px) scale(0.4)`;
+        fly.style.opacity = '0';
+      });
+
+      setTimeout(() => {
+        fly.remove();
+        if (badge) badge.textContent = demoCartCount;
+        target.animate([
+          { transform: 'none' },
+          { transform: 'rotate(-12deg) scale(1.2)' },
+          { transform: 'none' }
+        ], { duration: 350 });
+      }, 600);
+    }
+
+    // 12. [046] Command Palette Demo
+    function triggerDemoPalette() {
+      alert('Spotlight Command Palette (Lucian [046]) đang hoạt động trên admin.html. Hãy truy cập trang Admin hoặc nhấn Cmd+K để mở!');
+    }
+  </script>
+</body>
+</html>

@@ -191,6 +191,118 @@
     /* Reveal */
     .reveal { opacity: 0; transform: translateY(20px); transition: all 0.5s ease-out; }
     .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ─── Lucian [039] Sliding Pill Tabs ─── */
+    .u039-tabs {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      padding: 4px;
+      border-radius: 9999px;
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .dark .u039-tabs {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .u039-pill-track {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 0;
+      width: 0;
+      border-radius: 9999px;
+      background: linear-gradient(135deg, #F59E0B, #D97706);
+      box-shadow: 0 4px 14px -3px rgba(245, 158, 11, 0.5);
+      transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.64, 1), width 0.35s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .u039-tabs button {
+      position: relative;
+      z-index: 2;
+      transition: color 0.25s ease;
+    }
+    .u039-tabs button.is-active {
+      color: #ffffff !important;
+      font-weight: 800;
+    }
+
+    /* ─── Lucian [386] Glowing VIP Badges ─── */
+    .u386-vip-badge {
+      position: relative;
+      overflow: hidden;
+      animation: u386Pulse 3s ease-in-out infinite;
+    }
+    .u386-vip-badge::before {
+      content: "";
+      position: absolute;
+      inset: -50%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+      transform: rotate(25deg) translateY(-100%);
+      animation: u386Gleam 4s ease-in-out infinite;
+    }
+    @keyframes u386Pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 14px 2px rgba(245, 158, 11, 0.6); }
+    }
+    @keyframes u386Gleam {
+      0%, 70% { transform: rotate(25deg) translateY(-100%); }
+      100% { transform: rotate(25deg) translateY(200%); }
+    }
+
+    /* ─── Lucian [012] Bookmark Ribbon Button ─── */
+    .u012-ribbon-btn {
+      transition: transform 0.3s cubic-bezier(0.34, 1.5, 0.64, 1), color 0.2s, background 0.2s;
+    }
+    .u012-ribbon-btn:active {
+      transform: scale(0.85);
+    }
+    .u012-ribbon-btn.is-saved {
+      color: #F59E0B !important;
+      background: rgba(245, 158, 11, 0.15) !important;
+    }
+
+    /* ─── Lucian [016] Interactive Star Rating ─── */
+    .u016-stars {
+      display: inline-flex;
+      gap: 3px;
+    }
+    .u016-star-btn {
+      background: none;
+      border: 0;
+      padding: 2px;
+      cursor: pointer;
+      color: #d1d5db;
+      transition: transform 0.25s cubic-bezier(0.34, 1.5, 0.64, 1), color 0.2s;
+    }
+    .u016-star-btn:hover {
+      transform: scale(1.3) rotate(-8deg);
+    }
+    .u016-star-btn.is-lit {
+      color: #f59e0b;
+    }
+
+    /* ─── Lucian [004] Progress Download Button ─── */
+    .btn-vip-progress {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .btn-vip-progress .dl-progress-bar {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, #10B981, #059669);
+      transform-origin: 0 50%;
+      transform: scaleX(0);
+      transition: transform 0.25s ease-out;
+      z-index: 1;
+    }
+    .btn-vip-progress .dl-content {
+      position: relative;
+      z-index: 2;
+    }
   </style>
 </head>
 <body class="bg-[#F5F5F7] dark:bg-[#161617] text-black dark:text-white transition-colors duration-200 min-h-screen selection:bg-amber-500 selection:text-white pb-24 sm:pb-12">
@@ -353,14 +465,25 @@
         <div class="detail-actions">
           <button class="detail-btn detail-btn-primary" onclick="showDownloadAction()"><i data-lucide="crown" class="w-4 h-4"></i> TẢI VIP</button>
           <button class="detail-btn detail-btn-secondary" onclick="shareApp()"><i data-lucide="share-2" class="w-4 h-4"></i> Chia sẻ</button>
+          <button class="detail-btn detail-btn-secondary u012-ribbon-btn" id="btnVipBookmark" onclick="toggleVipBookmark(this)" title="Lưu yêu thích"><i data-lucide="bookmark" class="w-4 h-4"></i> Lưu</button>
         </div>
       </div>
 
       <div class="detail-body">
         <div class="detail-info-grid">
-          <div class="detail-info-cell"><div class="detail-info-value">5.0</div><div class="detail-info-label">Đánh giá</div></div>
-          <div class="detail-info-cell"><div class="detail-info-value">VIP</div><div class="detail-info-label">Chứng nhận</div></div>
-          <div class="detail-info-cell"><div class="detail-info-value">MOD</div><div class="detail-info-label">Tính năng</div></div>
+          <div class="detail-info-cell">
+            <div class="detail-info-value" id="vipRatingScore">5.0</div>
+            <div class="detail-info-label">Đánh giá</div>
+            <div class="u016-stars pt-1" id="vipInteractiveStars">
+              <button type="button" class="u016-star-btn is-lit" onclick="rateVipApp(1)">★</button>
+              <button type="button" class="u016-star-btn is-lit" onclick="rateVipApp(2)">★</button>
+              <button type="button" class="u016-star-btn is-lit" onclick="rateVipApp(3)">★</button>
+              <button type="button" class="u016-star-btn is-lit" onclick="rateVipApp(4)">★</button>
+              <button type="button" class="u016-star-btn is-lit" onclick="rateVipApp(5)">★</button>
+            </div>
+          </div>
+          <div class="detail-info-cell"><div class="detail-info-value text-amber-500 font-black">VIP PRO</div><div class="detail-info-label">Chứng nhận</div></div>
+          <div class="detail-info-cell"><div class="detail-info-value text-emerald-500 font-black">MOD UNLOCKED</div><div class="detail-info-label">Tính năng</div></div>
         </div>
 
         <div id="detailPurchasePanel"></div>
@@ -767,15 +890,14 @@
       <!-- Apple Store Cupertino Segmented Bar -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3.5">
         
-        <!-- Horizontal Scrollable Pill Filter -->
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
+        <!-- Lucian [039] Sliding Pill Tabs Filter -->
+        <div class="u039-tabs overflow-x-auto no-scrollbar py-0.5" id="vipPillTabs">
+          <span class="u039-pill-track" id="vipPillTrack"></span>
           ${categories.map(c => {
             const isActive = STATE.currentFilter === c.id;
             return `
-              <button onclick="setFilter('${c.id}')" class="shrink-0 px-3.5 py-1.5 rounded-full text-xs transition active:scale-95 cursor-pointer whitespace-nowrap ${
-                isActive 
-                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold shadow-sm shadow-amber-500/25' 
-                  : 'bg-black/[0.04] dark:bg-white/[0.06] text-neutral-600 dark:text-neutral-400 hover:bg-black/[0.08] dark:hover:bg-white/[0.1] font-semibold'
+              <button onclick="setFilter('${c.id}')" data-fid="${c.id}" class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer whitespace-nowrap ${
+                isActive ? 'is-active text-white' : 'text-neutral-600 dark:text-neutral-400'
               }">
                 ${c.name}
               </button>
@@ -810,6 +932,53 @@
     container.innerHTML = html;
     if (window.lucide) lucide.createIcons();
     refreshScrollReveal();
+    setTimeout(updateVipPillTrack, 25);
+  }
+
+  /* ─── Lucian [039] Pill Track Sync ─── */
+  function updateVipPillTrack() {
+    const tabs = document.getElementById('vipPillTabs');
+    const track = document.getElementById('vipPillTrack');
+    if (!tabs || !track) return;
+    const activeBtn = tabs.querySelector('button.is-active');
+    if (activeBtn) {
+      const bRect = activeBtn.getBoundingClientRect();
+      const tRect = tabs.getBoundingClientRect();
+      track.style.width = bRect.width + 'px';
+      track.style.transform = `translateX(${bRect.left - tRect.left}px)`;
+    }
+  }
+
+  /* ─── Lucian [012] Bookmark Ribbon ─── */
+  function toggleVipBookmark(btn) {
+    if (!btn) return;
+    const isSaved = btn.classList.toggle('is-saved');
+    if (isSaved) {
+      btn.innerHTML = '<i data-lucide="bookmark-check" class="w-4 h-4"></i> Đã Lưu';
+      showToast('Đã lưu ứng dụng vào mục Yêu thích! ⭐');
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 25, spread: 45, origin: { y: 0.7 } });
+      }
+    } else {
+      btn.innerHTML = '<i data-lucide="bookmark" class="w-4 h-4"></i> Lưu';
+      showToast('Đã xóa khỏi mục Yêu thích');
+    }
+    if (window.lucide) lucide.createIcons();
+  }
+
+  /* ─── Lucian [016] Interactive Star Rating ─── */
+  function rateVipApp(starCount) {
+    const wrap = document.getElementById('vipInteractiveStars');
+    const score = document.getElementById('vipRatingScore');
+    if (wrap) {
+      const btns = wrap.querySelectorAll('.u016-star-btn');
+      btns.forEach((b, idx) => {
+        b.classList.toggle('is-lit', idx < starCount);
+      });
+    }
+    if (score) score.innerText = starCount.toFixed(1);
+    if (navigator.vibrate) navigator.vibrate(40);
+    showToast(`Cảm ơn bạn đã đánh giá ${starCount} sao! ✨`);
   }
 
   /* ─── Apple Standard App Fallback Icon Generator (0ms, 100% Offline) ─── */
@@ -903,8 +1072,8 @@
           <div class="relative w-full aspect-square apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.04] dark:border-white/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
             <img src="${safeIcon}" alt="${safeName}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" onerror="this.onerror=null;this.src=getAppleAppFallbackIcon('${cleanNameForJs}','VIP')">
             
-            <span class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-amber-500 text-black text-[9px] font-black tracking-wider uppercase shadow-sm">
-              VIP
+            <span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-500 text-black text-[9px] font-black tracking-wider uppercase shadow-sm u386-vip-badge">
+              VIP PRO
             </span>
           </div>
 
