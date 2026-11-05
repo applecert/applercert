@@ -188,6 +188,96 @@
       background: rgba(255, 255, 255, 0.05);
       color: var(--text);
     }
+
+    /* ─── Lucian [379] Streak Flame Bar ─── */
+    .streak-flame-bar {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .streak-flame-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: 980px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #FCD34D;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* ─── Lucian [320] Coin-Scratch Instant Ticket ─── */
+    .scratch-container {
+      position: relative;
+      margin: 16px auto 20px;
+      max-width: 320px;
+      width: 100%;
+    }
+    .scratch-card-box {
+      position: relative;
+      width: 100%;
+      height: 150px;
+      border-radius: 20px;
+      background: radial-gradient(circle at 50% 30%, #1e293b, #0f172a);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+    .scratch-prize {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(16, 185, 129, 0.15));
+      color: #FFF;
+      user-select: none;
+    }
+    .scratch-prize b {
+      font-size: 32px;
+      font-weight: 900;
+      color: #34D399;
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 20px rgba(52, 211, 153, 0.5);
+    }
+    .scratch-prize span {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .scratch-prize.is-pop b {
+      animation: prizePop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes prizePop {
+      from { transform: scale(0.4); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .scratch-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+      border-radius: 20px;
+      transition: opacity 0.5s ease;
+    }
+    .scratch-canvas.is-gone {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .scratch-hint {
+      margin-top: 10px;
+      font-size: 11.5px;
+      color: #94A3B8;
+      font-weight: 600;
+      transition: color 0.3s;
+    }
+
     .footer-note {
       font-size: 11.5px;
       color: var(--muted);
@@ -218,9 +308,30 @@
   <div id="toast"></div>
 
   <div class="claim-card" id="claimCard">
+    <!-- Lucian [379] Streak Flame Bar -->
+    <div class="streak-flame-bar" id="streakFlameBar">
+      <div class="streak-flame-badge">
+        <span style="font-size: 15px;">🔥</span>
+        <span id="streakFlameText">Chuỗi nhiệm vụ: Kiểm tra hạn mức...</span>
+      </div>
+    </div>
+
     <div class="coin-badge" id="cardIcon">🪙</div>
     <h1 id="claimTitle">Hoàn Thành Nhiệm Vụ!</h1>
-    <p class="subtitle" id="claimSubtitle">Bạn đã vượt link thành công. Bấm nút bên dưới để nhận ngay 1.000 Xu vào tài khoản.</p>
+    <p class="subtitle" id="claimSubtitle">Bạn đã vượt link thành công. Cào lớp bạc bên dưới hoặc bấm nút nhận ngay để cộng Xu vào tài khoản.</p>
+
+    <!-- Lucian [320] Coin-Scratch Instant Ticket -->
+    <div class="scratch-container" id="scratchContainer">
+      <div class="scratch-card-box">
+        <div class="scratch-prize" id="scratchPrize">
+          <span style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #a7f3d0; font-weight: 800;">Phần Thưởng Của Bạn</span>
+          <b id="scratchPrizeText">+1.000 Xu</b>
+          <span>✨ Chúc mừng bạn đã hoàn thành!</span>
+        </div>
+        <canvas class="scratch-canvas" id="scratchCanvas" width="320" height="150"></canvas>
+      </div>
+      <div class="scratch-hint" id="scratchHint">👉 Dùng chuột hoặc ngón tay cào lớp bạc để mở thưởng</div>
+    </div>
 
     <div class="ticket-box">
       <div class="ticket-row">
@@ -339,6 +450,170 @@
 
       update();
       countdownInterval = setInterval(update, 1000);
+    }
+
+    /* ─── Lucian [320] Scratch Canvas & [379] Streak Helpers ─── */
+    let scratchInitialized = false;
+    let scratchRevealed = false;
+
+    function initScratchCard(rewardAmount) {
+      if (scratchInitialized) return;
+      const canvas = document.getElementById('scratchCanvas');
+      const prizeText = document.getElementById('scratchPrizeText');
+      if (!canvas) return;
+
+      if (rewardAmount && prizeText) {
+        prizeText.textContent = `+${Number(rewardAmount).toLocaleString('vi-VN')} Xu`;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || 320;
+      const h = rect.height || 150;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      // Metallic foil background
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, '#64748b');
+      grad.addColorStop(0.25, '#94a3b8');
+      grad.addColorStop(0.5, '#cbd5e1');
+      grad.addColorStop(0.75, '#94a3b8');
+      grad.addColorStop(1, '#475569');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Sparkle pattern
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+      for (let i = 0; i < 35; i++) {
+        const sx = (i * 37) % w;
+        const sy = (i * 23) % h;
+        ctx.beginPath();
+        ctx.arc(sx, sy, (i % 3) + 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Title & Instruction text on canvas
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('✨ CÀO LỚP BẠC ĐỂ MỞ THƯỞNG ✨', w / 2, h / 2 - 8);
+
+      ctx.fillStyle = '#334155';
+      ctx.font = '600 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('(Di chuột hoặc ngón tay để cào)', w / 2, h / 2 + 16);
+
+      scratchInitialized = true;
+
+      let isDrawing = false;
+      let lastX = 0;
+      let lastY = 0;
+      let strokeCount = 0;
+
+      function scratchAt(clientX, clientY) {
+        if (scratchRevealed) return;
+        const bounds = canvas.getBoundingClientRect();
+        const x = clientX - bounds.left;
+        const y = clientY - bounds.top;
+
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(x, y, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (isDrawing && (lastX !== 0 || lastY !== 0)) {
+          ctx.beginPath();
+          ctx.lineWidth = 44;
+          ctx.lineCap = 'round';
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+        }
+        lastX = x;
+        lastY = y;
+        strokeCount++;
+
+        if (strokeCount % 8 === 0) {
+          checkScratchProgress();
+        }
+      }
+
+      function checkScratchProgress() {
+        if (scratchRevealed) return;
+        try {
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const pixels = imgData.data;
+          let transparent = 0;
+          const step = 32; // Sample every 8th pixel
+          const totalSampled = pixels.length / step;
+          for (let i = 3; i < pixels.length; i += step) {
+            if (pixels[i] === 0) transparent++;
+          }
+          const ratio = transparent / totalSampled;
+          if (ratio > 0.35) {
+            revealPrize();
+          }
+        } catch(e) {}
+      }
+
+      function revealPrize() {
+        if (scratchRevealed) return;
+        scratchRevealed = true;
+        canvas.classList.add('is-gone');
+        const prizeBox = document.getElementById('scratchPrize');
+        if (prizeBox) prizeBox.classList.add('is-pop');
+        const hint = document.getElementById('scratchHint');
+        if (hint) {
+          hint.innerHTML = '🎉 <span style="color:#34D399; font-weight:700;">Đã cào mở thưởng! Đang kích hoạt nhận xu...</span>';
+        }
+        const btn = document.getElementById('btnClaimAction');
+        if (btn && !btn.disabled && !btn.dataset.claimed) {
+          handleClaimTicket();
+        }
+      }
+
+      canvas.addEventListener('pointerdown', (e) => {
+        isDrawing = true;
+        scratchAt(e.clientX, e.clientY);
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!isDrawing) return;
+        scratchAt(e.clientX, e.clientY);
+      });
+      window.addEventListener('pointerup', () => {
+        if (isDrawing) {
+          isDrawing = false;
+          lastX = 0;
+          lastY = 0;
+          checkScratchProgress();
+        }
+      });
+    }
+
+    function updateStreakBadge(count) {
+      const el = document.getElementById('streakFlameText');
+      if (!el) return;
+      const today = getTodayDateStr();
+      let completed = count;
+      if (completed === undefined) {
+        try {
+          if (currentUser && currentUser.uid) {
+            completed = parseInt(localStorage.getItem(`ipaviet_uid_mission_${today}_${currentUser.uid}`) || '0', 10);
+          }
+        } catch(e) {}
+      }
+      completed = Math.min(2, Math.max(0, completed || 0));
+      if (completed >= 2) {
+        el.textContent = 'Chuỗi hôm nay: 2/2 lượt (Đã hoàn thành tối đa hôm nay!)';
+      } else if (completed === 1) {
+        el.textContent = 'Chuỗi hôm nay: 1/2 hoàn thành (Nhận thêm 1 lượt nữa!)';
+      } else {
+        el.textContent = 'Chuỗi hôm nay: Sẵn sàng nhận lượt 1/2 (+1.000 Xu)';
+      }
     }
 
     async function sendTelegramAlert(email, uid, ip, completedCount, newBalance, provider, elapsedSec) {
@@ -462,11 +737,16 @@
           document.getElementById('cardIcon').textContent = '✅';
           document.getElementById('claimTitle').textContent = 'Vé Đã Được Nhận';
           document.getElementById('claimSubtitle').textContent = 'Vé nhận thưởng này đã được sử dụng trước đó. Mỗi vé chỉ được nhận 1 lần duy nhất!';
+          const scCanvas = document.getElementById('scratchCanvas');
+          if (scCanvas) scCanvas.classList.add('is-gone');
+          const hint = document.getElementById('scratchHint');
+          if (hint) hint.textContent = 'Vé đã sử dụng';
           if (btn) {
             btn.disabled = true;
             btn.dataset.claimed = "1";
             btn.textContent = 'Đã Nhận Thưởng Rồi';
           }
+          updateStreakBadge();
           return;
         }
 
@@ -474,11 +754,15 @@
         if (expiresAt > 0 && Date.now() > expiresAt) {
           document.getElementById('claimTitle').textContent = 'Vé Đã Hết Hạn';
           document.getElementById('claimSubtitle').textContent = 'Vé nhận thưởng này đã quá hạn 15 phút. Vui lòng làm lại nhiệm vụ mới.';
+          const scCanvas = document.getElementById('scratchCanvas');
+          if (scCanvas) scCanvas.classList.add('is-gone');
           if (btn) { btn.disabled = true; btn.textContent = 'Vé Đã Hết Hạn'; }
           return;
         }
 
         startCountdown(expiresAt || (Date.now() + 15 * 60 * 1000));
+        initScratchCard(ticketData.reward || 1000);
+        updateStreakBadge();
 
         if (currentUser) {
           if (accEl) accEl.textContent = currentUser.email || currentUser.displayName || 'Tài khoản của bạn';
@@ -624,6 +908,12 @@
           timerEl.textContent = 'Đã nhận';
           timerEl.style.color = '#34d399';
         }
+
+        updateStreakBadge(completedToday);
+        const scC = document.getElementById('scratchCanvas');
+        if (scC) scC.classList.add('is-gone');
+        const hintEl = document.getElementById('scratchHint');
+        if (hintEl) hintEl.innerHTML = '🎉 <span style="color:#34D399; font-weight:700;">Đã nhận thưởng thành công!</span>';
 
         showToast(`🎉 Nhận thành công +${reward.toLocaleString('vi-VN')} Xu!`);
 

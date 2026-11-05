@@ -3252,11 +3252,20 @@
     <div class="glass-card rounded-[28px] shadow-2xl border border-black/[0.08] w-full max-w-lg overflow-hidden relative z-10 animate-in fade-in zoom-in-95 duration-150">
       <div class="flex items-center px-4 border-b border-black/[0.06] bg-white/40">
         <i data-lucide="search" class="w-4 h-4 text-gray-400 mr-3"></i>
-        <input type="text" id="cmdInput" oninput="filterCommandPalette()" placeholder="Gõ hành động hoặc nhảy tới tab..." class="w-full py-4 text-xs font-semibold bg-transparent outline-none text-gray-900 placeholder:text-gray-400">
+        <input type="text" id="cmdInput" oninput="filterCommandPalette()" placeholder="Gõ hành động, lệnh hoặc nhảy tới tab..." class="w-full py-4 text-xs font-semibold bg-transparent outline-none text-gray-900 placeholder:text-gray-400">
         <kbd class="text-[10px] font-mono text-gray-400 px-2 py-0.5 rounded-lg border border-black/[0.08] bg-black/[0.02]">ESC</kbd>
       </div>
       <div id="cmdResults" class="p-2 max-h-80 overflow-y-auto space-y-1 text-xs scrollbar-none">
         <!-- Results populated dynamically -->
+      </div>
+      <!-- Lucian [046] Command Palette Footer -->
+      <div class="px-4 py-2.5 bg-black/[0.03] border-t border-black/[0.06] flex items-center justify-between text-[11px] font-semibold text-gray-400 select-none">
+        <div class="flex items-center gap-3">
+          <span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded bg-white border border-black/[0.1] text-[9.5px] font-mono text-gray-500 shadow-2xs">↑↓</kbd> Di chuyển</span>
+          <span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded bg-white border border-black/[0.1] text-[9.5px] font-mono text-gray-500 shadow-2xs">↵</kbd> Chọn</span>
+          <span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded bg-white border border-black/[0.1] text-[9.5px] font-mono text-gray-500 shadow-2xs">Esc</kbd> Đóng</span>
+        </div>
+        <span class="text-[10px] text-appleBlue font-bold">ADMIN.OS QuickNav</span>
       </div>
     </div>
   </div>
@@ -5554,54 +5563,199 @@
       }
     });
 
+    let cmdActiveIdx = 0;
+    let currentCmdFiltered = [];
+
     const COMMAND_ITEMS = [
-      { label: 'Tổng Quan Hệ Thống', action: () => switchTab('dashboard'), category: 'Điều Hướng' },
-      { label: 'Thống Kê Kho IPA & Hành Vi', action: () => switchTab('analytics'), category: 'Điều Hướng' },
-      { label: 'Vượt Link & Chống Spam IP (Giới Hạn 2 Lượt)', action: () => switchTab('shortener_missions'), category: 'Điều Hướng' },
-      { label: 'Chat Hỗ Trợ Khách Hàng', action: () => switchTab('support_chat'), category: 'Điều Hướng' },
-      { label: 'Duyệt Đơn Hàng Mall', action: () => switchTab('mmo_orders'), category: 'Điều Hướng' },
-      { label: 'Quản Lý Kho Sản Phẩm', action: () => switchTab('mmo_products'), category: 'Điều Hướng' },
-      { label: 'Cấu Hình Deal Hot', action: () => switchTab('mmo_dealhot'), category: 'Điều Hướng' },
-      { label: 'Khách Hàng & Số Dư', action: () => switchTab('users'), category: 'Điều Hướng' },
-      { label: 'Trợ Lý AI & Playground', action: () => switchTab('ai_knowledge'), category: 'Điều Hướng' },
-      { label: 'Cấu Hình VSign App (Remote Config & Bảo Trì)', action: () => switchTab('vsign_config'), category: 'Điều Hướng' },
-      { label: 'Nhật Ký Hoạt Động (Audit)', action: () => switchTab('audit'), category: 'Điều Hướng' },
-      { label: 'Đồng Bộ Toàn Bộ Lên Máy Chủ', action: () => saveAllConfigsToServer(), category: 'Thao Tác' },
-      { label: 'Đăng Xuất Khỏi Admin', action: () => logoutAdmin(), category: 'Bảo Mật' }
+      { label: 'Tổng Quan Hệ Thống', action: () => switchTab('dashboard'), category: 'Điều Hướng', icon: 'layout-dashboard' },
+      { label: 'Thống Kê Kho IPA & Hành Vi Khách', action: () => switchTab('analytics'), category: 'Điều Hướng', icon: 'bar-chart-3' },
+      { label: 'Quản Lý Đơn Hàng Chứng Chỉ Apple', action: () => switchTab('cert_orders'), category: 'Điều Hướng', icon: 'file-check' },
+      { label: 'Bảng Giá & Gói Chứng Chỉ Apple', action: () => switchTab('cert_products'), category: 'Điều Hướng', icon: 'tag' },
+      { label: 'Duyệt Đơn Hàng Chợ MMO', action: () => switchTab('mmo_orders'), category: 'Điều Hướng', icon: 'shopping-bag' },
+      { label: 'Quản Lý Kho Sản Phẩm Mall', action: () => switchTab('mmo_products'), category: 'Điều Hướng', icon: 'boxes' },
+      { label: 'Danh Mục Sản Phẩm MMO', action: () => switchTab('mmo_categories'), category: 'Điều Hướng', icon: 'folder-tree' },
+      { label: 'Cấu Hình Deal Hot Chợ Mall', action: () => switchTab('mmo_dealhot'), category: 'Điều Hướng', icon: 'flame' },
+      { label: 'Khách Hàng & Quản Lý Số Dư Ví', action: () => switchTab('users'), category: 'Điều Hướng', icon: 'users' },
+      { label: 'Lịch Sử Giao Dịch & Nạp Tiền', action: () => switchTab('transactions'), category: 'Điều Hướng', icon: 'receipt' },
+      { label: 'Chat Hỗ Trợ Khách Hàng Trực Tiếp', action: () => switchTab('support_chat'), category: 'Điều Hướng', icon: 'message-square' },
+      { label: 'Vượt Link & Chống Spam IP (2 Lượt/Ngày)', action: () => switchTab('shortener_missions'), category: 'Điều Hướng', icon: 'link-2' },
+      { label: 'Kho Phím Tắt Shortcuts iOS', action: () => switchTab('shortcuts'), category: 'Điều Hướng', icon: 'sparkles' },
+      { label: 'Trợ Lý AI & Kiến Thức Bot', action: () => switchTab('ai_knowledge'), category: 'Điều Hướng', icon: 'bot' },
+      { label: 'Cấu Hình VSign App (OTA & Remote Config)', action: () => switchTab('vsign_config'), category: 'Điều Hướng', icon: 'smartphone' },
+      { label: 'Nhật Ký Hoạt Động & Audit Log', action: () => switchTab('audit'), category: 'Điều Hướng', icon: 'shield-alert' },
+      { label: 'Xuất File Danh Sách Khách Hàng (.CSV)', action: () => exportUsersCSV(), category: 'Xuất Dữ Liệu', icon: 'download' },
+      { label: 'Xuất Lịch Sử Giao Dịch (.CSV)', action: () => exportTransactionsCSV(), category: 'Xuất Dữ Liệu', icon: 'download' },
+      { label: 'Lưu & Đồng Bộ Toàn Bộ Lên Máy Chủ', action: () => saveAllConfigsToServer(), category: 'Thao Tác', icon: 'cloud' },
+      { label: 'Đăng Xuất Khỏi Admin', action: () => logoutAdmin(), category: 'Bảo Mật', icon: 'log-out' }
     ];
+
+    function highlightMatch(text, query) {
+      if (!query) return escapeHTML(text);
+      const idx = text.toLowerCase().indexOf(query.toLowerCase());
+      if (idx === -1) return escapeHTML(text);
+      const before = escapeHTML(text.substring(0, idx));
+      const match = escapeHTML(text.substring(idx, idx + query.length));
+      const after = escapeHTML(text.substring(idx + query.length));
+      return `${before}<mark class="bg-blue-100 text-blue-600 font-extrabold px-0.5 rounded">${match}</mark>${after}`;
+    }
 
     function openCommandPalette() {
       const palette = document.getElementById('commandPalette');
+      if (!palette) return;
       palette.classList.remove('hidden');
-      document.getElementById('cmdInput').value = '';
+      const input = document.getElementById('cmdInput');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+      cmdActiveIdx = 0;
       filterCommandPalette();
-      document.getElementById('cmdInput').focus();
     }
 
     function closeCommandPalette() {
-      document.getElementById('commandPalette').classList.add('hidden');
+      const palette = document.getElementById('commandPalette');
+      if (palette) palette.classList.add('hidden');
     }
 
     function filterCommandPalette() {
       const q = (document.getElementById('cmdInput')?.value || '').toLowerCase().trim();
       const results = document.getElementById('cmdResults');
+      if (!results) return;
 
-      let filtered = COMMAND_ITEMS;
-      if (q) {
-        filtered = filtered.filter(item => item.label.toLowerCase().includes(q) || item.category.toLowerCase().includes(q));
+      currentCmdFiltered = COMMAND_ITEMS.filter(item => {
+        if (!q) return true;
+        return item.label.toLowerCase().includes(q) || item.category.toLowerCase().includes(q);
+      });
+
+      if (cmdActiveIdx >= currentCmdFiltered.length) {
+        cmdActiveIdx = Math.max(0, currentCmdFiltered.length - 1);
       }
 
-      results.innerHTML = filtered.map((item, i) => `
-        <div onclick="executeCommand(${i})" class="px-3.5 py-2.5 rounded-xl hover:bg-appleBlue hover:text-white cursor-pointer transition flex items-center justify-between group">
-          <span class="font-bold">${escapeHTML(item.label)}</span>
-          <span class="text-[10px] font-semibold text-gray-400 group-hover:text-white/80">${escapeHTML(item.category)}</span>
-        </div>
-      `).join('');
+      if (currentCmdFiltered.length === 0) {
+        results.innerHTML = `
+          <div class="py-8 text-center text-gray-400">
+            <p class="font-bold text-sm text-gray-600">Không tìm thấy kết quả phù hợp</p>
+            <p class="text-xs mt-1">Thử gõ từ khóa khác như "cert", "mmo", "user", "csv"...</p>
+          </div>
+        `;
+        return;
+      }
+
+      results.innerHTML = currentCmdFiltered.map((item, i) => {
+        const isSelected = i === cmdActiveIdx;
+        return `
+          <div onclick="executeCommand(${i})" 
+               class="px-3.5 py-2.5 rounded-xl cursor-pointer transition-all flex items-center justify-between group ${isSelected ? 'bg-appleBlue text-white shadow-sm' : 'hover:bg-black/[0.04] text-gray-800'}"
+               data-idx="${i}">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-6 h-6 rounded-lg ${isSelected ? 'bg-white/20 text-white' : 'bg-black/[0.04] text-gray-500 group-hover:text-appleBlue'} flex items-center justify-center shrink-0">
+                <i data-lucide="${item.icon || 'arrow-right'}" class="w-3.5 h-3.5"></i>
+              </span>
+              <span class="font-bold truncate text-xs ${isSelected ? 'text-white' : 'text-gray-900'}">${highlightMatch(item.label, q)}</span>
+            </div>
+            <span class="text-[10px] font-semibold shrink-0 ml-2 ${isSelected ? 'text-white/80' : 'text-gray-400 group-hover:text-gray-600'}">${escapeHTML(item.category)}</span>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
     }
 
     function executeCommand(index) {
       closeCommandPalette();
-      if (COMMAND_ITEMS[index]) COMMAND_ITEMS[index].action();
+      if (currentCmdFiltered && currentCmdFiltered[index]) {
+        currentCmdFiltered[index].action();
+      }
+    }
+
+    // Lucian [046] Keyboard Navigation Listener for Command Palette
+    document.addEventListener('DOMContentLoaded', () => {
+      const cmdInp = document.getElementById('cmdInput');
+      if (cmdInp) {
+        cmdInp.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (currentCmdFiltered.length > 0) {
+              cmdActiveIdx = (cmdActiveIdx + 1) % currentCmdFiltered.length;
+              filterCommandPalette();
+              const sel = document.querySelector(`#cmdResults [data-idx="${cmdActiveIdx}"]`);
+              if (sel) sel.scrollIntoView({ block: 'nearest' });
+            }
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (currentCmdFiltered.length > 0) {
+              cmdActiveIdx = (cmdActiveIdx - 1 + currentCmdFiltered.length) % currentCmdFiltered.length;
+              filterCommandPalette();
+              const sel = document.querySelector(`#cmdResults [data-idx="${cmdActiveIdx}"]`);
+              if (sel) sel.scrollIntoView({ block: 'nearest' });
+            }
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            executeCommand(cmdActiveIdx);
+          }
+        });
+      }
+    });
+
+    /* ─── Lucian [003] Hold-to-Delete Engine ─── */
+    function bindHoldToDelete(btn, onConfirmed, duration = 1200) {
+      if (!btn) return;
+      btn.style.position = 'relative';
+      btn.style.overflow = 'hidden';
+      btn.style.userSelect = 'none';
+      btn.style.webkitUserSelect = 'none';
+
+      let bar = btn.querySelector('.u003-fill-track');
+      if (!bar) {
+        bar = document.createElement('span');
+        bar.className = 'u003-fill-track';
+        bar.style.cssText = 'position:absolute; inset:0; background:rgba(225, 29, 72, 0.4); transform-origin:0 50%; transform:scaleX(0); transition:none; pointer-events:none; z-index:0;';
+        btn.prepend(bar);
+      }
+
+      let holding = false;
+      let startTime = 0;
+      let animFrame = null;
+
+      function start(e) {
+        if (e && e.button !== undefined && e.button !== 0) return;
+        holding = true;
+        startTime = performance.now();
+        bar.style.transition = 'none';
+        btn.style.transform = 'scale(0.97)';
+
+        function step(now) {
+          if (!holding) return;
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / duration);
+          bar.style.transform = `scaleX(${progress})`;
+
+          if (progress >= 1) {
+            holding = false;
+            btn.style.transform = '';
+            bar.style.transform = 'scaleX(0)';
+            if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+            if (typeof onConfirmed === 'function') onConfirmed();
+            return;
+          }
+          animFrame = requestAnimationFrame(step);
+        }
+        animFrame = requestAnimationFrame(step);
+      }
+
+      function stop() {
+        if (!holding) return;
+        holding = false;
+        cancelAnimationFrame(animFrame);
+        btn.style.transform = '';
+        bar.style.transition = 'transform 0.25s ease-out';
+        bar.style.transform = 'scaleX(0)';
+      }
+
+      btn.addEventListener('pointerdown', start);
+      btn.addEventListener('pointerup', stop);
+      btn.addEventListener('pointercancel', stop);
+      btn.addEventListener('pointerleave', stop);
     }
 
     // ==========================================
@@ -7239,7 +7393,7 @@
           Swal.fire({
             title: title,
             html: desc,
-            icon: type === 'confirm' ? 'warning' : 'info',
+            icon: (type === 'danger' || type === 'delete') ? 'warning' : 'info',
             showCancelButton: true,
             confirmButtonText: 'Đồng Ý',
             cancelButtonText: 'Hủy'
@@ -7249,21 +7403,53 @@
         }
         return;
       }
-      content.innerHTML = `
-        <h3 class="text-base font-bold text-gray-900">${escapeHTML(title)}</h3>
-        <p class="text-xs text-gray-500 leading-relaxed mt-2">${desc}</p>
-        <div class="flex gap-2 mt-6">
-          <button onclick="closeActionModal()" class="flex-1 py-2.5 bg-gray-100 font-bold text-gray-600 rounded-xl text-xs">Hủy</button>
-          <button id="btnActionConfirm" class="flex-1 py-2.5 bg-appleBlue text-white font-bold rounded-xl text-xs shadow-md">Đồng Ý</button>
-        </div>
-      `;
-      modal.classList.remove('hidden');
-      const btn = document.getElementById('btnActionConfirm');
-      if (btn) {
-        btn.onclick = () => {
-          closeActionModal();
-          if (typeof onConfirm === 'function') onConfirm();
-        };
+
+      if (type === 'danger' || type === 'delete' || type === 'revoke') {
+        content.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+              <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-gray-900">${escapeHTML(title)}</h3>
+              <span class="text-[10px] text-rose-500 font-bold uppercase tracking-wider">Hành động nhạy cảm</span>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 leading-relaxed mt-2">${desc}</p>
+          <div class="flex gap-2 mt-6">
+            <button onclick="closeActionModal()" class="flex-1 py-2.5 bg-gray-100 font-bold text-gray-600 rounded-xl text-xs hover:bg-gray-200 transition">Hủy</button>
+            <button id="btnActionConfirm" class="flex-1 py-2.5 bg-rose-600 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-500/25 relative overflow-hidden flex items-center justify-center gap-1.5 active:scale-95 transition">
+              <span class="u003-fill-track absolute inset-0 bg-rose-700 origin-left scale-x-0 transition-none pointer-events-none"></span>
+              <span class="relative z-10 flex items-center gap-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Giữ để xóa (1s)</span>
+            </button>
+          </div>
+        `;
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+        const btn = document.getElementById('btnActionConfirm');
+        if (btn) {
+          bindHoldToDelete(btn, () => {
+            closeActionModal();
+            if (typeof onConfirm === 'function') onConfirm();
+          }, 1000);
+        }
+      } else {
+        content.innerHTML = `
+          <h3 class="text-base font-bold text-gray-900">${escapeHTML(title)}</h3>
+          <p class="text-xs text-gray-500 leading-relaxed mt-2">${desc}</p>
+          <div class="flex gap-2 mt-6">
+            <button onclick="closeActionModal()" class="flex-1 py-2.5 bg-gray-100 font-bold text-gray-600 rounded-xl text-xs hover:bg-gray-200 transition">Hủy</button>
+            <button id="btnActionConfirm" class="flex-1 py-2.5 bg-appleBlue text-white font-bold rounded-xl text-xs shadow-md shadow-blue-500/25 hover:bg-blue-600 transition">Đồng Ý</button>
+          </div>
+        `;
+        modal.classList.remove('hidden');
+        const btn = document.getElementById('btnActionConfirm');
+        if (btn) {
+          btn.onclick = () => {
+            closeActionModal();
+            if (typeof onConfirm === 'function') onConfirm();
+          };
+        }
       }
     }
 

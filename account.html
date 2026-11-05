@@ -220,6 +220,43 @@
       border-color: rgba(0, 0, 0, 0.08) !important;
       color: #0F172A !important;
     }
+
+    /* ─── Lucian [386] Glowing Unlockable VIP Badge ─── */
+    .u386-vip-badge {
+      position: relative;
+      animation: vipGleam 2.8s ease-in-out infinite;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.45);
+    }
+    @keyframes vipGleam {
+      0%, 100% {
+        box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 22px rgba(245, 158, 11, 0.65), 0 0 6px rgba(251, 191, 36, 0.9);
+        transform: scale(1.02);
+      }
+    }
+
+    /* ─── Lucian [036] Password Strength Meter ─── */
+    .u036-meter-seg {
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(125, 125, 125, 0.18);
+      overflow: hidden;
+      position: relative;
+    }
+    .u036-meter-seg .meter-bar {
+      position: absolute;
+      inset: 0;
+      background: var(--meter-color, #E5484D);
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+      transition: transform 0.35s cubic-bezier(0.34, 1.45, 0.64, 1), background-color 0.3s;
+    }
+    .u036-meter-seg.on .meter-bar {
+      transform: scaleX(1);
+    }
   </style>
 
   <script>
@@ -623,6 +660,19 @@
               class="w-full h-11 pl-10 pr-4 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-transparent focus:border-apple-blue focus:bg-white dark:focus:bg-[#121214] text-xs sm:text-sm font-medium outline-none transition text-black dark:text-white"
             >
           </div>
+          <!-- Lucian [036] Password Strength Meter (Register only) -->
+          <div id="passStrengthMeter" class="expand-anim max-h-0 opacity-0 space-y-1.5 pt-0.5 overflow-hidden transition-all duration-300">
+            <div class="grid grid-cols-4 gap-1.5" id="meterSegs">
+              <div class="u036-meter-seg"><span class="meter-bar"></span></div>
+              <div class="u036-meter-seg"><span class="meter-bar"></span></div>
+              <div class="u036-meter-seg"><span class="meter-bar"></span></div>
+              <div class="u036-meter-seg"><span class="meter-bar"></span></div>
+            </div>
+            <div class="flex items-center justify-between text-[11px] font-semibold text-apple-gray">
+              <span>Độ bảo mật mật khẩu</span>
+              <span id="passStrengthLabel" class="font-bold text-apple-red">Nhập mật khẩu</span>
+            </div>
+          </div>
         </div>
 
         <!-- Field 4: Confirm Password (Register only) -->
@@ -884,12 +934,13 @@
               document.getElementById('userEmailShow').innerText = data.email || user.email; 
               document.getElementById('avatarLetter').innerText = displayName.charAt(0).toUpperCase(); 
               document.getElementById('userUidShow').innerText = user.uid; 
-              document.getElementById('userCoinsShow').innerText = (data.coins || 0).toLocaleString();
+              const targetCoins = data.coins || 0;
+              animateOdometer(document.getElementById('userCoinsShow'), targetCoins);
               
               const vipShow = document.getElementById('userVipShow');
               if (data.vipExpire && data.vipExpire.toMillis() > Date.now()) { 
                 const dateStr = new Date(data.vipExpire.toMillis()).toLocaleDateString('vi-VN'); 
-                vipShow.innerHTML = `<span class="bg-gradient-to-r from-amber-500 to-amber-400 text-black px-3 py-1 rounded-full text-xs font-black shadow-sm flex items-center gap-1"><i data-lucide="crown" class="w-3.5 h-3.5"></i> VIP Tới ${dateStr}</span>`; 
+                vipShow.innerHTML = `<span class="u386-vip-badge bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-black px-3.5 py-1 rounded-full text-xs font-black shadow-md flex items-center gap-1.5"><i data-lucide="crown" class="w-3.5 h-3.5"></i> VIP Tới ${dateStr}</span>`; 
               } else { 
                 vipShow.innerHTML = `<span class="bg-black/5 dark:bg-white/10 text-apple-gray text-xs font-bold px-3 py-1 rounded-full">Cơ bản</span>`; 
               }
@@ -1085,6 +1136,76 @@
       }, 2000);
     }
     
+    /* ─── Lucian [018] Rolling Odometer Stepper ─── */
+    function animateOdometer(el, endVal, duration = 800) {
+      if (!el) return;
+      const startVal = parseInt((el.textContent || '0').replace(/[^0-9]/g, ''), 10) || 0;
+      if (startVal === endVal) {
+        el.textContent = endVal.toLocaleString('vi-VN');
+        return;
+      }
+      const startTime = performance.now();
+      function updateNumber(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(startVal + (endVal - startVal) * ease);
+        el.textContent = current.toLocaleString('vi-VN');
+        if (progress < 1) {
+          requestAnimationFrame(updateNumber);
+        } else {
+          el.textContent = endVal.toLocaleString('vi-VN');
+        }
+      }
+      requestAnimationFrame(updateNumber);
+    }
+
+    /* ─── Lucian [036] Password Strength Meter ─── */
+    function checkPassStrength(val) {
+      const segs = document.querySelectorAll('#meterSegs .u036-meter-seg');
+      const label = document.getElementById('passStrengthLabel');
+      if (!segs.length || !label) return;
+
+      if (!val) {
+        segs.forEach(s => s.classList.remove('on'));
+        label.textContent = 'Nhập mật khẩu';
+        label.className = 'font-bold text-apple-gray';
+        return;
+      }
+
+      let score = 0;
+      if (val.length >= 6) score++;
+      if (val.length >= 8 && /\d/.test(val)) score++;
+      if (/[A-Z]/.test(val) || /[^A-Za-z0-9]/.test(val)) score++;
+      if (val.length >= 10 && /[A-Z]/.test(val) && /\d/.test(val) && /[^A-Za-z0-9]/.test(val)) score++;
+
+      const levels = [
+        { text: 'Quá yếu', color: '#EF4444', cls: 'text-red-500' },
+        { text: 'Trung bình', color: '#F97316', cls: 'text-orange-500' },
+        { text: 'Khá mạnh', color: '#F59E0B', cls: 'text-amber-500' },
+        { text: 'Rất mạnh', color: '#10B981', cls: 'text-emerald-500' }
+      ];
+
+      const current = levels[Math.max(0, Math.min(3, score - 1))] || levels[0];
+      segs.forEach((s, idx) => {
+        s.style.setProperty('--meter-color', current.color);
+        s.classList.toggle('on', idx < score);
+      });
+      label.textContent = current.text;
+      label.className = `font-bold ${current.cls}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const passEl = document.getElementById('passInput');
+      if (passEl) {
+        passEl.addEventListener('input', (e) => {
+          if (authMode === 'register') {
+            checkPassStrength(e.target.value);
+          }
+        });
+      }
+    });
+
     function switchAuthMode(mode) { 
       authMode = mode; 
       const slider = document.getElementById('authSlider'); 
@@ -1097,6 +1218,7 @@
       const grpUser = document.getElementById('groupUsername'); 
       const grpConfirm = document.getElementById('groupConfirmPass'); 
       const grpTerms = document.getElementById('groupTerms'); 
+      const grpMeter = document.getElementById('passStrengthMeter');
       
       errBox.classList.add('hidden'); 
       
@@ -1111,6 +1233,7 @@
         grpUser.style.maxHeight = '0'; grpUser.style.opacity = '0'; 
         grpConfirm.style.maxHeight = '0'; grpConfirm.style.opacity = '0'; 
         grpTerms.style.maxHeight = '0'; grpTerms.style.opacity = '0'; 
+        if (grpMeter) { grpMeter.style.maxHeight = '0'; grpMeter.style.opacity = '0'; }
         if (grpCaptcha) { grpCaptcha.style.maxHeight = '0'; grpCaptcha.style.opacity = '0'; }
       } else { 
         slider.style.transform = 'translateX(100%)'; 
@@ -1122,6 +1245,7 @@
         grpUser.style.maxHeight = '100px'; grpUser.style.opacity = '1'; 
         grpConfirm.style.maxHeight = '100px'; grpConfirm.style.opacity = '1'; 
         grpTerms.style.maxHeight = '100px'; grpTerms.style.opacity = '1'; 
+        if (grpMeter) { grpMeter.style.maxHeight = '60px'; grpMeter.style.opacity = '1'; }
         if (grpCaptcha) { 
           grpCaptcha.style.maxHeight = '100px'; grpCaptcha.style.opacity = '1'; 
           if (window.turnstile) {
