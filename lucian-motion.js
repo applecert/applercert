@@ -445,19 +445,33 @@
       this.initMagnetic('.anim-magnetic, .hero-cta, .header-cta, .btn-action-small, [data-magnetic]');
 
       // Gyro tilt cards (subtle 3D perspective on real cards)
-      this.initGyroTilt('.anim-gyro-card, .eco-panel, .card-panel, [data-tilt]', 6);
+      this.initGyroTilt('.anim-gyro-card, .eco-panel, .card-panel, .num-item, [data-tilt]', 6);
 
       // Spotlight beams (soft radial light follows mouse)
-      this.initSpotlight('.anim-spotlight, .eco-panel, .card-panel, [data-spotlight]');
+      this.initSpotlight('.anim-spotlight, .eco-panel, .card-panel, .num-item, [data-spotlight]');
 
       // Hold to confirm buttons
       this.initHoldToConfirm('.anim-hold-btn, [data-hold]');
 
       // Auto ripple clicks on real interactive buttons
       document.addEventListener('click', (e) => {
-        const rippleTarget = e.target.closest('.anim-ripple, [data-ripple], .hero-cta, .header-cta, .copy-chip, .btn-action-small, button:not([data-no-ripple])');
+        const rippleTarget = e.target.closest('.anim-ripple, [data-ripple], .hero-cta, .header-cta, .copy-chip, .btn-action-small, .pill, button:not([data-no-ripple])');
         if (rippleTarget) {
           LucianMotion.ripple(e, rippleTarget);
+        }
+
+        // Auto copy for chips & data-copy
+        const copyEl = e.target.closest('[data-copy], .copy-chip');
+        if (copyEl) {
+          const textToCopy = copyEl.getAttribute('data-copy') || copyEl.dataset.clipboard || copyEl.innerText.trim();
+          if (textToCopy && navigator.clipboard) {
+            navigator.clipboard.writeText(textToCopy).then(() => {
+              copyEl.classList.add('is-copied');
+              LucianMotion.showToast('Đã sao chép: ' + (textToCopy.length > 25 ? textToCopy.slice(0, 25) + '…' : textToCopy), 'success');
+              if (navigator.vibrate) navigator.vibrate(25);
+              setTimeout(() => copyEl.classList.remove('is-copied'), 2000);
+            }).catch(() => {});
+          }
         }
 
         // Bookmark toggle
