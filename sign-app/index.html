@@ -2500,23 +2500,80 @@
                     if (!url) return;
                     this.loadingRemote = true;
                     this.appStatusClass = 'loading';
-                    this.appStatusText = 'Đang tải tệp IPA từ liên kết từ xa...';
+                    this.appStatusText = 'Đang kết nối máy chủ tải IPA...';
+
+                    const ghMirrors = [
+                        'https://gh-proxy.org/',
+                        'https://hk.gh-proxy.org/',
+                        'https://cdn.gh-proxy.org/',
+                        'https://edgeone.gh-proxy.org/',
+                        'https://gh-proxy.com/'
+                    ];
+                    const isGitHub = /^https?:\/\/(www\.)?github\.com\//i.test(url) || /^https?:\/\/release-assets\.githubusercontent\.com\//i.test(url);
+                    const candidates = isGitHub
+                        ? [...ghMirrors.map(m => m + url), url]
+                        : [url, ...ghMirrors.map(m => m + url)];
 
                     try {
-                        let res = await fetch(url);
-                        if (!res.ok) {
-                            // Thử proxy qua Cloudflare Worker nếu CORS bị chặn
-                            const proxyUrl = `https://tight-water-fabbipa-proxy.tlvdzreal.workers.dev/?url=${encodeURIComponent(url)}`;
-                            res = await fetch(proxyUrl);
-                        }
-                        if (!res.ok) throw new Error("Không thể tải tệp từ liên kết (HTTP " + res.status + ")");
+                        let validBlob = null;
+                        let lastErr = null;
 
-                        const blob = await res.blob();
+                        for (let i = 0; i < candidates.length; i++) {
+                            try {
+                                const res = await fetch(candidates[i]);
+                                if (!res || !res.ok) {
+                                    lastErr = new Error("HTTP " + (res ? res.status : "Error"));
+                                    continue;
+                                }
+                                const total = parseInt(res.headers.get('content-length') || '0', 10);
+                                if (res.body && res.body.getReader) {
+                                    const reader = res.body.getReader();
+                                    const chunks = [];
+                                    let got = 0;
+                                    let checkedMagic = false;
+                                    for (;;) {
+                                        const { done, value } = await reader.read();
+                                        if (done) break;
+                                        if (!value || !value.length) continue;
+                                        if (!checkedMagic) {
+                                            checkedMagic = true;
+                                            if (value.length >= 2 && (value[0] !== 0x50 || value[1] !== 0x4B)) {
+                                                try { reader.cancel(); } catch(e) {}
+                                                throw new Error("Dữ liệu trả về không phải định dạng IPA");
+                                            }
+                                        }
+                                        chunks.push(value);
+                                        got += value.length;
+                                        if (total > 0) {
+                                            const pct = Math.min(99, Math.round((got / total) * 100));
+                                            this.appStatusText = `Đang nạp IPA từ kho... ${pct}% (${this.formatFileSize(got)} / ${this.formatFileSize(total)})`;
+                                        } else {
+                                            this.appStatusText = `Đang nạp IPA từ kho... (${this.formatFileSize(got)})`;
+                                        }
+                                    }
+                                    if (got < 1024) throw new Error("Tệp IPA tải về quá nhỏ");
+                                    validBlob = new Blob(chunks, { type: 'application/octet-stream' });
+                                    break;
+                                } else {
+                                    const b = await res.blob();
+                                    if (b.size < 1024) throw new Error("Tệp IPA quá nhỏ");
+                                    const head = new Uint8Array(await b.slice(0, 4).arrayBuffer());
+                                    if (head[0] !== 0x50 || head[1] !== 0x4B) throw new Error("Dữ liệu không phải IPA hợp lệ");
+                                    validBlob = new Blob([b], { type: 'application/octet-stream' });
+                                    break;
+                                }
+                            } catch (e) {
+                                lastErr = e;
+                            }
+                        }
+
+                        if (!validBlob) throw (lastErr || new Error("Không thể tải tệp IPA từ máy chủ"));
+
                         const fileName = this.customAppName ? `${this.customAppName}.ipa` : (url.split('/').pop().split('?')[0] || 'App.ipa');
-                        this.ipa = new File([blob], fileName.endsWith('.ipa') ? fileName : `${fileName}.ipa`, { type: 'application/octet-stream' });
+                        this.ipa = new File([validBlob], fileName.endsWith('.ipa') ? fileName : `${fileName}.ipa`, { type: 'application/octet-stream' });
                         this.selectedApp = 'custom';
                         this.appStatusClass = 'success';
-                        this.appStatusText = `Đã nạp thành công: ${this.ipa.name} (${this.formatFileSize(blob.size)})`;
+                        this.appStatusText = `Đã nạp thành công: ${this.ipa.name} (${this.formatFileSize(validBlob.size)})`;
                     } catch(err) {
                         this.appStatusClass = 'error';
                         this.appStatusText = `Lỗi nạp IPA từ xa: ${err.message}`;
@@ -2540,23 +2597,34 @@
                         const zip = await JSZip.loadAsync(file);
                         let foundP12 = null;
                         let foundMp = null;
+                        let detectedPwd = '';
 
                         for (const relPath in zip.files) {
                             const entry = zip.files[relPath];
                             if (entry.dir) continue;
                             const lower = entry.name.toLowerCase();
-                            if (lower.endsWith('.p12')) {
+                            if (lower.indexOf('__macosx') !== -1) continue;
+                            if (lower.endsWith('.p12') && !foundP12) {
                                 const blob = await entry.async('blob');
                                 foundP12 = new File([blob], entry.name.split('/').pop(), { type: 'application/x-pkcs12' });
-                            } else if (lower.endsWith('.mobileprovision')) {
+                            } else if (lower.endsWith('.mobileprovision') && !foundMp) {
                                 const blob = await entry.async('blob');
                                 foundMp = new File([blob], entry.name.split('/').pop(), { type: 'application/octet-stream' });
+                            } else if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('pwd') || lower.includes('matkhau') || lower.includes('readme')) {
+                                try {
+                                    const txt = (await entry.async('string')).trim();
+                                    const m = txt.match(/(?:pass(?:word)?|mật\s*khẩu|mk|pwd|pass\s*p12)\s*[:=\-]\s*([^\r\n]+)/i);
+                                    if (m && m[1]) detectedPwd = m[1].trim().replace(/^['"`]+|['"`]+$/g, '');
+                                    else if (txt && txt.length <= 64 && !/\s/.test(txt)) detectedPwd = txt;
+                                } catch(x) {}
                             }
                         }
 
                         if (foundP12 && foundMp) {
                             this.p12 = foundP12;
                             this.mobileprovision = foundMp;
+                            if (detectedPwd) this.password = detectedPwd;
+                            else if (!this.password) this.password = '1';
                             this.certZipText = `✓ ${file.name} (P12 & Prov OK)`;
                             this.saveCertToVault(foundP12, foundMp);
                         } else {
@@ -2604,9 +2672,20 @@
                 },
                 checkSavedCert() {
                     try {
-                        const raw = localStorage.getItem('ipaviet_saved_cert');
+                        const raw = localStorage.getItem('ipaviet_saved_cert') || localStorage.getItem('ipaviet_vip_cert_v1');
                         if (raw) {
-                            this.savedCertInfo = JSON.parse(raw);
+                            const parsed = JSON.parse(raw);
+                            if (parsed && parsed.p12Data && parsed.mpData) {
+                                this.savedCertInfo = {
+                                    name: parsed.name || 'Cert Đã Lưu',
+                                    savedAt: parsed.savedAt || (parsed.updatedAt ? new Date(parsed.updatedAt).toLocaleDateString('vi-VN') : 'Đã lưu'),
+                                    p12Name: parsed.p12Name || 'cert.p12',
+                                    mpName: parsed.mpName || 'cert.mobileprovision',
+                                    p12Data: parsed.p12Data,
+                                    mpData: parsed.mpData,
+                                    password: parsed.password || ''
+                                };
+                            }
                         }
                     } catch(e) {}
                 },
@@ -2621,6 +2700,9 @@
                         const mpBlob = this.base64ToBlob(this.savedCertInfo.mpData, 'application/octet-stream');
                         this.p12 = new File([p12Blob], this.savedCertInfo.p12Name, { type: 'application/x-pkcs12' });
                         this.mobileprovision = new File([mpBlob], this.savedCertInfo.mpName, { type: 'application/octet-stream' });
+                        if (this.savedCertInfo.password && !this.password) {
+                            this.password = this.savedCertInfo.password;
+                        }
                     } catch(e) {
                         this.showAppleDialog('Lỗi Nạp Cert', 'Dữ liệu chứng chỉ đã lưu bị lỗi hoặc hết hạn.');
                     }

@@ -12,8 +12,8 @@
   <link rel="stylesheet" href="../ipaviet-search.css">
   <script src="../ipaviet-theme.js"></script>
   <script src="ipaviet-download-machine.js" defer></script>
-  <link rel="stylesheet" href="ipaviet-vip-sign.css?v=3">
-  <script src="ipaviet-vip-sign.js?v=3" defer></script>
+  <link rel="stylesheet" href="ipaviet-vip-sign.css?v=4">
+  <script src="ipaviet-vip-sign.js?v=4" defer></script>
 
   <!-- Firebase Compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -2101,6 +2101,15 @@
     }
 
     /* 5. Download Handlers: Free, VIP & Coins */
+    function triggerDirectDownload(rawLink) {
+      if (!rawLink) return;
+      try {
+        window.location.assign(rawLink);
+      } catch (e) {
+        window.location.href = rawLink;
+      }
+    }
+
     function scrollToDownload(e) {
       if (e) e.preventDefault();
       const el = document.getElementById('downloadSection');
@@ -2112,8 +2121,11 @@
     function handleHeroDownloadClick(e) {
       if (e) e.preventDefault();
       if (isUserVip) {
-        showToast("🚀 Đặc quyền VIP: Bắt đầu tải file IPA trực tiếp...");
         handleDownloadVip(document.getElementById('btnDownloadVip'));
+        return;
+      }
+      if (currentUser && currentCoins >= 1000) {
+        buyWithCoins(document.getElementById('btnDownloadCoins'));
         return;
       }
       scrollToDownload(e);
@@ -2131,36 +2143,16 @@
       }
 
       if (isUserVip) {
-        if (window.IPAVIET_DOWNLOAD_MACHINE && btnEl) {
-          await window.IPAVIET_DOWNLOAD_MACHINE.start(btnEl, {
-            onAuthorize: async () => {
-              showToast("🚀 Đặc quyền VIP: Kết nối đường truyền tải tốc độ cao...");
-              await recordAppDownload(CURRENT_APP, 'VIP Direct Download');
-              return true;
-            },
-            onComplete: () => {
-              const a = document.createElement('a');
-              a.href = rawLink;
-              a.setAttribute('download', '');
-              a.target = '_blank';
-              document.body.appendChild(a);
-              a.click();
-              setTimeout(() => a.remove(), 1000);
-            },
-            successText: 'Mở File IPA ✓'
-          });
-          return;
-        }
-
         showToast("🚀 Đặc quyền VIP: Bắt đầu tải file IPA trực tiếp...");
         recordAppDownload(CURRENT_APP, 'VIP Direct Download');
-        const a = document.createElement('a');
-        a.href = rawLink;
-        a.setAttribute('download', '');
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => a.remove(), 1000);
+        if (btnEl) {
+          const prevText = btnEl.textContent;
+          btnEl.textContent = 'Đang tải ✓';
+          setTimeout(() => {
+            if (btnEl) btnEl.textContent = prevText || 'Tải 0s';
+          }, 2500);
+        }
+        triggerDirectDownload(rawLink);
         return;
       }
 
@@ -2185,8 +2177,8 @@
       // If user is VIP account, download direct immediately
       if (isUserVip) {
         showToast("🚀 Đặc quyền VIP: Bắt đầu tải file IPA trực tiếp...");
-        await recordAppDownload(CURRENT_APP, 'VIP Direct Download');
-        window.location.href = rawLink;
+        recordAppDownload(CURRENT_APP, 'VIP Direct Download');
+        triggerDirectDownload(rawLink);
         return;
       }
 
@@ -2209,7 +2201,7 @@
 
       try {
         showToast("Đang kết nối cổng tải an toàn...");
-        await recordAppDownload(CURRENT_APP, `Free Ads (${cfg.provider || 'site2s'})`);
+        recordAppDownload(CURRENT_APP, `Free Ads (${cfg.provider || 'site2s'})`);
 
         const token = createFreePassToken(CURRENT_APP, rawLink);
         const origin = (window.location.origin && window.location.origin.startsWith('http')) ? window.location.origin : 'https://ipaviet.site';
@@ -2241,6 +2233,13 @@
         setTimeout(() => { window.location.href = '../account.html'; }, 1000);
         return;
       }
+
+      // Thành viên VIP được tải miễn phí không trừ xu
+      if (isUserVip) {
+        handleDownloadVip(document.getElementById('btnDownloadVip') || btnEl);
+        return;
+      }
+
       if (currentCoins < 1000) {
         const missing = 1000 - (currentCoins || 0);
         const descEl = document.getElementById('coinPromptDesc');
@@ -2252,7 +2251,10 @@
         return;
       }
 
-      if (!CURRENT_APP) return;
+      if (!CURRENT_APP) {
+        showToast("Không tìm thấy thông tin ứng dụng!");
+        return;
+      }
       const rawLink = CURRENT_APP.fileLink || CURRENT_APP.downloadUrl || CURRENT_APP.link;
       if (!rawLink) {
         showToast("Không tìm thấy link tải IPA.");
@@ -2262,61 +2264,42 @@
       const confirmed = confirm(`Bạn có muốn dùng 1.000 Xu để tải ngay ứng dụng "${CURRENT_APP.name || 'IPA'}" không?`);
       if (!confirmed) return;
 
-      if (window.IPAVIET_DOWNLOAD_MACHINE && btnEl) {
-        await window.IPAVIET_DOWNLOAD_MACHINE.start(btnEl, {
-          onAuthorize: async () => {
-            await db.runTransaction(async (transaction) => {
-              const userRef = db.collection('users').doc(currentUser.uid);
-              const userDoc = await transaction.get(userRef);
-              if (!userDoc.exists) throw new Error("Tài khoản không tồn tại!");
-              const balance = userDoc.data().coins || 0;
-              if (balance < 1000) throw new Error("Số dư không đủ 1.000 Xu!");
-              transaction.update(userRef, { coins: balance - 1000 });
-            });
-            currentCoins -= 1000;
-            updateUserBadge();
-            showToast("✅ Đã trừ 1.000 Xu! Bắt đầu tải ứng dụng...");
-            await recordAppDownload(CURRENT_APP, 'Coin Download (1.000 Xu)');
-            return true;
-          },
-          onComplete: () => {
-            const a = document.createElement('a');
-            a.href = rawLink;
-            a.setAttribute('download', '');
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => a.remove(), 1000);
-          },
-          successText: 'Đã Trừ Xu & Tải ✓'
-        });
-        return;
+      const originalHtml = btnEl ? btnEl.innerHTML : '1.000 Xu';
+      if (btnEl) {
+        btnEl.innerHTML = `Đang tải...`;
+        btnEl.disabled = true;
       }
 
-      const originalHtml = btnEl.innerHTML;
-      btnEl.innerHTML = `Đang trừ xu...`;
-      btnEl.disabled = true;
-
       try {
-        await db.runTransaction(async (transaction) => {
-          const userRef = db.collection('users').doc(currentUser.uid);
-          const userDoc = await transaction.get(userRef);
-          if (!userDoc.exists) throw new Error("Tài khoản không tồn tại!");
-          const balance = userDoc.data().coins || 0;
-          if (balance < 1000) throw new Error("Số dư không đủ 1.000 Xu!");
-          transaction.update(userRef, { coins: balance - 1000 });
-        });
+        const userRef = db.collection('users').doc(currentUser.uid);
+        try {
+          await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) throw new Error("Tài khoản không tồn tại!");
+            const balance = userDoc.data().coins || 0;
+            if (balance < 1000) throw new Error("Số dư không đủ 1.000 Xu!");
+            transaction.update(userRef, { coins: balance - 1000 });
+          });
+        } catch (txErr) {
+          if (txErr && txErr.message && (txErr.message.includes("không đủ") || txErr.message.includes("không tồn tại"))) {
+            throw txErr;
+          }
+          await userRef.update({ coins: firebase.firestore.FieldValue.increment(-1000) });
+        }
 
-        currentCoins -= 1000;
+        currentCoins = Math.max(0, (currentCoins || 1000) - 1000);
+        if (btnEl) btnEl.disabled = false;
         updateUserBadge();
-        showToast("✅ Đã trừ 1.000 Xu! Bắt đầu tải ứng dụng...");
-        await recordAppDownload(CURRENT_APP, 'Coin Download (1.000 Xu)');
-        setTimeout(() => { window.location.href = rawLink; }, 500);
+        showToast("✅ Đã trừ 1.000 Xu! Đang bắt đầu tải file IPA...");
+        recordAppDownload(CURRENT_APP, 'Coin Download (1.000 Xu)');
+        triggerDirectDownload(rawLink);
 
       } catch(err) {
-        showToast(err.message || "Giao dịch thất bại!");
-        btnEl.innerHTML = originalHtml;
-        btnEl.disabled = false;
+        showToast("⚠️ " + (err.message || "Giao dịch thất bại!"));
+        if (btnEl) {
+          btnEl.innerHTML = originalHtml;
+          btnEl.disabled = false;
+        }
       }
     }
 
@@ -2458,42 +2441,21 @@
 
       // Update VSign Direct Signing Links
       const rawLink = app.fileLink || app.downloadUrl || app.link || '';
-      const vsignUrl = `../sign-app/index.html?ipa=${encodeURIComponent(rawLink)}&name=${encodeURIComponent(appName)}`;
+      const safeBundle = app.bundleId || app.bundleIdentifier || '';
+      const vsignUrl = `../sign-app/index.html?ipa=${encodeURIComponent(rawLink)}&name=${encodeURIComponent(appName)}&bundle_id=${encodeURIComponent(safeBundle)}`;
       const heroSignBtn = document.getElementById('heroSignBtn');
       if (heroSignBtn) {
         heroSignBtn.href = vsignUrl;
-        heroSignBtn.onclick = function(e) {
-          if (window.IPAVIET_DOWNLOAD_MACHINE && !this.classList.contains('dl-sm-busy')) {
-            e.preventDefault();
-            window.IPAVIET_DOWNLOAD_MACHINE.start(this, {
-              onAuthorize: async () => {
-                showToast("⚡ Khởi động công cụ ký số VSign Native...");
-                return true;
-              },
-              onComplete: () => { window.location.href = vsignUrl; },
-              successText: 'Mở VSign iOS ✓'
-            });
-          }
-        };
+        heroSignBtn.removeAttribute('target');
+        heroSignBtn.onclick = null;
       }
       const stickySignBtn = document.getElementById('stickySignBtn');
       if (stickySignBtn) stickySignBtn.href = vsignUrl;
       const btnSignVSign = document.getElementById('btnSignVSign');
       if (btnSignVSign) {
         btnSignVSign.href = vsignUrl;
-        btnSignVSign.onclick = function(e) {
-          if (window.IPAVIET_DOWNLOAD_MACHINE && !this.classList.contains('dl-sm-busy')) {
-            e.preventDefault();
-            window.IPAVIET_DOWNLOAD_MACHINE.start(this, {
-              onAuthorize: async () => {
-                showToast("⚡ Đang kết nối máy chủ ký số an toàn...");
-                return true;
-              },
-              onComplete: () => { window.location.href = vsignUrl; },
-              successText: 'Mở VSign iOS ✓'
-            });
-          }
-        };
+        btnSignVSign.removeAttribute('target');
+        btnSignVSign.onclick = null;
       }
 
       // Update Floating Mobile Sticky Bar

@@ -22,10 +22,17 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['vip', 'isAdmin', 'role']) || request.resource.data.vip == false)
         && (!request.resource.data.keys().hasAny(['coins']) || request.resource.data.coins == 0);
 
-      // Cập nhật hồ sơ: CẤM tuyệt đối Client tự sửa trường coins, vip, role, isAdmin
+      // Cập nhật hồ sơ: Cho phép user cập nhật vipCert, trừ xu khi mua/tải IPA hoặc nhận xu nhiệm vụ hợp lệ; cấm tự nâng quyền isAdmin/role/vip
       allow update: if isSuperAdmin() || (
         request.auth != null && request.auth.uid == userId
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coins', 'vip', 'isAdmin', 'role'])
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['vip', 'isAdmin', 'role'])
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coins'])
+          || (
+            request.resource.data.coins >= 0
+            && request.resource.data.coins <= (resource.data.coins + 2000)
+          )
+        )
       );
 
       allow delete: if isSuperAdmin();

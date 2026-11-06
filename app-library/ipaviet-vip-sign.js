@@ -12,7 +12,13 @@
   const STATUS_URL = 'https://ipa.ipasign.cc/status/';
   const DOWNLOAD_URL = 'https://ipa.ipasign.cc/download/';
   const INSTALLER = 'https://ipaviet-installer.clonene121212.workers.dev/';
-  const PROXY = 'https://tight-water-fabbipa-proxy.tlvdzreal.workers.dev/?url=';
+  const GH_MIRRORS = [
+    'https://gh-proxy.org/',
+    'https://hk.gh-proxy.org/',
+    'https://cdn.gh-proxy.org/',
+    'https://edgeone.gh-proxy.org/',
+    'https://gh-proxy.com/'
+  ];
   const GITHUB_REPO_OWNER = 'applecert';
   const GITHUB_REPO_NAME = 'applercert';
   const GITHUB_REPO_BRANCH = 'main';
@@ -690,24 +696,78 @@
   }
 
   // ───────────────────────── Sign pipeline ─────────────────────────
-  async function fetchIpa(url, onProgress) {
-    let res = null;
-    try { res = await fetch(url); } catch (e) { res = null; }
-    if (!res || !res.ok) res = await fetch(PROXY + encodeURIComponent(url));
-    if (!res.ok) throw new Error('Không tải được file IPA (HTTP ' + res.status + ').');
+  function buildIpaCandidateUrls(url) {
+    const clean = String(url || '').trim();
+    if (!clean) return [];
+    const isGitHub = /^https?:\/\/(www\.)?github\.com\//i.test(clean) || /^https?:\/\/release-assets\.githubusercontent\.com\//i.test(clean);
+    const list = [];
+    if (isGitHub) {
+      GH_MIRRORS.forEach((m) => list.push(m + clean));
+      list.push(clean);
+    } else {
+      list.push(clean);
+      GH_MIRRORS.forEach((m) => list.push(m + clean));
+    }
+    return list;
+  }
+
+  async function streamAndVerifyZip(res, onProgress) {
     const total = parseInt(res.headers.get('content-length') || '0', 10);
-    if (!res.body || !res.body.getReader) return res.blob();
+    if (!res.body || !res.body.getReader) {
+      const blob = await res.blob();
+      if (blob.size < 1024) throw new Error('Tệp tải về quá nhỏ hoặc không hợp lệ.');
+      const head = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+      if (head[0] !== 0x50 || head[1] !== 0x4B) throw new Error('Phản hồi không phải tệp IPA hợp lệ.');
+      onProgress(1);
+      return new Blob([blob], { type: 'application/octet-stream' });
+    }
+
     const reader = res.body.getReader();
     const chunks = [];
     let got = 0;
+    let checkedMagic = false;
+
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
+      if (!value || !value.length) continue;
+
+      if (!checkedMagic) {
+        checkedMagic = true;
+        if (value.length >= 2 && (value[0] !== 0x50 || value[1] !== 0x4B)) {
+          try { reader.cancel(); } catch (e) {}
+          throw new Error('Máy chủ trả về dữ liệu không phải định dạng IPA (ZIP).');
+        }
+      }
+
       chunks.push(value);
       got += value.length;
-      onProgress(total ? got / total : 1 - Math.exp(-got / 80e6));
+      onProgress(total ? Math.min(0.99, got / total) : 1 - Math.exp(-got / 80e6));
     }
+
+    if (got < 1024) throw new Error('Tệp IPA tải về không đầy đủ.');
+    onProgress(1);
     return new Blob(chunks, { type: 'application/octet-stream' });
+  }
+
+  async function fetchIpa(url, onProgress) {
+    const candidates = buildIpaCandidateUrls(url);
+    let lastErr = null;
+    for (let i = 0; i < candidates.length; i++) {
+      const targetUrl = candidates[i];
+      try {
+        const res = await fetch(targetUrl);
+        if (!res || !res.ok) {
+          lastErr = new Error('HTTP ' + (res ? res.status : 'Network Error'));
+          continue;
+        }
+        const blob = await streamAndVerifyZip(res, onProgress);
+        return blob;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw new Error((lastErr && lastErr.message) || 'Không tải được file IPA từ máy chủ.');
   }
 
   function b64ToBlob(b64, type) {
