@@ -441,21 +441,21 @@
 
     // ─── Auto Initialization ───
     init() {
-      // Magnetic elements
-      this.initMagnetic('.anim-magnetic, [data-magnetic]');
+      // Magnetic elements (elevates real buttons on all pages)
+      this.initMagnetic('.anim-magnetic, .hero-cta, .header-cta, .btn-action-small, [data-magnetic]');
 
-      // Gyro tilt cards
-      this.initGyroTilt('.anim-gyro-card, [data-tilt]');
+      // Gyro tilt cards (subtle 3D perspective on real cards)
+      this.initGyroTilt('.anim-gyro-card, .eco-panel, .card-panel, [data-tilt]', 6);
 
-      // Spotlight beams
-      this.initSpotlight('.anim-spotlight, [data-spotlight]');
+      // Spotlight beams (soft radial light follows mouse)
+      this.initSpotlight('.anim-spotlight, .eco-panel, .card-panel, [data-spotlight]');
 
       // Hold to confirm buttons
       this.initHoldToConfirm('.anim-hold-btn, [data-hold]');
 
-      // Auto ripple clicks
+      // Auto ripple clicks on real interactive buttons
       document.addEventListener('click', (e) => {
-        const rippleTarget = e.target.closest('.anim-ripple, [data-ripple]');
+        const rippleTarget = e.target.closest('.anim-ripple, [data-ripple], .hero-cta, .header-cta, .copy-chip, .btn-action-small, button:not([data-no-ripple])');
         if (rippleTarget) {
           LucianMotion.ripple(e, rippleTarget);
         }
@@ -504,7 +504,7 @@
           });
         }, { threshold: 0.3 });
 
-        document.querySelectorAll('[data-odometer]').forEach(el => observer.observe(el));
+        document.querySelectorAll('[data-odometer], [data-target], .num-value').forEach(el => observer.observe(el));
       }
 
       console.log('✨ [Lucian Motion] 52+ Tactile Motion System Active.');
