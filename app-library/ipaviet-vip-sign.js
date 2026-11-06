@@ -78,6 +78,51 @@
     });
   }
 
+  function loadForge() {
+    if (window.forge) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = 'https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js';
+      el.onload = resolve;
+      el.onerror = () => reject(new Error('forge'));
+      document.head.appendChild(el);
+    });
+  }
+
+  const COMMON_PASSWORDS = ['', '1', '123456', '12345678', '1234', 'applep12', 'password', 'apple', 'ipaviet', '123', '0000'];
+
+  /** Lấy mật khẩu từ nội dung file .txt kèm trong ZIP (password: xxx / pass: xxx / mật khẩu: xxx / 1 dòng ngắn). */
+  function extractPasswords(text) {
+    const out = [];
+    const re = /(?:pass(?:word)?|pwd|m[aậ]t\s*kh[aẩ]u|mk)\s*(?:p12|cert)?\s*[:=\-]\s*["']?([^\s"'\r\n]{1,64})/gi;
+    let m;
+    while ((m = re.exec(text))) out.push(m[1]);
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (!out.length && lines.length === 1 && lines[0].length <= 32 && !/\s/.test(lines[0])) out.push(lines[0]);
+    return out;
+  }
+
+  function p12Opens(binary, pw) {
+    try {
+      const asn = window.forge.asn1.fromDer(window.forge.util.createBuffer(binary));
+      window.forge.pkcs12.pkcs12FromAsn1(asn, false, pw);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /** Dò mật khẩu .p12: gợi ý từ ZIP + mật khẩu hay dùng, kiểm chứng thật bằng cách giải mã p12. */
+  async function detectP12Password(file, hints, typed) {
+    try { await loadForge(); } catch (e) { return null; }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    const list = Array.from(new Set([].concat(hints || [], typed ? [typed] : [], COMMON_PASSWORDS)));
+    for (const pw of list) {
+      if (p12Opens(bin, pw)) return { password: pw };
+    }
+    return { password: null };
+  }
+
   function daysLeft(ms) { return Math.floor((ms - Date.now()) / DAY); }
 
   // ───────────────────────── Row UI ─────────────────────────
@@ -140,7 +185,7 @@
     opts = opts || {};
     closeModal();
     const meta = cfg.getMeta();
-    const state = { p12: null, mp: null };
+    const state = { p12: null, mp: null, hints: [] };
     const wrap = document.createElement('div');
     wrap.id = 'vsModal';
     wrap.className = 'vs-modal';
@@ -172,17 +217,37 @@
     requestAnimationFrame(() => wrap.classList.add('show'));
 
     const err = (m) => { wrap.querySelector('#vsErr').textContent = m || ''; };
-    const refreshSel = async () => {
+    const autoPass = async () => {
+      if (!state.p12) return;
+      const info = wrap.querySelector('#vsInfo');
+      const passEl = wrap.querySelector('#vsPass');
+      info.textContent = 'Đang tự dò mật khẩu cert...';
+      info.dataset.tone = '';
+      const r = await detectP12Password(state.p12, state.hints, passEl.value);
+      if (r && r.password !== null) {
+        passEl.value = r.password;
+        info.textContent = r.password ? 'Đã tự nhận mật khẩu cert ✓' : 'Cert không đặt mật khẩu ✓';
+        info.dataset.tone = 'ok';
+      } else if (r) {
+        info.textContent = 'Không tự dò được mật khẩu — hãy nhập tay.';
+        info.dataset.tone = 'bad';
+      } else {
+        info.textContent = '';
+      }
+      await refreshSel(true);
+    };
+    const refreshSel = async (keepInfo) => {
       wrap.querySelector('#vsP12Txt').textContent = state.p12 ? state.p12.name : 'Chọn file';
       wrap.querySelector('#vsMpTxt').textContent = state.mp ? state.mp.name : 'Chọn file';
       const info = wrap.querySelector('#vsInfo');
-      info.textContent = '';
+      if (!keepInfo) info.textContent = '';
       if (state.mp) {
         const p = await profileExpiry(state.mp);
         if (p && p.expiresAt) {
           const d = daysLeft(p.expiresAt);
-          info.textContent = (p.teamName ? p.teamName + ' · ' : '') + (d >= 0 ? 'còn ' + d + ' ngày' : 'ĐÃ HẾT HẠN');
-          info.dataset.tone = d >= 0 ? 'ok' : 'bad';
+          const line = (p.teamName ? p.teamName + ' · ' : '') + (d >= 0 ? 'còn ' + d + ' ngày' : 'ĐÃ HẾT HẠN');
+          info.textContent = keepInfo && info.textContent ? info.textContent + ' · ' + line : line;
+          if (!keepInfo || d < 0) info.dataset.tone = d >= 0 ? 'ok' : 'bad';
         }
       }
     };
@@ -193,7 +258,7 @@
       if (pick) wrap.querySelector({ zip: '#vsZipIn', p12: '#vsP12In', mp: '#vsMpIn' }[pick.dataset.pick]).click();
     });
 
-    wrap.querySelector('#vsP12In').addEventListener('change', (e) => { state.p12 = e.target.files[0] || null; refreshSel(); });
+    wrap.querySelector('#vsP12In').addEventListener('change', (e) => { state.p12 = e.target.files[0] || null; state.hints = []; refreshSel().then(autoPass); });
     wrap.querySelector('#vsMpIn').addEventListener('change', (e) => { state.mp = e.target.files[0] || null; refreshSel(); });
     wrap.querySelector('#vsZipIn').addEventListener('change', async (e) => {
       const f = e.target.files[0];
@@ -203,16 +268,19 @@
         await loadJsZip();
         const zip = await window.JSZip.loadAsync(f);
         let p12 = null, mp = null;
+        const hints = [];
         for (const name of Object.keys(zip.files)) {
           const low = name.toLowerCase();
           if (zip.files[name].dir || low.indexOf('__macosx') !== -1) continue;
+          if (low.endsWith('.txt')) { try { extractPasswords(await zip.files[name].async('string')).forEach((h) => hints.push(h)); } catch (x) {} }
           if (low.endsWith('.p12') && !p12) p12 = new File([await zip.files[name].async('blob')], name.split('/').pop());
           if (low.endsWith('.mobileprovision') && !mp) mp = new File([await zip.files[name].async('blob')], name.split('/').pop());
         }
         if (!p12 || !mp) { err('ZIP cần chứa cả file .p12 và .mobileprovision.'); return; }
-        state.p12 = p12; state.mp = mp;
+        state.p12 = p12; state.mp = mp; state.hints = hints;
         wrap.querySelector('#vsZipTxt').textContent = f.name;
-        refreshSel();
+        await refreshSel();
+        autoPass();
       } catch (ex) { err(ex.message || 'Không đọc được ZIP.'); }
     });
 
