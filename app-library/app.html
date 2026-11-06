@@ -6,10 +6,12 @@
   <title>Chi Tiết Ứng Dụng — IPAVIET</title>
   <meta name="description" content="Tải tệp IPA chuẩn iOS chất lượng cao, ký số trực tuyến bằng VSign và cài đặt an toàn cho iPhone, iPad.">
   <link rel="stylesheet" href="maclife-store.css">
+  <link rel="stylesheet" href="ipaviet-download-machine.css">
   <link rel="stylesheet" href="../lucian-tokens.css">
   <link rel="stylesheet" href="../lucian-motion.css?v=2">
   <link rel="stylesheet" href="../ipaviet-search.css">
   <script src="../ipaviet-theme.js"></script>
+  <script src="ipaviet-download-machine.js" defer></script>
 
   <!-- Firebase Compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -819,7 +821,11 @@
       }
     }
 
-    function openImageDialog(src) {
+    function openImageDialog(src, idx = 0) {
+      if (window.IPAVIET_LIGHTBOX && Array.isArray(window.CURRENT_SCREENSHOTS) && window.CURRENT_SCREENSHOTS.length > 0) {
+        window.IPAVIET_LIGHTBOX.open(window.CURRENT_SCREENSHOTS, idx);
+        return;
+      }
       const dlg = document.getElementById('imageDialog');
       const img = document.getElementById('dialogImage');
       if (dlg && img) {
@@ -1024,9 +1030,10 @@
 
       function renderScreenshots(items) {
         ssSec.style.display = 'block';
+        window.CURRENT_SCREENSHOTS = items;
         if (countEl) countEl.textContent = `${items.length} ảnh`;
         ssList.innerHTML = items.map((url, idx) => `
-          <div class="preview-item" onclick="openImageDialog('${url}')" title="Nhấn để phóng to ảnh ${idx + 1}" role="button" tabindex="0">
+          <div class="preview-item" onclick="openImageDialog('${url}', ${idx})" title="Nhấn để phóng to ảnh ${idx + 1}" role="button" tabindex="0">
             <img src="${url}" alt="${app.name || 'App'} - Ảnh chụp màn hình ${idx + 1}" loading="lazy" onerror="this.parentElement.remove()">
           </div>
         `).join('');
@@ -2101,6 +2108,27 @@
       }
 
       if (isUserVip) {
+        if (window.IPAVIET_DOWNLOAD_MACHINE && btnEl) {
+          await window.IPAVIET_DOWNLOAD_MACHINE.start(btnEl, {
+            onAuthorize: async () => {
+              showToast("🚀 Đặc quyền VIP: Kết nối đường truyền tải tốc độ cao...");
+              await recordAppDownload(CURRENT_APP, 'VIP Direct Download');
+              return true;
+            },
+            onComplete: () => {
+              const a = document.createElement('a');
+              a.href = rawLink;
+              a.setAttribute('download', '');
+              a.target = '_blank';
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(() => a.remove(), 1000);
+            },
+            successText: 'Mở File IPA ✓'
+          });
+          return;
+        }
+
         showToast("🚀 Đặc quyền VIP: Bắt đầu tải file IPA trực tiếp...");
         recordAppDownload(CURRENT_APP, 'VIP Direct Download');
         const a = document.createElement('a');
@@ -2210,6 +2238,37 @@
 
       const confirmed = confirm(`Bạn có muốn dùng 1.000 Xu để tải ngay ứng dụng "${CURRENT_APP.name || 'IPA'}" không?`);
       if (!confirmed) return;
+
+      if (window.IPAVIET_DOWNLOAD_MACHINE && btnEl) {
+        await window.IPAVIET_DOWNLOAD_MACHINE.start(btnEl, {
+          onAuthorize: async () => {
+            await db.runTransaction(async (transaction) => {
+              const userRef = db.collection('users').doc(currentUser.uid);
+              const userDoc = await transaction.get(userRef);
+              if (!userDoc.exists) throw new Error("Tài khoản không tồn tại!");
+              const balance = userDoc.data().coins || 0;
+              if (balance < 1000) throw new Error("Số dư không đủ 1.000 Xu!");
+              transaction.update(userRef, { coins: balance - 1000 });
+            });
+            currentCoins -= 1000;
+            updateUserBadge();
+            showToast("✅ Đã trừ 1.000 Xu! Bắt đầu tải ứng dụng...");
+            await recordAppDownload(CURRENT_APP, 'Coin Download (1.000 Xu)');
+            return true;
+          },
+          onComplete: () => {
+            const a = document.createElement('a');
+            a.href = rawLink;
+            a.setAttribute('download', '');
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => a.remove(), 1000);
+          },
+          successText: 'Đã Trừ Xu & Tải ✓'
+        });
+        return;
+      }
 
       const originalHtml = btnEl.innerHTML;
       btnEl.innerHTML = `Đang trừ xu...`;
@@ -2378,11 +2437,41 @@
       const rawLink = app.fileLink || app.downloadUrl || app.link || '';
       const vsignUrl = `../sign-app/index.html?ipa=${encodeURIComponent(rawLink)}&name=${encodeURIComponent(appName)}`;
       const heroSignBtn = document.getElementById('heroSignBtn');
-      if (heroSignBtn) heroSignBtn.href = vsignUrl;
+      if (heroSignBtn) {
+        heroSignBtn.href = vsignUrl;
+        heroSignBtn.onclick = function(e) {
+          if (window.IPAVIET_DOWNLOAD_MACHINE && !this.classList.contains('dl-sm-busy')) {
+            e.preventDefault();
+            window.IPAVIET_DOWNLOAD_MACHINE.start(this, {
+              onAuthorize: async () => {
+                showToast("⚡ Khởi động công cụ ký số VSign Native...");
+                return true;
+              },
+              onComplete: () => { window.location.href = vsignUrl; },
+              successText: 'Mở VSign iOS ✓'
+            });
+          }
+        };
+      }
       const stickySignBtn = document.getElementById('stickySignBtn');
       if (stickySignBtn) stickySignBtn.href = vsignUrl;
       const btnSignVSign = document.getElementById('btnSignVSign');
-      if (btnSignVSign) btnSignVSign.href = vsignUrl;
+      if (btnSignVSign) {
+        btnSignVSign.href = vsignUrl;
+        btnSignVSign.onclick = function(e) {
+          if (window.IPAVIET_DOWNLOAD_MACHINE && !this.classList.contains('dl-sm-busy')) {
+            e.preventDefault();
+            window.IPAVIET_DOWNLOAD_MACHINE.start(this, {
+              onAuthorize: async () => {
+                showToast("⚡ Đang kết nối máy chủ ký số an toàn...");
+                return true;
+              },
+              onComplete: () => { window.location.href = vsignUrl; },
+              successText: 'Mở VSign iOS ✓'
+            });
+          }
+        };
+      }
 
       // Update Floating Mobile Sticky Bar
       const mIcon = document.getElementById('mobileStickyIcon');
