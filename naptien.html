@@ -109,10 +109,46 @@
     .apple-card-metallic {
       background: linear-gradient(135deg, #1D1D1F 0%, #2C2C2E 45%, #182236 75%, #0071E3 120%);
       box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+      position: relative;
     }
     .dark .apple-card-metallic {
       background: linear-gradient(135deg, #111112 0%, #1C1C1E 45%, #0F1E3D 80%, #0071E3 130%);
       box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+    }
+
+    /* Holographic Prismatic Card Sheen */
+    .holo-sheen {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle 350px at var(--holo-x, 50%) var(--holo-y, 50%), rgba(255, 255, 255, 0.28) 0%, rgba(200, 230, 255, 0.16) 30%, transparent 70%);
+      pointer-events: none;
+      mix-blend-mode: overlay;
+      opacity: 0.85;
+      transition: opacity 0.3s ease;
+      z-index: 5;
+    }
+
+    /* VietQR Rotating Radar Pulse Ring */
+    .qr-radar-ring {
+      position: relative;
+      padding: 4px;
+      border-radius: 28px;
+      background: conic-gradient(from 0deg, #0071E3, #30B0C7, #34C759, #FF9500, #AF52DE, #0071E3);
+      box-shadow: 0 0 28px -4px rgba(0, 113, 227, 0.35);
+      animation: qrRadarSpin 8s linear infinite;
+    }
+    @keyframes qrRadarSpin {
+      100% { filter: hue-rotate(360deg); }
+    }
+    .qr-radar-ring::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 30px;
+      background: inherit;
+      filter: blur(10px);
+      opacity: 0.45;
+      z-index: 0;
     }
 
     /* Radar Pulse Animation for 24/7 scanning */
@@ -218,8 +254,11 @@
   <main class="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 pb-28 sm:pb-16">
 
     <!-- ═══ 1. APPLE CASH TITANIUM CARD (HERO CARD) ═══ -->
-    <div class="relative w-full rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 apple-card-metallic text-white overflow-hidden shadow-2xl transition-transform duration-300 hover:scale-[1.01]">
+    <div id="titaniumHeroCard" class="relative w-full rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 apple-card-metallic text-white overflow-hidden shadow-2xl transition-transform duration-300 hover:scale-[1.01]">
       
+      <!-- Holographic Interactive Sheen -->
+      <div class="holo-sheen" id="holoSheen"></div>
+
       <!-- Ambient Card Glow -->
       <div class="absolute -right-12 -top-12 w-64 h-64 bg-apple-blue/30 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -left-12 -bottom-12 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -358,22 +397,24 @@
           </span>
         </div>
 
-        <!-- QR Display Container (Apple Squircle) -->
-        <div class="relative w-64 h-64 sm:w-72 sm:h-72 p-3 rounded-[28px] bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.06] dark:border-white/[0.08] shadow-inner flex items-center justify-center overflow-hidden">
-          
-          <!-- Loading Shimmer Placeholder -->
-          <div id="qrLoadingShimmer" class="absolute inset-0 bg-slate-200 dark:bg-slate-700 animate-pulse flex flex-col items-center justify-center gap-2 text-apple-gray text-xs font-semibold">
-            <i data-lucide="loader-2" class="w-7 h-7 animate-spin text-apple-blue"></i>
-            <span>Đang tạo VietQR...</span>
-          </div>
+        <!-- QR Display Container with VietQR Rotating Radar Ring -->
+        <div class="qr-radar-ring my-2">
+          <div class="relative w-64 h-64 sm:w-72 sm:h-72 p-3 rounded-[24px] bg-white dark:bg-[#1C1C1E] border border-black/[0.04] dark:border-white/[0.06] shadow-sm flex items-center justify-center overflow-hidden">
+            
+            <!-- Loading Shimmer Placeholder -->
+            <div id="qrLoadingShimmer" class="absolute inset-0 bg-slate-200 dark:bg-slate-800 animate-pulse flex flex-col items-center justify-center gap-2 text-apple-gray text-xs font-semibold z-20">
+              <i data-lucide="loader-2" class="w-7 h-7 animate-spin text-apple-blue"></i>
+              <span>Đang tạo VietQR...</span>
+            </div>
 
-          <img 
-            id="qrImage" 
-            src="" 
-            alt="Mã QR Chuyển Khoản BIDV" 
-            onload="onQrLoaded()"
-            class="w-full h-full object-contain apple-squircle relative z-10 transition-opacity duration-300 opacity-0"
-          >
+            <img 
+              id="qrImage" 
+              src="" 
+              alt="Mã QR Chuyển Khoản BIDV" 
+              onload="onQrLoaded()"
+              class="w-full h-full object-contain apple-squircle relative z-10 transition-opacity duration-300 opacity-0"
+            >
+          </div>
         </div>
 
         <!-- Amount hint under QR -->
@@ -1063,6 +1104,17 @@
     document.addEventListener('DOMContentLoaded', () => {
       initBackNavLabel();
       lucide.createIcons();
+
+      const heroCard = document.getElementById('titaniumHeroCard');
+      if (heroCard) {
+        heroCard.addEventListener('mousemove', (e) => {
+          const rect = heroCard.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          heroCard.style.setProperty('--holo-x', `${x}px`);
+          heroCard.style.setProperty('--holo-y', `${y}px`);
+        });
+      }
     });
   </script>
 

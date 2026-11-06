@@ -209,6 +209,42 @@
       z-index: 99999;
       pointer-events: none;
     }
+
+    /* 3D Gyro Card Tilt & Metallic Gleam Reflection */
+    .mmo-tilt-card {
+      transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s ease, border-color 0.2s ease;
+      transform-style: preserve-3d;
+      will-change: transform;
+      position: relative;
+    }
+    .mmo-tilt-card:hover {
+      box-shadow: 0 16px 36px -8px rgba(0, 113, 227, 0.16), 0 0 0 1px rgba(0, 113, 227, 0.35);
+    }
+    .mmo-gleam-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      opacity: 0;
+      background: radial-gradient(circle 220px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.18), transparent 70%);
+      transition: opacity 0.3s ease;
+      z-index: 15;
+    }
+    .dark .mmo-gleam-overlay {
+      background: radial-gradient(circle 220px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.12), transparent 70%);
+    }
+    .mmo-tilt-card:hover .mmo-gleam-overlay {
+      opacity: 1;
+    }
+
+    /* Horizontal Category Smooth Snap */
+    #categoryPillsContainer {
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    #categoryPillsContainer > button {
+      scroll-snap-align: start;
+    }
   </style>
 </head>
 <body class="bg-bgLight dark:bg-bgDark text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200 overflow-x-hidden max-w-full">
@@ -1799,8 +1835,10 @@
           <a href="mmo-product.html?id=${encodeURIComponent(p.id)}&from_page=${PAGE}&from_cat=${encodeURIComponent(CAT)}" 
              onclick="saveProductBrowseState('${p.id}')"
              data-card-pid="${p.id}"
-             class="group bg-white dark:bg-[#1C1C1E] rounded-[20px] sm:rounded-[24px] p-2.5 sm:p-4 border border-apple-separatorLight dark:border-apple-separatorDark hover:border-apple-blue/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden block text-inherit no-underline">
+             class="group mmo-tilt-card bg-white dark:bg-[#1C1C1E] rounded-[20px] sm:rounded-[24px] p-2.5 sm:p-4 border border-apple-separatorLight dark:border-apple-separatorDark hover:border-apple-blue/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden block text-inherit no-underline">
             
+            <div class="mmo-gleam-overlay"></div>
+
             <!-- Top Badges -->
             <div class="flex items-center justify-between gap-1 mb-2 z-10">
               <span class="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${p.instant ? 'bg-apple-green/10 text-apple-green' : 'bg-apple-amber/10 text-apple-amber'} shrink-0">
@@ -1825,7 +1863,7 @@
             </div>
 
             <!-- Info Content -->
-            <div class="space-y-1 sm:space-y-1.5 flex-1 flex flex-col justify-between">
+            <div class="space-y-1 sm:space-y-1.5 flex-1 flex flex-col justify-between relative z-10">
               <div>
                 <span class="text-[9px] sm:text-[11px] font-semibold text-apple-gray uppercase tracking-wider block truncate">${p.cat || 'Khác'}</span>
                 <h4 class="font-bold text-xs sm:text-sm text-black dark:text-white line-clamp-2 leading-snug group-hover:text-apple-blue transition-colors min-h-[30px] sm:min-h-[36px]">
@@ -1840,7 +1878,7 @@
                 <span class="truncate">${sold} đã bán</span>
               </div>
 
-              <!-- Price & Apple GET / BUY Button -->
+              <!-- Price & Dual Quick Action Buttons -->
               <div class="pt-2 border-t border-apple-separatorLight dark:border-apple-separatorDark flex items-center justify-between gap-1">
                 <div class="min-w-0 flex-1">
                   <div class="font-black text-xs sm:text-base text-apple-blue truncate">
@@ -1849,10 +1887,26 @@
                   ${p.fakePrice > p.price ? `<div class="text-[9px] sm:text-[10px] text-apple-gray line-through leading-none truncate">${p.fakePrice.toLocaleString()}đ</div>` : ''}
                 </div>
 
-                <!-- Apple GET / BUY Pill Button -->
-                <button onclick="quickAddCart(event, '${p.id}')" class="px-2.5 sm:px-3.5 py-1 rounded-full bg-[#F5F5F7] hover:bg-apple-blue text-apple-blue hover:text-white dark:bg-[#2C2C2E] dark:hover:bg-apple-blue font-bold text-[10px] sm:text-xs transition active:scale-95 flex items-center gap-0.5 shrink-0 shadow-sm" title="Thêm vào giỏ">
-                  <span>MUA</span>
-                </button>
+                <!-- Action Button Group: Add to Cart + Quick Buy -->
+                <div class="flex items-center gap-1 shrink-0">
+                  <button 
+                    type="button" 
+                    onclick="quickAddCart(event, '${p.id}')" 
+                    class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F5F5F7] hover:bg-apple-blue/15 dark:bg-[#2C2C2E] dark:hover:bg-white/15 text-apple-gray hover:text-apple-blue dark:hover:text-white flex items-center justify-center transition active:scale-90" 
+                    title="Thêm vào giỏ"
+                  >
+                    <i data-lucide="plus" class="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]"></i>
+                  </button>
+                  <button 
+                    type="button" 
+                    onclick="openDetailModalWithStop(event, '${p.id}')" 
+                    class="px-2.5 sm:px-3 py-1 rounded-full bg-apple-blue hover:bg-blue-600 text-white font-bold text-[10px] sm:text-xs transition active:scale-95 flex items-center gap-0.5 shadow-sm shadow-apple-blue/25" 
+                    title="Mua ngay 2-click"
+                  >
+                    <i data-lucide="zap" class="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-white"></i>
+                    <span>MUA</span>
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -1862,6 +1916,7 @@
       }).join('');
 
       lucide.createIcons();
+      initCardGleamEffects();
 
       if (window.MmoIconResolver) {
         document.querySelectorAll('.mmo-card-icon').forEach(img => {
@@ -1929,8 +1984,59 @@
     }
 
     /* ══════════════════════════════════════════════════════
-       PRODUCT DETAIL MODAL
+       PRODUCT DETAIL MODAL & 3D INTERACTION
        ══════════════════════════════════════════════════════ */
+    function openDetailModalWithStop(e, id) {
+      if (e) {
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+      }
+      openDetailModal(id);
+    }
+
+    function initCardGleamEffects() {
+      const grid = document.getElementById('prodGrid');
+      if (!grid || grid._gleamInited) return;
+      grid._gleamInited = true;
+
+      let rAF = null;
+      grid.addEventListener('mousemove', (e) => {
+        const card = e.target.closest('.mmo-tilt-card');
+        if (!card) return;
+        if (rAF) cancelAnimationFrame(rAF);
+        rAF = requestAnimationFrame(() => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          card.style.setProperty('--mouse-x', `${x}px`);
+          card.style.setProperty('--mouse-y', `${y}px`);
+          const cx = rect.width / 2;
+          const cy = rect.height / 2;
+          const rotX = ((y - cy) / cy) * -5;
+          const rotY = ((x - cx) / cx) * 5;
+          card.style.transform = `perspective(900px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) translateY(-2px)`;
+        });
+      }, { passive: true });
+
+      const resetCard = (card) => {
+        if (card) {
+          card.style.transform = '';
+        }
+      };
+
+      grid.addEventListener('mouseleave', () => {
+        const cards = grid.querySelectorAll('.mmo-tilt-card');
+        cards.forEach(resetCard);
+      });
+
+      grid.addEventListener('mouseout', (e) => {
+        const card = e.target.closest('.mmo-tilt-card');
+        if (card && (!e.relatedTarget || !card.contains(e.relatedTarget))) {
+          resetCard(card);
+        }
+      });
+    }
+
     function openDetailModal(id) {
       const p = PRODS.find(x => String(x.id) === String(id));
       if (!p) return;
