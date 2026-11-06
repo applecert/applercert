@@ -1,8 +1,9 @@
 /**
  * IPAVIET VIP Auto-Sign
- * Ký & cài app ngầm cho thành viên VIP bằng chứng chỉ riêng (lưu ở repo GitHub private
- * thông qua Apps Script - xem gas-vip-cert.js). Người dùng chỉ bấm 1 lần, hệ thống
- * tự tải IPA → ký → hiện nút "Cài Đặt".
+ * Ký & cài app ngầm cho thành viên VIP bằng chứng chỉ riêng.
+ * - Tự động bóc tách ZIP, đọc hồ sơ .mobileprovision và tự động dò/điền mật khẩu .p12.
+ * - Lưu chứng chỉ bảo mật vào Firestore (users/{uid}.vipCert) + LocalStorage Vault
+ *   + đồng bộ nền lên GitHub / Apps Script (không bao giờ chặn hay lỗi khi GAS chưa redeploy).
  */
 (function () {
   'use strict';
@@ -12,6 +13,9 @@
   const DOWNLOAD_URL = 'https://ipa.ipasign.cc/download/';
   const INSTALLER = 'https://ipaviet-installer.clonene121212.workers.dev/';
   const PROXY = 'https://tight-water-fabbipa-proxy.tlvdzreal.workers.dev/?url=';
+  const GITHUB_REPO_OWNER = 'applecert';
+  const GITHUB_REPO_NAME = 'applercert';
+  const GITHUB_REPO_BRANCH = 'main';
   const MAX_FILE = 300 * 1024;
   const DAY = 86400000;
 
@@ -29,22 +33,218 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
-  // ───────────────────────── Backend ─────────────────────────
-  async function api(action, payload) {
-    const user = cfg.getUser();
-    if (!user) throw Object.assign(new Error('Bạn cần đăng nhập.'), { code: 'AUTH' });
-    const idToken = await user.getIdToken();
-    const res = await fetch(cfg.gsUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(Object.assign({ action, idToken }, payload || {}))
-    });
-    const data = await res.json();
-    if (!data.success) throw Object.assign(new Error(data.error || 'Lỗi máy chủ.'), { code: data.code, meta: data.meta });
-    return data;
+  function getDb() {
+    if (cfg && cfg.db) return cfg.db;
+    if (window.firebase && typeof window.firebase.firestore === 'function') {
+      try { return window.firebase.firestore(); } catch (e) {}
+    }
+    return null;
   }
 
-  // ───────────────────────── Helpers ─────────────────────────
+  // ───────────────────────── Storage & Sync ─────────────────────────
+  function getLocalCert(uid) {
+    try {
+      if (uid) {
+        const rawUid = localStorage.getItem('ipaviet_vip_cert_' + uid);
+        if (rawUid) {
+          const parsed = JSON.parse(rawUid);
+          if (parsed && parsed.p12Data && parsed.mpData) return parsed;
+        }
+      }
+      const rawSaved = localStorage.getItem('ipaviet_saved_cert');
+      if (rawSaved) {
+        const s = JSON.parse(rawSaved);
+        if (s && s.p12Data && s.mpData) {
+          return {
+            name: s.name || 'Cert',
+            teamName: s.teamName || '',
+            teamId: s.teamId || '',
+            devices: s.devices || 0,
+            expiresAt: s.expiresAt || (Date.now() + 240 * DAY),
+            updatedAt: s.updatedAt || Date.now(),
+            p12Name: s.p12Name || 'cert.p12',
+            mpName: s.mpName || 'cert.mobileprovision',
+            p12Data: s.p12Data,
+            mpData: s.mpData,
+            password: s.password || '1'
+          };
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function saveLocalCert(uid, record) {
+    try {
+      if (uid && record) {
+        localStorage.setItem('ipaviet_vip_cert_' + uid, JSON.stringify(record));
+      } else if (uid && !record) {
+        localStorage.removeItem('ipaviet_vip_cert_' + uid);
+      }
+      if (record) {
+        localStorage.setItem('ipaviet_saved_cert', JSON.stringify({
+          name: record.name || 'Cert',
+          teamName: record.teamName || '',
+          teamId: record.teamId || '',
+          devices: record.devices || 0,
+          expiresAt: record.expiresAt,
+          updatedAt: record.updatedAt,
+          savedAt: new Date().toLocaleDateString('vi-VN'),
+          p12Name: record.p12Name || 'cert.p12',
+          mpName: record.mpName || 'cert.mobileprovision',
+          p12Data: record.p12Data,
+          mpData: record.mpData,
+          password: record.password || ''
+        }));
+      } else {
+        localStorage.removeItem('ipaviet_saved_cert');
+      }
+    } catch (e) {}
+  }
+
+  /** Đồng bộ nền lên GitHub (nếu có token auto-up) và Apps Script (nếu đã deploy) — không chặn UI */
+  async function syncBackupInBackground(uid, record, zipBlob) {
+    // 1. Nếu có GitHub token auto-up (như kho cert), đẩy bản zip lên GitHub
+    try {
+      const ghToken = (localStorage.getItem('ipaviet_github_token') || '').trim();
+      if (ghToken && zipBlob) {
+        const targetPath = `downloads/certs/vip_${uid}_cert.zip`;
+        const b64 = await fileToB64(zipBlob);
+        const apiUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${targetPath}`;
+        let sha = null;
+        try {
+          const chk = await fetch(apiUrl, {
+            headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/vnd.github.v3+json' }
+          });
+          if (chk.ok) {
+            const d = await chk.json();
+            if (d && d.sha) sha = d.sha;
+          }
+        } catch (e) {}
+        const body = { message: `Auto upload VIP cert for ${uid}`, content: b64, branch: GITHUB_REPO_BRANCH };
+        if (sha) body.sha = sha;
+        await fetch(apiUrl, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
+    } catch (e) {}
+
+    // 2. Đồng bộ phụ qua Apps Script nếu có
+    try {
+      const user = cfg && cfg.getUser && cfg.getUser();
+      if (user && cfg && cfg.gsUrl) {
+        const idToken = await user.getIdToken();
+        await fetch(cfg.gsUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'vip_cert_save',
+            idToken,
+            p12: record.p12Data,
+            mp: record.mpData,
+            p12Name: record.p12Name,
+            mpName: record.mpName,
+            name: record.name,
+            password: record.password
+          })
+        });
+      }
+    } catch (e) {}
+  }
+
+  async function saveCertVault(record, zipBlob) {
+    const user = cfg && cfg.getUser && cfg.getUser();
+    if (!user) throw new Error('Bạn cần đăng nhập tài khoản VIP.');
+
+    // 1. Lưu ngay vào LocalStorage (0ms)
+    saveLocalCert(user.uid, record);
+
+    // 2. Lưu vào Firestore users/{uid}.vipCert (đồng bộ đám mây bảo mật theo tài khoản)
+    const db = getDb();
+    if (db) {
+      await db.collection('users').doc(user.uid).set({ vipCert: record }, { merge: true });
+    }
+
+    // 3. Đồng bộ nền GitHub / GAS không chặn luồng
+    syncBackupInBackground(user.uid, record, zipBlob);
+    return record;
+  }
+
+  async function loadCertVault() {
+    const user = cfg && cfg.getUser && cfg.getUser();
+    if (!user) throw Object.assign(new Error('Bạn cần đăng nhập.'), { code: 'AUTH' });
+
+    // 1. Kiểm tra trong state hiện tại (từ Firestore onSnapshot)
+    const meta = cfg && cfg.getMeta && cfg.getMeta();
+    if (meta && meta.p12Data && meta.mpData) {
+      return {
+        p12: meta.p12Data,
+        mp: meta.mpData,
+        password: meta.password || '',
+        p12Name: meta.p12Name || 'cert.p12',
+        mpName: meta.mpName || 'cert.mobileprovision',
+        meta
+      };
+    }
+
+    // 2. Kiểm tra LocalStorage
+    const local = getLocalCert(user.uid);
+    if (local && local.p12Data && local.mpData) {
+      return {
+        p12: local.p12Data,
+        mp: local.mpData,
+        password: local.password || '',
+        p12Name: local.p12Name || 'cert.p12',
+        mpName: local.mpName || 'cert.mobileprovision',
+        meta: local
+      };
+    }
+
+    // 3. Đọc trực tiếp từ Firestore users/{uid}
+    const db = getDb();
+    if (db) {
+      try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        if (doc && doc.exists) {
+          const data = doc.data();
+          if (data && data.vipCert && data.vipCert.p12Data && data.vipCert.mpData) {
+            const vc = data.vipCert;
+            saveLocalCert(user.uid, vc);
+            if (cfg.setMeta) cfg.setMeta(vc);
+            return {
+              p12: vc.p12Data,
+              mp: vc.mpData,
+              password: vc.password || '',
+              p12Name: vc.p12Name || 'cert.p12',
+              mpName: vc.mpName || 'cert.mobileprovision',
+              meta: vc
+            };
+          }
+        }
+      } catch (e) {}
+    }
+
+    throw Object.assign(new Error('Bạn chưa thêm chứng chỉ trên thiết bị này. Hãy nạp lại file chứng chỉ 1 lần.'), { code: 'NO_CERT' });
+  }
+
+  async function deleteCertVault() {
+    const user = cfg && cfg.getUser && cfg.getUser();
+    if (!user) return;
+    saveLocalCert(user.uid, null);
+    const db = getDb();
+    if (db) {
+      try {
+        const fv = window.firebase && window.firebase.firestore && window.firebase.firestore.FieldValue;
+        await db.collection('users').doc(user.uid).set({
+          vipCert: fv && fv.delete ? fv.delete() : null
+        }, { merge: true });
+      } catch (e) {}
+    }
+  }
+
+  // ───────────────────────── Helpers & Auto-Read Password ─────────────────────────
   function fileToB64(file) {
     return new Promise((resolve, reject) => {
       const r = new FileReader();
@@ -61,9 +261,18 @@
         r.onload = () => resolve(String(r.result));
         r.readAsText(file, 'ISO-8859-1');
       });
-      const m = text.match(/<key>ExpirationDate<\/key>\s*<date>([^<]+)<\/date>/);
-      const n = text.match(/<key>TeamName<\/key>\s*<string>([^<]*)<\/string>/);
-      return m ? { expiresAt: new Date(m[1]).getTime(), teamName: n ? n[1] : '' } : null;
+      const m = text.match(/<key>ExpirationDate<\/key>\s*<date>([^<]+)<\/date>/i);
+      const n = text.match(/<key>TeamName<\/key>\s*<string>([^<]*)<\/string>/i);
+      const pName = text.match(/<key>Name<\/key>\s*<string>([^<]*)<\/string>/i);
+      const team = text.match(/<key>TeamIdentifier<\/key>\s*<array>\s*<string>([^<]*)<\/string>/i);
+      const devices = (text.match(/<key>ProvisionedDevices<\/key>\s*<array>([\s\S]*?)<\/array>/i) || [, ''])[1].split('<string>').length - 1;
+      return m ? {
+        expiresAt: new Date(m[1]).getTime(),
+        teamName: n ? n[1] : '',
+        profileName: pName ? pName[1] : '',
+        teamId: team ? team[1] : '',
+        devices: Math.max(0, devices)
+      } : null;
     } catch (e) { return null; }
   }
 
@@ -89,38 +298,110 @@
     });
   }
 
-  const COMMON_PASSWORDS = ['', '1', '123456', '12345678', '1234', 'applep12', 'password', 'apple', 'ipaviet', '123', '0000'];
+  const COMMON_PASSWORDS = ['1', '123456', '12345678', '1234', 'applep12', 'password', 'apple', 'ipaviet', '123', '0000', ''];
 
-  /** Lấy mật khẩu từ nội dung file .txt kèm trong ZIP (password: xxx / pass: xxx / mật khẩu: xxx / 1 dòng ngắn). */
-  function extractPasswords(text) {
-    const out = [];
-    const re = /(?:pass(?:word)?|pwd|m[aậ]t\s*kh[aẩ]u|mk)\s*(?:p12|cert)?\s*[:=\-]\s*["']?([^\s"'\r\n]{1,64})/gi;
-    let m;
-    while ((m = re.exec(text))) out.push(m[1]);
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    if (!out.length && lines.length === 1 && lines[0].length <= 32 && !/\s/.test(lines[0])) out.push(lines[0]);
-    return out;
+  function cleanCertPassword(raw) {
+    if (!raw) return '';
+    let s = String(raw).trim();
+    const prefixRegex = /^(?:hồ\s*sơ|chứng\s*chỉ|certificate|cert|mật\s*khẩu\s*(?:cert|p12)?|mat\s*khau|password|pass|pwd|mk|code)[\s:=\-]+/i;
+    while (prefixRegex.test(s)) {
+      s = s.replace(prefixRegex, '').trim();
+    }
+    s = s.replace(/^["'`]|["'`]$/g, '').trim();
+    return s;
   }
 
-  function p12Opens(binary, pw) {
+  /** Bóc tách mật khẩu từ mọi file text trong ZIP và từ tên file */
+  function extractPasswordsFromText(text, fileName) {
+    const out = [];
+    if (text) {
+      const lines = String(text).split(/\r?\n/);
+      // 1. Dòng có từ khoá password / mật khẩu / pass:
+      for (const line of lines) {
+        const m = line.match(/(?:mật\s*khẩu|mat\s*khau|password|pass|pwd|mk|code)\s*(?:certificate|cert|p12)?\s*[:=\-]\s*([^\r\n,;]+)/i);
+        if (m && m[1]) {
+          const c = cleanCertPassword(m[1]);
+          if (c) out.push(c);
+        }
+      }
+      // 2. Dòng đơn ngắn (ví dụ file password.txt chỉ ghi "1" hoặc "123456")
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t) continue;
+        const c = cleanCertPassword(t);
+        if (c && c.length <= 40 && !/\s/.test(c) && !/^(http|udid|team|date|apple)/i.test(c)) {
+          out.push(c);
+        }
+      }
+    }
+    if (fileName) {
+      const base = String(fileName).replace(/\.(?:zip|p12|txt|mobileprovision)$/i, '');
+      const fnMatch = base.match(/(?:pass(?:word)?|pwd|mk)[_\-\s:=]+([a-zA-Z0-9._@#]+)/i);
+      if (fnMatch && fnMatch[1]) {
+        const c = cleanCertPassword(fnMatch[1]);
+        if (c) out.push(c);
+      }
+    }
+    return Array.from(new Set(out));
+  }
+
+  /**
+   * Kiểm tra mật khẩu .p12 bằng node-forge:
+   * - 'valid': giải mã thành công 100%
+   * - 'wrong': sai mật khẩu (MAC verification failed)
+   * - 'unsupported': file .p12 dùng chuẩn mã hoá mới (PBES2/AES) mà forge không đọc được
+   */
+  function testP12WithForge(binary, pw) {
     try {
       const asn = window.forge.asn1.fromDer(window.forge.util.createBuffer(binary));
       window.forge.pkcs12.pkcs12FromAsn1(asn, false, pw);
-      return true;
-    } catch (e) { return false; }
+      return 'valid';
+    } catch (e) {
+      const msg = String(e && e.message || e || '');
+      if (/Invalid password|MAC could not be verified|PKCS#12 MAC/i.test(msg)) {
+        return 'wrong';
+      }
+      return 'unsupported';
+    }
   }
 
-  /** Dò mật khẩu .p12: gợi ý từ ZIP + mật khẩu hay dùng, kiểm chứng thật bằng cách giải mã p12. */
+  /** Tự động dò mật khẩu .p12 từ gợi ý trong ZIP + danh sách mật khẩu thông dụng */
   async function detectP12Password(file, hints, typed) {
-    try { await loadForge(); } catch (e) { return null; }
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    let bin = '';
-    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-    const list = Array.from(new Set([].concat(hints || [], typed ? [typed] : [], COMMON_PASSWORDS)));
-    for (const pw of list) {
-      if (p12Opens(bin, pw)) return { password: pw };
+    const cleanHints = (hints || []).filter(Boolean);
+    let forgeReady = false;
+    try {
+      await loadForge();
+      forgeReady = Boolean(window.forge);
+    } catch (e) {}
+
+    if (forgeReady && file) {
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        const list = Array.from(new Set([].concat(cleanHints, typed ? [typed] : [], COMMON_PASSWORDS)));
+        let sawUnsupported = false;
+        for (const pw of list) {
+          const res = testP12WithForge(bin, pw);
+          if (res === 'valid') {
+            return { password: pw, source: cleanHints.includes(pw) ? 'zip' : 'verified' };
+          }
+          if (res === 'unsupported') {
+            sawUnsupported = true;
+            break;
+          }
+        }
+        if (sawUnsupported) {
+          const best = cleanHints[0] || typed || '1';
+          return { password: best, source: cleanHints.length ? 'zip' : 'default' };
+        }
+      } catch (e) {}
     }
-    return { password: null };
+
+    if (cleanHints.length > 0) {
+      return { password: cleanHints[0], source: 'zip' };
+    }
+    return { password: typed || '1', source: 'default' };
   }
 
   function daysLeft(ms) { return Math.floor((ms - Date.now()) / DAY); }
@@ -148,11 +429,19 @@
     el.dataset.tone = tone || '';
   }
 
+  function getEffectiveMeta() {
+    if (!cfg) return null;
+    const m = cfg.getMeta && cfg.getMeta();
+    if (m) return m;
+    const u = cfg.getUser && cfg.getUser();
+    return u ? getLocalCert(u.uid) : null;
+  }
+
   function refresh() {
     if (!cfg || busy) return;
     const user = cfg.getUser();
     const vip = cfg.isVip();
-    const meta = cfg.getMeta();
+    const meta = getEffectiveMeta();
     const certBtn = $('btnVipCert');
     if (certBtn) certBtn.hidden = !(user && vip);
 
@@ -170,7 +459,7 @@
 
   function currentKey() {
     const app = cfg.getApp();
-    const meta = cfg.getMeta();
+    const meta = getEffectiveMeta();
     const stamp = meta && meta.updatedAt ? (meta.updatedAt.toMillis ? meta.updatedAt.toMillis() : String(meta.updatedAt)) : '';
     return app ? (app._id || app.bundleId || app.name) + '|' + stamp : '';
   }
@@ -184,8 +473,8 @@
   function openCertModal(opts) {
     opts = opts || {};
     closeModal();
-    const meta = cfg.getMeta();
-    const state = { p12: null, mp: null, hints: [] };
+    const meta = getEffectiveMeta();
+    const state = { p12: null, mp: null, zipFile: null, hints: [], profileInfo: null };
     const wrap = document.createElement('div');
     wrap.id = 'vsModal';
     wrap.className = 'vs-modal';
@@ -194,7 +483,7 @@
       <div class="vs-sheet" role="dialog" aria-modal="true" aria-label="Chứng chỉ ký của bạn">
         <div class="vs-grab"></div>
         <h3>Chứng chỉ ký của bạn</h3>
-        <p class="vs-sub">${opts.reason ? esc(opts.reason) : 'Tải lên một lần. Cert được lưu riêng tư trên kho bảo mật và dùng để ký ngầm mọi app bạn cài.'}</p>
+        <p class="vs-sub">${opts.reason ? esc(opts.reason) : 'Tải lên một lần. Hệ thống tự động bóc tách file ZIP, tự đọc mật khẩu và lưu riêng tư theo tài khoản VIP của bạn.'}</p>
         ${meta ? `<div class="vs-current"><b>${esc(meta.name)}</b><span>${esc(meta.teamName || '')}</span></div>` : ''}
         <div class="vs-files">
           <button type="button" class="vs-file" data-pick="zip"><b>File ZIP</b><span id="vsZipTxt">.p12 + .mobileprovision</span></button>
@@ -204,7 +493,10 @@
         <input type="file" id="vsZipIn" accept=".zip" hidden>
         <input type="file" id="vsP12In" accept=".p12" hidden>
         <input type="file" id="vsMpIn" accept=".mobileprovision" hidden>
-        <input type="password" id="vsPass" class="vs-input" placeholder="Mật khẩu .p12 (nếu có)" autocomplete="off">
+        <div class="vs-pass-wrap">
+          <input type="text" id="vsPass" class="vs-input" placeholder="Mật khẩu .p12 (tự động đọc khi chọn file)" autocomplete="off" spellcheck="false">
+          <span class="vs-pass-tag" id="vsPassTag" hidden>Tự động</span>
+        </div>
         <div class="vs-info" id="vsInfo"></div>
         <div class="vs-err" id="vsErr" role="alert"></div>
         <div class="vs-actions">
@@ -217,38 +509,53 @@
     requestAnimationFrame(() => wrap.classList.add('show'));
 
     const err = (m) => { wrap.querySelector('#vsErr').textContent = m || ''; };
+    const passEl = wrap.querySelector('#vsPass');
+    const passTag = wrap.querySelector('#vsPassTag');
+
+    const updateInfoLine = (passNote) => {
+      const info = wrap.querySelector('#vsInfo');
+      const parts = [];
+      let tone = 'ok';
+      if (passNote) parts.push(passNote);
+      if (state.profileInfo && state.profileInfo.expiresAt) {
+        const p = state.profileInfo;
+        const d = daysLeft(p.expiresAt);
+        parts.push((p.teamName ? p.teamName + ' · ' : '') + (d >= 0 ? 'còn ' + d + ' ngày' : 'ĐÃ HẾT HẠN'));
+        if (d < 0) tone = 'bad';
+      }
+      info.textContent = parts.join(' · ');
+      info.dataset.tone = parts.length ? tone : '';
+    };
+
+    const refreshSel = async () => {
+      wrap.querySelector('#vsP12Txt').textContent = state.p12 ? state.p12.name : 'Chọn file';
+      wrap.querySelector('#vsMpTxt').textContent = state.mp ? state.mp.name : 'Chọn file';
+      if (state.mp) {
+        state.profileInfo = await profileExpiry(state.mp);
+      } else {
+        state.profileInfo = null;
+      }
+      updateInfoLine('');
+    };
+
     const autoPass = async () => {
       if (!state.p12) return;
       const info = wrap.querySelector('#vsInfo');
-      const passEl = wrap.querySelector('#vsPass');
-      info.textContent = 'Đang tự dò mật khẩu cert...';
+      info.textContent = 'Đang tự động đọc mật khẩu chứng chỉ...';
       info.dataset.tone = '';
-      const r = await detectP12Password(state.p12, state.hints, passEl.value);
-      if (r && r.password !== null) {
+      const fnHints = extractPasswordsFromText('', state.p12.name);
+      const allHints = Array.from(new Set([].concat(state.hints || [], fnHints)));
+      const r = await detectP12Password(state.p12, allHints, passEl.value.trim());
+      if (r && r.password !== null && r.password !== undefined) {
         passEl.value = r.password;
-        info.textContent = r.password ? 'Đã tự nhận mật khẩu cert ✓' : 'Cert không đặt mật khẩu ✓';
-        info.dataset.tone = 'ok';
-      } else if (r) {
-        info.textContent = 'Không tự dò được mật khẩu — hãy nhập tay.';
-        info.dataset.tone = 'bad';
-      } else {
-        info.textContent = '';
-      }
-      await refreshSel(true);
-    };
-    const refreshSel = async (keepInfo) => {
-      wrap.querySelector('#vsP12Txt').textContent = state.p12 ? state.p12.name : 'Chọn file';
-      wrap.querySelector('#vsMpTxt').textContent = state.mp ? state.mp.name : 'Chọn file';
-      const info = wrap.querySelector('#vsInfo');
-      if (!keepInfo) info.textContent = '';
-      if (state.mp) {
-        const p = await profileExpiry(state.mp);
-        if (p && p.expiresAt) {
-          const d = daysLeft(p.expiresAt);
-          const line = (p.teamName ? p.teamName + ' · ' : '') + (d >= 0 ? 'còn ' + d + ' ngày' : 'ĐÃ HẾT HẠN');
-          info.textContent = keepInfo && info.textContent ? info.textContent + ' · ' + line : line;
-          if (!keepInfo || d < 0) info.dataset.tone = d >= 0 ? 'ok' : 'bad';
+        if (passTag) {
+          passTag.hidden = false;
+          passTag.textContent = r.source === 'zip' ? 'Từ file ZIP ✓' : (r.source === 'verified' ? 'Đã giải mã ✓' : 'Mặc định ✓');
         }
+        const label = r.password === '' ? 'Không mật khẩu ✓' : `🔑 Pass: "${r.password}"`;
+        updateInfoLine(label);
+      } else {
+        updateInfoLine('Hãy kiểm tra hoặc nhập mật khẩu .p12');
       }
     };
 
@@ -258,30 +565,60 @@
       if (pick) wrap.querySelector({ zip: '#vsZipIn', p12: '#vsP12In', mp: '#vsMpIn' }[pick.dataset.pick]).click();
     });
 
-    wrap.querySelector('#vsP12In').addEventListener('change', (e) => { state.p12 = e.target.files[0] || null; state.hints = []; refreshSel().then(autoPass); });
-    wrap.querySelector('#vsMpIn').addEventListener('change', (e) => { state.mp = e.target.files[0] || null; refreshSel(); });
+    wrap.querySelector('#vsP12In').addEventListener('change', async (e) => {
+      state.p12 = e.target.files[0] || null;
+      state.hints = extractPasswordsFromText('', state.p12 ? state.p12.name : '');
+      await refreshSel();
+      await autoPass();
+    });
+
+    wrap.querySelector('#vsMpIn').addEventListener('change', async (e) => {
+      state.mp = e.target.files[0] || null;
+      await refreshSel();
+      if (state.p12) await autoPass();
+    });
+
     wrap.querySelector('#vsZipIn').addEventListener('change', async (e) => {
       const f = e.target.files[0];
       if (!f) return;
       err('');
+      state.zipFile = f;
       try {
         await loadJsZip();
         const zip = await window.JSZip.loadAsync(f);
         let p12 = null, mp = null;
-        const hints = [];
+        const hints = extractPasswordsFromText('', f.name);
         for (const name of Object.keys(zip.files)) {
+          const entry = zip.files[name];
           const low = name.toLowerCase();
-          if (zip.files[name].dir || low.indexOf('__macosx') !== -1) continue;
-          if (low.endsWith('.txt')) { try { extractPasswords(await zip.files[name].async('string')).forEach((h) => hints.push(h)); } catch (x) {} }
-          if (low.endsWith('.p12') && !p12) p12 = new File([await zip.files[name].async('blob')], name.split('/').pop());
-          if (low.endsWith('.mobileprovision') && !mp) mp = new File([await zip.files[name].async('blob')], name.split('/').pop());
+          if (entry.dir || low.indexOf('__macosx') !== -1) continue;
+          const baseName = name.split('/').pop();
+          if (low.endsWith('.p12') && !p12) {
+            p12 = new File([await entry.async('blob')], baseName, { type: 'application/x-pkcs12' });
+            extractPasswordsFromText('', baseName).forEach((h) => hints.push(h));
+          } else if (low.endsWith('.mobileprovision') && !mp) {
+            mp = new File([await entry.async('blob')], baseName, { type: 'application/octet-stream' });
+          } else if (
+            low.endsWith('.txt') || low.endsWith('.md') || low.endsWith('.ini') ||
+            low.includes('pass') || low.includes('pwd') || low.includes('matkhau') || low.includes('readme') || low.includes('info') ||
+            (!/\.(cer|crt|der|pem|ipa|png|jpg|jpeg|gif|webp|ds_store)$/i.test(low))
+          ) {
+            try {
+              const txt = await entry.async('string');
+              if (txt && txt.length < 32768) {
+                extractPasswordsFromText(txt, baseName).forEach((h) => hints.push(h));
+              }
+            } catch (x) {}
+          }
         }
-        if (!p12 || !mp) { err('ZIP cần chứa cả file .p12 và .mobileprovision.'); return; }
-        state.p12 = p12; state.mp = mp; state.hints = hints;
+        if (!p12 || !mp) { err('File ZIP cần chứa đủ cả .p12 và .mobileprovision.'); return; }
+        state.p12 = p12;
+        state.mp = mp;
+        state.hints = Array.from(new Set(hints));
         wrap.querySelector('#vsZipTxt').textContent = f.name;
         await refreshSel();
-        autoPass();
-      } catch (ex) { err(ex.message || 'Không đọc được ZIP.'); }
+        await autoPass();
+      } catch (ex) { err(ex.message || 'Không đọc được file ZIP.'); }
     });
 
     wrap.querySelector('#vsSave').addEventListener('click', async (ev) => {
@@ -289,37 +626,66 @@
       err('');
       if (!state.p12 || !state.mp) { err('Cần chọn đủ file .p12 và .mobileprovision.'); return; }
       if (state.p12.size > MAX_FILE || state.mp.size > MAX_FILE) { err('File quá lớn (tối đa 300KB mỗi file).'); return; }
-      btn.disabled = true; btn.textContent = 'Đang lưu...';
+      const info = state.profileInfo || (await profileExpiry(state.mp));
+      if (!info || !info.expiresAt) { err('File .mobileprovision không hợp lệ.'); return; }
+      if (info.expiresAt <= Date.now()) { err('Hồ sơ .mobileprovision này đã hết hạn.'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Đang lưu...';
       try {
-        const res = await api('vip_cert_save', {
-          p12: await fileToB64(state.p12), mp: await fileToB64(state.mp),
-          p12Name: state.p12.name, mpName: state.mp.name,
-          name: state.p12.name.replace(/\.p12$/i, ''),
-          password: wrap.querySelector('#vsPass').value
-        });
-        if (cfg.setMeta) cfg.setMeta(res.meta);
+        const p12B64 = await fileToB64(state.p12);
+        const mpB64 = await fileToB64(state.mp);
+        const password = passEl.value != null ? String(passEl.value).trim() : '1';
+        const certName = info.teamName || info.profileName || state.p12.name.replace(/\.p12$/i, '') || 'Cert VIP';
+
+        const record = {
+          name: String(certName).substring(0, 80),
+          teamName: info.teamName || '',
+          teamId: info.teamId || '',
+          devices: info.devices || 0,
+          expiresAt: info.expiresAt,
+          updatedAt: Date.now(),
+          p12Name: state.p12.name || 'cert.p12',
+          mpName: state.mp.name || 'cert.mobileprovision',
+          p12Data: p12B64,
+          mpData: mpB64,
+          password
+        };
+
+        await saveCertVault(record, state.zipFile);
+        if (cfg.setMeta) cfg.setMeta(record);
         haptic([15, 60, 20]);
-        toast('✅ Đã lưu chứng chỉ. Sẵn sàng ký ngầm!');
+        toast('✅ Đã lưu chứng chỉ VIP! Sẵn sàng ký tự động.');
         closeModal();
         ready = null;
         refresh();
-        if (pendingAfterSave) { const fn = pendingAfterSave; pendingAfterSave = null; setTimeout(fn, 300); }
+        if (pendingAfterSave) {
+          const fn = pendingAfterSave;
+          pendingAfterSave = null;
+          setTimeout(fn, 250);
+        }
       } catch (ex) {
-        err(ex.message);
-        btn.disabled = false; btn.textContent = 'Lưu chứng chỉ';
+        err(ex.message || 'Không thể lưu chứng chỉ.');
+        btn.disabled = false;
+        btn.textContent = 'Lưu chứng chỉ';
       }
     });
 
     const del = wrap.querySelector('#vsDel');
     if (del) del.addEventListener('click', async () => {
-      if (!confirm('Xoá chứng chỉ khỏi hệ thống?')) return;
+      if (!confirm('Xoá chứng chỉ khỏi tài khoản VIP?')) return;
       del.disabled = true;
       try {
-        await api('vip_cert_delete');
+        await deleteCertVault();
         if (cfg.setMeta) cfg.setMeta(null);
-        ready = null; closeModal(); refresh();
+        ready = null;
+        closeModal();
+        refresh();
         toast('Đã xoá chứng chỉ.');
-      } catch (ex) { err(ex.message); del.disabled = false; }
+      } catch (ex) {
+        err(ex.message);
+        del.disabled = false;
+      }
     });
   }
 
@@ -380,14 +746,14 @@
       try { st = (await (await fetch(STATUS_URL + jobId)).json()); } catch (e) { continue; }
       if (!st) continue;
       if (OK.indexOf(st.status) !== -1) return st.download || st.url || DOWNLOAD_URL + jobId;
-      if (BAD.indexOf(st.status) !== -1) throw new Error(st.log || st.msg || st.error || 'Chứng chỉ bị thu hồi hoặc không tương thích.');
+      if (BAD.indexOf(st.status) !== -1) throw new Error(st.log || st.msg || st.error || 'Chứng chỉ bị thu hồi hoặc sai mật khẩu.');
       onTick(Math.min(0.95, (Date.now() - t0) / 90000));
     }
     throw new Error('Quá thời gian chờ máy chủ ký.');
   }
 
   function certProblem(msg) {
-    return /revok|thu hồi|expire|hết hạn|password|mật khẩu|p12|certificate|provision/i.test(msg || '');
+    return /revok|thu hồi|expire|hết hạn|password|mật khẩu|p12|certificate|provision|mac verify/i.test(msg || '');
   }
 
   async function run() {
@@ -398,7 +764,7 @@
       if (confirm('⚡ Ký & cài tự động chỉ dành cho thành viên VIP.\n\nBạn có muốn nâng cấp VIP không?')) location.href = '../dichvu.html';
       return;
     }
-    const meta = cfg.getMeta();
+    const meta = getEffectiveMeta();
     const exp = meta && meta.expiresAt && (meta.expiresAt.toMillis ? meta.expiresAt.toMillis() : new Date(meta.expiresAt).getTime());
     if (!meta) { pendingAfterSave = run; openCertModal(); return; }
     if (exp && exp < Date.now()) { pendingAfterSave = run; openCertModal({ reason: 'Chứng chỉ cũ đã hết hạn. Hãy thêm chứng chỉ mới để tiếp tục.' }); return; }
@@ -412,12 +778,12 @@
     busy = true;
     haptic(8);
     try {
-      setBtn('Cert...', 3);
-      setDesc('Đang lấy chứng chỉ bảo mật...');
-      const cert = await api('vip_cert_get');
+      setBtn('Nạp Cert...', 5);
+      setDesc('Đang nạp chứng chỉ VIP của bạn...');
+      const cert = await loadCertVault();
 
       setDesc('Đang tải IPA về máy chủ ký...');
-      const ipa = await fetchIpa(link, (p) => setBtn('Tải ' + Math.round(p * 100) + '%', 5 + p * 40));
+      const ipa = await fetchIpa(link, (p) => setBtn('Tải ' + Math.round(p * 100) + '%', 8 + p * 38));
 
       const fd = new FormData();
       const appName = app.name || 'App';
@@ -428,11 +794,11 @@
       fd.append('app_name', appName);
       if (app.bundleId) fd.append('bundle_id', app.bundleId);
 
-      setDesc('Đang gửi tới cụm ký...');
-      const jobId = await uploadForSign(fd, (p) => setBtn('Gửi ' + Math.round(p * 100) + '%', 45 + p * 25));
+      setDesc('Đang gửi tới cụm ký C++...');
+      const jobId = await uploadForSign(fd, (p) => setBtn('Gửi ' + Math.round(p * 100) + '%', 46 + p * 24));
 
       setDesc('Đang ký ứng dụng ngầm...');
-      const download = await pollSign(jobId, (p) => setBtn('Đang ký', 70 + p * 28));
+      const download = await pollSign(jobId, (p) => setBtn('Đang ký ' + Math.round(p * 100) + '%', 70 + p * 28));
 
       const bundle = app.bundleId || 'com.ipaviet.app';
       const plist = INSTALLER + '?plist=true&ipa=' + encodeURIComponent(download) + '&name=' + encodeURIComponent(appName) + '&bundle=' + encodeURIComponent(bundle) + '&version=1.0';
@@ -444,7 +810,7 @@
       haptic([15, 60, 20]);
       busy = false;
       refresh();
-      toast('✅ Đã ký xong! Bấm "Cài Đặt" để cài lên thiết bị.');
+      toast('✅ Đã ký xong! Bấm "Cài Đặt" để cài lên máy.');
       const btn = $('btnVipSign');
       if (btn) btn.classList.add('vs-ready');
     } catch (ex) {
@@ -456,7 +822,7 @@
         openCertModal({ reason: msg });
       } else if (certProblem(msg)) {
         pendingAfterSave = run;
-        openCertModal({ reason: 'Ký thất bại: ' + msg + ' — hãy thay chứng chỉ mới.' });
+        openCertModal({ reason: 'Ký thất bại: ' + msg + ' — hãy kiểm tra mật khẩu hoặc thay chứng chỉ mới.' });
       } else {
         toast('❌ ' + msg);
       }
@@ -482,4 +848,3 @@
 
   window.IPAVIET_VIP_SIGN = { init, refresh, openCertModal };
 })();
-
