@@ -365,12 +365,49 @@
       padding: 24px;
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
     }
+
+    /* ─── Apple VietQR Radar Pulse ─── */
+    .qr-radar-wrapper {
+      position: relative;
+      display: inline-block;
+      padding: 8px;
+      margin: 8px auto 14px;
+    }
+    .qr-radar-ring {
+      position: absolute;
+      inset: -3px;
+      border-radius: 22px;
+      padding: 2.5px;
+      background: conic-gradient(from 0deg, transparent 0deg, transparent 240deg, #0A84FF 300deg, #30D158 360deg);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: qrRadarSpin 3.2s linear infinite;
+      pointer-events: none;
+    }
+    .qr-radar-pulse {
+      position: absolute;
+      inset: 2px;
+      border-radius: 18px;
+      box-shadow: 0 0 24px rgba(10, 132, 255, 0.35);
+      animation: qrPulseGlow 2.4s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes qrRadarSpin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes qrPulseGlow {
+      0% { opacity: 0.3; filter: blur(3px); }
+      100% { opacity: 0.85; filter: blur(7px); }
+    }
+
     .qr-frame {
       background: #FFFFFF;
       padding: 14px;
       border-radius: 16px;
       display: inline-block;
-      margin: 12px auto;
+      position: relative;
+      z-index: 2;
       box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
     }
     .qr-frame img {
@@ -561,23 +598,124 @@
     .timer-badge {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
       color: #FBBF24;
       padding: 4px 10px;
       border-radius: 980px;
       font-size: 11.5px;
       font-weight: 700;
-      transition: background 0.3s, color 0.3s;
+      transition: all 0.3s ease;
+    }
+    .timer-svg {
+      transform: rotate(-90deg);
+      flex-shrink: 0;
+    }
+    .timer-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.15);
+      stroke-width: 3;
+    }
+    .timer-fg {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 56.55;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 0.8s linear, stroke 0.3s;
     }
     .timer-badge.is-urgent {
       background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
       color: #F87171;
       animation: pulseUrgent 1s infinite;
     }
     @keyframes pulseUrgent {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.05); }
+    }
+
+    /* ─── Apple Hold-to-Confirm Button (1.2s Hold) ─── */
+    .hold-confirm-box {
+      width: 100%;
+      margin: 16px 0 10px;
+    }
+    .btn-hold-confirm {
+      position: relative;
+      width: 100%;
+      min-height: 52px;
+      padding: 0 18px;
+      border-radius: 16px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34D399;
+      font-size: 14.5px;
+      font-weight: 800;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+      user-select: none;
+      -webkit-user-select: none;
+      transition: border-color 0.25s, transform 0.15s, box-shadow 0.25s;
+    }
+    .btn-hold-confirm:hover {
+      border-color: rgba(16, 185, 129, 0.6);
+      box-shadow: 0 6px 24px rgba(16, 185, 129, 0.25);
+    }
+    .btn-hold-confirm:active {
+      transform: scale(0.98);
+    }
+    .hold-progress-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 0%;
+      background: linear-gradient(135deg, #10B981, #059669);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+      z-index: 1;
+      pointer-events: none;
+    }
+    .btn-hold-confirm.is-holding {
+      border-color: #34D399;
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
+    }
+    .btn-hold-confirm.is-confirmed {
+      background: #10B981 !important;
+      color: #FFF !important;
+      border-color: #10B981 !important;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.7) !important;
+      pointer-events: none;
+    }
+    .hold-content {
+      position: relative;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.01em;
+      transition: color 0.2s;
+    }
+    .btn-hold-confirm.is-holding .hold-content,
+    .btn-hold-confirm.is-confirmed .hold-content {
+      color: #FFFFFF;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    .hold-hint {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: color 0.2s;
     }
 
     /* ─── Lucian [001] Liquid Glass Button ─── */
@@ -803,22 +941,29 @@
         <div class="payment-panel">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <span style="font-size: 11px; font-weight: 800; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em;">Thanh Toán Tự Động</span>
-            <div class="timer-badge">
-              <i data-lucide="timer" class="w-3.5 h-3.5"></i>
-              <span id="countdownTimer">15:00</span>
+            <div class="timer-badge" id="timerBadge">
+              <svg class="timer-svg" width="16" height="16" viewBox="0 0 24 24">
+                <circle class="timer-bg" cx="12" cy="12" r="9"/>
+                <circle class="timer-fg" id="timerCircleFg" cx="12" cy="12" r="9"/>
+              </svg>
+              <span id="countdownTimer">10:00</span>
             </div>
           </div>
 
           <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">Cổng Auto Bank VietQR BIDV</h3>
           <p style="font-size: 12px; color: var(--text-muted);">Quét mã bằng app ngân hàng bất kỳ để hệ thống tự động xác nhận sau 3 giây.</p>
 
-          <!-- QR Code Display -->
+          <!-- QR Code Display with Radar Pulse -->
           <div style="text-align: center;">
-            <div class="qr-frame">
-              <img id="qrImage" src="" alt="VietQR BIDV">
+            <div class="qr-radar-wrapper">
+              <div class="qr-radar-ring" aria-hidden="true"></div>
+              <div class="qr-radar-pulse" aria-hidden="true"></div>
+              <div class="qr-frame">
+                <img id="qrImage" src="" alt="VietQR BIDV">
+              </div>
             </div>
-            <div style="font-size: 11.5px; color: #10B981; font-weight: 600;">
-              ✓ Tự động điền số tiền và nội dung chuyển khoản
+            <div style="font-size: 11.5px; color: #10B981; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i> Tự động quét & điền chính xác 100% nội dung
             </div>
           </div>
 
@@ -858,9 +1003,19 @@
             </div>
           </div>
 
-          <button onclick="confirmOrderPayment()" class="btn-submit-order">
-            <i data-lucide="check-circle-2" class="w-4 h-4"></i> Tôi Đã Chuyển Khoản Thành Công
-          </button>
+          <!-- Apple Hold-to-Confirm Button (1.2s Hold) -->
+          <div class="hold-confirm-box">
+            <button type="button" class="btn-submit-order btn-hold-confirm" id="btnHoldConfirm" aria-label="Nhấn giữ 1.2s để xác nhận chuyển khoản">
+              <span class="hold-progress-fill" id="holdProgressFill"></span>
+              <span class="hold-content" id="holdContent">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span id="holdText">Nhấn Giữ 1.2s Để Xác Nhận Đã Chuyển</span>
+              </span>
+            </button>
+            <div class="hold-hint" id="holdHint">
+              <i data-lucide="fingerprint" class="w-3.5 h-3.5 inline"></i> Chạm & giữ 1.2s để chống bấm nhầm
+            </div>
+          </div>
 
           <div style="text-align: center; margin-top: 14px; font-size: 11.5px; color: var(--text-muted);">
             Cần hỗ trợ gấp? <a href="https://t.me/ipaviet" target="_blank" style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">Chat với Kỹ Thuật Viên 24/7</a>
@@ -1105,22 +1260,137 @@
       copyText(currentOrder.orderId, 'Đã chép mã đơn hàng: ' + currentOrder.orderId, btnEl);
     }
 
-    // Countdown Timer
+    // Countdown Timer with Circular SVG Progress
     function startTimer(durationSeconds) {
       let timer = durationSeconds;
       const display = document.getElementById('countdownTimer');
+      const circleFg = document.getElementById('timerCircleFg');
+      const badge = document.getElementById('timerBadge');
+      const totalCircumference = 56.548;
+
       const interval = setInterval(() => {
         const minutes = parseInt(timer / 60, 10);
         const seconds = parseInt(timer % 60, 10);
-        display.textContent = (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds < 10 ? "0" + seconds : seconds);
-        if (timer < 180 && display.parentElement) {
-          display.parentElement.classList.add('is-urgent');
+        if (display) {
+          display.textContent = (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds < 10 ? "0" + seconds : seconds);
+        }
+        if (circleFg) {
+          const progress = Math.max(0, timer / durationSeconds);
+          circleFg.style.strokeDashoffset = (totalCircumference * (1 - progress)) + 'px';
+        }
+        if (timer < 180 && badge) {
+          badge.classList.add('is-urgent');
         }
         if (--timer < 0) {
           clearInterval(interval);
-          display.textContent = "00:00 (Hết hạn)";
+          if (display) display.textContent = "00:00 (Hết hạn)";
         }
       }, 1000);
+    }
+
+    // Apple Hold-to-Confirm Interaction (1.2s Hold)
+    function setupHoldToConfirm() {
+      const btn = document.getElementById('btnHoldConfirm');
+      const fill = document.getElementById('holdProgressFill');
+      const text = document.getElementById('holdText');
+      const hint = document.getElementById('holdHint');
+      if (!btn || !fill) return;
+
+      const HOLD_DURATION = 1200; // ms
+      let holdStartTime = 0;
+      let animFrame = null;
+      let isCompleted = false;
+
+      function triggerHaptic(p) {
+        try { if (navigator.vibrate) navigator.vibrate(p); } catch(e) {}
+      }
+
+      function startHold(e) {
+        if (isCompleted) return;
+        const input = document.getElementById('inputUdid');
+        const udid = input ? input.value.trim().toUpperCase() : '';
+        if (!udid) {
+          Swal.fire({
+            title: 'Thiếu Mã UDID Thiết Bị',
+            text: 'Vui lòng nhập hoặc sử dụng tính năng "Lấy UDID Tự Động" để đăng ký chứng chỉ Apple trước khi thanh toán!',
+            icon: 'warning',
+            confirmButtonColor: '#0A84FF'
+          });
+          return;
+        }
+
+        holdStartTime = performance.now();
+        btn.classList.add('is-holding');
+        if (hint) hint.textContent = 'Đang xác nhận... Giữ chặt ngón tay';
+        triggerHaptic(10);
+
+        function tick(now) {
+          const elapsed = now - holdStartTime;
+          const progress = Math.min(1, elapsed / HOLD_DURATION);
+          fill.style.width = (progress * 100) + '%';
+
+          if (progress === 0.35 || progress === 0.7) {
+            triggerHaptic(8);
+          }
+
+          if (progress < 1) {
+            animFrame = requestAnimationFrame(tick);
+          } else {
+            isCompleted = true;
+            btn.classList.remove('is-holding');
+            btn.classList.add('is-confirmed');
+            if (text) text.textContent = '✓ Đã Xác Nhận Thành Công!';
+            if (hint) hint.textContent = 'Đang kết nối hệ thống kích hoạt...';
+            triggerHaptic([20, 60, 25]);
+            setTimeout(() => {
+              confirmOrderPayment();
+            }, 300);
+          }
+        }
+        animFrame = requestAnimationFrame(tick);
+      }
+
+      function cancelHold() {
+        if (isCompleted) return;
+        cancelAnimationFrame(animFrame);
+        btn.classList.remove('is-holding');
+        fill.style.transition = 'width 0.25s cubic-bezier(0.34, 1.45, 0.64, 1)';
+        fill.style.width = '0%';
+        setTimeout(() => { fill.style.transition = ''; }, 260);
+        if (hint) hint.innerHTML = '<i data-lucide="fingerprint" class="w-3.5 h-3.5 inline"></i> Chạm & giữ 1.2s để chống bấm nhầm';
+        if (window.lucide) lucide.createIcons();
+      }
+
+      btn.addEventListener('mousedown', startHold);
+      btn.addEventListener('mouseup', cancelHold);
+      btn.addEventListener('mouseleave', cancelHold);
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(e); }, { passive: false });
+      btn.addEventListener('touchend', cancelHold);
+      btn.addEventListener('touchcancel', cancelHold);
+
+      btn.addEventListener('click', (e) => {
+        if (!isCompleted) {
+          cancelHold();
+          Swal.fire({
+            title: 'Xác Nhận Đã Chuyển Khoản?',
+            text: `Bạn đã chuyển đúng số tiền ${(currentOrder.price || 180000).toLocaleString('vi-VN')}đ vào số tài khoản BIDV 8900733531 với nội dung ${currentOrder.orderId} chưa?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Đã Chuyển Khoản',
+            cancelButtonText: 'Xem Lại Mã QR',
+            confirmButtonColor: '#10B981',
+            cancelButtonColor: '#64748B'
+          }).then(res => {
+            if (res.isConfirmed) {
+              isCompleted = true;
+              btn.classList.add('is-confirmed');
+              fill.style.width = '100%';
+              if (text) text.textContent = '✓ Đã Xác Nhận Thành Công!';
+              confirmOrderPayment();
+            }
+          });
+        }
+      });
     }
 
     function calculateWarrantyDate(warrantyText) {
@@ -1346,6 +1616,7 @@
       lucide.createIcons();
       loadPlanFromContext();
       startTimer(15 * 60);
+      setupHoldToConfirm();
       autoSyncPendingOrder();
     });
   </script>
