@@ -742,11 +742,11 @@
 
       chunks.push(value);
       got += value.length;
-      onProgress(total ? Math.min(0.99, got / total) : 1 - Math.exp(-got / 80e6));
+      onProgress(total ? Math.min(0.99, got / total) : 1 - Math.exp(-got / 80e6), got, total);
     }
 
     if (got < 1024) throw new Error('Tệp IPA tải về không đầy đủ.');
-    onProgress(1);
+    onProgress(1, got, total || got);
     return new Blob(chunks, { type: 'application/octet-stream' });
   }
 
@@ -843,7 +843,14 @@
       const cert = await loadCertVault();
 
       setDesc('Đang tải IPA về máy chủ ký...');
-      const ipa = await fetchIpa(link, (p) => setBtn('Tải ' + Math.round(p * 100) + '%', 8 + p * 38));
+      const ipa = await fetchIpa(link, (p, gotBytes, totalBytes) => {
+        setBtn('Tải ' + Math.round(p * 100) + '%', 8 + p * 38);
+        if (gotBytes && gotBytes > 0) {
+          const gotMb = (gotBytes / 1048576).toFixed(1);
+          const totalMb = totalBytes && totalBytes > 0 ? ' / ' + (totalBytes / 1048576).toFixed(1) + ' MB' : ' MB';
+          setDesc('Đang tải IPA về máy chủ ký (' + gotMb + totalMb + ')...');
+        }
+      });
 
       const fd = new FormData();
       const appName = app.name || 'App';

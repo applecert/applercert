@@ -3868,7 +3868,21 @@
       "tchy432@gmail.com",
       "applecert.vn@gmail.com"
     ];
-    const MASTER_SERVER_PIN = "200912aB";
+    const MASTER_SERVER_PIN = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin') || "";
+    const MASTER_PIN_SHA256 = "e5d7508ac7fefc7999c03153e7ee3393fd7c3978be7d761c1cb6d9dcda5783a6";
+
+    async function isPinHashMatch(rawPin) {
+      if (!rawPin || typeof rawPin !== 'string') return false;
+      try {
+        const msgBuffer = new TextEncoder().encode(rawPin.trim().toLowerCase());
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex === MASTER_PIN_SHA256;
+      } catch (e) {
+        return false;
+      }
+    }
 
     // Mở khóa bảng điều khiển tức thì (0ms, không bao giờ bị kẹt spinner)
     function unlockDashboard(pin) {
@@ -3972,9 +3986,9 @@
       if (btnText) btnText.innerText = "Đang kiểm tra PIN...";
       if (btn) btn.disabled = true;
 
-      // 1. Mở khóa tức thì với mã PIN máy chủ chuẩn (0ms)
-      if (pinInput === MASTER_SERVER_PIN || pinInput.toLowerCase() === MASTER_SERVER_PIN.toLowerCase()) {
-        unlockDashboard(MASTER_SERVER_PIN);
+      // 1. Mở khóa tức thì với mã PIN máy chủ chuẩn (kiểm tra qua SHA-256 chống lộ mã nguồn)
+      if (await isPinHashMatch(pinInput)) {
+        unlockDashboard(pinInput);
         return;
       }
 
@@ -4017,11 +4031,11 @@
         if (adminEmailEl) adminEmailEl.innerText = userEmail;
         if (dashNameEl) dashNameEl.innerText = userEmail.split('@')[0];
 
-        // Nếu là Super Admin và đã có mã PIN trong máy -> tự động mở khóa
+        // Nếu là Super Admin và đã có mã PIN hợp lệ trong máy -> tự động mở khóa
         if (SUPER_ADMINS.includes(userEmail)) {
           const savedPin = sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin');
-          if (savedPin === MASTER_SERVER_PIN) {
-            unlockDashboard(MASTER_SERVER_PIN);
+          if (savedPin && (await isPinHashMatch(savedPin))) {
+            unlockDashboard(savedPin);
           }
         }
       } else {
@@ -4032,12 +4046,12 @@
     });
 
     // Tự động mở khóa an toàn trong phiên làm việc hiện tại (Session Only)
-    (function checkInitialAutoUnlock() {
+    (async function checkInitialAutoUnlock() {
       try { loadCachedAdminDataInstant(); } catch(e) {}
       const savedPin = sessionStorage.getItem('admin_session_pin');
-      if (savedPin && savedPin === MASTER_SERVER_PIN) {
+      if (savedPin && (await isPinHashMatch(savedPin))) {
         setTimeout(() => {
-          unlockDashboard(MASTER_SERVER_PIN);
+          unlockDashboard(savedPin);
         }, 100);
       }
     })();

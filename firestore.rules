@@ -12,47 +12,70 @@ service cloud.firestore {
         ] || request.auth.token.admin == true);
     }
 
-    // 1. Users Collection
+    // Các trường nhạy cảm mà người dùng KHÔNG ĐƯỢC tự thêm hoặc sửa từ phía Client
+    function touchesProtectedUserFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['vip', 'isVip', 'vipExpire', 'vipExpiresAt', 'isAdmin', 'role', 'totalDeposited']);
+    }
+
+    // 1. Users Collection & Subcollections
     match /users/{userId} {
       // Người dùng chỉ được đọc hồ sơ của chính mình hoặc Super Admin
       allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
       
-      // Tạo tài khoản mới: cấm tự gán coins > 0 hoặc vip = true
-      allow create: if request.auth != null && request.auth.uid == userId
-        && (!request.resource.data.keys().hasAny(['vip', 'isAdmin', 'role']) || request.resource.data.vip == false)
-        && (!request.resource.data.keys().hasAny(['coins']) || request.resource.data.coins == 0);
+      // Tạo tài khoản mới: cấm tự gán quyền VIP, Admin hoặc số dư Xu > 0
+      allow create: if isSuperAdmin() || (
+        request.auth != null && request.auth.uid == userId
+        && (!request.resource.data.keys().hasAny(['vip']) || request.resource.data.vip == false)
+        && (!request.resource.data.keys().hasAny(['isVip']) || request.resource.data.isVip == false)
+        && !request.resource.data.keys().hasAny(['vipExpire', 'vipExpiresAt', 'isAdmin', 'role', 'totalDeposited'])
+        && (!request.resource.data.keys().hasAny(['coins']) || request.resource.data.coins == 0)
+      );
 
-      // Cập nhật hồ sơ: Cho phép user cập nhật vipCert, trừ xu khi mua/tải IPA hoặc nhận xu nhiệm vụ hợp lệ; cấm tự nâng quyền isAdmin/role/vip
+      // Cập nhật hồ sơ:
+      // - Super Admin có toàn quyền
+      // - Chủ tài khoản được cập nhật vipCert, pendingMission, dailyMissions, lịch sử tải
+      // - Nếu thay đổi coins: chỉ cho phép trừ xu (>= 0) hoặc cộng tối đa +1.000 Xu/lượt nhiệm vụ (tối đa 2 lượt/ngày)
       allow update: if isSuperAdmin() || (
         request.auth != null && request.auth.uid == userId
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['vip', 'isAdmin', 'role'])
+        && !touchesProtectedUserFields()
         && (
           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['coins'])
           || (
             request.resource.data.coins >= 0
-            && request.resource.data.coins <= (resource.data.coins + 2000)
+            && (
+              request.resource.data.coins < resource.data.coins
+              || (
+                request.resource.data.coins <= (resource.data.coins + 1000)
+                && request.resource.data.keys().hasAny(['dailyMissions'])
+                && request.resource.data.dailyMissions.count <= 2
+              )
+            )
           )
         )
       );
 
       allow delete: if isSuperAdmin();
+
+      // Lịch sử tải ứng dụng của người dùng
+      match /downloads/{downloadId} {
+        allow read, write: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
+      }
     }
 
     // 2. Chứng Chỉ Apple Orders (cert_orders)
     match /cert_orders/{orderId} {
-      // Cho phép tra cứu đơn công khai hoặc qua authentication
-      allow read: if true;
+      // Cho phép tra cứu 1 đơn cụ thể bằng mã đơn (get), nhưng chỉ Admin hoặc chủ đơn mới được liệt kê (list)
+      allow get: if true;
+      allow list: if isSuperAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
 
       // Khách hàng tạo đơn mới: Trạng thái bắt buộc phải là PENDING hoặc PENDING_PAYMENT
       allow create: if isSuperAdmin() || (
         request.resource.data.status in ['PENDING', 'PENDING_PAYMENT']
       );
 
-      // CẬP NHẬT ĐƠN HÀNG: Chỉ Admin mới có quyền duyệt tiền hoặc trả file Cert!
-      // Chặn hoàn toàn việc khách tự sửa status thành COMPLETED hoặc PAID_PROCESSING
-      allow update: if isSuperAdmin();
-
-      allow delete: if isSuperAdmin();
+      // CẬP NHẬT ĐƠN HÀNG: Chỉ Admin mới có quyền duyệt tiền hoặc trả file Cert
+      allow update, delete: if isSuperAdmin();
     }
 
     // 3. Đơn Hàng MMO (mmo_orders)
@@ -62,7 +85,7 @@ service cloud.firestore {
       allow update, delete: if isSuperAdmin();
     }
 
-    // 4. Kho Ứng Dụng IPA (app_library & catalog)
+    // 4. Kho Ứng Dụng IPA & Gói Chứng Chỉ
     match /app_library/{appId} {
       allow read: if true;
       allow write: if isSuperAdmin();
@@ -71,15 +94,57 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isSuperAdmin();
     }
-
-    // 5. Thống Kê & Hành Vi Khách Hàng (analytics & telemetry)
-    match /analytics/{docId} {
-      allow read: if isSuperAdmin();
-      allow create: if true; // Ghi nhận telemetry
-      allow update, delete: if isSuperAdmin();
+    match /cert_products/{prodId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
     }
 
-    // 6. Cấu Hình Hệ Thống (system_configs)
+    // 5. Hệ Thống Nhiệm Vụ Nhận Xu (shortener_missions & mission_tickets)
+    match /shortener_missions/{docId} {
+      allow read: if request.auth != null || isSuperAdmin();
+      allow create, update: if request.auth != null && request.resource.data.count <= 2;
+      allow delete: if isSuperAdmin();
+    }
+    match /mission_tickets/{ticketId} {
+      allow get: if request.auth != null || isSuperAdmin();
+      allow list: if isSuperAdmin();
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid && request.resource.data.reward <= 1000;
+      allow update: if isSuperAdmin() || (request.auth != null && resource.data.uid == request.auth.uid && request.resource.data.status == 'claimed');
+      allow delete: if isSuperAdmin();
+    }
+
+    // 6. Thống Kê & Hành Vi Khách Hàng (analytics_*)
+    match /analytics/{docId} {
+      allow read: if isSuperAdmin();
+      allow create: if true;
+      allow update, delete: if isSuperAdmin();
+    }
+    match /analytics_daily/{docId} {
+      allow read: if isSuperAdmin();
+      allow create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /analytics_apps/{docId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+    match /analytics_recent_downloads/{docId} {
+      allow read: if isSuperAdmin();
+      allow create: if true;
+      allow update, delete: if isSuperAdmin();
+    }
+    match /analytics_searches/{docId} {
+      allow read: if isSuperAdmin();
+      allow create, update: if true;
+      allow delete: if isSuperAdmin();
+    }
+
+    // 7. Cấu Hình Hệ Thống (system_config & system_configs)
+    match /system_config/{configId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
     match /system_configs/{configId} {
       allow read: if true;
       allow write: if isSuperAdmin();
@@ -91,4 +156,3 @@ service cloud.firestore {
     }
   }
 }
-
