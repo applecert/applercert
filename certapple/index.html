@@ -416,6 +416,55 @@
           </div>
         </div>
 
+        <!-- ══ ORDER BUMP: TÙY CHỌN NÂNG CẤP ĐẶC QUYỀN ══ -->
+        <div class="mt-6">
+          <div class="flex items-center justify-between mb-2.5 px-1">
+            <h3 class="text-footnote font-bold uppercase tracking-wide text-label flex items-center gap-1.5">
+              <span>Nâng Cấp Đặc Quyền Kèm Đơn</span>
+              <span class="rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-black px-2 py-0.5 border border-amber-500/30">Khuyên dùng</span>
+            </h3>
+            <span class="text-caption font-bold text-flame">Tiết kiệm 36%</span>
+          </div>
+
+          <div class="space-y-3">
+            <!-- Addon 1: VIP 30 Days -->
+            <label class="ios-sheet block p-3.5 cursor-pointer border border-separator transition-all select-none hover:border-flame/40" id="cardAddonVip">
+              <div class="flex items-start gap-3">
+                <input type="checkbox" id="chkAddonVip" onchange="toggleAddon('vip')" class="mt-0.5 w-5 h-5 rounded-md accent-[#e10e0e] cursor-pointer shrink-0"/>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <span class="text-subhead font-bold text-label flex items-center gap-1.5">
+                      <span>👑 Gói Nhàn Tênh: VIP Ký &amp; Cài Tự Động 30 Ngày</span>
+                    </span>
+                    <span class="text-subhead font-black text-flame whitespace-nowrap">+25.000&nbsp;₫ <span class="text-caption text-label-3 line-through font-normal">39.000&nbsp;₫</span></span>
+                  </div>
+                  <p class="mt-1 text-footnote text-label-2 leading-relaxed">
+                    Tự động đồng bộ chứng chỉ này vào tài khoản IPAVIET ID của bạn. Lên Kho IPA chỉ cần 1 chạm là cài app thẳng vào iPhone, không cần máy tính, không cần giải nén file .p12 hay cài ESign!
+                  </p>
+                </div>
+              </div>
+            </label>
+
+            <!-- Addon 2: Bảo Hiểm Thu Hồi AppleCare+ -->
+            <label class="ios-sheet block p-3.5 cursor-pointer border border-separator transition-all select-none hover:border-flame/40" id="cardAddonInsurance">
+              <div class="flex items-start gap-3">
+                <input type="checkbox" id="chkAddonInsurance" onchange="toggleAddon('insurance')" class="mt-0.5 w-5 h-5 rounded-md accent-[#e10e0e] cursor-pointer shrink-0"/>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <span class="text-subhead font-bold text-label flex items-center gap-1.5">
+                      <span>🛡️ Bảo Hiểm AppleCare+ Thu Hồi Đổi Mới Cấp Tốc</span>
+                    </span>
+                    <span class="text-subhead font-black text-flame whitespace-nowrap">+29.000&nbsp;₫</span>
+                  </div>
+                  <p class="mt-1 text-footnote text-label-2 leading-relaxed">
+                    Nếu Apple quét thu hồi sớm, ưu tiên cấp lại chứng chỉ mới bằng cổng FAST 2h hoàn toàn miễn phí + Tặng 20.000 Xu vào ví IPAVIET Pay.
+                  </p>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
         <p id="udidErrorHint" class="mt-3 px-1 text-footnote text-red" style="display:none;">UDID chưa đúng dạng — 40 ký tự hex, hoặc 8 ký tự + dấu gạch + 16 ký tự.</p>
 
         <!-- Sticky Bottom Checkout Bar -->
@@ -717,6 +766,48 @@
   let activeOrder = null;
   let timerInterval = null;
 
+  // ══ ORDER BUMP ADDON STATE & PRICING ══
+  const addonsState = {
+    vip: false,
+    insurance: false
+  };
+  const ADDON_PRICES = {
+    vip: 25000,
+    insurance: 29000
+  };
+
+  function calculateTotalPrice() {
+    let total = currentPkg.price;
+    if (addonsState.vip) total += ADDON_PRICES.vip;
+    if (addonsState.insurance) total += ADDON_PRICES.insurance;
+    return total;
+  }
+
+  function updateOrderTotalDisplay() {
+    const total = calculateTotalPrice();
+    const formatted = total.toLocaleString('vi-VN') + ' ₫';
+    const stickyBtn = document.getElementById('lblBtnStickyPrice');
+    if (stickyBtn) stickyBtn.textContent = formatted;
+  }
+
+  function toggleAddon(type) {
+    const chk = document.getElementById(type === 'vip' ? 'chkAddonVip' : 'chkAddonInsurance');
+    const card = document.getElementById(type === 'vip' ? 'cardAddonVip' : 'cardAddonInsurance');
+    if (chk) {
+      addonsState[type] = chk.checked;
+      if (card) {
+        if (chk.checked) {
+          card.style.borderColor = 'var(--flame)';
+          card.style.background = 'var(--flame-soft)';
+        } else {
+          card.style.borderColor = '';
+          card.style.background = '';
+        }
+      }
+    }
+    updateOrderTotalDisplay();
+  }
+
   // IntersectionObserver for .ios-reveal elements
   function initIosReveal() {
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -802,7 +893,7 @@
     document.getElementById('lblChosenPrice').textContent = currentPkg.price.toLocaleString('vi-VN') + ' ₫';
     document.getElementById('lblChosenDuration').textContent = currentPkg.duration;
     document.getElementById('lblChosenIssue').textContent = currentPkg.issue;
-    document.getElementById('lblBtnStickyPrice').textContent = currentPkg.price.toLocaleString('vi-VN') + ' ₫';
+    updateOrderTotalDisplay();
 
     const target = document.getElementById('scrollTargetDatHang');
     if (target) {
@@ -918,6 +1009,13 @@
     const email = document.getElementById('email').value.trim();
     const coupon = (document.getElementById('coupon').value || '').trim();
     const orderId = 'IPAVIET_' + Math.floor(100000 + Math.random() * 900000);
+    const totalPrice = calculateTotalPrice();
+
+    const selectedAddons = [];
+    if (addonsState.vip) selectedAddons.push({ id: 'vip_30d', name: 'VIP Ký Tự Động 30 Ngày', price: ADDON_PRICES.vip });
+    if (addonsState.insurance) selectedAddons.push({ id: 'applecare_fast', name: 'Bảo Hiểm AppleCare+ FAST', price: ADDON_PRICES.insurance });
+
+    const addonSuffix = selectedAddons.length ? ' (+ ' + selectedAddons.map(a => a.name).join(', ') + ')' : '';
 
     activeOrder = {
       orderId: orderId,
@@ -927,8 +1025,12 @@
       deviceName: '',
       planId: currentPkg.slug,
       planName: currentPkg.name,
-      productName: currentPkg.name,
-      price: currentPkg.price,
+      productName: currentPkg.name + addonSuffix,
+      basePrice: currentPkg.price,
+      price: totalPrice,
+      hasVipAddon: addonsState.vip,
+      hasInsuranceAddon: addonsState.insurance,
+      addons: selectedAddons,
       amount: 1,
       udid: udid,
       createdAt: new Date().toISOString(),
@@ -941,10 +1043,10 @@
     };
 
     document.getElementById('modalOrderId').textContent = orderId;
-    document.getElementById('modalAmountText').textContent = currentPkg.price.toLocaleString('vi-VN') + ' ₫';
+    document.getElementById('modalAmountText').textContent = totalPrice.toLocaleString('vi-VN') + ' ₫';
     document.getElementById('modalSyntaxText').textContent = orderId;
 
-    const qrUrl = `https://api.vietqr.io/image/970418-${BANK_ACC_NO}-print.jpg?amount=${currentPkg.price}&addInfo=${orderId}&accountName=${encodeURIComponent(BANK_ACC_NAME)}`;
+    const qrUrl = `https://api.vietqr.io/image/970418-${BANK_ACC_NO}-print.jpg?amount=${totalPrice}&addInfo=${orderId}&accountName=${encodeURIComponent(BANK_ACC_NAME)}`;
     document.getElementById('modalQrImage').src = qrUrl;
 
     document.getElementById('modalVietQr').classList.add('active');
