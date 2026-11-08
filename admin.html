@@ -478,6 +478,21 @@
       </div>
 
       <div>
+        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3 mb-2">Kho IPA & Apps</p>
+        <div class="space-y-1">
+          <button onclick="switchTab('ipa_apps')" id="nav-ipa_apps" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-sky-50/70 hover:text-sky-700 transition-all duration-200">
+            <div class="flex items-center">
+              <div class="w-7 h-7 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center mr-2.5 shrink-0 shadow-2xs">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+              </div>
+              <span>Quản Lý Kho IPA</span>
+            </div>
+            <span id="badgeIpaAppsCount" class="bg-blue-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs">0</span>
+          </button>
+        </div>
+      </div>
+
+      <div>
         <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3 mb-2">VSign Ecosystem</p>
         <div class="space-y-1">
           <button onclick="switchTab('vsign_config')" id="nav-vsign_config" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-indigo-50/70 hover:text-indigo-700 transition-all duration-200">
@@ -3055,6 +3070,126 @@
       </div>
     </div>
 
+    <!-- ================= TAB: KHO IPA & VIP APPS MANAGER ================= -->
+    <div id="tab-ipa_apps" class="hidden max-w-6xl mx-auto space-y-6">
+      <!-- Luxury Cyan/Blue Header Banner -->
+      <div class="relative overflow-hidden rounded-[32px] p-7 md:p-9 text-white shadow-card-elevated border border-white/10 bg-gradient-to-br from-[#0c1e36] via-[#102a4c] to-[#081324] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="absolute -right-12 -bottom-12 w-80 h-80 bg-sky-500/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-12 -top-12 w-72 h-72 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 space-y-2">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-300 text-[11px] font-bold tracking-wide backdrop-blur-md">
+            <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse shadow-sm shadow-sky-400/50"></span>
+            <span>ADMIN.OS • QUẢN LÝ KHO IPA & VIP APPS</span>
+          </div>
+          <h2 class="text-2xl md:text-3xl font-black tracking-tight text-white">Quản Lý Kho IPA & VIP Vault</h2>
+          <p class="text-white/70 text-xs md:text-sm max-w-xl">
+            Tích hợp <b>Apple iTunes API</b> tự động kéo Icon 512px, Ảnh chụp màn hình, Developer, Version chỉ trong 1 giây. Kiểm tra link tải chết (Dead-Link Scanner) và xuất file <code class="font-mono text-amber-300">vip.json</code>.
+          </p>
+        </div>
+
+        <div class="relative z-10 flex flex-wrap gap-2.5 items-center">
+          <button type="button" onclick="openAddIpaModal()" class="px-4 py-2.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-2xl text-xs font-bold transition shadow-md shadow-sky-500/25 active:scale-95 flex items-center gap-2 cursor-pointer border border-white/15">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm App Mới
+          </button>
+          <button type="button" onclick="scanIpaDeadLinks()" id="btnScanDeadLinks" class="px-3.5 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-2xl text-xs font-bold transition border border-white/10 flex items-center gap-2 cursor-pointer active:scale-95">
+            <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i> Quét Link Chết
+          </button>
+          <button type="button" onclick="exportVipJson()" class="px-3.5 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-2xl text-xs font-bold transition border border-white/10 flex items-center gap-2 cursor-pointer active:scale-95" title="Xuất dữ liệu vip.json">
+            <i data-lucide="download" class="w-4 h-4 text-amber-300"></i> Xuất JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Metrics Ribbons -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass-card p-4.5 rounded-2xl border border-black/[0.06] shadow-apple">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span class="font-bold">Tổng Ứng Dụng</span>
+            <i data-lucide="layers" class="w-4 h-4 text-blue-500"></i>
+          </div>
+          <div class="text-2xl font-black text-gray-900 font-mono" id="statTotalIpaApps">0</div>
+          <span class="text-[10px] text-gray-400 mt-1 block">Trong kho VIP & Free</span>
+        </div>
+        <div class="glass-card p-4.5 rounded-2xl border border-black/[0.06] shadow-apple">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span class="font-bold">App Độc Quyền VIP</span>
+            <i data-lucide="crown" class="w-4 h-4 text-amber-500"></i>
+          </div>
+          <div class="text-2xl font-black text-amber-600 font-mono" id="statVipIpaApps">0</div>
+          <span class="text-[10px] text-gray-400 mt-1 block">Khóa bảo vệ thành viên</span>
+        </div>
+        <div class="glass-card p-4.5 rounded-2xl border border-black/[0.06] shadow-apple">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span class="font-bold">Đã Quét Link</span>
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+          </div>
+          <div class="text-2xl font-black text-emerald-600 font-mono" id="statScannedIpaApps">0</div>
+          <span class="text-[10px] text-gray-400 mt-1 block">Trạng thái HTTP OK</span>
+        </div>
+        <div class="glass-card p-4.5 rounded-2xl border border-black/[0.06] shadow-apple">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span class="font-bold">Link Nghi Vấn / Lỗi</span>
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i>
+          </div>
+          <div class="text-2xl font-black text-rose-600 font-mono" id="statBrokenIpaApps">0</div>
+          <span class="text-[10px] text-gray-400 mt-1 block">Cần cập nhật link mới</span>
+        </div>
+      </div>
+
+      <!-- Filter & Search Controls -->
+      <div class="glass-card p-4 rounded-2xl border border-black/[0.06] shadow-apple flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div class="relative flex-1 w-full">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input type="text" id="searchIpaAppInput" oninput="renderIpaAppsTable()" placeholder="Tìm tên app, bundle ID, danh mục hoặc link..." class="w-full pl-10 pr-4 py-2 bg-white/80 focus:bg-white border border-black/[0.08] focus:border-appleBlue focus:ring-4 focus:ring-blue-500/10 rounded-2xl text-xs outline-none transition shadow-2xs font-medium">
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+          <select id="filterIpaCategory" onchange="renderIpaAppsTable()" class="px-3 py-2 bg-white/80 border border-black/[0.08] rounded-2xl text-xs font-bold text-gray-700 outline-none focus:border-appleBlue shadow-2xs">
+            <option value="all">Tất cả danh mục</option>
+            <option value="social">Mạng xã hội</option>
+            <option value="edit">Chỉnh sửa Video/Ảnh</option>
+            <option value="game">Trò chơi (Game)</option>
+            <option value="utility">Tiện ích</option>
+            <option value="entertainment">Giải trí</option>
+          </select>
+          <select id="filterIpaTier" onchange="renderIpaAppsTable()" class="px-3 py-2 bg-white/80 border border-black/[0.08] rounded-2xl text-xs font-bold text-gray-700 outline-none focus:border-appleBlue shadow-2xs">
+            <option value="all">Tất cả quyền</option>
+            <option value="vip">Chỉ VIP</option>
+            <option value="free">Miễn phí</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Apps Table -->
+      <div class="glass-card rounded-3xl shadow-apple border border-black/[0.06] overflow-hidden">
+        <div class="overflow-x-auto w-full max-h-[640px]">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="sticky top-0 bg-white/95 backdrop-blur-md z-10 text-gray-500 font-black text-[11px] uppercase tracking-wider border-b border-black/[0.06]">
+              <tr>
+                <th class="p-3.5 w-14 text-center">Icon</th>
+                <th class="p-3.5">Ứng Dụng</th>
+                <th class="p-3.5">Phiên Bản</th>
+                <th class="p-3.5">Danh Mục</th>
+                <th class="p-3.5 text-center">Phân Hạng</th>
+                <th class="p-3.5 text-center">Trạng Thái Link</th>
+                <th class="p-3.5 text-right w-36">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="ipaAppsTableBody" class="divide-y divide-black/[0.04]">
+              <tr>
+                <td colspan="7" class="p-8 text-center text-gray-400">
+                  <div class="flex items-center justify-center gap-2">
+                    <i data-lucide="loader" class="w-5 h-5 animate-spin text-sky-500"></i>
+                    <span>Đang tải danh sách kho IPA...</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- GLOBAL UNSAVED CHANGES FLOATING ACTION BUTTON -->
     <button onclick="saveAllConfigsToServer()" id="btnGlobalSave" class="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-6 py-3.5 rounded-full font-bold text-xs tracking-wider shadow-2xl flex items-center gap-2.5 transition-all transform translate-y-32 active:scale-95">
       <i data-lucide="save" class="w-4 h-4"></i> LƯU THAY ĐỔI MÁY CHỦ
@@ -3062,6 +3197,122 @@
   </main>
 
   <!-- ================= 5. MODALS & DRAWERS (CLEAN ARCHITECTURE) ================= -->
+
+  <!-- MODAL: ADD / EDIT IPA APP WITH APPLE STORE SEARCH -->
+  <div id="modalAddIpaApp" class="fixed inset-0 z-[140] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAddIpaModal()"></div>
+    <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl border border-black/[0.08] relative z-10 p-6 md:p-8 space-y-6">
+      
+      <div class="flex items-center justify-between pb-4 border-b border-black/[0.06]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
+            <i data-lucide="apple" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-gray-900" id="ipaModalTitle">Thêm Ứng Dụng Kho IPA</h3>
+            <p class="text-xs text-gray-400">Tra cứu tự động dữ liệu từ Apple iTunes Store API</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAddIpaModal()" class="w-8 h-8 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center text-gray-500 transition cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- ITUNES AUTO-FETCH BOX -->
+      <div class="p-4 rounded-2xl bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-100 space-y-3">
+        <label class="block text-xs font-bold text-sky-900">⚡ Tra Cứu Nhanh Từ Apple App Store (Auto-Fill):</label>
+        <div class="flex gap-2">
+          <div class="relative flex-1">
+            <input type="text" id="itunesSearchQuery" placeholder="Gõ tên app (VD: CapCut, Locket, YouTube, Zalo)..." class="w-full px-3.5 py-2.5 rounded-xl border border-sky-200 bg-white text-xs font-medium outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 shadow-2xs" onkeydown="if(event.key==='Enter'){event.preventDefault();searchAppleItunes();}">
+          </div>
+          <button type="button" onclick="searchAppleItunes()" id="btnSearchItunes" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-sm active:scale-95 cursor-pointer">
+            <i data-lucide="search" class="w-3.5 h-3.5"></i> Tìm Apple
+          </button>
+        </div>
+        <!-- iTunes Suggestions Dropdown / List -->
+        <div id="itunesResultsBox" class="hidden space-y-2 pt-2 border-t border-sky-200/60 max-h-48 overflow-y-auto"></div>
+      </div>
+
+      <!-- FORM FIELDS -->
+      <form id="formIpaApp" onsubmit="saveIpaApp(event)" class="space-y-4">
+        <input type="hidden" id="ipaAppId">
+        
+        <div class="flex gap-4 items-center">
+          <div class="w-16 h-16 rounded-2xl border border-black/10 bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center text-gray-300 relative shadow-sm" id="ipaPreviewIconWrap">
+            <img id="ipaPreviewIcon" src="" class="w-full h-full object-cover hidden">
+            <i data-lucide="image" class="w-6 h-6" id="ipaPreviewIconPlaceholder"></i>
+          </div>
+          <div class="flex-1 space-y-1">
+            <label class="block text-[11px] font-bold text-gray-600 uppercase">Tên Ứng Dụng *</label>
+            <input type="text" id="ipaAppName" required placeholder="Tên hiển thị (VD: CapCut Pro)" class="w-full px-3 py-2 border border-black/[0.08] rounded-xl text-xs font-bold outline-none focus:border-appleBlue shadow-2xs">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Phiên Bản</label>
+            <input type="text" id="ipaAppVersion" placeholder="VD: 12.5.0" class="w-full px-3 py-2 border border-black/[0.08] rounded-xl text-xs font-mono outline-none focus:border-appleBlue shadow-2xs">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Danh Mục</label>
+            <select id="ipaAppCategory" class="w-full px-3 py-2 border border-black/[0.08] rounded-xl text-xs font-bold text-gray-700 outline-none focus:border-appleBlue shadow-2xs">
+              <option value="social">Mạng Xã Hội</option>
+              <option value="edit">Chỉnh Sửa (Edit)</option>
+              <option value="game">Trò Chơi (Game)</option>
+              <option value="utility">Tiện Ích</option>
+              <option value="entertainment">Giải Trí</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">URL Icon HD 512px *</label>
+          <input type="url" id="ipaAppIcon" oninput="updateIpaIconPreview(this.value)" required placeholder="https://is1-ssl.mzstatic.com/..." class="w-full px-3 py-2 border border-black/[0.08] rounded-xl text-xs font-mono outline-none focus:border-appleBlue shadow-2xs">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Link Tải File .IPA Trực Tiếp *</label>
+          <input type="url" id="ipaAppDownloadUrl" required placeholder="https://github.com/.../app.ipa hoặc direct link" class="w-full px-3 py-2 border border-black/[0.08] rounded-xl text-xs font-mono outline-none focus:border-appleBlue shadow-2xs">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Link Cài Trực Tiếp (OTA / itms-services)</label>
+          <input type="text" id="ipaAppOtaUrl" placeholder="itms-services://?action=download-manifest&url=... (tùy chọn)" class="w-full px-3 py-2 border border-black/[0.08] rounded-xl text-xs font-mono outline-none focus:border-appleBlue shadow-2xs">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Mô Tả Tính Năng Mod / Ghi Chú Bản Hack</label>
+          <textarea id="ipaAppDesc" rows="3" placeholder="Đã mở khóa toàn bộ tính năng Pro, không quảng cáo, hỗ trợ iOS 15 - 18..." class="w-full px-3 py-2 border border-black/[0.08] rounded-xl text-xs outline-none focus:border-appleBlue shadow-2xs leading-relaxed"></textarea>
+        </div>
+
+        <!-- Screenshots Preview Strip -->
+        <div id="ipaScreenshotsWrap" class="hidden space-y-1">
+          <label class="block text-[11px] font-bold text-gray-600 uppercase">Ảnh Chụp Màn Hình Preview (Tự Kéo Từ Apple):</label>
+          <div id="ipaScreenshotsList" class="flex gap-2 overflow-x-auto py-1.5 scrollbar-thin"></div>
+          <input type="hidden" id="ipaAppScreenshots">
+        </div>
+
+        <!-- VIP & Hot Switches -->
+        <div class="p-3.5 rounded-2xl bg-black/[0.02] border border-black/[0.06] flex items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="crown" class="w-4 h-4 text-amber-500"></i>
+            <div>
+              <span class="text-xs font-bold text-gray-800 block">Đặc Quyền Hội Viên VIP</span>
+              <span class="text-[10px] text-gray-400">Chỉ tài khoản VIP mới được tải và hiển thị trong Kệ VIP Vault</span>
+            </div>
+          </div>
+          <input type="checkbox" id="ipaIsVip" class="w-5 h-5 accent-amber-500 rounded cursor-pointer">
+        </div>
+
+        <div class="pt-3 border-t border-black/[0.06] flex items-center justify-end gap-2.5">
+          <button type="button" onclick="closeAddIpaModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-black/5 transition cursor-pointer">Hủy Bỏ</button>
+          <button type="submit" id="btnSubmitIpaApp" class="px-5 py-2.5 rounded-xl bg-appleBlue hover:bg-blue-600 text-white font-bold text-xs shadow-md shadow-blue-500/25 transition active:scale-95 flex items-center gap-1.5 cursor-pointer">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> Lưu Ứng Dụng
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL: LEDGER BALANCE ADJUSTMENT (REPLACING DANGEROUS OVERWRITE) -->
   <div id="ledgerModal" class="fixed inset-0 z-[140] hidden flex items-center justify-center p-4">
@@ -5434,13 +5685,13 @@
     // 13. COMMAND PALETTE & NAVIGATION
     // ==========================================
     function switchTab(tabId) {
-      const validTabs = ['dashboard', 'analytics', 'shortener_missions', 'mmo_orders', 'mmo_products', 'mmo_categories', 'mmo_dealhot', 'cert_orders', 'cert_products', 'users', 'transactions', 'shortcuts', 'ai_knowledge', 'audit', 'system_settings', 'support_chat', 'vsign_config'];
+      const validTabs = ['dashboard', 'analytics', 'shortener_missions', 'mmo_orders', 'mmo_products', 'mmo_categories', 'mmo_dealhot', 'cert_orders', 'cert_products', 'users', 'transactions', 'shortcuts', 'ai_knowledge', 'audit', 'system_settings', 'support_chat', 'vsign_config', 'ipa_apps'];
       validTabs.forEach(t => {
         const el = document.getElementById('tab-' + t);
         if (el) el.classList.add('hidden');
         const nav = document.getElementById('nav-' + t);
         if (nav) {
-          const hasBadge = (t === 'vsign_config' || t === 'mmo_orders' || t === 'support_chat' || t === 'cert_orders' || t === 'shortener_missions');
+          const hasBadge = (t === 'vsign_config' || t === 'mmo_orders' || t === 'support_chat' || t === 'cert_orders' || t === 'shortener_missions' || t === 'ipa_apps');
           nav.className = `w-full flex items-center ${hasBadge ? 'justify-between' : ''} px-3 py-2 rounded-2xl font-semibold text-gray-600 hover:bg-black/[0.03] hover:text-gray-900 border border-transparent transition-all duration-200`;
         }
       });
@@ -5450,7 +5701,7 @@
 
       const currentNav = document.getElementById('nav-' + tabId);
       if (currentNav) {
-        const hasBadge = (tabId === 'vsign_config' || tabId === 'mmo_orders' || tabId === 'support_chat' || tabId === 'cert_orders' || tabId === 'shortener_missions');
+        const hasBadge = (tabId === 'vsign_config' || tabId === 'mmo_orders' || tabId === 'support_chat' || tabId === 'cert_orders' || tabId === 'shortener_missions' || tabId === 'ipa_apps');
         currentNav.className = `w-full flex items-center ${hasBadge ? 'justify-between' : ''} px-3 py-2 rounded-2xl font-bold bg-blue-600/10 text-appleBlue border border-blue-500/20 shadow-xs transition-all duration-200`;
       }
 
@@ -5460,9 +5711,15 @@
         cert_orders: 'Quản Lý Đơn Cert & Trả Hàng', cert_products: 'Cấu Hình Gói Cert & Giá Bán',
         users: 'Khách Hàng', transactions: 'Lịch Sử Nạp Tiền', shortcuts: 'Kho Phím Tắt',
         ai_knowledge: 'Tri Thức AI', audit: 'Nhật Ký Hoạt Động', system_settings: 'Cài Đặt Hệ Thống',
-        support_chat: 'Chat Hỗ Trợ Khách Hàng', vsign_config: 'VSign App — Cấu Hình Từ Xa & Bảo Trì'
+        support_chat: 'Chat Hỗ Trợ Khách Hàng', vsign_config: 'VSign App — Cấu Hình Từ Xa & Bảo Trì',
+        ipa_apps: 'Quản Lý Kho IPA & VIP Vault (Apple Auto-Enrichment)'
       };
       document.getElementById('pageTitle').innerText = titleMap[tabId] || 'Workspace';
+
+      if (tabId === 'ipa_apps') {
+        loadIpaApps();
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
+      }
 
       if (tabId === 'shortener_missions') {
         loadMissionAdminData(false);
@@ -11072,6 +11329,29 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
         try {
           if (typeof db !== 'undefined' && db.collection) {
             await db.collection('cert_orders').doc(orderId).set(updateData, { merge: true });
+
+            // Tự động bơm Cert vào Tủ Đồ của Khách Hàng (users/{uid}.vipCert)
+            const matchedOrder = (AdminState.certOrders || []).find(o => (o.orderId || o.id) === orderId) || {};
+            const targetUid = matchedOrder.uid || matchedOrder.userId || '';
+            if (targetUid) {
+              await db.collection('users').doc(targetUid).set({
+                vipCert: {
+                  orderId: orderId,
+                  certFileUrl: certFileUrl,
+                  p12Url: certFileUrl,
+                  directInstallLink: directInstallLink,
+                  certPass: certPass,
+                  warrantyUntil: warrantyUntil,
+                  remainingDays: remainingDays,
+                  udid: matchedOrder.udid || '',
+                  planName: matchedOrder.planName || 'Chứng Chỉ Apple Developer',
+                  status: status,
+                  revokeStatus: revokeStatus,
+                  updatedAt: new Date().toISOString()
+                }
+              }, { merge: true });
+              console.log("✓ Đã tự động bơm Cert vào users/" + targetUid + ".vipCert");
+            }
           }
         } catch (fsErr) {
           console.warn("Client Firestore update notice:", fsErr);
@@ -11640,6 +11920,566 @@ Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, t�
       });
     }
 
+    // ==========================================
+    // MODULE: QUẢN LÝ KHO IPA & APPLE ITUNES AUTO-ENRICHMENT
+    // ==========================================
+    let ipaAppsList = [];
+    let ipaAppsScanned = {};
+
+    async function loadIpaApps() {
+      const tbody = document.getElementById('ipaAppsTableBody');
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-8 text-center text-gray-400">
+              <div class="flex items-center justify-center gap-2">
+                <i data-lucide="loader" class="w-5 h-5 animate-spin text-sky-500"></i>
+                <span>Đang tải danh sách kho IPA...</span>
+              </div>
+            </td>
+          </tr>
+        `;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      try {
+        let apps = [];
+        try {
+          const res = await fetch(`vip.json?t=${Date.now()}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) apps = data;
+          }
+        } catch(e) {}
+
+        try {
+          if (typeof db !== 'undefined' && db.collection) {
+            const snap = await db.collection('ipa_apps').get();
+            snap.forEach(doc => {
+              const d = doc.data();
+              d._id = doc.id;
+              if (!apps.some(a => (a._id === d._id || (a.name === d.name && a.version === d.version)))) {
+                apps.unshift(d);
+              }
+            });
+          }
+        } catch(e) {}
+
+        ipaAppsList = apps;
+        updateIpaMetrics();
+        renderIpaAppsTable();
+      } catch (err) {
+        console.error("Lỗi loadIpaApps:", err);
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-500 font-bold">Không thể tải kho IPA: ${escapeHTML(err.message)}</td></tr>`;
+        }
+      }
+    }
+
+    function updateIpaMetrics() {
+      const total = ipaAppsList.length;
+      const vipCount = ipaAppsList.filter(a => a._type === 'VIP' || a.isVip || a.isVipOnly).length;
+      const okCount = Object.values(ipaAppsScanned).filter(s => s === 'OK').length;
+      const brokenCount = Object.values(ipaAppsScanned).filter(s => s === 'BROKEN').length;
+
+      const elTotal = document.getElementById('statTotalIpaApps');
+      if (elTotal) elTotal.textContent = total.toLocaleString('vi-VN');
+      const elVip = document.getElementById('statVipIpaApps');
+      if (elVip) elVip.textContent = vipCount.toLocaleString('vi-VN');
+      const elOk = document.getElementById('statScannedIpaApps');
+      if (elOk) elOk.textContent = okCount.toLocaleString('vi-VN');
+      const elBroken = document.getElementById('statBrokenIpaApps');
+      if (elBroken) elBroken.textContent = brokenCount.toLocaleString('vi-VN');
+
+      const badge = document.getElementById('badgeIpaAppsCount');
+      if (badge) badge.textContent = total;
+    }
+
+    function renderIpaAppsTable() {
+      const tbody = document.getElementById('ipaAppsTableBody');
+      if (!tbody) return;
+
+      const q = (document.getElementById('searchIpaAppInput')?.value || '').toLowerCase().trim();
+      const cat = document.getElementById('filterIpaCategory')?.value || 'all';
+      const tier = document.getElementById('filterIpaTier')?.value || 'all';
+
+      let filtered = ipaAppsList.filter(app => {
+        const name = (app.name || app.title || '').toLowerCase();
+        const bundle = (app.bundleId || '').toLowerCase();
+        const category = (app.category || '').toLowerCase();
+        const isVip = (app._type === 'VIP' || app.isVip || app.isVipOnly);
+
+        if (q && !name.includes(q) && !bundle.includes(q) && !category.includes(q)) return false;
+        if (cat !== 'all' && !category.includes(cat)) return false;
+        if (tier === 'vip' && !isVip) return false;
+        if (tier === 'free' && isVip) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-400">Không tìm thấy ứng dụng nào khớp với bộ lọc.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(app => {
+        const id = escapeHTML(app._id || app.id || app.name);
+        const name = escapeHTML(app.name || app.title || 'Chưa đặt tên');
+        const version = escapeHTML(app.version || '1.0');
+        const icon = escapeHTML(app.icon || 'https://img.icons8.com/fluency/96/apple-app-store.png');
+        const category = escapeHTML(app.category || 'Tiện ích');
+        const isVip = (app._type === 'VIP' || app.isVip || app.isVipOnly);
+        const downloadUrl = escapeHTML(app.downloadUrl || app.link || app.fileLink || '');
+        const linkStatus = ipaAppsScanned[app._id || app.name] || 'UNTESTED';
+
+        let statusBadge = '';
+        if (linkStatus === 'OK') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Hoạt Động</span>`;
+        } else if (linkStatus === 'BROKEN') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">⚠️ Link Hỏng</span>`;
+        } else if (linkStatus === 'CHECKING') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">Đang test...</span>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium text-gray-400 bg-gray-50 border border-gray-200">Chưa test</span>`;
+        }
+
+        return `
+          <tr class="hover:bg-black/[0.015] transition">
+            <td class="p-3 text-center">
+              <img src="${icon}" class="w-10 h-10 rounded-xl object-cover shadow-2xs border border-black/10 inline-block" onerror="this.src='https://img.icons8.com/fluency/96/apple-app-store.png'">
+            </td>
+            <td class="p-3">
+              <span class="font-extrabold text-gray-900 block text-xs">${name}</span>
+              <span class="text-[10px] text-gray-400 font-mono block truncate max-w-xs">${downloadUrl}</span>
+            </td>
+            <td class="p-3 font-mono text-xs font-bold text-gray-600">${version}</td>
+            <td class="p-3">
+              <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-gray-100 text-gray-700 uppercase">${category}</span>
+            </td>
+            <td class="p-3 text-center">
+              ${isVip ? `
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-yellow-500 text-black shadow-2xs inline-flex items-center gap-1">
+                  <i data-lucide="crown" class="w-3 h-3"></i> VIP
+                </span>
+              ` : `
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600">Miễn Phí</span>
+              `}
+            </td>
+            <td class="p-3 text-center">
+              ${statusBadge}
+            </td>
+            <td class="p-3 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button type="button" onclick="testSingleIpaLink('${id}')" class="p-2 rounded-xl bg-gray-50 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 transition cursor-pointer" title="Test Link Tải">
+                  <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                </button>
+                <button type="button" onclick="openEditIpaModal('${id}')" class="p-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 transition cursor-pointer" title="Chỉnh sửa">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </button>
+                <button type="button" onclick="deleteIpaApp('${id}')" class="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 transition cursor-pointer" title="Xóa App">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function searchAppleItunes() {
+      const q = document.getElementById('itunesSearchQuery')?.value.trim();
+      if (!q) {
+        Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: 'Vui lòng nhập tên app để tìm!', timer: 1500, showConfirmButton: false });
+        return;
+      }
+
+      const btn = document.getElementById('btnSearchItunes');
+      const box = document.getElementById('itunesResultsBox');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Đang tìm...`;
+      if (box) {
+        box.classList.remove('hidden');
+        box.innerHTML = `<div class="p-3 text-center text-xs text-sky-700">Đang quét kho Apple App Store...</div>`;
+      }
+      if (window.lucide) lucide.createIcons();
+
+      try {
+        let results = [];
+        try {
+          const resVN = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=software&country=vn&limit=5`);
+          if (resVN.ok) {
+            const data = await resVN.json();
+            if (data.results && data.results.length > 0) results = data.results;
+          }
+        } catch(e) {}
+
+        if (results.length === 0) {
+          try {
+            const resUS = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=software&country=us&limit=5`);
+            if (resUS.ok) {
+              const data = await resUS.json();
+              if (data.results && data.results.length > 0) results = data.results;
+            }
+          } catch(e) {}
+        }
+
+        if (results.length === 0) {
+          box.innerHTML = `<div class="p-3 text-center text-xs text-amber-700">Không tìm thấy ứng dụng nào trên Apple Store khớp từ khóa "${escapeHTML(q)}". Bạn có thể nhập tay các trường bên dưới!</div>`;
+          return;
+        }
+
+        box.innerHTML = results.map((item) => {
+          const trackName = escapeHTML(item.trackName || 'Không tên');
+          const artistName = escapeHTML(item.artistName || 'Nhà phát triển');
+          const version = escapeHTML(item.version || '1.0');
+          const icon = escapeHTML(item.artworkUrl512 || item.artworkUrl100 || item.artworkUrl60 || '');
+          const genre = escapeHTML(item.primaryGenreName || 'Tiện ích');
+          const itemPayload = JSON.stringify(item).replace(/'/g, "&#39;");
+
+          return `
+            <div class="p-2 rounded-xl bg-white hover:bg-sky-100/70 border border-sky-200/80 transition flex items-center justify-between gap-3 cursor-pointer" onclick='applyAppleItunesResult(${itemPayload})'>
+              <div class="flex items-center gap-2.5 min-w-0">
+                <img src="${icon}" class="w-10 h-10 rounded-xl object-cover shrink-0 shadow-2xs">
+                <div class="min-w-0">
+                  <div class="font-extrabold text-xs text-gray-900 truncate">${trackName}</div>
+                  <div class="text-[10px] text-gray-500 truncate">${artistName} • v${version} • ${genre}</div>
+                </div>
+              </div>
+              <button type="button" class="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-[10px] font-bold shrink-0 transition">
+                Áp Dụng
+              </button>
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        box.innerHTML = `<div class="p-3 text-center text-xs text-rose-500">Lỗi kết nối Apple iTunes API: ${escapeHTML(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="search" class="w-3.5 h-3.5"></i> Tìm Apple`;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function applyAppleItunesResult(item) {
+      if (!item) return;
+
+      document.getElementById('ipaAppName').value = item.trackName || '';
+      document.getElementById('ipaAppVersion').value = item.version || '1.0';
+      
+      const iconUrl = item.artworkUrl512 || item.artworkUrl100 || '';
+      document.getElementById('ipaAppIcon').value = iconUrl;
+      updateIpaIconPreview(iconUrl);
+
+      const genre = (item.primaryGenreName || '').toLowerCase();
+      let mappedCat = 'utility';
+      if (genre.includes('photo') || genre.includes('video') || genre.includes('graphics')) mappedCat = 'edit';
+      else if (genre.includes('social') || genre.includes('networking')) mappedCat = 'social';
+      else if (genre.includes('game')) mappedCat = 'game';
+      else if (genre.includes('entertainment') || genre.includes('music')) mappedCat = 'entertainment';
+      document.getElementById('ipaAppCategory').value = mappedCat;
+
+      if (item.description) {
+        document.getElementById('ipaAppDesc').value = item.description.substring(0, 300) + '...';
+      }
+
+      if (item.screenshotUrls && item.screenshotUrls.length > 0) {
+        document.getElementById('ipaScreenshotsWrap').classList.remove('hidden');
+        document.getElementById('ipaAppScreenshots').value = JSON.stringify(item.screenshotUrls.slice(0, 5));
+        const list = document.getElementById('ipaScreenshotsList');
+        if (list) {
+          list.innerHTML = item.screenshotUrls.slice(0, 5).map(u => `
+            <img src="${escapeHTML(u)}" class="h-24 w-auto rounded-lg object-cover border border-black/10 shrink-0 shadow-2xs">
+          `).join('');
+        }
+      }
+
+      document.getElementById('itunesResultsBox').classList.add('hidden');
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `Đã nạp: ${item.trackName}`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+
+    function updateIpaIconPreview(url) {
+      const img = document.getElementById('ipaPreviewIcon');
+      const placeholder = document.getElementById('ipaPreviewIconPlaceholder');
+      if (url && url.startsWith('http')) {
+        img.src = url;
+        img.classList.remove('hidden');
+        if (placeholder) placeholder.classList.add('hidden');
+      } else {
+        img.classList.add('hidden');
+        if (placeholder) placeholder.classList.remove('hidden');
+      }
+    }
+
+    function openAddIpaModal() {
+      document.getElementById('ipaModalTitle').textContent = 'Thêm Ứng Dụng Kho IPA';
+      document.getElementById('formIpaApp').reset();
+      document.getElementById('ipaAppId').value = '';
+      document.getElementById('itunesResultsBox').classList.add('hidden');
+      document.getElementById('ipaScreenshotsWrap').classList.add('hidden');
+      updateIpaIconPreview('');
+
+      const modal = document.getElementById('modalAddIpaApp');
+      if (modal) modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openEditIpaModal(id) {
+      const app = ipaAppsList.find(a => (a._id || a.id || a.name) === id);
+      if (!app) return;
+
+      document.getElementById('ipaModalTitle').textContent = 'Chỉnh Sửa Ứng Dụng';
+      document.getElementById('ipaAppId').value = id;
+      document.getElementById('ipaAppName').value = app.name || app.title || '';
+      document.getElementById('ipaAppVersion').value = app.version || '';
+      document.getElementById('ipaAppCategory').value = app.category || 'utility';
+      document.getElementById('ipaAppIcon').value = app.icon || '';
+      updateIpaIconPreview(app.icon || '');
+      document.getElementById('ipaAppDownloadUrl').value = app.downloadUrl || app.link || app.fileLink || '';
+      document.getElementById('ipaAppOtaUrl').value = app.otaUrl || app.directInstallLink || '';
+      document.getElementById('ipaAppDesc').value = app.desc || app.fullDesc || '';
+      document.getElementById('ipaIsVip').checked = (app._type === 'VIP' || app.isVip || app.isVipOnly);
+
+      const screenshots = app.screenshots || [];
+      if (screenshots.length > 0) {
+        document.getElementById('ipaScreenshotsWrap').classList.remove('hidden');
+        document.getElementById('ipaAppScreenshots').value = JSON.stringify(screenshots);
+        const list = document.getElementById('ipaScreenshotsList');
+        if (list) {
+          list.innerHTML = screenshots.map(u => `
+            <img src="${escapeHTML(u)}" class="h-24 w-auto rounded-lg object-cover border border-black/10 shrink-0 shadow-2xs">
+          `).join('');
+        }
+      } else {
+        document.getElementById('ipaScreenshotsWrap').classList.add('hidden');
+      }
+
+      const modal = document.getElementById('modalAddIpaApp');
+      if (modal) modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeAddIpaModal() {
+      const modal = document.getElementById('modalAddIpaApp');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveIpaApp(e) {
+      e.preventDefault();
+      const id = document.getElementById('ipaAppId').value;
+      const name = document.getElementById('ipaAppName').value.trim();
+      const version = document.getElementById('ipaAppVersion').value.trim() || '1.0';
+      const category = document.getElementById('ipaAppCategory').value;
+      const icon = document.getElementById('ipaAppIcon').value.trim();
+      const downloadUrl = document.getElementById('ipaAppDownloadUrl').value.trim();
+      const otaUrl = document.getElementById('ipaAppOtaUrl').value.trim();
+      const desc = document.getElementById('ipaAppDesc').value.trim();
+      const isVip = document.getElementById('ipaIsVip').checked;
+
+      let screenshots = [];
+      try {
+        const rawShot = document.getElementById('ipaAppScreenshots').value;
+        if (rawShot) screenshots = JSON.parse(rawShot);
+      } catch(err) {}
+
+      const appData = {
+        name: name,
+        title: name,
+        version: version,
+        category: category,
+        icon: icon,
+        downloadUrl: downloadUrl,
+        link: downloadUrl,
+        fileLink: downloadUrl,
+        otaUrl: otaUrl,
+        directInstallLink: otaUrl,
+        desc: desc,
+        fullDesc: desc,
+        screenshots: screenshots,
+        developer: "IPAVIET",
+        source: "IPAVIET",
+        _type: isVip ? 'VIP' : 'FREE',
+        isVip: isVip,
+        isVipOnly: isVip,
+        updatedAt: new Date().toISOString()
+      };
+
+      const btn = document.getElementById('btnSubmitIpaApp');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> Đang lưu...`;
+
+      try {
+        const generatedId = id || ('app_' + Math.random().toString(36).substring(2, 11));
+        appData._id = generatedId;
+
+        if (typeof db !== 'undefined' && db.collection) {
+          await db.collection('ipa_apps').doc(generatedId).set(appData, { merge: true });
+        }
+
+        const existingIdx = ipaAppsList.findIndex(a => (a._id || a.id || a.name) === generatedId);
+        if (existingIdx !== -1) {
+          ipaAppsList[existingIdx] = { ...ipaAppsList[existingIdx], ...appData };
+        } else {
+          ipaAppsList.unshift(appData);
+        }
+
+        closeAddIpaModal();
+        updateIpaMetrics();
+        renderIpaAppsTable();
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Thành Công!',
+          text: `Đã lưu ứng dụng "${name}" vào Kho IPA thành công.`,
+          timer: 1500,
+          showConfirmButton: false
+        });
+      } catch (err) {
+        Swal.fire('Lỗi Lưu Ứng Dụng', err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> Lưu Ứng Dụng`;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    async function deleteIpaApp(id) {
+      const app = ipaAppsList.find(a => (a._id || a.id || a.name) === id);
+      const name = app ? (app.name || app.title) : id;
+
+      const confirm = await Swal.fire({
+        title: 'Xóa Ứng Dụng?',
+        html: `Bạn có chắc muốn xóa ứng dụng <b>${escapeHTML(name)}</b> khỏi Kho IPA?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Đồng ý xóa',
+        cancelButtonText: 'Hủy'
+      });
+
+      if (confirm.isConfirmed) {
+        try {
+          if (typeof db !== 'undefined' && db.collection) {
+            await db.collection('ipa_apps').doc(id).delete();
+          }
+          ipaAppsList = ipaAppsList.filter(a => (a._id || a.id || a.name) !== id);
+          updateIpaMetrics();
+          renderIpaAppsTable();
+          Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã xóa ứng dụng!', timer: 1200, showConfirmButton: false });
+        } catch (err) {
+          Swal.fire('Lỗi', err.message, 'error');
+        }
+      }
+    }
+
+    async function testSingleIpaLink(id) {
+      const app = ipaAppsList.find(a => (a._id || a.id || a.name) === id);
+      if (!app) return;
+      const url = app.downloadUrl || app.link || app.fileLink;
+      if (!url) {
+        Swal.fire('Thiếu Link', 'Ứng dụng này chưa có link tải!', 'warning');
+        return;
+      }
+
+      ipaAppsScanned[id] = 'CHECKING';
+      renderIpaAppsTable();
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6000);
+        await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+        clearTimeout(timeout);
+        ipaAppsScanned[id] = 'OK';
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          ipaAppsScanned[id] = 'BROKEN';
+        } else {
+          ipaAppsScanned[id] = 'OK';
+        }
+      }
+      updateIpaMetrics();
+      renderIpaAppsTable();
+    }
+
+    async function scanIpaDeadLinks() {
+      const btn = document.getElementById('btnScanDeadLinks');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Đang quét...`;
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'info',
+        title: `Đang quét kiểm tra link tải...`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      for (let i = 0; i < Math.min(ipaAppsList.length, 30); i++) {
+        const app = ipaAppsList[i];
+        const id = app._id || app.id || app.name;
+        const url = app.downloadUrl || app.link || app.fileLink;
+        if (!url) {
+          ipaAppsScanned[id] = 'BROKEN';
+          continue;
+        }
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 4000);
+          await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+          clearTimeout(timeout);
+          ipaAppsScanned[id] = 'OK';
+        } catch(e) {
+          if (e.name === 'AbortError') {
+            ipaAppsScanned[id] = 'BROKEN';
+          } else {
+            ipaAppsScanned[id] = 'OK';
+          }
+        }
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = `<i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i> Quét Link Chết`;
+      updateIpaMetrics();
+      renderIpaAppsTable();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Hoàn Tất Quét Link!',
+        html: `Đã quét xong link tải ứng dụng.<br>Link hoạt động: <b>${document.getElementById('statScannedIpaApps')?.textContent || 0}</b> • Nghi vấn: <b>${document.getElementById('statBrokenIpaApps')?.textContent || 0}</b>`,
+        confirmButtonColor: '#0071E3'
+      });
+    }
+
+    function exportVipJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(ipaAppsList, null, 2));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", `vip.json`);
+      document.body.appendChild(dlAnchor);
+      dlAnchor.click();
+      dlAnchor.remove();
+
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Đã xuất file vip.json thành công!',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    }
+
     // Thiết lập Drag & Drop tự nhiên cho 2 vùng thả file Cert
     function setupCertDropzones() {
       const setupZone = (zoneId, inputId, handler) => {
@@ -11887,6 +12727,7 @@ Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, t�
       // Nạp Chứng Chỉ Apple (Orders & Products & Maintenance State)
       loadCertOrders(false);
       loadCertProducts();
+      loadIpaApps();
       initCertMaintenanceState();
       setupCertDropzones();
       updateGitHubStatusBadge();

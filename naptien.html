@@ -287,14 +287,21 @@
           </div>
         </div>
 
-        <!-- Middle: Current Balance -->
+        <!-- Middle: Current Balance with Dual Currency -->
         <div class="my-4 space-y-1">
           <div class="text-xs font-semibold text-white/70 uppercase tracking-wider flex items-center gap-1.5">
-            <span>Số dư khả dụng trong ví</span>
+            <span>Số dư ví chính (VNĐ)</span>
             <span class="inline-block w-2 h-2 rounded-full bg-apple-green animate-ping"></span>
           </div>
           <div class="text-3xl sm:text-5xl font-black tracking-tight text-white flex items-baseline gap-2">
             <span id="headerCoins">0đ</span>
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <span class="px-2.5 py-0.5 rounded-full bg-yellow-400/20 text-yellow-300 border border-yellow-400/30 text-xs font-bold flex items-center gap-1">
+              <span>🪙 Xu Thưởng:</span>
+              <span id="headerBonusCoins" class="font-mono">0 Xu</span>
+            </span>
+            <span class="text-[11px] text-white/60">Dùng mở link IPA & VIP</span>
           </div>
         </div>
 
@@ -666,9 +673,13 @@
         // Live balance subscription with Lucian [018] Rolling Odometer
         db.collection("users").doc(user.uid).onSnapshot(doc => {
           if (doc.exists) {
-            const coins = doc.data().coins || 0;
+            const data = doc.data();
+            const coins = data.coins || 0;
+            const bonusCoins = data.bonusCoins || data.bonusXu || 0;
             const h = document.getElementById('headerCoins');
             if (h) animateOdometer(h, coins, 'đ');
+            const b = document.getElementById('headerBonusCoins');
+            if (b) b.innerText = bonusCoins.toLocaleString('vi-VN') + ' Xu';
           }
         });
 
@@ -687,6 +698,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const amountParam = parseInt(urlParams.get('amount')) || 0;
       const coinsParam = parseInt(urlParams.get('coins')) || amountParam;
+      const bonusParam = parseInt(urlParams.get('bonus')) || 0;
       const nameParam = urlParams.get('name') || '';
 
       if (nameParam || amountParam > 0) {
@@ -694,7 +706,9 @@
         const titleEl = document.getElementById('topupForProductTitle');
         if (alertBox && titleEl) {
           alertBox.classList.remove('hidden');
-          titleEl.innerText = nameParam ? `Nạp tiền mua: ${nameParam}` : 'Nạp tiền bổ sung số dư';
+          let text = nameParam ? `Nạp tiền mua: ${nameParam}` : 'Nạp tiền bổ sung số dư ví';
+          if (bonusParam > 0) text += ` • 🎁 Tặng Kèm +${bonusParam.toLocaleString()} Xu Thưởng!`;
+          titleEl.innerText = text;
         }
       }
 
@@ -712,6 +726,7 @@
         localStorage.setItem('activeDepositTime', Date.now().toString());
         localStorage.setItem('activeDepositAmount', amountParam || 0);
         localStorage.setItem('activeDepositCoins', coinsParam || 0);
+        localStorage.setItem('activeDepositBonus', bonusParam || 0);
       } else {
         depositOrderId = cachedOrderId;
       }
@@ -868,13 +883,25 @@
           localStorage.removeItem('activeDepositAmount');
           localStorage.removeItem('activeDepositCoins');
           
+          // Credit bonus coins if applicable
+          const savedBonus = parseInt(localStorage.getItem('activeDepositBonus')) || 0;
+          if (savedBonus > 0 && currentUser) {
+            try {
+              db.collection("users").doc(currentUser.uid).set({
+                bonusCoins: firebase.firestore.FieldValue.increment(savedBonus),
+                bonusXu: firebase.firestore.FieldValue.increment(savedBonus)
+              }, { merge: true });
+            } catch(e) {}
+          }
+          localStorage.removeItem('activeDepositBonus');
+
           const st = document.getElementById('pollingStatus');
           if (st) {
             st.className = "w-full p-4 rounded-2xl bg-apple-green/15 border border-apple-green text-center";
             st.innerHTML = `
               <div class="flex items-center justify-center gap-2 text-apple-green font-black text-sm">
                 <i data-lucide="check-circle" class="w-5 h-5"></i>
-                <span>NẠP THÀNH CÔNG: +${data.amount.toLocaleString()}đ</span>
+                <span>NẠP THÀNH CÔNG: +${data.amount.toLocaleString()}đ ${savedBonus > 0 ? `(+${savedBonus.toLocaleString()} Xu)` : ''}</span>
               </div>
             `;
             lucide.createIcons();
@@ -891,10 +918,11 @@
           
           loadTransactionHistory();
 
+          const bonusMsg = savedBonus > 0 ? `<br><span class="text-amber-500 font-bold text-sm">🎁 Tặng kèm: <b>+${savedBonus.toLocaleString()} Xu Thưởng VIP</b>!</span>` : '';
           Swal.fire({
             icon: 'success',
             title: 'Nạp Tiền Thành Công!',
-            html: `Hệ thống đã tự động cộng <b class="text-apple-blue text-lg">+${data.coins.toLocaleString()}đ</b> vào ví của bạn.`,
+            html: `Hệ thống đã tự động cộng <b class="text-apple-blue text-lg">+${data.coins.toLocaleString()}đ</b> vào Ví chính của bạn.${bonusMsg}`,
             confirmButtonText: 'Quay Lại Tiếp Tục',
             showCancelButton: true,
             cancelButtonText: 'Ở Lại Trang Nạp',
