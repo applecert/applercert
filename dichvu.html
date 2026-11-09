@@ -837,6 +837,14 @@
 
     let currentUser = null; let currentCoins = 0; let currentBonusCoins = 0; let pollingInterval = null; 
     
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refParam = urlParams.get('ref');
+        if (refParam && refParam.trim()) {
+            localStorage.setItem('ipaviet_ref', refParam.trim());
+        }
+    } catch(e) {} 
+    
     let currentOrder = { id: "", originalAmount: 0, finalAmount: 0, coins: 0, bonusCoins: 0, name: "", isDiscountApplied: false, isCredited: false, isChecking: false };
     let checkCount = 0; const MAX_CHECKS = 50; 
 
@@ -1124,6 +1132,30 @@
 
                 await userRef.set(updates, { merge: true });
                 
+                // Trả hoa hồng CTV (+15%) nếu có mã giới thiệu
+                const refCode = localStorage.getItem('ipaviet_ref');
+                if (refCode && refCode !== currentUser.uid && useCash > 0) {
+                    const commission = Math.round(useCash * 0.15);
+                    if (commission > 0) {
+                        try {
+                            await db.collection('users').doc(refCode).update({
+                                affiliateBalance: firebase.firestore.FieldValue.increment(commission),
+                                affiliateEarnings: firebase.firestore.FieldValue.increment(commission),
+                                affiliateOrders: firebase.firestore.FieldValue.increment(1)
+                            });
+                            await db.collection('users').doc(refCode).collection('notifications').add({
+                                title: 'Hoa Hồng Tiếp Thị VIP Mới (+15%)',
+                                message: `Bạn vừa nhận được +${commission.toLocaleString('vi-VN')}đ hoa hồng từ đơn đăng ký VIP (${itemName})!`,
+                                type: 'affiliate_earning',
+                                amount: commission,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        } catch(affErr) {
+                            console.warn("Affiliate commission update notice:", affErr);
+                        }
+                    }
+                }
+
                 const msg = `👑 *CÓ KHÁCH MỞ GÓI VIP!*\n👤 UID: \`${currentUser.uid}\`\n📦 Gói mua: *${itemName}*\n💎 Tiền ví: -${useCash.toLocaleString()}đ\n🪙 Xu thưởng: -${useBonus.toLocaleString()} Xu\n⏰ Hạn dùng: +${extraData} ngày`;
                 fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
 

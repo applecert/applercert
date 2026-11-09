@@ -14,6 +14,31 @@
 (function () {
   'use strict';
 
+  // 0. Nhận diện và ghi nhận Tiếp Thị Liên Kết (Affiliate / CTV Tracker)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    if (refCode && refCode.trim()) {
+      const cleanRef = refCode.trim();
+      localStorage.setItem('ipaviet_ref', cleanRef);
+
+      // Nếu là lần đầu tiên IP / thiết bị này click ref này, tăng lượt click cho referrer
+      const clickedKey = 'ipaviet_ref_clicked_' + cleanRef;
+      if (!localStorage.getItem(clickedKey)) {
+        localStorage.setItem(clickedKey, '1');
+        setTimeout(() => {
+          if (typeof firebase !== 'undefined' && firebase.firestore) {
+            try {
+              firebase.firestore().collection('users').doc(cleanRef).update({
+                affiliateClicks: firebase.firestore.FieldValue.increment(1)
+              }).catch(() => {});
+            } catch (e) {}
+          }
+        }, 1200);
+      }
+    }
+  } catch (e) {}
+
   // 1. Cấu hình Web App Google Sheet Thống Kê Riêng Biệt (Phương Án 2)
   const ANALYTICS_API_URL =
     localStorage.getItem('ipaviet_analytics_api_url') ||

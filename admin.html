@@ -1237,6 +1237,40 @@
             </table>
           </div>
         </div>
+
+        <!-- YÊU CẦU RÚT TIỀN HOA HỒNG CTV (AFFILIATE PAYOUTS) -->
+        <div class="glass-card rounded-3xl shadow-apple border border-black/[0.06] overflow-hidden mt-6">
+          <div class="p-4 border-b border-black/[0.04] bg-emerald-500/5 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">
+                <i data-lucide="landmark" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="text-xs font-bold text-gray-900">Yêu Cầu Rút Tiền Hoa Hồng CTV</h3>
+                <p class="text-[11px] text-gray-500">Duyệt và xác nhận chuyển khoản hoa hồng tiếp thị cho cộng tác viên</p>
+              </div>
+            </div>
+            <button onclick="loadWithdrawalRequests()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer">
+              <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Làm Mới
+            </button>
+          </div>
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-black/[0.02] text-gray-400 font-black text-[11px] uppercase tracking-wider border-b border-black/[0.04]">
+                  <th class="p-4">Thời Gian</th>
+                  <th class="p-4">Cộng Tác Viên / UID</th>
+                  <th class="p-4">Số Tiền (VNĐ)</th>
+                  <th class="p-4">Thông Tin Nhận Tiền</th>
+                  <th class="p-4 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="withdrawalTableBody" class="divide-y divide-black/[0.03]">
+                <tr><td colspan="5" class="p-8 text-center text-gray-400">Đang tải danh sách yêu cầu rút tiền...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- ================= TAB: MMO ORDERS (STATE MACHINE + IDEMPOTENCY) ================= -->
@@ -4774,6 +4808,118 @@
     }
 
     // ==========================================
+    // 4.5 AFFILIATE WITHDRAWAL MANAGEMENT
+    // ==========================================
+    async function loadWithdrawalRequests() {
+      const tbody = document.getElementById('withdrawalTableBody');
+      if (!tbody || typeof db === 'undefined' || !db.collection) return;
+
+      try {
+        const snap = await db.collection('withdrawal_requests').orderBy('createdAt', 'desc').limit(50).get();
+        if (snap.empty) {
+          tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-gray-400">Chưa có yêu cầu rút tiền nào từ CTV.</td></tr>';
+          return;
+        }
+
+        let html = '';
+        snap.forEach(doc => {
+          const d = doc.data();
+          const docId = doc.id;
+          const dateStr = d.createdAt ? (d.createdAt.toDate ? d.createdAt.toDate().toLocaleString('vi-VN') : new Date(d.createdAt).toLocaleString('vi-VN')) : 'Mới đây';
+          const isPending = d.status === 'PENDING';
+          const statusBadge = isPending 
+            ? '<span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">Chờ Chuyển</span>'
+            : (d.status === 'COMPLETED' ? '<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">✓ Đã Chuyển</span>' : '<span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold">Đã Từ Chối</span>');
+
+          html += `
+            <tr class="hover:bg-black/[0.01] transition">
+              <td class="p-4 text-gray-500 font-mono text-[11px]">${dateStr}</td>
+              <td class="p-4">
+                <div class="font-bold text-gray-900">${escapeHTML(d.userEmail || 'CTV')}</div>
+                <div class="font-mono text-[10px] text-gray-400">${d.uid ? escapeHTML(d.uid.slice(0, 14)) + '...' : ''}</div>
+              </td>
+              <td class="p-4 font-black text-emerald-600 text-sm font-mono">${(d.amount || 0).toLocaleString('vi-VN')}đ</td>
+              <td class="p-4">
+                <div class="font-bold text-gray-800">${escapeHTML(d.bankName || 'Ngân Hàng')} · <span class="font-mono select-all text-sky-700">${escapeHTML(d.accountNumber || '')}</span></div>
+                <div class="text-[11px] text-gray-500 uppercase font-semibold">${escapeHTML(d.accountName || '')}</div>
+              </td>
+              <td class="p-4 text-right">
+                <div class="flex items-center justify-end gap-1.5">
+                  ${statusBadge}
+                  ${isPending ? `
+                    <button onclick="approveWithdrawal('${docId}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-2xs cursor-pointer">
+                      Duyệt & Đã CK
+                    </button>
+                    <button onclick="rejectWithdrawal('${docId}', '${escapeHTML(d.uid || '')}', ${d.amount || 0})" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs transition border border-rose-200 cursor-pointer">
+                      Từ Chối
+                    </button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-rose-500">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function approveWithdrawal(docId) {
+      const confirm = await Swal.fire({
+        title: 'Xác Nhận Đã Chuyển Khoản?',
+        text: 'Bạn đã thực hiện chuyển tiền ngân hàng cho CTV này thành công?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Đã Chuyển Khoản Thành Công',
+        cancelButtonText: 'Chưa'
+      });
+      if (!confirm.isConfirmed) return;
+
+      try {
+        await db.collection('withdrawal_requests').doc(docId).update({
+          status: 'COMPLETED',
+          approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        Swal.fire('Thành Công', 'Đã đánh dấu hoàn tất yêu cầu rút tiền!', 'success');
+        loadWithdrawalRequests();
+      } catch (err) {
+        Swal.fire('Lỗi', err.message, 'error');
+      }
+    }
+
+    async function rejectWithdrawal(docId, uid, amount) {
+      const { value: reason } = await Swal.fire({
+        title: 'Từ Chối Yêu Cầu Rút Tiền?',
+        input: 'text',
+        inputLabel: 'Lý do từ chối (Tiền sẽ được hoàn lại vào số dư hoa hồng của CTV)',
+        inputPlaceholder: 'Sai STK, tên không khớp...',
+        showCancelButton: true,
+        confirmButtonText: 'Từ Chối & Hoàn Tiền',
+        cancelButtonText: 'Hủy'
+      });
+      if (reason === undefined) return;
+
+      try {
+        await db.collection('withdrawal_requests').doc(docId).update({
+          status: 'REJECTED',
+          rejectReason: reason || 'Thông tin ngân hàng không hợp lệ',
+          rejectedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        if (uid && amount > 0) {
+          await db.collection('users').doc(uid).update({
+            affiliateBalance: firebase.firestore.FieldValue.increment(amount)
+          });
+        }
+        Swal.fire('Đã Từ Chối', 'Đã từ chối và hoàn lại tiền vào ví CTV!', 'info');
+        loadWithdrawalRequests();
+      } catch (err) {
+        Swal.fire('Lỗi', err.message, 'error');
+      }
+    }
+
+    // ==========================================
     // 5. MMO ORDERS (FULFILLMENT & IDEMPOTENCY)
     // ==========================================
     let currentMmoFilter = 'PENDING_PAID';
@@ -5786,6 +5932,7 @@
 
       if (tabId === 'transactions') {
         renderTransactions();
+        loadWithdrawalRequests();
         setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 40);
       }
 
@@ -11351,6 +11498,36 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
                 }
               }, { merge: true });
               console.log("✓ Đã tự động bơm Cert vào users/" + targetUid + ".vipCert");
+            }
+
+            // Tự động trả thưởng Affiliate CTV (+15%) nếu đơn hàng có mã ref
+            const refUid = matchedOrder.ref || matchedOrder.refCode || '';
+            if (status === 'COMPLETED' && refUid && refUid !== targetUid && !matchedOrder.affiliateRewarded) {
+              const orderPrice = matchedOrder.price || matchedOrder.totalPrice || 150000;
+              const commission = Math.round(orderPrice * 0.15);
+              if (commission > 0) {
+                try {
+                  await db.collection('users').doc(refUid).update({
+                    affiliateBalance: firebase.firestore.FieldValue.increment(commission),
+                    affiliateEarnings: firebase.firestore.FieldValue.increment(commission),
+                    affiliateOrders: firebase.firestore.FieldValue.increment(1)
+                  });
+                  await db.collection('users').doc(refUid).collection('notifications').add({
+                    title: 'Hoa Hồng Đơn Cert Apple Mới (+15%)',
+                    message: `Bạn vừa nhận được +${commission.toLocaleString('vi-VN')}đ hoa hồng từ đơn mua Chứng chỉ Apple #${orderId}!`,
+                    type: 'affiliate_earning',
+                    amount: commission,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                  });
+                  await db.collection('cert_orders').doc(orderId).update({
+                    affiliateRewarded: true,
+                    affiliateCommission: commission
+                  });
+                  console.log("✓ Đã tự động trả hoa hồng 15% cho CTV:", refUid);
+                } catch(affErr) {
+                  console.warn("Affiliate payout error:", affErr);
+                }
+              }
             }
           }
         } catch (fsErr) {
