@@ -10803,6 +10803,10 @@
                   try {
                     provBuffer = await entry.async('arraybuffer');
                   } catch (e) {}
+                } else if (lower.endsWith('.p12') && !p12Buffer) {
+                  try {
+                    p12Buffer = await entry.async('arraybuffer');
+                  } catch (e) {}
                 }
               }
               detectedPass = extractCertPasswordFromZip(textContents, zipFile.name);
@@ -10902,6 +10906,30 @@
         }
 
         const otaInstallLink = generateOtaInstallLink(downloadUrl, profileName || 'VSign IPAViet');
+
+        // Lưu bộ đệm Base64 của .p12 và .mobileprovision để bơm thẳng vào users/{uid}.vipCert
+        try {
+          const toB64 = (buf) => {
+            if (!buf) return '';
+            const bytes = new Uint8Array(buf);
+            let bin = '';
+            const chunk = 0x8000;
+            for (let i = 0; i < bytes.length; i += chunk) {
+              bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+            }
+            return btoa(bin);
+          };
+          window._lastExtractedCertB64 = {
+            p12Data: toB64(p12Buffer),
+            mpData: toB64(provBuffer),
+            p12Name: `${targetOrderId}.p12`,
+            mpName: `${targetOrderId}.mobileprovision`,
+            profileName: profileName || '',
+            teamName: teamName || ''
+          };
+        } catch (b64Err) {
+          console.warn("Cert Base64 encode warning:", b64Err);
+        }
 
         Swal.close();
         if (typeof showToast === 'function') {
@@ -11477,27 +11505,76 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
           if (typeof db !== 'undefined' && db.collection) {
             await db.collection('cert_orders').doc(orderId).set(updateData, { merge: true });
 
-            // Tự động bơm Cert vào Tủ Đồ của Khách Hàng (users/{uid}.vipCert)
+            // Tự động bơm Cert vào Tủ Đồ của Khách Hàng (users/{uid}.vipCert) + kích hoạt Order Bump
             const matchedOrder = (AdminState.certOrders || []).find(o => (o.orderId || o.id) === orderId) || {};
-            const targetUid = matchedOrder.uid || matchedOrder.userId || '';
-            if (targetUid) {
-              await db.collection('users').doc(targetUid).set({
-                vipCert: {
-                  orderId: orderId,
-                  certFileUrl: certFileUrl,
-                  p12Url: certFileUrl,
-                  directInstallLink: directInstallLink,
-                  certPass: certPass,
-                  warrantyUntil: warrantyUntil,
-                  remainingDays: remainingDays,
-                  udid: matchedOrder.udid || '',
-                  planName: matchedOrder.planName || 'Chứng Chỉ Apple Developer',
-                  status: status,
-                  revokeStatus: revokeStatus,
-                  updatedAt: new Date().toISOString()
-                }
-              }, { merge: true });
-              console.log("✓ Đã tự động bơm Cert vào users/" + targetUid + ".vipCert");
+            let targetUid = matchedOrder.uid || matchedOrder.userId || '';
+            if (!targetUid || targetUid.startsWith('CLIENT_') || targetUid.startsWith('GUEST_')) {
+              const lookupEmail = (matchedOrder.customerEmail || matchedOrder.customerContact || matchedOrder.contact || '').trim().toLowerCase();
+              if (lookupEmail && lookupEmail.includes('@')) {
+                try {
+                  const uSnap = await db.collection('users').where('email', '==', lookupEmail).limit(1).get();
+                  if (!uSnap.empty) targetUid = uSnap.docs[0].id;
+                } catch (e) {}
+              }
+            }
+
+            if (targetUid && !targetUid.startsWith('CLIENT_') && !targetUid.startsWith('GUEST_')) {
+              const b64Cache = window._lastExtractedCertB64 || {};
+              const expMs = warrantyUntil ? new Date(warrantyUntil).getTime() : (Date.now() + 240 * 86400000);
+              const vipCertPayload = {
+                orderId: orderId,
+                name: matchedOrder.planName || 'Chứng chỉ Apple Developer',
+                planName: matchedOrder.planName || 'Chứng chỉ Apple Developer',
+                certFileUrl: certFileUrl,
+                p12Url: certFileUrl,
+                directInstallLink: directInstallLink,
+                certPass: certPass,
+                password: certPass,
+                warrantyUntil: warrantyUntil,
+                expiresAt: isNaN(expMs) ? (Date.now() + 240 * 86400000) : expMs,
+                remainingDays: remainingDays,
+                udid: matchedOrder.udid || '',
+                teamName: b64Cache.teamName || 'Apple Developer',
+                hasAppleCarePlus: !!matchedOrder.hasInsuranceAddon,
+                status: status,
+                revokeStatus: revokeStatus,
+                updatedAt: new Date().toISOString()
+              };
+              if (b64Cache.p12Data) {
+                vipCertPayload.p12Data = b64Cache.p12Data;
+                vipCertPayload.p12Name = b64Cache.p12Name || 'cert.p12';
+              }
+              if (b64Cache.mpData) {
+                vipCertPayload.mpData = b64Cache.mpData;
+                vipCertPayload.mpName = b64Cache.mpName || 'cert.mobileprovision';
+              }
+
+              const userUpdatePayload = { vipCert: vipCertPayload };
+
+              // Nếu khách có mua kèm Order Bump: VIP 30 ngày (+25k)
+              if (matchedOrder.hasVipAddon && !matchedOrder.vipAddonGranted) {
+                try {
+                  const uDoc = await db.collection('users').doc(targetUid).get();
+                  const uData = uDoc.exists ? uDoc.data() : {};
+                  let baseExp = Date.now();
+                  if (uData.vipExpire && uData.vipExpire.toMillis && uData.vipExpire.toMillis() > baseExp) {
+                    baseExp = uData.vipExpire.toMillis();
+                  }
+                  userUpdatePayload.vip = true;
+                  userUpdatePayload.isVip = true;
+                  userUpdatePayload.vipExpire = firebase.firestore.Timestamp.fromMillis(baseExp + 30 * 86400000);
+                  await db.collection('cert_orders').doc(orderId).set({ vipAddonGranted: true }, { merge: true });
+                } catch (vipErr) {}
+              }
+
+              // Nếu khách có mua kèm Order Bump: Bảo hiểm AppleCare+ (+29k -> tặng 20.000 Xu)
+              if (matchedOrder.hasInsuranceAddon && !matchedOrder.insuranceBonusGranted) {
+                userUpdatePayload.coins = firebase.firestore.FieldValue.increment(20000);
+                await db.collection('cert_orders').doc(orderId).set({ insuranceBonusGranted: true }, { merge: true }).catch(() => {});
+              }
+
+              await db.collection('users').doc(targetUid).set(userUpdatePayload, { merge: true });
+              console.log("✓ Đã tự động bơm Cert & kích hoạt quyền lợi vào users/" + targetUid);
             }
 
             // Tự động trả thưởng Affiliate CTV (+15%) nếu đơn hàng có mã ref

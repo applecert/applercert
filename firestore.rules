@@ -15,7 +15,7 @@ service cloud.firestore {
     // Các trường nhạy cảm mà người dùng KHÔNG ĐƯỢC tự thêm hoặc sửa từ phía Client
     function touchesProtectedUserFields() {
       return request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['vip', 'isVip', 'vipExpire', 'vipExpiresAt', 'isAdmin', 'role', 'totalDeposited']);
+        .hasAny(['vip', 'isVip', 'vipExpire', 'vipExpiresAt', 'isAdmin', 'role', 'totalDeposited', 'affiliateBalance', 'affiliateEarnings', 'affiliateOrders']);
     }
 
     // 1. Users Collection & Subcollections
@@ -28,14 +28,16 @@ service cloud.firestore {
         request.auth != null && request.auth.uid == userId
         && (!request.resource.data.keys().hasAny(['vip']) || request.resource.data.vip == false)
         && (!request.resource.data.keys().hasAny(['isVip']) || request.resource.data.isVip == false)
-        && !request.resource.data.keys().hasAny(['vipExpire', 'vipExpiresAt', 'isAdmin', 'role', 'totalDeposited'])
+        && !request.resource.data.keys().hasAny(['vipExpire', 'vipExpiresAt', 'isAdmin', 'role', 'totalDeposited', 'affiliateBalance', 'affiliateEarnings', 'affiliateOrders'])
         && (!request.resource.data.keys().hasAny(['coins']) || request.resource.data.coins == 0)
+        && (!request.resource.data.keys().hasAny(['bonusCoins']) || request.resource.data.bonusCoins == 0)
+        && (!request.resource.data.keys().hasAny(['bonusXu']) || request.resource.data.bonusXu == 0)
       );
 
       // Cập nhật hồ sơ:
       // - Super Admin có toàn quyền
       // - Chủ tài khoản được cập nhật vipCert, pendingMission, dailyMissions, lịch sử tải
-      // - Nếu thay đổi coins: chỉ cho phép trừ xu (>= 0) hoặc cộng tối đa +1.000 Xu/lượt nhiệm vụ (tối đa 2 lượt/ngày)
+      // - Nếu thay đổi coins / bonusCoins: chỉ cho phép trừ xu (>= 0) hoặc cộng tối đa +1.000 Xu/lượt nhiệm vụ (tối đa 2 lượt/ngày)
       allow update: if isSuperAdmin() || (
         request.auth != null && request.auth.uid == userId
         && !touchesProtectedUserFields()
@@ -53,12 +55,32 @@ service cloud.firestore {
             )
           )
         )
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['bonusCoins'])
+          || (
+            request.resource.data.bonusCoins >= 0
+            && (
+              !resource.data.keys().hasAny(['bonusCoins'])
+              || request.resource.data.bonusCoins < resource.data.bonusCoins
+              || (
+                request.resource.data.bonusCoins <= (resource.data.bonusCoins + 1000)
+                && request.resource.data.keys().hasAny(['dailyMissions'])
+                && request.resource.data.dailyMissions.count <= 2
+              )
+            )
+          )
+        )
       );
 
       allow delete: if isSuperAdmin();
 
       // Lịch sử tải ứng dụng của người dùng
       match /downloads/{downloadId} {
+        allow read, write: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
+      }
+
+      // Lịch sử ký ứng dụng trong Tủ Đồ VIP
+      match /signed_history/{historyId} {
         allow read, write: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
       }
     }
@@ -69,9 +91,9 @@ service cloud.firestore {
       allow get: if true;
       allow list: if isSuperAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
 
-      // Khách hàng tạo đơn mới: Trạng thái bắt buộc phải là PENDING hoặc PENDING_PAYMENT
+      // Khách hàng tạo đơn mới: Trạng thái bắt buộc phải là PENDING, PENDING_PAYMENT hoặc PAID_PROCESSING
       allow create: if isSuperAdmin() || (
-        request.resource.data.status in ['PENDING', 'PENDING_PAYMENT']
+        request.resource.data.status in ['PENDING', 'PENDING_PAYMENT', 'PAID_PROCESSING']
       );
 
       // CẬP NHẬT ĐƠN HÀNG: Chỉ Admin mới có quyền duyệt tiền hoặc trả file Cert
@@ -148,6 +170,18 @@ service cloud.firestore {
     match /system_configs/{configId} {
       allow read: if true;
       allow write: if isSuperAdmin();
+    }
+
+    // 8. Lệnh Rút Hoa Hồng CTV (withdrawal_requests) & Lịch Sử Giao Dịch (transactions)
+    match /withdrawal_requests/{reqId} {
+      allow read: if isSuperAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'PENDING' && request.resource.data.amount >= 50000;
+      allow update, delete: if isSuperAdmin();
+    }
+    match /transactions/{txId} {
+      allow read: if isSuperAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isSuperAdmin();
     }
 
     // Mặc định: Chặn tất cả các đường dẫn khác

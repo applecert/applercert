@@ -1046,16 +1046,16 @@
           const userSnap = await userDocRef.get();
           if (!userSnap.exists) throw new Error("Tài khoản người dùng không tồn tại!");
           const userData = userSnap.data();
-          const curCoins = userData.coins || 0;
+          const curBonus = (userData.bonusCoins || 0) + (userData.bonusXu || 0);
           const uDaily = userData.dailyMissions || {};
           let countToday = (uDaily.date === today) ? (uDaily.count || 0) : 0;
           if (countToday >= 2) throw new Error("Tài khoản của bạn đã nhận đủ 2/2 lượt hôm nay!");
 
-          newBalance = curCoins + reward;
+          newBalance = curBonus + reward;
           completedToday = countToday + 1;
 
           await userDocRef.update({
-            coins: newBalance,
+            bonusCoins: newBalance,
             dailyMissions: {
               date: today,
               count: countToday + 1,

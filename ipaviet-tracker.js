@@ -22,19 +22,14 @@
       const cleanRef = refCode.trim();
       localStorage.setItem('ipaviet_ref', cleanRef);
 
-      // Nếu là lần đầu tiên IP / thiết bị này click ref này, tăng lượt click cho referrer
+      // Nếu là lần đầu tiên IP / thiết bị này click ref này, tăng lượt click cho referrer qua Server API
       const clickedKey = 'ipaviet_ref_clicked_' + cleanRef;
       if (!localStorage.getItem(clickedKey)) {
         localStorage.setItem(clickedKey, '1');
         setTimeout(() => {
-          if (typeof firebase !== 'undefined' && firebase.firestore) {
-            try {
-              firebase.firestore().collection('users').doc(cleanRef).update({
-                affiliateClicks: firebase.firestore.FieldValue.increment(1)
-              }).catch(() => {});
-            } catch (e) {}
-          }
-        }, 1200);
+          const gasMainUrl = 'https://script.google.com/macros/s/AKfycbyXnH5KjwQVafxGW_W2KlpDY9KHBx_0TAmaNZBqUaPz9WR8T1PDKwB9un37fNA_YO7pmg/exec';
+          fetch(`${gasMainUrl}?action=track_affiliate_click&refUid=${encodeURIComponent(cleanRef)}&t=${Date.now()}`, { keepalive: true }).catch(() => {});
+        }, 800);
       }
     }
   } catch (e) {}

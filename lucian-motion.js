@@ -386,12 +386,14 @@
         stack.id = 'lucianToastStack';
         stack.style.cssText = `
           position: fixed;
-          bottom: 24px;
-          right: 24px;
-          z-index: 99999;
+          bottom: 84px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 100000;
           display: flex;
           flex-direction: column-reverse;
-          gap: 10px;
+          align-items: center;
+          gap: 8px;
           pointer-events: none;
         `;
         document.body.appendChild(stack);
@@ -401,23 +403,20 @@
       toast.className = 'anim-toast-slide';
       toast.style.cssText = `
         pointer-events: auto;
-        padding: 12px 18px;
-        border-radius: 16px;
-        background: rgba(15, 23, 42, 0.9);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #fff;
-        box-shadow: 0 16px 32px rgba(0,0,0,0.4);
-        display: flex;
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: var(--surface, #ffffff);
+        border: 1px solid var(--flame, #e10e0e);
+        color: var(--label, #0f1318);
+        box-shadow: var(--window-shadow, 0 20px 44px rgba(15,19,24,0.13));
+        display: inline-flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         font-size: 13.5px;
-        font-weight: 500;
+        font-weight: 600;
+        white-space: nowrap;
       `;
-      
-      const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : '⚡');
-      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+      toast.textContent = message;
       stack.appendChild(toast);
 
       requestAnimationFrame(() => {
@@ -426,7 +425,7 @@
 
       setTimeout(() => {
         toast.classList.remove('is-shown');
-        setTimeout(() => toast.remove(), 400);
+        setTimeout(() => toast.remove(), 300);
       }, duration);
     },
 
@@ -434,61 +433,38 @@
     toggleCheckmark(svgEl) {
       if (!svgEl) return;
       svgEl.classList.toggle('is-checked');
-      if (svgEl.classList.contains('is-checked') && navigator.vibrate) {
-        navigator.vibrate(20);
-      }
     },
 
-    // ─── Auto Initialization ───
+    // ─── Calm Cert Apple Initialization ───
     init() {
-      // Magnetic elements (elevates real buttons on all pages)
-      this.initMagnetic('.anim-magnetic, .hero-cta, .header-cta, .btn-action-small, [data-magnetic]');
-
-      // Gyro tilt cards (subtle 3D perspective on real cards)
-      this.initGyroTilt('.anim-gyro-card, .eco-panel, .card-panel, .num-item, [data-tilt]', 6);
-
-      // Spotlight beams (soft radial light follows mouse)
-      this.initSpotlight('.anim-spotlight, .eco-panel, .card-panel, .num-item, [data-spotlight]');
-
       // Hold to confirm buttons
       this.initHoldToConfirm('.anim-hold-btn, [data-hold]');
 
-      // Auto ripple clicks on real interactive buttons
+      // Auto copy & accordion handlers (No artificial ripples, tilts or magnetic pulls)
       document.addEventListener('click', (e) => {
-        const rippleTarget = e.target.closest('.anim-ripple, [data-ripple], .hero-cta, .header-cta, .copy-chip, .btn-action-small, .pill, button:not([data-no-ripple])');
-        if (rippleTarget) {
-          LucianMotion.ripple(e, rippleTarget);
-        }
-
-        // Auto copy for chips & data-copy
         const copyEl = e.target.closest('[data-copy], .copy-chip');
         if (copyEl) {
           const textToCopy = copyEl.getAttribute('data-copy') || copyEl.dataset.clipboard || copyEl.innerText.trim();
           if (textToCopy && navigator.clipboard) {
             navigator.clipboard.writeText(textToCopy).then(() => {
               copyEl.classList.add('is-copied');
-              LucianMotion.showToast('Đã sao chép: ' + (textToCopy.length > 25 ? textToCopy.slice(0, 25) + '…' : textToCopy), 'success');
-              if (navigator.vibrate) navigator.vibrate(25);
+              LucianMotion.showToast('Đã sao chép vào bộ nhớ tạm', 'success');
               setTimeout(() => copyEl.classList.remove('is-copied'), 2000);
             }).catch(() => {});
           }
         }
 
-        // Bookmark toggle
         const bookmarkBtn = e.target.closest('.anim-ribbon-btn');
         if (bookmarkBtn) {
           bookmarkBtn.classList.toggle('is-active');
-          if (navigator.vibrate) navigator.vibrate(15);
         }
 
-        // 3D Flip card toggle
         const flipTrigger = e.target.closest('.anim-flip-wrap, [data-flip]');
         if (flipTrigger) {
           const card = flipTrigger.querySelector('.anim-flip-card') || flipTrigger;
           card.classList.toggle('is-flipped');
         }
 
-        // Accordion toggle
         const accordionBtn = e.target.closest('[data-accordion-toggle]');
         if (accordionBtn) {
           const targetId = accordionBtn.getAttribute('data-accordion-toggle');
@@ -497,31 +473,26 @@
         }
       });
 
-      // Scramble text on hover
-      document.querySelectorAll('[data-scramble]').forEach(el => {
-        el.addEventListener('mouseenter', () => {
-          LucianMotion.scramble(el);
-        });
-      });
-
-      // Odometers on viewport entry
+      // Calm single-run .ios-reveal scroll observer (Cert Apple standard)
       if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver((entries) => {
+        const revealObserver = new IntersectionObserver((entries) => {
           entries.forEach(entry => {
-            if (entry.isIntersecting && !entry.target._hasOdometerRun) {
-              entry.target._hasOdometerRun = true;
-              const val = entry.target.dataset.target || entry.target.textContent.replace(/[^0-9]/g, '');
-              const prefix = entry.target.dataset.prefix || '';
-              const suffix = entry.target.dataset.suffix || '';
-              LucianMotion.odometer(entry.target, val, 1400, prefix, suffix);
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-shown');
+              revealObserver.unobserve(entry.target);
             }
           });
-        }, { threshold: 0.3 });
+        }, { rootMargin: '0px 0px -6% 0px', threshold: 0.05 });
 
-        document.querySelectorAll('[data-odometer], [data-target], .num-value').forEach(el => observer.observe(el));
+        document.querySelectorAll('.ios-reveal').forEach(el => {
+          const rect = el.getBoundingClientRect();
+          if (rect.top < window.innerHeight - 30) {
+            el.classList.add('is-shown');
+          } else {
+            revealObserver.observe(el);
+          }
+        });
       }
-
-      console.log('✨ [Lucian Motion] 52+ Tactile Motion System Active.');
     }
   };
 

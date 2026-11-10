@@ -1114,50 +1114,18 @@
             if (type === 'vip') {
                 const useBonus = Math.min(currentBonusCoins, priceInXu);
                 const useCash = priceInXu - useBonus;
-                const userRef = db.collection("users").doc(currentUser.uid);
-                const updates = {};
-                
-                if (useCash > 0) updates.coins = firebase.firestore.FieldValue.increment(-useCash);
-                if (useBonus > 0) {
-                    updates.bonusCoins = firebase.firestore.FieldValue.increment(-useBonus);
-                    updates.bonusXu = firebase.firestore.FieldValue.increment(-useBonus);
-                }
+                const refCode = localStorage.getItem('ipaviet_ref') || '';
 
-                let exp = new Date(); 
-                const userData = (await userRef.get()).data() || {};
-                if (userData.vipExpire && userData.vipExpire.toMillis() > Date.now()) exp = new Date(userData.vipExpire.toMillis());
-                exp.setDate(exp.getDate() + extraData);
-                updates.vipExpire = firebase.firestore.Timestamp.fromDate(exp);
-                updates.vip = true;
-
-                await userRef.set(updates, { merge: true });
-                
-                // Trả hoa hồng CTV (+15%) nếu có mã giới thiệu
-                const refCode = localStorage.getItem('ipaviet_ref');
-                if (refCode && refCode !== currentUser.uid && useCash > 0) {
-                    const commission = Math.round(useCash * 0.15);
-                    if (commission > 0) {
-                        try {
-                            await db.collection('users').doc(refCode).update({
-                                affiliateBalance: firebase.firestore.FieldValue.increment(commission),
-                                affiliateEarnings: firebase.firestore.FieldValue.increment(commission),
-                                affiliateOrders: firebase.firestore.FieldValue.increment(1)
-                            });
-                            await db.collection('users').doc(refCode).collection('notifications').add({
-                                title: 'Hoa Hồng Tiếp Thị VIP Mới (+15%)',
-                                message: `Bạn vừa nhận được +${commission.toLocaleString('vi-VN')}đ hoa hồng từ đơn đăng ký VIP (${itemName})!`,
-                                type: 'affiliate_earning',
-                                amount: commission,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                        } catch(affErr) {
-                            console.warn("Affiliate commission update notice:", affErr);
-                        }
-                    }
+                // Gọi API Server-Side (Google Apps Script Admin Token) để kích hoạt VIP & cộng hoa hồng CTV an toàn
+                const vipApiUrl = `${GOOGLE_API_URL}?action=buy_vip_with_wallet&uid=${encodeURIComponent(currentUser.uid)}&days=${encodeURIComponent(extraData)}&price=${encodeURIComponent(priceInXu)}&planId=${encodeURIComponent(itemName)}&refBy=${encodeURIComponent(refCode)}&t=${Date.now()}`;
+                const apiResp = await fetch(vipApiUrl);
+                const apiData = await apiResp.json();
+                if (!apiData || !apiData.success) {
+                    throw new Error((apiData && apiData.error) || 'Không thể kích hoạt VIP lúc này. Vui lòng thử lại.');
                 }
 
                 const msg = `👑 *CÓ KHÁCH MỞ GÓI VIP!*\n👤 UID: \`${currentUser.uid}\`\n📦 Gói mua: *${itemName}*\n💎 Tiền ví: -${useCash.toLocaleString()}đ\n🪙 Xu thưởng: -${useBonus.toLocaleString()} Xu\n⏰ Hạn dùng: +${extraData} ngày`;
-                fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`);
+                fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(msg)}`).catch(() => {});
 
                 renderStoreModal('success', 'Kích Hoạt VIP Thành Công!', `Đã gia hạn gói ${itemName} cho tài khoản của bạn.${useBonus > 0 ? `\n(Đã khấu trừ ${useBonus.toLocaleString()} Xu Thưởng)` : ''}`, closeActionModal);
             
