@@ -442,19 +442,11 @@
         </div>
 
         <!-- QR Display Container -->
-        <div class="qr-frame my-2">
+        <div class="qr-frame my-2 flex justify-center">
           <div
-            class="relative w-64 h-64 sm:w-72 sm:h-72 p-3 rounded-[24px] bg-white dark:bg-[#1C1C1E] border border-black/[0.04] dark:border-white/[0.06] shadow-sm flex items-center justify-center overflow-hidden">
-
-            <!-- Loading Shimmer Placeholder -->
-            <div id="qrLoadingShimmer"
-              class="absolute inset-0 bg-slate-200 dark:bg-slate-800 animate-pulse flex flex-col items-center justify-center gap-2 text-apple-gray text-xs font-semibold z-20">
-              <i data-lucide="loader-2" class="w-7 h-7 animate-spin text-apple-blue"></i>
-              <span>Đang tạo VietQR...</span>
-            </div>
-
-            <img id="qrImage" src="" alt="Mã QR Chuyển Khoản BIDV" onload="onQrLoaded()"
-              class="w-full h-full object-contain apple-squircle relative z-10 transition-opacity duration-300 opacity-0">
+            class="relative w-64 h-64 sm:w-72 sm:h-72 p-3 rounded-[24px] bg-white border border-black/[0.06] dark:border-white/[0.1] shadow-sm flex items-center justify-center overflow-hidden">
+            <img id="qrImage" src="" alt="Mã QR Chuyển Khoản BIDV"
+              class="w-full h-full object-contain apple-squircle relative z-10 transition-all">
           </div>
         </div>
 
@@ -818,10 +810,8 @@
       pollingInterval = setInterval(() => checkBankTransfer(), 4000);
     }
 
-    let qrDebounce = null;
     function updateQrDisplay(amount) {
       const qrImg = document.getElementById('qrImage');
-      const shimmer = document.getElementById('qrLoadingShimmer');
       const amountDisp = document.getElementById('qrAmountDisplay');
 
       // Cập nhật số tiền hiển thị tức thì (0ms) cho người dùng
@@ -831,48 +821,26 @@
         if (amountDisp) amountDisp.innerText = 'Tự nhập khi quét';
       }
 
-      // Debounce tải ảnh QR 100ms chống chớp nháy khi bấm nhanh nhiều nút
-      clearTimeout(qrDebounce);
-      qrDebounce = setTimeout(() => {
-        if (shimmer) shimmer.classList.remove('hidden');
-        if (qrImg) qrImg.classList.add('opacity-0');
+      if (!qrImg || !depositOrderId) return;
 
-        let qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.png?addInfo=${depositOrderId}&accountName=${encodeURIComponent(ACC_NAME)}`;
-        if (amount > 0) {
-          qrUrl += `&amount=${amount}`;
+      // Ưu tiên load file SVG trực tiếp để không bị chuyển tiếp redirect 301
+      let qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.svg?addInfo=${depositOrderId}&accountName=${encodeURIComponent(ACC_NAME)}`;
+      if (amount > 0) {
+        qrUrl += `&amount=${amount}`;
+      }
+
+      qrImg.onerror = () => {
+        if (!qrImg.dataset.retried) {
+          qrImg.dataset.retried = '1';
+          // Fallback sang .png nếu SVG gặp sự cố
+          qrImg.src = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.png?addInfo=${depositOrderId}&accountName=${encodeURIComponent(ACC_NAME)}` + (amount > 0 ? `&amount=${amount}` : '');
         }
-        if (qrImg) {
-          qrImg.onload = onQrLoaded;
-          qrImg.onerror = () => {
-            if (!qrImg.dataset.retried) {
-              qrImg.dataset.retried = '1';
-              qrImg.src = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.svg?addInfo=${depositOrderId}&accountName=${encodeURIComponent(ACC_NAME)}` + (amount > 0 ? `&amount=${amount}` : '');
-            } else {
-              onQrLoaded();
-            }
-          };
-          qrImg.src = qrUrl;
-          if (qrImg.complete) {
-            onQrLoaded();
-          }
-          // Timeout dự phòng chắc chắn ẩn shimmer sau 700ms
-          setTimeout(onQrLoaded, 700);
-        }
-      }, 100);
+      };
+
+      qrImg.src = qrUrl;
     }
 
-    function onQrLoaded() {
-      const qrImg = document.getElementById('qrImage');
-      const shimmer = document.getElementById('qrLoadingShimmer');
-      if (shimmer) {
-        shimmer.classList.add('hidden');
-        shimmer.style.display = 'none';
-      }
-      if (qrImg) {
-        qrImg.classList.remove('opacity-0');
-        qrImg.style.opacity = '1';
-      }
-    }
+    function onQrLoaded() {}
 
     /* ══════════════════════════════════════════════════════
        PRESET CHIPS & CUSTOM AMOUNT (CLIENT-SIDE ONLY)
