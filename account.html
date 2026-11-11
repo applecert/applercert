@@ -1044,12 +1044,15 @@
     }
     const auth = firebase.auth();
     const db = firebase.firestore();
-    db.settings({ experimentalForceLongPolling: true, merge: true });
+    try {
+      db.settings({ experimentalForceLongPolling: true });
+    } catch (e) { }
 
     let authMode = 'login';
-    const TURNSTILE_SITE_KEY = "0x4AAAAAADuG_qcsGlFOiiqT";
+    const TURNSTILE_SITE_KEY = '0x4AAAAAADuG_qcsGlFOiiqT';
     let turnstileWidgetId = null;
-    const ADMIN_EMAILS = ["mquitran@gmail.com", "tchy432@gmail.com", "applecert.vn@gmail.com"];
+    const ADMIN_EMAILS = ['mquitran@gmail.com', 'tchy432@gmail.com', 'applecert.vn@gmail.com'];
+    let isProfileActive = false;
 
     function escapeHtml(str) {
       return String(str == null ? '' : str)
@@ -1089,71 +1092,147 @@
       switchAccountTab('cert');
     }
 
-    /* ─── Layer 1: Instant 0ms Profile Render from Shared Local Cache ─── */
-    function hydrateProfileFromCacheImmediately() {
+    /* ─── Read native IndexedDB of Firebase Auth (<30ms) ─── */
+    function readNativeFirebaseIndexedDB(callback) {
+      if (!window.indexedDB) return callback(null);
       try {
-        const raw = localStorage.getItem('ipaviet_auth_user');
-        if (!raw) return false;
-        const cached = JSON.parse(raw);
-        if (!cached || !cached.uid) return false;
+        const req = indexedDB.open('firebaseLocalStorageDb');
+        req.onerror = () => callback(null);
+        req.onsuccess = (e) => {
+          try {
+            const idb = e.target.result;
+            if (!idb.objectStoreNames.contains('firebaseLocalStorage')) {
+              idb.close();
+              return callback(null);
+            }
+            const tx = idb.transaction(['firebaseLocalStorage'], 'readonly');
+            const store = tx.objectStore('firebaseLocalStorage');
+            const getAllReq = store.getAll();
+            getAllReq.onsuccess = () => {
+              const rows = getAllReq.result || [];
+              for (const row of rows) {
+                const u = row && row.value ? row.value : row;
+                if (u && (u.uid || u.email)) {
+                  idb.close();
+                  return callback(u);
+                }
+              }
+              idb.close();
+              callback(null);
+            };
+            getAllReq.onerror = () => {
+              idb.close();
+              callback(null);
+            };
+          } catch (err) {
+            callback(null);
+          }
+        };
+      } catch (err) {
+        callback(null);
+      }
+    }
 
-        const loading = document.getElementById('loadingScreen');
-        const pView = document.getElementById('profileView');
-        const aView = document.getElementById('authView');
-        const adminBtn = document.getElementById('adminPortalBtn');
+    /* ─── Instant Profile State Hydration (0ms) ─── */
+    function applyUserToProfile(userObj) {
+      if (!userObj || (!userObj.uid && !userObj.email)) return false;
+      isProfileActive = true;
 
-        if (aView) aView.classList.add('hidden');
-        if (loading) {
-          loading.classList.add('opacity-0', 'hidden');
-        }
-        if (pView) pView.classList.remove('hidden');
+      const loading = document.getElementById('loadingScreen');
+      const pView = document.getElementById('profileView');
+      const aView = document.getElementById('authView');
+      const adminBtn = document.getElementById('adminPortalBtn');
 
-        const displayName = cached.displayName || (cached.email ? cached.email.split('@')[0] : 'Hội Viên');
-        document.getElementById('userNameShow').innerText = displayName;
-        document.getElementById('userEmailShow').innerText = cached.email || '';
-        document.getElementById('avatarLetter').innerText = displayName.charAt(0).toUpperCase();
-        document.getElementById('userUidShow').innerText = cached.uid;
+      if (aView) aView.classList.add('hidden');
+      if (loading) {
+        loading.classList.add('opacity-0', 'hidden');
+      }
+      if (pView) pView.classList.remove('hidden');
 
-        const coins = Number(cached.coins ?? localStorage.getItem('cached_coins') ?? 0);
-        document.getElementById('userCoinsShow').innerText = coins.toLocaleString('vi-VN');
+      const displayName = userObj.displayName || userObj.username || (userObj.email ? userObj.email.split('@')[0] : 'Hội Viên');
+      const email = userObj.email || '';
+      const uid = userObj.uid || '';
 
-        const bonus = Number(cached.bonusCoins || 0);
-        const bonusEl = document.getElementById('userBonusCoinsShow');
-        if (bonusEl) bonusEl.innerText = bonus.toLocaleString('vi-VN') + ' Xu';
+      const nameEl = document.getElementById('userNameShow');
+      if (nameEl) nameEl.innerText = displayName;
+      const emailEl = document.getElementById('userEmailShow');
+      if (emailEl) emailEl.innerText = email;
+      const letterEl = document.getElementById('avatarLetter');
+      if (letterEl) letterEl.innerText = displayName.charAt(0).toUpperCase();
+      const uidEl = document.getElementById('userUidShow');
+      if (uidEl && uid) uidEl.innerText = uid;
 
-        if (cached.email && ADMIN_EMAILS.includes(cached.email.toLowerCase())) {
-          adminBtn.classList.remove('hidden');
-        }
+      const coins = Number(userObj.coins ?? localStorage.getItem('cached_coins') ?? 0);
+      const coinsEl = document.getElementById('userCoinsShow');
+      if (coinsEl) coinsEl.innerText = coins.toLocaleString('vi-VN');
 
-        const cardName = document.getElementById('u052CardName');
-        if (cardName) cardName.innerText = displayName.toUpperCase();
-        const cardNum = document.getElementById('u052CardNum');
-        if (cardNum) cardNum.innerText = 'IPAV •••• •••• ' + cached.uid.slice(-4).toUpperCase();
-        const cardTier = document.getElementById('u052CardTier');
-        if (cardTier) cardTier.innerText = cached.isVip ? 'PRO VIP' : 'MEMBER';
+      const bonus = Number(userObj.bonusCoins || userObj.bonusXu || 0);
+      const bonusEl = document.getElementById('userBonusCoinsShow');
+      if (bonusEl) bonusEl.innerText = bonus.toLocaleString('vi-VN') + ' Xu';
 
-        initU052MembershipCard();
+      if (email && ADMIN_EMAILS.includes(email.toLowerCase())) {
+        if (adminBtn) adminBtn.classList.remove('hidden');
+      } else {
+        if (adminBtn) adminBtn.classList.add('hidden');
+      }
 
-        // Pre-render Cert Vault from local cache if available
-        let cachedCert = null;
+      const cardName = document.getElementById('u052CardName');
+      if (cardName) cardName.innerText = displayName.toUpperCase();
+      const cardNum = document.getElementById('u052CardNum');
+      if (cardNum && uid) cardNum.innerText = 'IPAV •••• •••• ' + uid.slice(-4).toUpperCase();
+      const cardTier = document.getElementById('u052CardTier');
+      if (cardTier) cardTier.innerText = userObj.isVip ? 'PRO VIP' : 'MEMBER';
+
+      initU052MembershipCard();
+
+      // Pre-render Cert Vault from local cache if available
+      let cachedCert = userObj.vipCert || null;
+      if (!cachedCert) {
         try {
           const rawCert = localStorage.getItem('ipaviet_vip_cert_v1');
           if (rawCert) cachedCert = JSON.parse(rawCert);
         } catch(e) {}
-        renderUserCertVault(cachedCert, cached.uid);
-        renderUserVipRepo(Boolean(cached.isVip), cached.uid);
-        renderUserAffiliate({}, cached.uid);
-        renderUserDownloadsList(null);
-
-        if (window.lucide) lucide.createIcons();
-        return true;
-      } catch (e) {
-        return false;
       }
+      renderUserCertVault(cachedCert, uid);
+      renderUserVipRepo(Boolean(userObj.isVip), uid);
+      renderUserAffiliate(userObj, uid);
+      renderUserDownloadsList(null);
+
+      if (window.lucide) lucide.createIcons();
+      return true;
     }
 
-    // Run 0ms hydration immediately
-    const _wasPreHydrated = hydrateProfileFromCacheImmediately();
+    function showGuestAuthView() {
+      if (isProfileActive) return;
+      const loading = document.getElementById('loadingScreen');
+      const pView = document.getElementById('profileView');
+      const aView = document.getElementById('authView');
+      const adminBtn = document.getElementById('adminPortalBtn');
+
+      if (adminBtn) adminBtn.classList.add('hidden');
+      if (pView) pView.classList.add('hidden');
+      if (loading) loading.classList.add('opacity-0', 'hidden');
+      if (aView) aView.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Lớp 1 (0ms): Đọc ngay từ localStorage
+    try {
+      const raw = localStorage.getItem('ipaviet_auth_user');
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (cached && (cached.uid || cached.email)) {
+          applyUserToProfile(cached);
+        }
+      }
+    } catch(e) {}
+
+    // Lớp 2 (<25ms): Đọc native IndexedDB
+    readNativeFirebaseIndexedDB((idbUser) => {
+      if (idbUser && !isProfileActive) {
+        applyUserToProfile(idbUser);
+      }
+    });
 
     // Check URL query parameter for initial tab (e.g. account.html?tab=inventory)
     (function checkInitialTabParam() {
@@ -1167,37 +1246,25 @@
     // Handle Google Redirect result
     auth.getRedirectResult().then((result) => {
       if (result && result.user) {
-        console.log("Redirect login success:", result.user.uid);
+        console.log('Redirect login success:', result.user.uid);
       }
     }).catch(err => {
-      console.error("Redirect error:", err);
-      showError("Lỗi liên kết Google: " + err.message);
+      console.error('Redirect error:', err);
+      showError('Lỗi liên kết Google: ' + err.message);
     });
 
+    // Lớp 3: Firebase Auth listener & Firestore live sync
     auth.onAuthStateChanged(async (user) => {
-      const loading = document.getElementById('loadingScreen');
-      const pView = document.getElementById('profileView');
-      const aView = document.getElementById('authView');
-      const adminBtn = document.getElementById('adminPortalBtn');
-
       if (user) {
-        aView.classList.add('hidden');
-        pView.classList.remove('hidden');
-        loading.classList.add('opacity-0', 'hidden');
-
-        if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
-          adminBtn.classList.remove('hidden');
-        } else {
-          adminBtn.classList.add('hidden');
-        }
+        applyUserToProfile(user);
 
         try {
-          const userRef = db.collection("users").doc(user.uid);
+          const userRef = db.collection('users').doc(user.uid);
           const docSnap = await userRef.get();
           if (!docSnap.exists) {
             await userRef.set({
               email: user.email,
-              username: user.displayName || "Hội Viên Mới",
+              username: user.displayName || 'Hội Viên Mới',
               coins: 0,
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -1206,33 +1273,35 @@
           userRef.onSnapshot(doc => {
             if (doc.exists) {
               const data = doc.data();
-              const displayName = data.username || user.displayName || "Hội Viên";
-              document.getElementById('userNameShow').innerText = displayName;
-              document.getElementById('userEmailShow').innerText = data.email || user.email;
-              document.getElementById('avatarLetter').innerText = displayName.charAt(0).toUpperCase();
-              document.getElementById('userUidShow').innerText = user.uid;
-
+              const displayName = data.username || user.displayName || 'Hội Viên';
               const targetCoins = data.coins || 0;
-              animateOdometer(document.getElementById('userCoinsShow'), targetCoins);
-
               const targetBonus = data.bonusCoins || data.bonusXu || 0;
-              const bonusEl = document.getElementById('userBonusCoinsShow');
-              if (bonusEl) bonusEl.innerText = targetBonus.toLocaleString('vi-VN') + ' Xu';
-
               const isVipActive = Boolean(data.vipExpire && data.vipExpire.toMillis() > Date.now());
 
-              // Sync to shared localStorage cache for 0ms cross-page navigation
+              const merged = {
+                uid: user.uid,
+                email: data.email || user.email || '',
+                displayName: displayName,
+                coins: targetCoins,
+                bonusCoins: targetBonus,
+                photoURL: user.photoURL || '',
+                isVip: isVipActive,
+                vipCert: data.vipCert || null,
+                affiliateEarnings: data.affiliateEarnings || 0,
+                affiliateBalance: data.affiliateBalance || 0,
+                affiliateOrders: data.affiliateOrders || 0,
+                affiliateClicks: data.affiliateClicks || 0,
+                savedAt: Date.now()
+              };
+
+              applyUserToProfile(merged);
+
+              // Update odometer
+              animateOdometer(document.getElementById('userCoinsShow'), targetCoins);
+
+              // Save to localStorage cache
               try {
-                localStorage.setItem('ipaviet_auth_user', JSON.stringify({
-                  uid: user.uid,
-                  email: data.email || user.email || '',
-                  displayName: displayName,
-                  coins: targetCoins,
-                  bonusCoins: targetBonus,
-                  photoURL: user.photoURL || '',
-                  isVip: isVipActive,
-                  savedAt: Date.now()
-                }));
+                localStorage.setItem('ipaviet_auth_user', JSON.stringify(merged));
                 localStorage.setItem('cached_coins', targetCoins);
                 localStorage.setItem('activeDepositUid', user.uid);
                 if (window.IPAVIET_AUTH && typeof window.IPAVIET_AUTH.syncPill === 'function') {
@@ -1241,35 +1310,21 @@
               } catch(e) {}
 
               const vipShow = document.getElementById('userVipShow');
-              if (isVipActive) {
-                const dateStr = new Date(data.vipExpire.toMillis()).toLocaleDateString('vi-VN');
-                vipShow.innerHTML = `<span class="u386-vip-badge bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-black px-3 py-1 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5"><i data-lucide="crown" class="w-3.5 h-3.5"></i> VIP tới ${dateStr}</span>`;
-              } else {
-                vipShow.innerHTML = `<span class="bg-fill border border-hairline text-label-2 text-xs font-bold px-3 py-1 rounded-full">Cơ bản</span>`;
+              if (vipShow) {
+                if (isVipActive) {
+                  const dateStr = new Date(data.vipExpire.toMillis()).toLocaleDateString('vi-VN');
+                  vipShow.innerHTML = `<span class="u386-vip-badge bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-black px-3 py-1 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5"><i data-lucide="crown" class="w-3.5 h-3.5"></i> VIP tới ${dateStr}</span>`;
+                } else {
+                  vipShow.innerHTML = `<span class="bg-fill border border-hairline text-label-2 text-xs font-bold px-3 py-1 rounded-full">Cơ bản</span>`;
+                }
               }
-
-              // Lucian [052] Card details sync
-              const cardName = document.getElementById('u052CardName');
-              if (cardName) cardName.innerText = displayName.toUpperCase();
-              const cardNum = document.getElementById('u052CardNum');
-              if (cardNum) cardNum.innerText = 'IPAV •••• •••• ' + user.uid.slice(-4).toUpperCase();
-              const cardTier = document.getElementById('u052CardTier');
-              if (cardTier) {
-                cardTier.innerText = isVipActive ? 'PRO VIP' : 'MEMBER';
-              }
-              initU052MembershipCard();
-
-              // Render Apple Cert Vault, VIP Repo & Affiliate
-              renderUserCertVault(data.vipCert || null, user.uid);
-              renderUserVipRepo(isVipActive, user.uid);
-              renderUserAffiliate(data, user.uid);
 
               loadUserPrivateData(user.uid);
               if (window.lucide) lucide.createIcons();
             }
           });
         } catch (error) {
-          console.error("Firestore sync error:", error);
+          console.error('Firestore sync error:', error);
         }
       } else {
         try {
@@ -1278,13 +1333,22 @@
           localStorage.removeItem('activeDepositUid');
           localStorage.removeItem('activeDepositOrderId');
         } catch(e) {}
-        adminBtn.classList.add('hidden');
-        pView.classList.add('hidden');
-        loading.classList.add('opacity-0', 'hidden');
-        aView.classList.remove('hidden');
-        if (window.lucide) lucide.createIcons();
+        isProfileActive = false;
+        showGuestAuthView();
       }
     });
+
+    // Failsafe timeout 1s: Chống treo màn hình xoay vô hạn
+    setTimeout(() => {
+      const loading = document.getElementById('loadingScreen');
+      if (loading && !loading.classList.contains('hidden')) {
+        if (!isProfileActive) {
+          showGuestAuthView();
+        } else {
+          loading.classList.add('opacity-0', 'hidden');
+        }
+      }
+    }, 1000);
 
     function renderUserCertVault(cert, uid) {
       const container = document.getElementById('userCertVaultContainer');
