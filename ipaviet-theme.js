@@ -181,10 +181,10 @@
     nav.innerHTML = html;
 
     // Ẩn các thanh bottom bar cũ bị trùng lặp (nếu có)
-    var legacyNavs = document.querySelectorAll('.floating-nav, .mobile-bottom-nav, #mobileBottomNav');
+    var legacyNavs = document.querySelectorAll('.floating-nav, .mobile-bottom-nav, #mobileBottomNav, .bottom-tabs, nav.fixed.bottom-0, nav.thanh-duoi-cu');
     for (var j = 0; j < legacyNavs.length; j++) {
       if (legacyNavs[j] !== nav) {
-        legacyNavs[j].style.display = 'none';
+        legacyNavs[j].style.setProperty('display', 'none', 'important');
       }
     }
 
