@@ -298,7 +298,7 @@
         <!-- User Account Badge -->
         <div class="flex items-center gap-2 text-xs text-white/90 self-start sm:self-auto flex-wrap bg-white/10 px-3.5 py-1.5 rounded-full border border-white/15">
           <span class="w-2 h-2 rounded-full bg-apple-gray" id="userOnlineDot"></span>
-          <span class="font-bold text-white tracking-wide truncate max-w-[200px] sm:max-w-[280px]" id="userDisplayName">Đang kiểm tra tài khoản...</span>
+          <span class="font-bold text-white tracking-wide truncate max-w-[200px] sm:max-w-[280px]" id="userDisplayName">Thành viên Ví IPAVIET</span>
           <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white font-mono uppercase font-bold">Ví IPAVIET</span>
         </div>
       </div>
@@ -602,14 +602,11 @@
       db.settings({ experimentalForceLongPolling: true });
     } catch (e) { }
 
-    try {
-      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => { });
-    } catch (e) { }
-
     let currentUser = null;
     let depositOrderId = null;
     let pollingInterval = null;
     let currentSelectedAmount = 0;
+    let userStateResolved = false;
 
     const BANK_ID = "BIDV";
     const ACC_NO = "8900733531";
@@ -625,95 +622,182 @@
     }
 
     /* ══════════════════════════════════════════════════════
-       AUTH & INITIALIZE
+       TRIPLE-LAYER BULLETPROOF AUTH BRIDGE
+       Lớp 1: Đọc localStorage tức thì 0ms
+       Lớp 2: Đọc trực tiếp IndexedDB Firebase Auth (<30ms)
+       Lớp 3: Firebase Auth SDK onAuthStateChanged & Firestore sync
        ══════════════════════════════════════════════════════ */
-    // Nhận diện ngay tài khoản từ cache localStorage để hiển thị tức thì 0ms
-    function applyCachedUserImmediate() {
-      try {
-        let cached = null;
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && k.startsWith('firebase:authUser:')) {
-            const parsed = JSON.parse(localStorage.getItem(k));
-            if (parsed && (parsed.email || parsed.uid)) {
-              cached = parsed;
-              break;
-            }
-          }
-        }
-        if (cached) {
-          currentUser = cached;
-          const shortName = cached.displayName || (cached.email ? cached.email.split('@')[0] : 'Thành viên');
-          const navName = document.getElementById('navUserName');
-          if (navName) navName.innerText = shortName;
-          const userDisp = document.getElementById('userDisplayName');
-          if (userDisp) userDisp.innerText = cached.email || shortName;
-          const dot = document.getElementById('userOnlineDot');
-          if (dot) dot.className = 'w-2 h-2 rounded-full bg-apple-green animate-pulse';
-          const savedCoins = localStorage.getItem('cached_coins');
-          if (savedCoins) {
-            const h = document.getElementById('headerCoins');
-            if (h) h.innerText = parseInt(savedCoins).toLocaleString('vi-VN') + 'đ';
-          }
-        }
-      } catch (e) { }
-    }
-    applyCachedUserImmediate();
-
-    // Khởi tạo mã nạp ngay lập tức (0ms, không chờ auth để không bao giờ bị treo 'ĐANG TẠO MÃ...')
-    initDeposit();
-
-    auth.onAuthStateChanged(user => {
-      currentUser = user;
+    function syncUserState(userObj, isFromAuthSdk = false) {
       const navName = document.getElementById('navUserName');
+      const navAv = document.getElementById('navAvatar');
       const userDisp = document.getElementById('userDisplayName');
       const dot = document.getElementById('userOnlineDot');
+      const h = document.getElementById('headerCoins');
+      const b = document.getElementById('headerBonusCoins');
 
-      if (user) {
-        const shortName = (user.displayName || user.email || 'Tôi').split(' ').slice(-1)[0] || user.email.split('@')[0];
-        const fullDisplay = user.email || user.displayName || 'Thành viên';
-        const av = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(shortName)}&background=0071E3&color=fff&size=64`;
+      if (userObj && (userObj.uid || userObj.email)) {
+        userStateResolved = true;
+        currentUser = userObj;
+
+        // Lưu session vào localStorage để dùng chung giữa các tab
+        try {
+          const currentCoins = (typeof userObj.coins === 'number') ? userObj.coins : (parseInt(localStorage.getItem('cached_coins')) || 0);
+          const currentBonus = (typeof userObj.bonusCoins === 'number') ? userObj.bonusCoins : 0;
+          localStorage.setItem('ipaviet_auth_user', JSON.stringify({
+            uid: userObj.uid,
+            email: userObj.email || '',
+            displayName: userObj.displayName || '',
+            photoURL: userObj.photoURL || '',
+            coins: currentCoins,
+            bonusCoins: currentBonus,
+            savedAt: Date.now()
+          }));
+          localStorage.setItem('activeDepositUid', userObj.uid);
+        } catch (e) { }
+
+        const shortName = (userObj.displayName || userObj.email || 'Tôi').split(' ').slice(-1)[0] || (userObj.email ? userObj.email.split('@')[0] : 'Tôi');
+        const fullDisplay = userObj.displayName ? `${userObj.displayName} (${userObj.email || ''})` : (userObj.email || 'Thành viên');
+        const av = userObj.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(shortName)}&background=0071E3&color=fff&size=64`;
 
         if (navName) navName.innerText = shortName;
+        if (navAv) navAv.innerHTML = `<img src="${av}" class="w-full h-full rounded-full object-cover">`;
         if (userDisp) userDisp.innerText = fullDisplay;
         if (dot) dot.className = 'w-2 h-2 rounded-full bg-apple-green';
 
-        const navAv = document.getElementById('navAvatar');
-        if (navAv) {
-          navAv.innerHTML = `<img src="${av}" class="w-full h-full rounded-full object-cover">`;
+        if (typeof userObj.coins === 'number' && h) {
+          h.innerText = userObj.coins.toLocaleString('vi-VN') + 'đ';
+        }
+        if (typeof userObj.bonusCoins === 'number' && b) {
+          b.innerText = userObj.bonusCoins.toLocaleString('vi-VN') + ' Xu';
         }
 
-        // Live balance subscription with Lucian [018] Rolling Odometer & long polling
-        db.collection("users").doc(user.uid).onSnapshot(doc => {
-          if (doc.exists) {
-            const data = doc.data() || {};
-            const coins = data.coins || 0;
-            const bonusCoins = data.bonusCoins || data.bonusXu || 0;
-            try { localStorage.setItem('cached_coins', coins); } catch (e) {}
-            const h = document.getElementById('headerCoins');
-            if (h) animateOdometer(h, coins, 'đ');
-            const b = document.getElementById('headerBonusCoins');
-            if (b) b.innerText = bonusCoins.toLocaleString('vi-VN') + ' Xu';
-          }
-        }, err => {
-          console.warn("Firestore snapshot listener error:", err);
-        });
+        // Lắng nghe biến động số dư realtime từ Firestore
+        if (userObj.uid && !window._listeningFirestoreUid) {
+          window._listeningFirestoreUid = userObj.uid;
+          try {
+            db.collection("users").doc(userObj.uid).onSnapshot(doc => {
+              if (doc.exists) {
+                const data = doc.data() || {};
+                const coins = data.coins || 0;
+                const bonusCoins = data.bonusCoins || data.bonusXu || 0;
+                try {
+                  localStorage.setItem('cached_coins', coins);
+                  const sess = JSON.parse(localStorage.getItem('ipaviet_auth_user') || '{}');
+                  sess.coins = coins;
+                  sess.bonusCoins = bonusCoins;
+                  localStorage.setItem('ipaviet_auth_user', JSON.stringify(sess));
+                } catch (e) { }
+                if (h) animateOdometer(h, coins, 'đ');
+                if (b) b.innerText = bonusCoins.toLocaleString('vi-VN') + ' Xu';
+              }
+            }, err => {
+              console.warn("Firestore snapshot listener error:", err);
+            });
+          } catch (e) { }
+        }
 
-        // Tái khởi tạo gắn với UID thật của tài khoản
+        // Cập nhật lại mã nạp và lịch sử giao dịch gắn liền với UID người dùng
         initDeposit();
         loadTransactionHistory();
       } else {
         // Chưa đăng nhập (Khách vãng lai)
+        if (userStateResolved) return;
+        currentUser = null;
         if (navName) navName.innerText = 'Đăng nhập';
-        if (userDisp) userDisp.innerText = 'Chưa đăng nhập (Khách vãng lai)';
+        if (navAv) navAv.innerHTML = '<i data-lucide="log-in" class="w-3.5 h-3.5"></i>';
+        if (userDisp) {
+          userDisp.innerHTML = '<a href="account.html" class="hover:underline flex items-center gap-1">Khách vãng lai <span class="text-[10px] text-yellow-300 font-normal">(Bấm đăng nhập)</span></a>';
+        }
         if (dot) dot.className = 'w-2 h-2 rounded-full bg-apple-gray';
-        const h = document.getElementById('headerCoins');
         if (h) h.innerText = '0đ';
-        const b = document.getElementById('headerBonusCoins');
         if (b) b.innerText = '0 Xu';
         loadTransactionHistory();
       }
+
+      if (window.lucide) {
+        try { lucide.createIcons(); } catch (e) { }
+      }
+    }
+
+    // Đọc trực tiếp IndexedDB của Firebase Auth phòng trường hợp Firebase SDK bị chậm
+    function readNativeFirebaseIndexedDB(callback) {
+      if (!window.indexedDB) return callback(null);
+      try {
+        const req = indexedDB.open("firebaseLocalStorageDb");
+        req.onerror = () => callback(null);
+        req.onsuccess = (e) => {
+          try {
+            const idb = e.target.result;
+            if (!idb.objectStoreNames.contains("firebaseLocalStorage")) {
+              idb.close();
+              return callback(null);
+            }
+            const tx = idb.transaction(["firebaseLocalStorage"], "readonly");
+            const store = tx.objectStore("firebaseLocalStorage");
+            const getAllReq = store.getAll();
+            getAllReq.onsuccess = () => {
+              const rows = getAllReq.result || [];
+              for (const row of rows) {
+                const u = row && row.value ? row.value : row;
+                if (u && (u.uid || u.email)) {
+                  idb.close();
+                  return callback(u);
+                }
+              }
+              idb.close();
+              callback(null);
+            };
+            getAllReq.onerror = () => {
+              idb.close();
+              callback(null);
+            };
+          } catch (err) {
+            callback(null);
+          }
+        };
+      } catch (err) {
+        callback(null);
+      }
+    }
+
+    // Bước 1: 0ms - Quét localStorage
+    try {
+      const cached = localStorage.getItem('ipaviet_auth_user');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && (parsed.uid || parsed.email)) {
+          syncUserState(parsed);
+        }
+      }
+    } catch (e) { }
+
+    // Bước 2: 15ms - Đọc Native IndexedDB
+    readNativeFirebaseIndexedDB((idbUser) => {
+      if (idbUser && !userStateResolved) {
+        syncUserState(idbUser);
+      }
     });
+
+    // Khởi tạo mã nạp ngay lập tức (0ms)
+    initDeposit();
+
+    // Bước 3: Firebase Auth SDK listener
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        syncUserState(user, true);
+      } else {
+        if (!userStateResolved) {
+          syncUserState(null);
+        }
+      }
+    });
+
+    // Timeout an toàn sau 1.2s: Chống treo UI hoàn toàn
+    setTimeout(() => {
+      if (!userStateResolved) {
+        syncUserState(auth.currentUser || null);
+      }
+    }, 1200);
 
     /* ══════════════════════════════════════════════════════
        DEPOSIT ORDER GENERATION & VIETQR BUILDER

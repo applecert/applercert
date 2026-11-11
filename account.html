@@ -1224,6 +1224,22 @@
               const targetBonus = data.bonusCoins || data.bonusXu || 0;
               const bonusEl = document.getElementById('userBonusCoinsShow');
               if (bonusEl) bonusEl.innerText = targetBonus.toLocaleString('vi-VN') + ' Xu';
+
+              // Lưu ngay profile và số dư vào localStorage để đồng bộ tức thì 0ms sang naptien.html và các trang khác
+              try {
+                localStorage.setItem('ipaviet_auth_user', JSON.stringify({
+                  uid: user.uid,
+                  email: data.email || user.email || '',
+                  displayName: displayName,
+                  coins: targetCoins,
+                  bonusCoins: targetBonus,
+                  photoURL: user.photoURL || '',
+                  isVip: (data.vipExpire && data.vipExpire.toMillis() > Date.now()),
+                  savedAt: Date.now()
+                }));
+                localStorage.setItem('cached_coins', targetCoins);
+                localStorage.setItem('activeDepositUid', user.uid);
+              } catch(e) {}
               
               const vipShow = document.getElementById('userVipShow');
               const isVipActive = (data.vipExpire && data.vipExpire.toMillis() > Date.now());
@@ -1263,6 +1279,12 @@
           loading.innerHTML = `<p class="text-apple-red font-bold text-sm">Lỗi mạng! Vui lòng làm mới trang.</p>`; 
         }
       } else {
+        try {
+          localStorage.removeItem('ipaviet_auth_user');
+          localStorage.removeItem('cached_coins');
+          localStorage.removeItem('activeDepositUid');
+          localStorage.removeItem('activeDepositOrderId');
+        } catch(e) {}
         adminBtn.classList.add('hidden'); 
         pView.classList.add('hidden'); 
         loading.classList.add('opacity-0'); 
@@ -2145,6 +2167,12 @@
     }
 
     function confirmLogout() {
+      try {
+        localStorage.removeItem('ipaviet_auth_user');
+        localStorage.removeItem('cached_coins');
+        localStorage.removeItem('activeDepositUid');
+        localStorage.removeItem('activeDepositOrderId');
+      } catch(e) {}
       auth.signOut().then(() => { window.location.reload(); });
     }
 
