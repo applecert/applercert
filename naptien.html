@@ -285,7 +285,7 @@
           </div>
           <div>
             <div class="text-[11px] font-semibold text-white/70 uppercase tracking-wider flex items-center gap-1.5">
-              <span>Số dư ví chính</span>
+              <span>Số dư ví của bạn</span>
               <span class="inline-block w-2 h-2 rounded-full bg-apple-green animate-ping"></span>
             </div>
             <div class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-baseline gap-2">
@@ -295,11 +295,11 @@
           </div>
         </div>
 
-        <!-- User / Bank Badge -->
-        <div class="flex items-center gap-2 text-xs text-white/80 self-start sm:self-auto flex-wrap">
-          <span class="font-bold text-white tracking-wide" id="cardHolderName">TRAN NGUYEN MINH QUI</span>
-          <span class="text-[10px] px-2 py-0.5 rounded-md bg-white/15 text-white/90 uppercase font-bold">BIDV BANK</span>
-          <span class="px-2 py-0.5 rounded-full bg-apple-green/20 text-apple-green text-[10px] font-bold">Tự động 24/7</span>
+        <!-- User Account Badge -->
+        <div class="flex items-center gap-2 text-xs text-white/90 self-start sm:self-auto flex-wrap bg-white/10 px-3.5 py-1.5 rounded-full border border-white/15">
+          <span class="w-2 h-2 rounded-full bg-apple-gray" id="userOnlineDot"></span>
+          <span class="font-bold text-white tracking-wide truncate max-w-[200px] sm:max-w-[280px]" id="userDisplayName">Đang kiểm tra tài khoản...</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white font-mono uppercase font-bold">Ví IPAVIET</span>
         </div>
       </div>
     </div>
@@ -593,9 +593,14 @@
       appId: "1:127619650916:web:fc8904c99804eeb7539671"
     };
 
-    firebase.initializeApp(FB_CFG);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(FB_CFG);
+    }
     const auth = firebase.auth();
     const db = firebase.firestore();
+    try {
+      db.settings({ experimentalForceLongPolling: true });
+    } catch (e) { }
 
     try {
       auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => { });
@@ -622,47 +627,90 @@
     /* ══════════════════════════════════════════════════════
        AUTH & INITIALIZE
        ══════════════════════════════════════════════════════ */
+    // Nhận diện ngay tài khoản từ cache localStorage để hiển thị tức thì 0ms
+    function applyCachedUserImmediate() {
+      try {
+        let cached = null;
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('firebase:authUser:')) {
+            const parsed = JSON.parse(localStorage.getItem(k));
+            if (parsed && (parsed.email || parsed.uid)) {
+              cached = parsed;
+              break;
+            }
+          }
+        }
+        if (cached) {
+          currentUser = cached;
+          const shortName = cached.displayName || (cached.email ? cached.email.split('@')[0] : 'Thành viên');
+          const navName = document.getElementById('navUserName');
+          if (navName) navName.innerText = shortName;
+          const userDisp = document.getElementById('userDisplayName');
+          if (userDisp) userDisp.innerText = cached.email || shortName;
+          const dot = document.getElementById('userOnlineDot');
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-apple-green animate-pulse';
+          const savedCoins = localStorage.getItem('cached_coins');
+          if (savedCoins) {
+            const h = document.getElementById('headerCoins');
+            if (h) h.innerText = parseInt(savedCoins).toLocaleString('vi-VN') + 'đ';
+          }
+        }
+      } catch (e) { }
+    }
+    applyCachedUserImmediate();
+
     // Khởi tạo mã nạp ngay lập tức (0ms, không chờ auth để không bao giờ bị treo 'ĐANG TẠO MÃ...')
     initDeposit();
 
     auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
-        const name = (user.displayName || user.email || 'Tôi').split(' ').slice(-1)[0];
-        const av = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0071E3&color=fff&size=64`;
+      currentUser = user;
+      const navName = document.getElementById('navUserName');
+      const userDisp = document.getElementById('userDisplayName');
+      const dot = document.getElementById('userOnlineDot');
 
-        const navName = document.getElementById('navUserName');
-        if (navName) navName.innerText = name;
+      if (user) {
+        const shortName = (user.displayName || user.email || 'Tôi').split(' ').slice(-1)[0] || user.email.split('@')[0];
+        const fullDisplay = user.email || user.displayName || 'Thành viên';
+        const av = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(shortName)}&background=0071E3&color=fff&size=64`;
+
+        if (navName) navName.innerText = shortName;
+        if (userDisp) userDisp.innerText = fullDisplay;
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-apple-green';
+
         const navAv = document.getElementById('navAvatar');
         if (navAv) {
           navAv.innerHTML = `<img src="${av}" class="w-full h-full rounded-full object-cover">`;
         }
 
-        const holder = document.getElementById('cardHolderName');
-        if (holder) {
-          holder.innerText = (user.displayName || user.email || 'TRAN NGUYEN MINH QUI').toUpperCase();
-        }
-
-        // Live balance subscription with Lucian [018] Rolling Odometer
+        // Live balance subscription with Lucian [018] Rolling Odometer & long polling
         db.collection("users").doc(user.uid).onSnapshot(doc => {
           if (doc.exists) {
             const data = doc.data() || {};
             const coins = data.coins || 0;
             const bonusCoins = data.bonusCoins || data.bonusXu || 0;
+            try { localStorage.setItem('cached_coins', coins); } catch (e) {}
             const h = document.getElementById('headerCoins');
             if (h) animateOdometer(h, coins, 'đ');
             const b = document.getElementById('headerBonusCoins');
             if (b) b.innerText = bonusCoins.toLocaleString('vi-VN') + ' Xu';
           }
+        }, err => {
+          console.warn("Firestore snapshot listener error:", err);
         });
 
         // Tái khởi tạo gắn với UID thật của tài khoản
         initDeposit();
         loadTransactionHistory();
       } else {
-        // Khách vãng lai: Vẫn tạo mã VietQR bình thường, nhắc đăng nhập để lưu lịch sử
-        const navName = document.getElementById('navUserName');
-        if (navName) navName.innerText = 'Khách vãng lai';
+        // Chưa đăng nhập (Khách vãng lai)
+        if (navName) navName.innerText = 'Đăng nhập';
+        if (userDisp) userDisp.innerText = 'Chưa đăng nhập (Khách vãng lai)';
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-apple-gray';
+        const h = document.getElementById('headerCoins');
+        if (h) h.innerText = '0đ';
+        const b = document.getElementById('headerBonusCoins');
+        if (b) b.innerText = '0 Xu';
         loadTransactionHistory();
       }
     });
