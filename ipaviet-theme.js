@@ -204,7 +204,137 @@
       inputs[k].addEventListener('focus', function () { nav.classList.add('an-ban-phim'); });
       inputs[k].addEventListener('blur', function () { nav.classList.remove('an-ban-phim'); });
     }
+
+    syncGlobalHeaderAuthPill();
   }
+
+  // Cầu nối nhận diện tài khoản 0ms toàn hệ sinh thái (localStorage + IndexedDB)
+  function getCachedAuthUser() {
+    try {
+      var raw = localStorage.getItem('ipaviet_auth_user');
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && (parsed.uid || parsed.email)) {
+          var cachedCoins = localStorage.getItem('cached_coins');
+          if (cachedCoins !== null && typeof parsed.coins !== 'number') {
+            parsed.coins = parseInt(cachedCoins, 10) || 0;
+          }
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function readNativeFirebaseIndexedDB(callback) {
+    if (!window.indexedDB) return callback(null);
+    try {
+      var req = window.indexedDB.open('firebaseLocalStorageDb');
+      req.onerror = function () { callback(null); };
+      req.onsuccess = function (e) {
+        try {
+          var idb = e.target.result;
+          if (!idb.objectStoreNames.contains('firebaseLocalStorage')) {
+            idb.close();
+            return callback(null);
+          }
+          var tx = idb.transaction(['firebaseLocalStorage'], 'readonly');
+          var store = tx.objectStore('firebaseLocalStorage');
+          var allReq = store.getAll();
+          allReq.onsuccess = function () {
+            var rows = allReq.result || [];
+            for (var i = 0; i < rows.length; i++) {
+              var u = rows[i] && rows[i].value ? rows[i].value : rows[i];
+              if (u && (u.uid || u.email)) {
+                idb.close();
+                return callback(u);
+              }
+            }
+            idb.close();
+            callback(null);
+          };
+          allReq.onerror = function () {
+            idb.close();
+            callback(null);
+          };
+        } catch (err) {
+          callback(null);
+        }
+      };
+    } catch (err) {
+      callback(null);
+    }
+  }
+
+  function renderHeaderPillWithUser(user) {
+    if (!user || (!user.uid && !user.email)) return;
+    var shortName = (user.displayName || user.email || 'Thành viên').split(' ').slice(-1)[0] || (user.email ? user.email.split('@')[0] : 'Tôi');
+    var av = user.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(shortName) + '&background=e10e0e&color=fff&size=64');
+    var coinsVal = typeof user.coins === 'number' ? user.coins : (parseInt(localStorage.getItem('cached_coins'), 10) || 0);
+
+    // 1. Nếu trang có sẵn #navUserName & #navAvatar (như naptien.html)
+    var navName = document.getElementById('navUserName');
+    var navAv = document.getElementById('navAvatar');
+    if (navName && navAv) {
+      navName.textContent = shortName;
+      navAv.innerHTML = '<img src="' + av + '" alt="" class="w-full h-full rounded-full object-cover"/>';
+    }
+
+    // 2. Nâng cấp nút tài khoản trên Header của index.html và các trang dùng Header chuẩn
+    var headerLinks = document.querySelectorAll('header a[href*="account.html"]');
+    for (var i = 0; i < headerLinks.length; i++) {
+      var link = headerLinks[i];
+      if (link.id === 'navUserLink' || link.querySelector('#navUserName')) continue;
+      link.classList.remove('w-8', 'justify-center');
+      link.classList.add('px-2', 'pr-3', 'gap-2');
+      link.style.width = 'auto';
+      var balanceHtml = coinsVal > 0
+        ? '<span class="text-[11px] font-bold text-flame hidden sm:inline">· ' + coinsVal.toLocaleString('vi-VN') + 'đ</span>'
+        : '';
+      link.innerHTML =
+        '<img src="' + av + '" alt="" class="h-5 w-5 rounded-full object-cover shrink-0"/>' +
+        '<span class="text-xs font-bold text-label truncate max-w-[96px]">' + shortName + '</span>' +
+        balanceHtml;
+      link.title = (user.email || shortName) + ' — Số dư: ' + coinsVal.toLocaleString('vi-VN') + 'đ';
+    }
+  }
+
+  function syncGlobalHeaderAuthPill() {
+    var cached = getCachedAuthUser();
+    if (cached) {
+      renderHeaderPillWithUser(cached);
+    }
+    readNativeFirebaseIndexedDB(function (idbUser) {
+      if (idbUser) {
+        var existing = getCachedAuthUser() || {};
+        var merged = {
+          uid: idbUser.uid || existing.uid,
+          email: idbUser.email || existing.email || '',
+          displayName: existing.displayName || idbUser.displayName || '',
+          photoURL: existing.photoURL || idbUser.photoURL || '',
+          coins: typeof existing.coins === 'number' ? existing.coins : (parseInt(localStorage.getItem('cached_coins'), 10) || 0),
+          bonusCoins: typeof existing.bonusCoins === 'number' ? existing.bonusCoins : 0,
+          savedAt: Date.now()
+        };
+        try {
+          localStorage.setItem('ipaviet_auth_user', JSON.stringify(merged));
+        } catch (e) {}
+        renderHeaderPillWithUser(merged);
+      }
+    });
+  }
+
+  window.IPAVIET_AUTH = {
+    getCached: getCachedAuthUser,
+    readIndexedDB: readNativeFirebaseIndexedDB,
+    refreshHeader: syncGlobalHeaderAuthPill
+  };
+
+  window.addEventListener('storage', function (e) {
+    if (e.key === 'ipaviet_auth_user' || e.key === 'cached_coins') {
+      syncGlobalHeaderAuthPill();
+    }
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initUnifiedCertAppleDock);

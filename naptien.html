@@ -1,18 +1,27 @@
 <!DOCTYPE html>
-<html lang="vi" class="antialiased">
+<html lang="vi" data-cc-xem="sang" data-accent="amber">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Nạp Tiền Vào Ví — IPAVIET Wallet & Ecosystem</title>
+  <title>IPAVIET Pay — Cổng Nạp Tiền Tự Động VietQR 24/7</title>
   <meta name="description"
     content="Nạp tiền tự động 24/7 vào ví IPAVIET qua VietQR ngân hàng BIDV, cộng số dư siêu tốc chỉ 3-5 giây.">
+  <meta name="theme-color" content="#f6f7f9">
 
   <!-- Apple Favicon & Web App Meta -->
-  <link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/fluency/96/wallet.png">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e10e0e'><path d='M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 1.01-2.87-.96.04-2.07.64-2.72 1.39-.58.65-1.09 1.72-1.03 2.76 1.07.08 2.12-.53 2.74-1.28z'/></svg>">
+  <link rel="apple-touch-icon" href="certapple/assets/favicon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <!-- Core Apple Cert Stylesheets & Tokens (Unified DNA with index.html) -->
+  <link rel="stylesheet" href="certapple/applecert.css">
+  <link rel="stylesheet" href="lucian-tokens.css">
+  <link rel="stylesheet" href="lucian-motion.css?v=2">
+  <link rel="stylesheet" href="ipaviet-search.css">
+  <script src="ipaviet-theme.js"></script>
 
   <!-- Lucide Icons & SweetAlert2 -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -20,13 +29,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-  <!-- Lucian Tokens & Motion System -->
-  <link rel="stylesheet" href="lucian-tokens.css">
-  <link rel="stylesheet" href="lucian-motion.css?v=2">
-  <link rel="stylesheet" href="ipaviet-search.css">
-  <script src="ipaviet-theme.js"></script>
-
-  <!-- Tailwind CSS CDN with Apple Design System Configuration -->
+  <!-- Tailwind CSS CDN for Grid & Utility Layout -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -34,8 +37,8 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
           },
           colors: {
             apple: {
@@ -46,20 +49,13 @@
               red: '#FF3B30',
               purple: '#AF52DE',
               gray: '#86868B',
-              grayLight: '#E5E5EA',
-              grayDark: '#1C1C1E',
               bgLight: '#f6f7f9',
               bgDark: '#0b0e14',
               cardLight: '#ffffff',
               cardDark: '#14181f',
-              separatorLight: 'rgba(15, 19, 24, 0.11)',
+              separatorLight: 'rgba(15, 19, 24, 0.09)',
               separatorDark: 'rgba(255, 255, 255, 0.09)'
             }
-          },
-          boxShadow: {
-            'apple': '0 4px 24px rgba(0, 0, 0, 0.06)',
-            'apple-hover': '0 16px 36px rgba(0, 113, 227, 0.14)',
-            'card': '0 8px 30px rgba(0, 0, 0, 0.08)'
           }
         }
       }
@@ -72,196 +68,138 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
   <style>
-    html,
-    body {
-      overflow-x: hidden;
-      max-width: 100vw;
-      width: 100%;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    * {
-      -webkit-tap-highlight-color: transparent;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", sans-serif;
-      letter-spacing: -0.015em;
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-
-    /* Apple Squircle Continuous Curve */
-    .apple-squircle {
-      border-radius: 22.5% !important;
+    /* ─── Unified Flagship Bento Architecture (Shared with index.html) ─── */
+    .bento-card {
+      position: relative;
       overflow: hidden;
-      -webkit-corner-smoothing: antialiased;
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: 20px;
+      padding: 22px;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+    }
+    .bento-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
-    /* Apple Frosted Glass */
-    .apple-glass {
-      background: rgba(245, 245, 247, 0.85);
-      backdrop-filter: blur(25px) saturate(180%);
-      -webkit-backdrop-filter: blur(25px) saturate(180%);
-    }
-
-    .dark .apple-glass {
-      background: rgba(22, 22, 23, 0.85);
-      backdrop-filter: blur(25px) saturate(180%);
-      -webkit-backdrop-filter: blur(25px) saturate(180%);
-    }
-
-    /* Apple Titanium Card Metallic Finish */
+    /* Apple Wallet Pass Surface */
     .apple-card-metallic {
-      background: linear-gradient(135deg, #1D1D1F 0%, #2C2C2E 45%, #182236 75%, #0071E3 120%);
-      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+      background: linear-gradient(135deg, #161922 0%, #1e2433 55%, #172542 100%);
+      box-shadow: 0 14px 32px -10px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
       position: relative;
     }
-
-    .dark .apple-card-metallic {
-      background: linear-gradient(135deg, #111112 0%, #1C1C1E 45%, #0F1E3D 80%, #0071E3 130%);
-      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
-    }
-
-    /* Holographic Prismatic Card Sheen */
     .holo-sheen {
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle 350px at var(--holo-x, 50%) var(--holo-y, 50%), rgba(255, 255, 255, 0.28) 0%, rgba(200, 230, 255, 0.16) 30%, transparent 70%);
+      background: radial-gradient(circle 340px at var(--holo-x, 50%) var(--holo-y, 50%), rgba(255, 255, 255, 0.18) 0%, transparent 70%);
       pointer-events: none;
       mix-blend-mode: overlay;
-      opacity: 0.85;
-      transition: opacity 0.3s ease;
-      z-index: 5;
+      z-index: 2;
     }
 
-    /* VietQR Elegant Apple-style Frame */
+    /* Preset Amount Chips */
+    .amount-preset-chip {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      color: var(--label);
+      border-radius: 14px;
+      transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .amount-preset-chip:hover {
+      transform: translateY(-2px);
+      border-color: rgba(0, 113, 227, 0.4);
+      box-shadow: var(--lift);
+    }
+    .amount-preset-chip.is-selected {
+      background: #0071E3 !important;
+      color: #ffffff !important;
+      border-color: #0071E3 !important;
+      box-shadow: 0 8px 20px -4px rgba(0, 113, 227, 0.38);
+    }
+
+    /* VietQR Frame */
     .qr-frame {
-      position: relative;
-      padding: 6px;
-      border-radius: 24px;
-      background: var(--bg-card, #ffffff);
-      border: 1px solid var(--hairline, rgba(15, 19, 24, 0.08));
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+      padding: 10px;
+      border-radius: 22px;
+      background: #ffffff;
+      border: 1px solid var(--hairline);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
     }
 
-    /* Radar Pulse Animation for 24/7 scanning */
+    /* Bank Detail Row inside Bento */
+    .bank-field-row {
+      padding: 13px 16px;
+      border-radius: 14px;
+      background: var(--fill);
+      border: 1px solid var(--hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
     @keyframes radarPulse {
-      0% {
-        transform: scale(0.95);
-        opacity: 0.9;
-      }
-
-      50% {
-        transform: scale(1.15);
-        opacity: 0.3;
-      }
-
-      100% {
-        transform: scale(0.95);
-        opacity: 0.9;
-      }
+      0%, 100% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.2); opacity: 0.3; }
     }
-
     .radar-pulse {
       animation: radarPulse 2s ease-in-out infinite;
     }
-
-    .pb-safe {
-      padding-bottom: env(safe-area-inset-bottom, 20px);
-    }
-
-    .pt-safe {
-      padding-top: env(safe-area-inset-top, 0px);
-    }
-
-    /* Lucian [017] Tilting Preset Amount Chips */
-    .amount-preset-chip {
-      transition: transform 0.25s cubic-bezier(0.34, 1.45, 0.64, 1), box-shadow 0.25s, border-color 0.25s;
-    }
-
-    .amount-preset-chip:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 18px -4px rgba(0, 113, 227, 0.25);
-    }
-
-    .amount-preset-chip:active {
-      transform: scale(0.95);
-    }
   </style>
-
-  <script>
-    // Theme initialization before paint
-    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  </script>
 </head>
 
-<body
-  class="ios-root bg-apple-bgLight dark:bg-apple-bgDark text-black dark:text-white min-h-screen flex flex-col transition-colors duration-200 overflow-x-hidden max-w-full">
+<body>
+<div class="ios-root flex min-h-[100dvh] flex-col">
 
   <!-- ================================================================
-       APPLE STICKY TOP NAVIGATION BAR
+       UNIFIED TOP APPLE NAVIGATION BAR (MATCHING INDEX.HTML)
        ================================================================ -->
-  <header
-    class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-all duration-200 pt-safe">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+  <header class="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+    <div class="flex items-center justify-between py-1">
 
-      <!-- Back Navigation (Smart History / Referrer Aware) -->
-      <a href="javascript:void(0)" onclick="handleSmartBack(event)"
-        class="flex items-center gap-1 text-apple-blue font-semibold text-sm sm:text-base hover:opacity-75 transition active:scale-95 shrink-0"
-        id="backNavBtn" title="Quay lại">
-        <i data-lucide="chevron-left" class="w-5 h-5 sm:w-6 sm:h-6 -ml-1 stroke-[2.5]"></i>
-        <span id="backNavText">Trở lại</span>
-      </a>
+      <!-- Brand Logo & Smart Back Pill -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <a class="ios-tap inline-flex min-w-0 items-center gap-2.5 py-1" aria-label="IPAVIET — Trang chủ hệ sinh thái" href="index.html">
+          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg shadow-sm" style="background: linear-gradient(135deg, #e10e0e, #ff5f57);">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 1.01-2.87-.96.04-2.07.64-2.72 1.39-.58.65-1.09 1.72-1.03 2.76 1.07.08 2.12-.53 2.74-1.28z"/>
+            </svg>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="truncate text-headline text-label font-extrabold tracking-tight">IPAVIET</span>
+            <span class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-flame-soft text-flame">Pay</span>
+          </div>
+        </a>
 
-      <!-- Center Title -->
-      <div class="flex items-center gap-2">
-        <div
-          class="w-7 h-7 sm:w-8 sm:h-8 apple-squircle bg-apple-blue text-white flex items-center justify-center shadow-sm">
-          <i data-lucide="wallet" class="w-4 h-4"></i>
-        </div>
-        <div class="text-center">
-          <h1 class="font-extrabold text-sm sm:text-base text-black dark:text-white leading-tight">
-            Ví IPAVIET <span class="text-apple-blue font-black">Pay</span>
-          </h1>
-          <p class="text-[9px] sm:text-[10px] text-apple-gray font-semibold tracking-wider uppercase hidden sm:block">
-            Nạp tiền tự động 24/7
-          </p>
-        </div>
+        <a href="javascript:void(0)" onclick="handleSmartBack(event)" id="backNavBtn"
+          class="ios-tap inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-fill border border-hairline text-xs font-semibold text-label-2 hover:text-label transition"
+          title="Quay lại trang trước">
+          <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+          <span id="backNavText">Trở lại</span>
+        </a>
       </div>
 
-      <!-- Right Action Items -->
+      <!-- Quick Action Controls (Search ⌘K + Account Pill) -->
       <div class="flex items-center gap-2 shrink-0">
-        <!-- Theme Toggle -->
-        <button onclick="toggleTheme()"
-          class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/5 dark:bg-white/10 text-black dark:text-white flex items-center justify-center hover:bg-black/10 transition active:scale-95"
-          title="Đổi giao diện">
-          <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
-          <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
+        <button type="button" onclick="window.IPAVIET_SEARCH && window.IPAVIET_SEARCH.open()"
+          class="ios-tap flex items-center gap-2 px-3 py-1.5 rounded-full bg-fill border border-hairline text-subhead text-label-2 hover:text-label transition"
+          aria-label="Tìm kiếm nhanh">
+          <svg class="w-3.5 h-3.5 text-label-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span class="text-xs font-medium hidden sm:inline">Tìm app, cert, tool...</span>
+          <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] rounded bg-fill-2 font-mono text-label-3">⌘K</kbd>
         </button>
 
-        <!-- User Profile Pill -->
         <a href="account.html" id="navUserLink"
-          class="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full bg-black/5 dark:bg-white/10 border border-apple-separatorLight dark:border-apple-separatorDark hover:border-apple-blue transition active:scale-95"
-          title="Xem trang cá nhân">
-          <div
-            class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-apple-blue text-white flex items-center justify-center text-xs font-bold shrink-0"
-            id="navAvatar">
+          class="ios-tap flex items-center gap-2 px-2.5 py-1 rounded-full bg-fill border border-hairline text-label hover:bg-fill-2 transition"
+          title="Xem trang tài khoản">
+          <div class="w-6 h-6 rounded-full bg-apple-blue text-white flex items-center justify-center text-xs font-bold shrink-0" id="navAvatar">
             <i data-lucide="user" class="w-3.5 h-3.5"></i>
           </div>
-          <span id="navUserName" class="text-xs font-bold text-black dark:text-white hidden md:inline">Tài khoản</span>
+          <span id="navUserName" class="text-xs font-bold text-label hidden sm:inline">Tài khoản</span>
         </a>
       </div>
 
@@ -269,59 +207,59 @@
   </header>
 
   <!-- ================================================================
-       MAIN CONTAINER (APPLE WALLET / CASH STORE STYLE)
+       MAIN WORKSPACE (APPLE WALLET & VIETQR BENTO STUDIO)
        ================================================================ -->
-  <main class="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-5 sm:py-6 space-y-5 sm:space-y-6 pb-36">
+  <main class="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-4 sm:px-6 space-y-6">
 
-    <!-- ═══ 1. COMPACT APPLE WALLET STRIP ═══ -->
+    <!-- ═══ 1. COMPACT APPLE WALLET PASS STRIP ═══ -->
     <div id="titaniumHeroCard"
-      class="relative w-full rounded-[24px] p-4 sm:p-5 apple-card-metallic text-white overflow-hidden shadow-lg">
+      class="relative w-full rounded-[22px] p-4 sm:p-5 apple-card-metallic text-white overflow-hidden">
       <div class="holo-sheen" id="holoSheen"></div>
       <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <!-- Balance Info -->
         <div class="flex items-center gap-3.5">
-          <div class="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0">
-            <i data-lucide="wallet" class="w-5 h-5 text-yellow-300"></i>
+          <div class="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center shrink-0">
+            <i data-lucide="wallet" class="w-5 h-5 text-amber-300"></i>
           </div>
           <div>
             <div class="text-[11px] font-semibold text-white/70 uppercase tracking-wider flex items-center gap-1.5">
-              <span>Số dư ví của bạn</span>
-              <span class="inline-block w-2 h-2 rounded-full bg-apple-green animate-ping"></span>
+              <span>Số dư ví khả dụng</span>
+              <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             </div>
-            <div class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-baseline gap-2">
+            <div class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-baseline gap-2.5 mt-0.5">
               <span id="headerCoins">0đ</span>
-              <span class="text-xs px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-300 border border-yellow-400/30 font-bold" id="headerBonusCoins">0 Xu</span>
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 font-bold" id="headerBonusCoins">0 Xu</span>
             </div>
           </div>
         </div>
 
-        <!-- User Account Badge -->
+        <!-- User Account Status Pill -->
         <div class="flex items-center gap-2 text-xs text-white/90 self-start sm:self-auto flex-wrap bg-white/10 px-3.5 py-1.5 rounded-full border border-white/15">
           <span class="w-2 h-2 rounded-full bg-apple-gray" id="userOnlineDot"></span>
           <span class="font-bold text-white tracking-wide truncate max-w-[200px] sm:max-w-[280px]" id="userDisplayName">Thành viên Ví IPAVIET</span>
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white font-mono uppercase font-bold">Ví IPAVIET</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/15 text-white font-mono uppercase font-bold">VietQR 24/7</span>
         </div>
       </div>
     </div>
 
     <!-- ═══ CONTEXT BANNER: IF CALLED FROM PRODUCT (LỆNH MUA THIẾU TIỀN) ═══ -->
     <div id="productTopupAlert"
-      class="hidden rounded-2xl p-4 bg-apple-blue/10 dark:bg-apple-blue/15 border border-apple-blue/30 text-apple-blue flex items-center justify-between gap-3 shadow-sm animate-in fade-in">
+      class="hidden ios-sheet p-4 border-l-4 border-l-apple-blue flex items-center justify-between gap-3">
       <div class="flex items-center gap-3 min-w-0">
         <div class="w-9 h-9 rounded-full bg-apple-blue text-white flex items-center justify-center shrink-0">
           <i data-lucide="shopping-bag" class="w-4 h-4"></i>
         </div>
         <div class="min-w-0">
-          <h4 class="font-bold text-xs sm:text-sm text-black dark:text-white truncate" id="topupForProductTitle">
+          <h4 class="font-bold text-subhead text-label truncate" id="topupForProductTitle">
             Nạp tiền theo đơn hàng
           </h4>
-          <p class="text-[11px] sm:text-xs text-apple-gray truncate">
-            Đã tự động điền số tiền còn thiếu vào mã QR bên dưới.
+          <p class="text-footnote text-label-2 truncate">
+            Đã tự động điền số tiền còn thiếu vào mã VietQR bên dưới.
           </p>
         </div>
       </div>
       <button onclick="dismissProductAlert()"
-        class="text-apple-gray hover:text-black dark:hover:text-white p-1 rounded-full shrink-0">
+        class="text-label-3 hover:text-label p-1 rounded-full shrink-0">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
@@ -329,215 +267,189 @@
     <!-- ═══ 2. QUICK AMOUNT PRESETS (CHỌN NHANH MỨC NẠP) ═══ -->
     <section class="space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="text-sm sm:text-base font-bold text-black dark:text-white flex items-center gap-1.5">
-          <i data-lucide="zap" class="w-4 h-4 text-apple-blue"></i>
-          <span>Chọn mức nạp tiền nhanh</span>
-        </h2>
-        <span class="text-xs text-apple-gray">Tối thiểu: <b>10.000đ</b></span>
+        <div>
+          <h2 class="text-headline font-bold text-label">Chọn mức nạp tiền nhanh</h2>
+          <p class="text-caption text-label-2">Chạm mệnh giá để cập nhật mã VietQR tức thì (0ms)</p>
+        </div>
+        <span class="text-caption font-medium text-label-2">Tối thiểu: <b class="text-label">10.000đ</b></span>
       </div>
 
       <!-- Preset Chips Grid -->
-      <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5">
+      <div class="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
         <button onclick="selectAmount(20000)" data-amount="20000"
-          class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          class="amount-preset-chip py-2.5 px-3 font-bold text-subhead text-center">
           20.000đ
         </button>
         <button onclick="selectAmount(50000)" data-amount="50000"
-          class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          class="amount-preset-chip py-2.5 px-3 font-bold text-subhead text-center">
           50.000đ
         </button>
         <button onclick="selectAmount(100000)" data-amount="100000"
-          class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          class="amount-preset-chip py-2.5 px-3 font-bold text-subhead text-center">
           100.000đ
         </button>
         <button onclick="selectAmount(200000)" data-amount="200000"
-          class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          class="amount-preset-chip py-2.5 px-3 font-bold text-subhead text-center">
           200.000đ
         </button>
         <button onclick="selectAmount(500000)" data-amount="500000"
-          class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          class="amount-preset-chip py-2.5 px-3 font-bold text-subhead text-center">
           500.000đ
         </button>
         <button onclick="selectAmount(1000000)" data-amount="1000000"
-          class="amount-preset-chip py-2.5 px-3 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark font-bold text-xs sm:text-sm text-black dark:text-white hover:border-apple-blue transition active:scale-95 shadow-sm text-center">
+          class="amount-preset-chip py-2.5 px-3 font-bold text-subhead text-center">
           1.000.000đ
         </button>
       </div>
 
-      <!-- Custom Input (Optional) -->
-      <div class="relative flex items-center pt-1">
-        <span class="absolute left-4 text-apple-gray font-bold text-sm pointer-events-none">Số tiền tùy chọn:</span>
+      <!-- Custom Input -->
+      <div class="relative flex items-center pt-0.5">
+        <span class="absolute left-4 text-label-2 font-semibold text-footnote pointer-events-none">Số tiền tùy chọn:</span>
         <input type="text" id="customAmountInput" inputmode="numeric" placeholder="Nhập số tiền khác (VD: 85000)..."
           oninput="onCustomAmountInput(this.value)"
-          class="w-full h-12 pl-36 pr-14 rounded-2xl bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark text-sm font-bold text-black dark:text-white outline-none focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 transition shadow-sm">
+          class="w-full h-11 pl-36 pr-14 rounded-xl bg-[var(--surface)] border border-[var(--hairline)] text-subhead font-bold text-label outline-none focus:border-apple-blue transition">
         <span class="absolute right-4 text-apple-blue font-bold text-xs pointer-events-none">VNĐ</span>
       </div>
     </section>
 
-    <!-- ═══ 3. DEPOSIT WORKSPACE: 2 COLUMNS (QR & TRANSFER INFO) ═══ -->
-    <section id="depositWorkspace" class="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-start">
+    <!-- ═══ 3. DEPOSIT WORKSPACE: 2 BENTO COLUMNS (QR & BANK TRANSFER DETAILS) ═══ -->
+    <section id="depositWorkspace" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
 
-      <!-- ── COLUMN 1: VIETQR SCAN CARD (5 COLS ON MD) ── -->
-      <div
-        class="md:col-span-5 rounded-[28px] bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark p-5 sm:p-6 shadow-sm flex flex-col items-center space-y-4">
+      <!-- ── COLUMN 1: VIETQR SCAN BENTO (5 COLS ON MD) ── -->
+      <div class="md:col-span-5 bento-card flex flex-col items-center justify-between space-y-4">
 
-        <div
-          class="w-full flex items-center justify-between pb-2 border-b border-apple-separatorLight dark:border-apple-separatorDark">
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded-full bg-apple-blue/10 text-apple-blue flex items-center justify-center">
-              <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
-            </div>
-            <span class="font-extrabold text-xs sm:text-sm uppercase tracking-wide">Mã VietQR tự động</span>
-          </div>
-          <span
-            class="px-2 py-0.5 rounded-full bg-apple-green/10 text-apple-green font-bold text-[10px] uppercase tracking-wider">
-            Miễn phí 0đ
-          </span>
+        <div class="w-full bento-card-header !mb-0 pb-3 border-b border-[var(--separator)]">
+          <span class="rounded-full bg-blue-500/10 px-3 py-1 text-caption font-bold text-blue-500">MÃ VIETQR TỰ ĐỘNG</span>
+          <span class="text-caption font-bold text-emerald-600 dark:text-emerald-400">Miễn phí 0đ</span>
         </div>
 
         <!-- QR Display Container -->
-        <div class="qr-frame my-2 flex justify-center">
-          <div
-            class="relative w-64 h-64 sm:w-72 sm:h-72 p-3 rounded-[24px] bg-white border border-black/[0.06] dark:border-white/[0.1] shadow-sm flex items-center justify-center overflow-hidden">
-            <img id="qrImage" src="" alt="Mã QR Chuyển Khoản BIDV"
-              class="w-full h-full object-contain apple-squircle relative z-10 transition-all">
+        <div class="qr-frame my-1 flex justify-center">
+          <div class="relative w-60 h-60 sm:w-64 sm:h-64 p-2 rounded-2xl bg-white flex items-center justify-center overflow-hidden">
+            <img id="qrImage" src="" alt="Mã QR chuyển khoản BIDV"
+              class="w-full h-full object-contain relative z-10 transition-all">
           </div>
         </div>
 
         <!-- Amount hint under QR -->
-        <div class="text-center space-y-1">
-          <div class="text-xs text-apple-gray font-medium">Số tiền nạp hiện tại:</div>
-          <div class="text-xl sm:text-2xl font-black text-apple-blue" id="qrAmountDisplay">
-            Tự chọn khi quét
+        <div class="text-center">
+          <div class="text-caption text-label-2 font-medium">Số tiền nạp hiện tại</div>
+          <div class="text-title-2 font-extrabold text-apple-blue mt-0.5" id="qrAmountDisplay">
+            Tự nhập khi quét
           </div>
         </div>
 
-        <!-- Live Scanning Radar Pill -->
+        <!-- Live Scanning Status Pill -->
         <div id="pollingStatus"
-          class="w-full p-3 rounded-2xl bg-apple-blue/5 dark:bg-apple-blue/10 border border-apple-blue/20 text-center transition-all">
+          class="w-full p-3 rounded-xl bg-fill border border-hairline text-center transition-all">
           <div class="flex items-center justify-center gap-2 text-apple-blue text-xs font-bold">
-            <span class="relative flex h-2.5 w-2.5">
+            <span class="relative flex h-2 w-2">
               <span class="radar-pulse absolute inline-flex h-full w-full rounded-full bg-apple-blue opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-apple-blue"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-apple-blue"></span>
             </span>
             <span>Hệ thống đang quét chuyển khoản 24/7...</span>
           </div>
         </div>
 
-        <p class="text-[11px] text-apple-gray text-center leading-relaxed">
-          Mở app ngân hàng bất kỳ (BIDV, Vietcombank, MB, Techcombank, MoMo...) chọn <b>Quét QR</b> để tự động điền STK
-          & Nội dung chuẩn xác.
+        <p class="text-caption text-label-2 text-center leading-relaxed">
+          Mở ứng dụng ngân hàng hoặc MoMo bất kỳ, chọn <b class="text-label">Quét mã QR</b> để tự động điền chuẩn xác số tài khoản và nội dung.
         </p>
 
       </div>
 
-      <!-- ── COLUMN 2: BANK TRANSFER DETAILS & COPY ACTIONS (7 COLS ON MD) ── -->
-      <div class="md:col-span-7 space-y-4">
+      <!-- ── COLUMN 2: BANK TRANSFER DETAILS BENTO (7 COLS ON MD) ── -->
+      <div class="md:col-span-7 flex flex-col gap-4">
 
-        <!-- Bank Details Card -->
-        <div
-          class="rounded-[28px] bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark p-5 sm:p-6 shadow-sm space-y-4">
+        <!-- Bank Details Bento Card -->
+        <div class="bento-card flex-1 space-y-4">
 
-          <div
-            class="flex items-center justify-between pb-3 border-b border-apple-separatorLight dark:border-apple-separatorDark">
+          <div class="bento-card-header !mb-0 pb-3 border-b border-[var(--separator)]">
             <div class="flex items-center gap-2.5">
-              <div
-                class="w-9 h-9 rounded-xl bg-[#006A72] text-white flex items-center justify-center font-black text-xs shadow-sm">
+              <div class="w-9 h-9 rounded-xl bg-[#006A72] text-white flex items-center justify-center font-black text-xs shadow-sm shrink-0">
                 BIDV
               </div>
               <div>
-                <h3 class="font-extrabold text-sm sm:text-base text-black dark:text-white leading-tight">
-                  Ngân Hàng TMCP Đầu Tư và Phát Triển (BIDV)
+                <h3 class="font-extrabold text-subhead sm:text-headline text-label leading-tight">
+                  Ngân hàng TMCP Đầu tư và Phát triển (BIDV)
                 </h3>
-                <p class="text-[10px] text-apple-gray">Chuyển khoản 24/7 liên ngân hàng Napas</p>
+                <p class="text-caption text-label-2">Chuyển khoản nhanh Napas 247 liên ngân hàng</p>
               </div>
             </div>
-            <span class="px-2.5 py-1 rounded-full bg-apple-blue/10 text-apple-blue font-bold text-xs">
+            <span class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-caption font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
               Chính thức
             </span>
           </div>
 
           <!-- Fields -->
-          <div class="space-y-3.5">
+          <div class="space-y-3">
 
             <!-- 1. Chủ tài khoản -->
-            <div
-              class="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05] flex items-center justify-between">
+            <div class="bank-field-row">
               <div>
-                <span class="text-[10px] font-bold text-apple-gray uppercase tracking-wider block">Chủ tài khoản thụ
-                  hưởng</span>
-                <span class="font-black text-sm sm:text-base text-black dark:text-white tracking-wide">
+                <span class="text-[11px] font-semibold text-label-2 uppercase tracking-wider block">Chủ tài khoản thụ hưởng</span>
+                <span class="font-extrabold text-subhead sm:text-headline text-label tracking-wide">
                   TRAN NGUYEN MINH QUI
                 </span>
               </div>
-              <span
-                class="w-7 h-7 rounded-full bg-apple-green/10 text-apple-green flex items-center justify-center text-xs">
+              <span class="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xs shrink-0">
                 <i data-lucide="check" class="w-4 h-4"></i>
               </span>
             </div>
 
             <!-- 2. Số tài khoản (With Copy) -->
-            <div
-              class="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.05] flex items-center justify-between gap-3">
+            <div class="bank-field-row">
               <div class="min-w-0">
-                <span class="text-[10px] font-bold text-apple-gray uppercase tracking-wider block">Số tài khoản
-                  BIDV</span>
-                <span
-                  class="font-mono font-black text-base sm:text-lg text-emerald-600 dark:text-emerald-400 tracking-wider">
+                <span class="text-[11px] font-semibold text-label-2 uppercase tracking-wider block">Số tài khoản BIDV</span>
+                <span class="font-mono font-extrabold text-headline sm:text-title-3 text-emerald-600 dark:text-emerald-400 tracking-wider">
                   8900733531
                 </span>
               </div>
               <button onclick="copyData('8900733531', this)"
-                class="px-3.5 py-1.5 rounded-full bg-apple-blue text-white font-bold text-xs hover:bg-blue-600 transition active:scale-95 flex items-center gap-1.5 shrink-0 shadow-sm">
+                class="ios-btn ios-btn-filled text-xs px-4 py-1.5 shrink-0 flex items-center gap-1.5" style="min-height:34px;">
                 <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                 <span>Sao chép</span>
               </button>
             </div>
 
             <!-- 3. Nội dung chuyển khoản (BẮT BUỘC - HIGHLIGHTED) -->
-            <div class="p-4 rounded-2xl bg-apple-blue/10 dark:bg-apple-blue/15 border-2 border-apple-blue/40 space-y-2">
+            <div class="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/30 space-y-2.5">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-black uppercase tracking-wider text-apple-blue flex items-center gap-1">
-                  <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Nội dung chuyển khoản (Bắt buộc)
+                <span class="text-caption font-bold uppercase tracking-wider text-apple-blue flex items-center gap-1.5">
+                  <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Nội dung chuyển khoản (bắt buộc)
                 </span>
-                <span class="text-[10px] font-bold text-apple-gray">Mã đơn định danh</span>
+                <span class="text-caption font-medium text-label-3">Mã định danh tự động</span>
               </div>
 
-              <div
-                class="flex items-center justify-between gap-2 bg-white dark:bg-black/40 p-2.5 rounded-xl border border-apple-blue/20">
+              <div class="flex items-center justify-between gap-2 bg-[var(--surface)] p-2.5 rounded-xl border border-[var(--hairline)]">
                 <span id="transferSyntax"
-                  class="font-mono font-black text-base sm:text-lg text-apple-blue tracking-widest truncate">
+                  class="font-mono font-extrabold text-headline sm:text-title-3 text-apple-blue tracking-widest truncate">
                   ĐANG TẠO MÃ...
                 </span>
                 <button onclick="copySyntax(this)"
-                  class="px-4 py-1.5 rounded-full bg-apple-blue text-white font-black text-xs hover:bg-blue-600 transition active:scale-95 flex items-center gap-1.5 shrink-0 shadow-md shadow-apple-blue/30">
+                  class="ios-btn ios-btn-filled text-xs px-4 py-1.5 shrink-0 flex items-center gap-1.5" style="min-height:34px;background:#0071E3;color:#ffffff;">
                   <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                   <span>Sao chép</span>
                 </button>
               </div>
 
-              <p class="text-[10px] sm:text-[11px] text-apple-gray leading-tight">
-                ⚠️ Quý khách vui lòng copy chính xác mã này và dán vào phần Lời nhắn/Nội dung để hệ thống tự động cộng
-                tiền trong 3-5 giây.
+              <p class="text-caption text-label-2 leading-relaxed">
+                Quý khách vui lòng giữ nguyên mã định danh này trong phần <b class="text-label">Nội dung chuyển khoản</b> để máy chủ tự động cộng số dư sau 3 – 5 giây.
               </p>
             </div>
 
           </div>
         </div>
 
-        <!-- Important Notes Callout -->
-        <div
-          class="rounded-2xl p-4 sm:p-5 bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 space-y-2">
-          <div class="font-bold text-xs sm:text-sm flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-            <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
-            <span>Lưu ý quan trọng khi nạp tiền:</span>
+        <!-- Important Notes Sheet -->
+        <div class="ios-sheet p-4 sm:p-5 space-y-2">
+          <div class="font-bold text-footnote flex items-center gap-1.5 text-label">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500 shrink-0"></i>
+            <span>Lưu ý bảo đảm quyền lợi khi nạp ví</span>
           </div>
-          <ul class="text-xs space-y-1 text-slate-700 dark:text-slate-300 pl-4 list-disc leading-relaxed">
-            <li>Nạp tối thiểu từ <b>10.000đ</b>. Chuyển khoản sai cú pháp hoặc dưới 10.000đ sẽ cần liên hệ Admin hỗ trợ
-              thủ công.</li>
-            <li>Hệ thống chạy tự động 24/7 không nghỉ lễ tết. Tiền vào ví chỉ sau <b>3 - 5 giây</b>.</li>
-            <li>Nếu sau 5 phút chưa nhận được số dư, bấm vào nút hỗ trợ ở góc dưới màn hình để gặp Admin xử lý ngay.
-            </li>
+          <ul class="text-caption space-y-1 text-label-2 pl-4 list-disc leading-relaxed">
+            <li>Hạn mức nạp tối thiểu từ <b class="text-label">10.000đ</b>. Tỷ lệ quy đổi <b class="text-label">1:1</b> nguyên vẹn vào Ví chính (10.000đ = 10.000đ).</li>
+            <li>Hệ thống đối soát tự động 24/7 kể cả ngày lễ và cuối tuần, khớp đơn trong <b class="text-label">3 – 5 giây</b>.</li>
+            <li>Nếu ghi nhầm nội dung chuyển khoản, bạn chỉ cần nhắn mã giao dịch qua mục <a href="support.html" class="text-apple-blue hover:underline font-semibold">Hỗ trợ trực tuyến</a> để được cộng ngay.</li>
           </ul>
         </div>
 
@@ -546,38 +458,54 @@
     </section>
 
     <!-- ═══ 4. APPLE WALLET TRANSACTION STATEMENT (LỊCH SỬ NẠP TIỀN) ═══ -->
-    <section
-      class="rounded-[28px] bg-white dark:bg-apple-cardDark border border-apple-separatorLight dark:border-apple-separatorDark p-5 sm:p-6 shadow-sm space-y-4">
+    <section class="bento-card space-y-4">
 
-      <div
-        class="flex items-center justify-between pb-3 border-b border-apple-separatorLight dark:border-apple-separatorDark">
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-full bg-apple-blue/10 text-apple-blue flex items-center justify-center">
+      <div class="flex items-center justify-between pb-3 border-b border-[var(--separator)]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-fill text-label flex items-center justify-center">
             <i data-lucide="receipt" class="w-4 h-4"></i>
           </div>
-          <h3 class="font-bold text-sm sm:text-base text-black dark:text-white">
-            Lịch sử giao dịch
-          </h3>
+          <div>
+            <h3 class="font-bold text-headline text-label">Lịch sử giao dịch gần đây</h3>
+          </div>
         </div>
 
         <button onclick="loadTransactionHistory()"
-          class="text-xs font-bold text-apple-blue hover:opacity-80 transition flex items-center gap-1">
+          class="ios-btn ios-btn-tinted text-xs px-3 py-1 flex items-center gap-1.5" style="min-height:30px;">
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           <span>Làm mới</span>
         </button>
       </div>
 
       <!-- Transaction List Container -->
-      <div id="txListContainer" class="divide-y divide-apple-separatorLight dark:divide-apple-separatorDark">
-        <div class="py-10 text-center text-apple-gray">
+      <div id="txListContainer" class="divide-y divide-[var(--separator)]">
+        <div class="py-10 text-center text-label-2">
           <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-apple-blue"></i>
-          <span class="text-xs font-medium">Đang tải lịch sử giao dịch...</span>
+          <span class="text-caption font-medium">Đang tải lịch sử giao dịch...</span>
         </div>
       </div>
 
     </section>
 
   </main>
+
+  <!-- Clean Apple Footer (Unified with index.html) -->
+  <footer class="border-t border-[var(--separator)] bg-[var(--surface)] py-8 text-footnote text-label-2">
+    <div class="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
+      <div class="flex items-center gap-2">
+        <span class="font-extrabold text-label tracking-tight">IPAVIET</span>
+        <span>&copy; 2026. Chuẩn mực hệ sinh thái số Apple cho người Việt.</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="terms-of-service.html" class="hover:text-label transition">Điều khoản</a>
+        <a href="privacy-policy.html" class="hover:text-label transition">Bảo mật</a>
+        <a href="support.html" class="hover:text-label transition">Hỗ trợ</a>
+        <a href="https://t.me/ipaviet" target="_blank" rel="noopener noreferrer" class="text-flame hover:underline font-semibold">Telegram Kênh</a>
+      </div>
+    </div>
+  </footer>
+
+</div>
 
   <!-- ================================================================
        JAVASCRIPT APPLICATION LOGIC
@@ -960,11 +888,9 @@
       document.querySelectorAll('.amount-preset-chip').forEach(btn => {
         const val = parseInt(btn.dataset.amount);
         if (val === amt) {
-          btn.classList.add('bg-apple-blue', 'text-white', 'border-apple-blue', 'shadow-md', 'shadow-apple-blue/25');
-          btn.classList.remove('bg-white', 'dark:bg-apple-cardDark', 'text-black', 'dark:text-white');
+          btn.classList.add('is-selected');
         } else {
-          btn.classList.remove('bg-apple-blue', 'text-white', 'border-apple-blue', 'shadow-md', 'shadow-apple-blue/25');
-          btn.classList.add('bg-white', 'dark:bg-apple-cardDark', 'text-black', 'dark:text-white');
+          btn.classList.remove('is-selected');
         }
       });
     }
@@ -1025,12 +951,11 @@
 
           const st = document.getElementById('pollingStatus');
           if (st) {
-            st.className = "w-full p-4 rounded-2xl bg-apple-green/15 border border-apple-green text-center";
+            st.className = "w-full p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500 text-center";
             st.innerHTML = `
-              <div class="flex items-center justify-center gap-2 text-apple-green font-black text-sm">
-                <i data-lucide="check-circle" class="w-5 h-5"></i>
-                <span>NẠP THÀNH CÔNG: +${data.amount.toLocaleString()}đ</span>
-                <span>NẠP THÀNH CÔNG: +${data.amount.toLocaleString()}đ ${savedBonus > 0 ? `(+${savedBonus.toLocaleString()} Xu)` : ''}</span>
+              <div class="flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <span>Nạp thành công: +${data.amount.toLocaleString()}đ ${savedBonus > 0 ? `(+${savedBonus.toLocaleString()} Xu)` : ''}</span>
               </div>
             `;
             lucide.createIcons();
@@ -1047,15 +972,14 @@
 
           loadTransactionHistory();
 
-          const bonusMsg = savedBonus > 0 ? `<br><span class="text-amber-500 font-bold text-sm">🎁 Tặng kèm: <b>+${savedBonus.toLocaleString()} Xu Thưởng VIP</b>!</span>` : '';
+          const bonusMsg = savedBonus > 0 ? `<br><span class="text-amber-500 font-bold text-sm">Tặng kèm: <b>+${savedBonus.toLocaleString()} Xu thưởng VIP</b>!</span>` : '';
           Swal.fire({
             icon: 'success',
-            title: 'Nạp Tiền Thành Công!',
-            html: `Hệ thống đã tự động cộng <b class="text-apple-blue text-lg">+${data.coins.toLocaleString()}đ</b> vào ví của bạn.`,
+            title: 'Nạp tiền thành công!',
             html: `Hệ thống đã tự động cộng <b class="text-apple-blue text-lg">+${data.coins.toLocaleString()}đ</b> vào Ví chính của bạn.${bonusMsg}`,
-            confirmButtonText: 'Quay Lại Tiếp Tục',
+            confirmButtonText: 'Quay lại tiếp tục',
             showCancelButton: true,
-            cancelButtonText: 'Ở Lại Trang Nạp',
+            cancelButtonText: 'Ở lại trang nạp',
             confirmButtonColor: '#0071E3'
           }).then(r => {
             if (r.isConfirmed) {
@@ -1071,7 +995,16 @@
        ══════════════════════════════════════════════════════ */
     async function loadTransactionHistory() {
       const container = document.getElementById('txListContainer');
-      if (!container || !currentUser) return;
+      if (!container) return;
+      if (!currentUser || !currentUser.uid) {
+        container.innerHTML = `
+          <div class="py-10 text-center text-label-2 space-y-1.5">
+            <p class="font-bold text-subhead text-label">Chưa có giao dịch hiển thị</p>
+            <p class="text-caption text-label-2">Đăng nhập tài khoản để xem toàn bộ lịch sử biến động số dư của bạn.</p>
+          </div>
+        `;
+        return;
+      }
 
       try {
         const res = await fetch(`${GOOGLE_API_URL}?action=get_user_transactions&uid=${currentUser.uid}`);
@@ -1080,12 +1013,12 @@
         if (json.success) {
           if (!json.data || json.data.length === 0) {
             container.innerHTML = `
-              <div class="py-12 text-center text-apple-gray space-y-2">
-                <div class="w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.05] mx-auto flex items-center justify-center text-apple-gray">
-                  <i data-lucide="inbox" class="w-6 h-6"></i>
+              <div class="py-10 text-center text-label-2 space-y-2">
+                <div class="w-11 h-11 rounded-full bg-fill mx-auto flex items-center justify-center text-label-2">
+                  <i data-lucide="inbox" class="w-5 h-5"></i>
                 </div>
-                <p class="font-bold text-sm text-black dark:text-white">Chưa có giao dịch nạp tiền nào</p>
-                <p class="text-xs">Các giao dịch thành công sẽ xuất hiện tại đây.</p>
+                <p class="font-bold text-subhead text-label">Chưa có giao dịch nạp tiền nào</p>
+                <p class="text-caption text-label-2">Các giao dịch thành công sẽ xuất hiện tại đây.</p>
               </div>
             `;
             lucide.createIcons();
@@ -1099,25 +1032,25 @@
             const amountVal = parseInt(t.amount) || 0;
 
             return `
-              <div class="py-3.5 flex items-center justify-between gap-3 transition hover:bg-black/[0.02] dark:hover:bg-white/[0.02] px-2 rounded-xl">
+              <div class="py-3.5 flex items-center justify-between gap-3 transition hover:bg-fill px-2.5 rounded-xl">
                 <div class="flex items-center gap-3 min-w-0">
-                  <div class="w-10 h-10 rounded-2xl ${isDone ? 'bg-apple-green/10 text-apple-green' : 'bg-apple-amber/10 text-apple-amber'} flex items-center justify-center shrink-0">
-                    <i data-lucide="${isDone ? 'arrow-down-left' : 'clock'}" class="w-5 h-5"></i>
+                  <div class="w-9 h-9 rounded-xl ${isDone ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'} flex items-center justify-center shrink-0">
+                    <i data-lucide="${isDone ? 'arrow-down-left' : 'clock'}" class="w-4 h-4"></i>
                   </div>
                   <div class="min-w-0 space-y-0.5">
                     <div class="flex items-center gap-2">
-                      <span class="font-extrabold text-xs sm:text-sm text-black dark:text-white truncate">Chuyển khoản BIDV</span>
-                      <span class="font-mono text-[10px] text-apple-gray font-bold">#${t.orderId}</span>
+                      <span class="font-bold text-subhead text-label truncate">Chuyển khoản BIDV</span>
+                      <span class="font-mono text-caption text-label-3 font-semibold">#${t.orderId}</span>
                     </div>
-                    <div class="text-[11px] text-apple-gray">${timeStr}</div>
+                    <div class="text-caption text-label-2">${timeStr}</div>
                   </div>
                 </div>
 
                 <div class="text-right shrink-0">
-                  <div class="font-black text-sm sm:text-base ${isDone ? 'text-apple-green' : 'text-apple-amber'}">
+                  <div class="font-extrabold text-subhead ${isDone ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}">
                     ${isDone ? '+' + amountVal.toLocaleString() + 'đ' : 'Chờ quét'}
                   </div>
-                  <span class="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${isDone ? 'bg-apple-green/10 text-apple-green' : 'bg-apple-amber/10 text-apple-amber'}">
+                  <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${isDone ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-500'}">
                     ${isDone ? 'Thành công' : 'Chờ xử lý'}
                   </span>
                 </div>
@@ -1128,7 +1061,7 @@
           lucide.createIcons();
         }
       } catch (e) {
-        container.innerHTML = `<div class="py-6 text-center text-apple-red text-xs">Không thể tải lịch sử giao dịch.</div>`;
+        container.innerHTML = `<div class="py-6 text-center text-red-500 text-caption">Không thể tải lịch sử giao dịch.</div>`;
       }
     }
 
