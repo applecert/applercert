@@ -842,13 +842,21 @@
           qrUrl += `&amount=${amount}`;
         }
         if (qrImg) {
+          qrImg.onload = onQrLoaded;
           qrImg.onerror = () => {
             if (!qrImg.dataset.retried) {
               qrImg.dataset.retried = '1';
               qrImg.src = `https://img.vietqr.io/image/${BANK_ID}-${ACC_NO}-compact2.svg?addInfo=${depositOrderId}&accountName=${encodeURIComponent(ACC_NAME)}` + (amount > 0 ? `&amount=${amount}` : '');
+            } else {
+              onQrLoaded();
             }
           };
           qrImg.src = qrUrl;
+          if (qrImg.complete) {
+            onQrLoaded();
+          }
+          // Timeout dự phòng chắc chắn ẩn shimmer sau 700ms
+          setTimeout(onQrLoaded, 700);
         }
       }, 100);
     }
@@ -856,8 +864,14 @@
     function onQrLoaded() {
       const qrImg = document.getElementById('qrImage');
       const shimmer = document.getElementById('qrLoadingShimmer');
-      if (shimmer) shimmer.classList.add('hidden');
-      if (qrImg) qrImg.classList.remove('opacity-0');
+      if (shimmer) {
+        shimmer.classList.add('hidden');
+        shimmer.style.display = 'none';
+      }
+      if (qrImg) {
+        qrImg.classList.remove('opacity-0');
+        qrImg.style.opacity = '1';
+      }
     }
 
     /* ══════════════════════════════════════════════════════
