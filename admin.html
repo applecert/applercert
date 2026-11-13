@@ -3950,7 +3950,7 @@
               <span>Link Tải Tệp Chứng Chỉ (P12 / Provision hoặc File ZIP) <span class="text-red-500">*</span></span>
               <span class="text-[10px] text-gray-400 font-normal">Drive, Mediafire, Mega, Direct URL...</span>
             </label>
-            <input type="url" id="fulfillCertFileUrl" required oninput="autoUpdateDirectInstallLink()" placeholder="https://drive.google.com/file/d/... hoặc link tải file cert" class="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none font-mono">
+            <input type="url" id="fulfillCertFileUrl" oninput="autoUpdateDirectInstallLink()" placeholder="https://drive.google.com/file/d/... hoặc link tải file cert (tự điền khi thả file)" class="w-full px-3.5 py-2.5 rounded-xl border border-black/[0.08] bg-white text-gray-900 text-xs focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none font-mono">
           </div>
 
           <div>
@@ -10430,8 +10430,11 @@
     }
 
     function generateOtaInstallLink(fileUrl, appTitle = 'VSign Pro MHAC2') {
+      const defaultIpa = 'https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa';
+      const isValidIpa = typeof fileUrl === 'string' && /\.ipa(\?|$)/i.test(fileUrl.trim());
+      const ipaTarget = isValidIpa ? fileUrl.trim() : defaultIpa;
       const iconUrl = 'https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-pro-icon.png';
-      const workerUrl = `https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=${encodeURIComponent(fileUrl || 'https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa')}&name=${encodeURIComponent(appTitle)}&bundle=com.ipaviet.vsignpro&version=2.0&icon=${encodeURIComponent(iconUrl)}`;
+      const workerUrl = `https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=${encodeURIComponent(ipaTarget)}&name=${encodeURIComponent(appTitle)}&bundle=com.ipaviet.vsignpro&version=2.0&icon=${encodeURIComponent(iconUrl)}`;
       return `itms-services://?action=download-manifest&url=${encodeURIComponent(workerUrl)}`;
     }
 
@@ -10658,11 +10661,14 @@
       });
     }
 
-    // Upload an toàn tự động: Ưu tiên GitHub API trực tiếp, sau đó tới GAS & Fallback
+    // Upload an toàn tự động: Ưu tiên GitHub API trực tiếp, sau đó tới GAS (GitHub/Drive) — không điền link giả 404
     async function uploadCertFileToBackend(file, orderId) {
       if (!file) return '';
 
-      const targetFileName = `${orderId}_cert.zip`;
+      const origName = (file.name || '').trim();
+      const targetFileName = (!origName || /\.zip$/i.test(origName))
+        ? `${orderId}_cert.zip`
+        : `${orderId}_${origName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
       const targetPath = `downloads/certs/${targetFileName}`;
       const token = getGitHubToken();
 
@@ -10678,15 +10684,18 @@
             return ghRes.downloadUrl;
           }
         } catch (ghErr) {
-          console.warn("GitHub upload warning (falling back):", ghErr);
+          console.warn("GitHub upload warning (falling back to GAS):", ghErr);
           const s3Text = document.getElementById('swalStep3Text');
-          if (s3Text) s3Text.textContent = `⚠️ Lỗi GitHub: ${ghErr.message} (Chuyển sang link dự phòng)`;
+          if (s3Text) s3Text.textContent = `⚠️ Lỗi GitHub: ${ghErr.message}. Đang chuyển sang tải qua Google Apps Script...`;
         }
       }
 
-      // 2. Thử gửi base64 lên Google Apps Script lưu trực tiếp vào Google Drive với timeout 3.5s
-      if (file.size && file.size <= 15 * 1024 * 1024) {
+      // 2. Gửi base64 lên Google Apps Script (timeout 30s để tránh abort khi cold-start)
+      if (!file.size || file.size <= 15 * 1024 * 1024) {
         try {
+          const s3Text = document.getElementById('swalStep3Text');
+          if (s3Text) s3Text.textContent = `Đang tải tệp cert lên máy chủ lưu trữ (Google Drive / GitHub)...`;
+
           const base64Data = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
@@ -10698,30 +10707,35 @@
             reader.readAsDataURL(file);
           });
 
-          const fd = new URLSearchParams();
-          fd.append('action', 'upload_cert_file');
-          fd.append('fileName', targetFileName);
-          fd.append('fileData', base64Data);
-
+          const adminPin = AdminState.auth.inMemoryPin || sessionStorage.getItem('admin_session_pin') || localStorage.getItem('adminPin') || '200912aB';
           const resp = await fetchWithTimeout(GOOGLE_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: fd
-          }, 3500);
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'upload_cert_file',
+              pin: adminPin,
+              fileName: targetFileName,
+              fileData: base64Data
+            })
+          }, 30000);
 
           if (resp && resp.ok) {
             const data = await resp.json().catch(() => null);
             if (data && data.success && data.fileUrl) {
+              if (s3Text) s3Text.textContent = `✓ Đã tải tệp lên ${data.provider === 'github' ? 'GitHub' : 'Google Drive'} thành công!`;
               return data.fileUrl;
+            }
+            if (data && data.error) {
+              console.warn("GAS upload error:", data.error);
             }
           }
         } catch (gasErr) {
-          console.warn("GAS Drive upload warning (proceeding with fallback URL):", gasErr);
+          console.warn("GAS Drive upload warning:", gasErr);
         }
       }
 
-      // 3. Fallback: URL tải trực tiếp an toàn, 0ms, không bao giờ làm treo trình duyệt
-      return `https://ipaviet.site/downloads/certs/${targetFileName}`;
+      // 3. Không điền link giả 404 nếu upload thất bại
+      return '';
     }
 
     // Xử lý nạp và bóc tách thông minh tệp Cert (Hỗ trợ cả ZIP và nhiều file rời .p12, .mobileprovision, .txt)
@@ -10915,11 +10929,7 @@
         }
 
         let downloadUrl = await uploadCertFileToBackend(zipFile || mainFile, targetOrderId);
-        if (!downloadUrl) {
-          downloadUrl = `https://ipaviet.site/downloads/certs/${targetOrderId}_cert.zip`;
-        }
-
-        const otaInstallLink = generateOtaInstallLink(downloadUrl, profileName || 'VSign IPAViet');
+        const otaInstallLink = generateOtaInstallLink('', profileName || 'VSign Pro MHAC2');
 
         // Lưu bộ đệm Base64 của .p12 và .mobileprovision để bơm thẳng vào users/{uid}.vipCert
         try {
@@ -10933,7 +10943,8 @@
             }
             return btoa(bin);
           };
-          window._lastExtractedCertB64 = {
+          const extractedObj = {
+            orderId: targetOrderId,
             p12Data: toB64(p12Buffer),
             mpData: toB64(provBuffer),
             p12Name: `${targetOrderId}.p12`,
@@ -10941,17 +10952,19 @@
             profileName: profileName || '',
             teamName: teamName || ''
           };
+          window._lastExtractedCertB64 = extractedObj;
+          if (!window._extractedCertB64ByOrder) window._extractedCertB64ByOrder = {};
+          window._extractedCertB64ByOrder[targetOrderId] = extractedObj;
         } catch (b64Err) {
           console.warn("Cert Base64 encode warning:", b64Err);
         }
 
         Swal.close();
         if (typeof showToast === 'function') {
-          const hasGh = !!getGitHubToken();
-          if (hasGh) {
-            showToast(`⚡ Đã tự động đóng gói, tải lên GitHub/Vercel & quét pass: "${detectedPass}" thành công!`, 'success');
+          if (downloadUrl) {
+            showToast(`⚡ Đã bóc tách, tải file lên server & quét pass: "${detectedPass}" thành công!`, 'success');
           } else {
-            showToast(`⚡ Đã tự động nhận diện pass: "${detectedPass}". (Gợi ý: Cài GitHub Token để file tự đẩy lên server)`, 'info');
+            showToast(`⚠️ Đã quét pass "${detectedPass}" & nạp P12/Provision vào bộ nhớ, nhưng chưa tải được file .ZIP lên GitHub/Drive (hãy cài GitHub Token hoặc kiểm tra lại GAS)!`, 'warning');
           }
         }
 
@@ -11112,6 +11125,208 @@
       if (window.lucide) lucide.createIcons();
     }
 
+    function isPlaceholderCertUid(uid) {
+      const u = String(uid || '').trim();
+      return !u || /^(CLIENT_|GUEST_|ADMIN_MANUAL_)/i.test(u);
+    }
+
+    function getExtractedCertB64(orderId) {
+      if (window._extractedCertB64ByOrder && orderId && window._extractedCertB64ByOrder[orderId]) {
+        return window._extractedCertB64ByOrder[orderId];
+      }
+      if (window._lastExtractedCertB64 && (!window._lastExtractedCertB64.orderId || window._lastExtractedCertB64.orderId === orderId)) {
+        return window._lastExtractedCertB64;
+      }
+      return {};
+    }
+
+    async function resolveCertCustomerUid(order = {}, contactHint = '') {
+      const directUid = String(order.uid || order.userId || '').trim();
+      if (!isPlaceholderCertUid(directUid)) return directUid;
+
+      const candidates = [
+        contactHint,
+        order.customerEmail,
+        order.userEmail,
+        order.customerContact,
+        order.contact,
+        order.customerName
+      ].map(s => String(s || '').trim()).filter(Boolean);
+
+      const lowerCandidates = candidates.map(s => s.toLowerCase());
+
+      // 1. Tìm trong danh sách AdminState.users (không phân biệt hoa/thường)
+      const users = AdminState.users || [];
+      for (const u of users) {
+        const uEmail = String(u.email || '').trim().toLowerCase();
+        const uPhone = String(u.phone || '').trim().toLowerCase();
+        const uName = String(u.username || '').trim().toLowerCase();
+        const uUid = String(u.uid || '').trim();
+        if (!uUid) continue;
+        if (lowerCandidates.some(c => (uEmail && c === uEmail) || (uPhone && c === uPhone) || (uUid.toLowerCase() === c) || (uName && c === uName))) {
+          return uUid;
+        }
+      }
+
+      // 2. Tìm trong SupportChats theo email
+      const chats = AdminState.supportChats || [];
+      for (const m of chats) {
+        const cUid = String(m.uid || '').trim();
+        const cEmail = String(m.email || '').trim().toLowerCase();
+        if (!isPlaceholderCertUid(cUid) && cEmail && lowerCandidates.includes(cEmail)) {
+          return cUid;
+        }
+      }
+
+      // 3. Kiểm tra lại doc cert_orders/{orderId} trên Firestore (nếu AdminState load từ Google Sheet bị thiếu uid)
+      const ordId = String(order.orderId || order.id || '').trim();
+      if (ordId && typeof db !== 'undefined' && db.collection) {
+        try {
+          const ordDoc = await db.collection('cert_orders').doc(ordId).get();
+          if (ordDoc && ordDoc.exists) {
+            const d = ordDoc.data() || {};
+            if (!isPlaceholderCertUid(d.uid)) return String(d.uid).trim();
+            if (d.customerEmail && !candidates.includes(d.customerEmail)) {
+              candidates.push(d.customerEmail);
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 4. Query trực tiếp Firestore users theo email (thử cả nguyên bản & viết thường)
+      if (typeof db !== 'undefined' && db.collection) {
+        for (const raw of candidates) {
+          if (!raw.includes('@')) continue;
+          const variants = Array.from(new Set([raw, raw.toLowerCase()]));
+          for (const v of variants) {
+            try {
+              const uSnap = await db.collection('users').where('email', '==', v).limit(1).get();
+              if (!uSnap.empty) return uSnap.docs[0].id;
+            } catch (e) {}
+          }
+        }
+      }
+
+      return '';
+    }
+
+    function buildVipCertPayload({ orderId, planName, certFileUrl, directInstallLink, certPass, warrantyUntil, remainingDays, udid, hasInsuranceAddon, status, revokeStatus, b64Cache }) {
+      const expMs = warrantyUntil ? new Date(warrantyUntil).getTime() : (Date.now() + 240 * 86400000);
+      const payload = {
+        orderId: orderId,
+        name: planName || 'Chứng chỉ Apple Developer',
+        planName: planName || 'Chứng chỉ Apple Developer',
+        certFileUrl: certFileUrl || '',
+        p12Url: certFileUrl || '',
+        directInstallLink: directInstallLink || '',
+        certPass: certPass || '1',
+        password: certPass || '1',
+        warrantyUntil: warrantyUntil || '',
+        expiresAt: isNaN(expMs) ? (Date.now() + 240 * 86400000) : expMs,
+        remainingDays: remainingDays || 0,
+        udid: udid || '',
+        teamName: (b64Cache && b64Cache.teamName) || 'Apple Developer',
+        hasAppleCarePlus: !!hasInsuranceAddon,
+        status: status || 'COMPLETED',
+        revokeStatus: revokeStatus || 'ACTIVE',
+        updatedAt: new Date().toISOString()
+      };
+      if (b64Cache && b64Cache.p12Data) {
+        payload.p12Data = b64Cache.p12Data;
+        payload.p12Name = b64Cache.p12Name || 'cert.p12';
+      }
+      if (b64Cache && b64Cache.mpData) {
+        payload.mpData = b64Cache.mpData;
+        payload.mpName = b64Cache.mpName || 'cert.mobileprovision';
+      }
+      return payload;
+    }
+
+    async function syncVipCertClientFirestore(targetUid, vipCertPayload, orderId, matchedOrder = {}, status = 'COMPLETED') {
+      if (isPlaceholderCertUid(targetUid)) {
+        return { synced: false, error: 'Chưa tìm thấy UID tài khoản khách' };
+      }
+      if (typeof db === 'undefined' || !db.collection) {
+        return { synced: false, error: 'Firestore chưa sẵn sàng' };
+      }
+      try {
+        const userUpdatePayload = { vipCert: vipCertPayload };
+
+        // Order Bump: VIP 30 ngày (+25k)
+        if (matchedOrder.hasVipAddon && !matchedOrder.vipAddonGranted) {
+          try {
+            const uDoc = await db.collection('users').doc(targetUid).get();
+            const uData = uDoc.exists ? uDoc.data() : {};
+            let baseExp = Date.now();
+            if (uData.vipExpire && uData.vipExpire.toMillis && uData.vipExpire.toMillis() > baseExp) {
+              baseExp = uData.vipExpire.toMillis();
+            }
+            userUpdatePayload.vip = true;
+            userUpdatePayload.isVip = true;
+            userUpdatePayload.vipExpire = firebase.firestore.Timestamp.fromMillis(baseExp + 30 * 86400000);
+            await db.collection('cert_orders').doc(orderId).set({ vipAddonGranted: true }, { merge: true });
+          } catch (vipErr) {}
+        }
+
+        // Order Bump: Bảo hiểm AppleCare+ (+29k -> tặng 20.000 Xu)
+        if (matchedOrder.hasInsuranceAddon && !matchedOrder.insuranceBonusGranted) {
+          userUpdatePayload.coins = firebase.firestore.FieldValue.increment(20000);
+          await db.collection('cert_orders').doc(orderId).set({ insuranceBonusGranted: true }, { merge: true }).catch(() => {});
+        }
+
+        await db.collection('users').doc(targetUid).set(userUpdatePayload, { merge: true });
+
+        // Hoa hồng Affiliate CTV (+15%)
+        const refUid = matchedOrder.ref || matchedOrder.refCode || '';
+        if (status === 'COMPLETED' && refUid && refUid !== targetUid && !matchedOrder.affiliateRewarded) {
+          const orderPrice = matchedOrder.price || matchedOrder.totalPrice || 150000;
+          const commission = Math.round(orderPrice * 0.15);
+          if (commission > 0) {
+            try {
+              await db.collection('users').doc(refUid).update({
+                affiliateBalance: firebase.firestore.FieldValue.increment(commission),
+                affiliateEarnings: firebase.firestore.FieldValue.increment(commission),
+                affiliateOrders: firebase.firestore.FieldValue.increment(1)
+              });
+              await db.collection('users').doc(refUid).collection('notifications').add({
+                title: 'Hoa Hồng Đơn Cert Apple Mới (+15%)',
+                message: `Bạn vừa nhận được +${commission.toLocaleString('vi-VN')}đ hoa hồng từ đơn mua Chứng chỉ Apple #${orderId}!`,
+                type: 'affiliate_earning',
+                amount: commission,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              await db.collection('cert_orders').doc(orderId).update({
+                affiliateRewarded: true,
+                affiliateCommission: commission
+              });
+            } catch (affErr) {
+              console.warn("Affiliate payout error:", affErr);
+            }
+          }
+        }
+        return { synced: true };
+      } catch (err) {
+        console.warn("Client Firestore users/{uid}.vipCert write error:", err);
+        return { synced: false, error: err && err.message ? err.message : String(err) };
+      }
+    }
+
+    async function postCertActionToGas(payload) {
+      try {
+        const res = await fetchWithTimeout(GOOGLE_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        }, 25000);
+        if (res && res.ok) {
+          return await res.json().catch(() => null);
+        }
+      } catch (e) {
+        console.warn("GAS cert sync notice:", e);
+      }
+      return null;
+    }
+
     async function submitCreateCertOrder(e) {
       e.preventDefault();
       const orderId = document.getElementById('newCertOrderId').value.trim().toUpperCase();
@@ -11127,7 +11342,7 @@
       const note = document.getElementById('newCertNote').value.trim();
       
       const certFileUrl = document.getElementById('newCertFileUrl')?.value.trim() || '';
-      const directInstallLink = document.getElementById('newCertDirectInstallLink')?.value.trim() || '';
+      const directInstallLink = document.getElementById('newCertDirectInstallLink')?.value.trim() || (certFileUrl ? generateOtaInstallLink('', planName) : '');
       const certPass = cleanCertPassword(document.getElementById('newCertPass')?.value);
 
       if (!orderId || !contact) {
@@ -11141,52 +11356,68 @@
 
       const remainingDays = calculateRemainingDays(warrantyUntil);
       const trackingLink = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(orderId)}`;
-
-      const orderData = {
-        orderId: orderId,
-        id: orderId,
-        uid: (AdminState._chatContext && AdminState._chatContext.uid) || ('ADMIN_MANUAL_' + Date.now()),
-        customerEmail: contact.includes('@') ? contact : '',
-        customerContact: contact,
-        customerName: contact,
-        contact: contact,
-        planId: planId,
-        planName: planName,
-        productName: planName,
-        price: price,
-        udid: udid,
-        note: note,
-        createdAt: new Date().toISOString(),
-        status: status,
-        revokeStatus: 'ACTIVE',
-        warrantyUntil: warrantyUntil,
-        warrantyDays: warrantyDays,
-        remainingDays: remainingDays,
-        certFileUrl: certFileUrl,
-        p12Url: certFileUrl,
-        directInstallLink: directInstallLink,
-        certPass: certPass,
-        trackingLink: trackingLink,
-        appLinks: 'VSign: https://ipaviet.site/vsign\nESign: https://ipaviet.site/esign',
-        guideLinks: 'https://ipaviet.site/certapple/index.html#faqSection',
-        paymentMethod: 'ADMIN_MANUAL'
-      };
-
       const btn = document.getElementById('btnSubmitCreateCert');
       btn.disabled = true;
       btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Đang tạo đơn...`;
 
       try {
-        // 1. Lưu Firestore (Bọc try-catch an toàn, không bao giờ bị chặn vì rule)
+        const chatUidHint = (AdminState._chatContext && AdminState._chatContext.uid) || '';
+        const resolvedUid = await resolveCertCustomerUid({ uid: chatUidHint, customerContact: contact }, contact);
+        const effectiveUid = resolvedUid || ('ADMIN_MANUAL_' + Date.now());
+        const b64Cache = getExtractedCertB64(orderId);
+
+        const orderData = {
+          orderId: orderId,
+          id: orderId,
+          uid: effectiveUid,
+          customerEmail: contact.includes('@') ? contact : '',
+          customerContact: contact,
+          customerName: contact,
+          contact: contact,
+          planId: planId,
+          planName: planName,
+          productName: planName,
+          price: price,
+          udid: udid,
+          note: note,
+          createdAt: new Date().toISOString(),
+          status: status,
+          revokeStatus: 'ACTIVE',
+          warrantyUntil: warrantyUntil,
+          warrantyDays: warrantyDays,
+          remainingDays: remainingDays,
+          certFileUrl: certFileUrl,
+          p12Url: certFileUrl,
+          directInstallLink: directInstallLink,
+          certPass: certPass,
+          trackingLink: trackingLink,
+          appLinks: 'VSign: https://ipaviet.site/vsign\nESign: https://ipaviet.site/esign',
+          guideLinks: 'https://ipaviet.site/certapple/index.html#faqSection',
+          paymentMethod: 'ADMIN_MANUAL'
+        };
+
+        // 1. Lưu cert_orders lên Firestore
         try {
           if (typeof db !== 'undefined' && db.collection) {
             await db.collection('cert_orders').doc(orderId).set(orderData, { merge: true });
           }
         } catch (fsErr) {
-          console.warn("Client Firestore write notice (will sync via backend Apps Script):", fsErr);
+          console.warn("Client Firestore cert_orders write notice:", fsErr);
         }
 
-        // 2. Lưu local cache & memory state ngay tức thì
+        // 2. Bơm ngay vào users/{uid}.vipCert nếu đơn đã kèm cert (status COMPLETED / có link / có P12)
+        let clientSyncRes = { synced: false };
+        const hasCertPayload = Boolean(certFileUrl || b64Cache.p12Data || status === 'COMPLETED');
+        if (hasCertPayload && !isPlaceholderCertUid(resolvedUid)) {
+          const vipCertPayload = buildVipCertPayload({
+            orderId, planName, certFileUrl, directInstallLink, certPass,
+            warrantyUntil, remainingDays, udid, hasInsuranceAddon: false,
+            status, revokeStatus: 'ACTIVE', b64Cache
+          });
+          clientSyncRes = await syncVipCertClientFirestore(resolvedUid, vipCertPayload, orderId, orderData, status);
+        }
+
+        // 3. Lưu local cache & memory state ngay tức thì
         const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
         local.unshift(orderData);
         localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 100)));
@@ -11194,60 +11425,40 @@
         if (!AdminState.certOrders) AdminState.certOrders = [];
         AdminState.certOrders.unshift(orderData);
 
-        // 3. Đồng bộ lên Google Sheet CERT_ORDERS qua Google Apps Script
-        try {
-          fetch(GOOGLE_API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              action: 'create_cert_order',
-              pin: AdminState.auth.inMemoryPin || '200912aB',
-              orderId: orderId,
-              uid: orderData.uid,
-              productName: planName,
-              planName: planName,
-              price: price,
-              udid: udid,
-              customerName: contact,
-              customerContact: contact,
-              warrantyUntil: warrantyUntil,
-              warrantyDays: warrantyDays,
-              remainingDays: remainingDays,
-              certFileUrl: certFileUrl,
-              directInstallLink: directInstallLink,
-              certPass: certPass,
-              status: status,
-              note: note
-            })
-          });
+        // 4. Đồng bộ lên Google Sheet + Firestore Server-side qua GAS
+        const gasRes = await postCertActionToGas({
+          action: 'create_cert_order',
+          pin: AdminState.auth.inMemoryPin || sessionStorage.getItem('admin_session_pin') || '200912aB',
+          orderId: orderId,
+          uid: resolvedUid || effectiveUid,
+          productName: planName,
+          planName: planName,
+          price: price,
+          udid: udid,
+          customerName: contact,
+          customerContact: contact,
+          warrantyUntil: warrantyUntil,
+          warrantyDays: warrantyDays,
+          remainingDays: remainingDays,
+          certFileUrl: certFileUrl,
+          directInstallLink: directInstallLink,
+          certPass: certPass,
+          status: status,
+          note: note,
+          teamName: b64Cache.teamName || '',
+          p12Data: b64Cache.p12Data || '',
+          mpData: b64Cache.mpData || '',
+          p12Name: b64Cache.p12Name || '',
+          mpName: b64Cache.mpName || ''
+        });
 
-          // Nếu đã có file cert nạp kèm, gọi thêm fulfill_cert_order để đảm bảo Google Sheet cập nhật đủ link tải
-          if (certFileUrl) {
-            setTimeout(() => {
-              fetch(GOOGLE_API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                  action: 'fulfill_cert_order',
-                  pin: AdminState.auth.inMemoryPin || '200912aB',
-                  orderId: orderId,
-                  status: status || 'COMPLETED',
-                  revokeStatus: 'ACTIVE',
-                  warrantyUntil: warrantyUntil,
-                  remainingDays: remainingDays,
-                  certFileUrl: certFileUrl,
-                  directInstallLink: directInstallLink,
-                  certPass: certPass,
-                  fulfillNote: note
-                })
-              });
-            }, 500);
-          }
-        } catch (e) {}
+        const syncedToCustomerAccount = Boolean(clientSyncRes.synced || (gasRes && gasRes.vipCertSynced));
+        const finalResolvedUid = resolvedUid || (gasRes && gasRes.resolvedUid) || '';
+        if (finalResolvedUid && isPlaceholderCertUid(orderData.uid)) {
+          orderData.uid = finalResolvedUid;
+        }
 
-        // 4. Nếu đơn tạo từ ngữ cảnh Live Chat, tự động gửi thẻ đơn hàng vào chat
+        // 5. Nếu đơn tạo từ ngữ cảnh Live Chat, tự động gửi thẻ đơn hàng vào chat
         if (AdminState._chatContext && AdminState._chatContext.sendCardOnCreate) {
           const chatUid = AdminState._chatContext.uid;
           const chatEmail = AdminState._chatContext.email;
@@ -11268,10 +11479,8 @@ Hệ thống đang tiến hành cấp chứng chỉ cho máy bạn. Ngay khi có
           AdminState._chatContext = null;
         }
 
-        // 5. Audit Log
+        // 6. Audit Log & Telegram Alert
         addAuditLog('CREATE_CERT_ORDER_MANUAL', `Tạo đơn cert thủ công: ${orderId} (${planName}) cho UDID: ${udid}`);
-
-        // 6. Telegram Alert
         try {
           const teleMsg = `🆕 <b>ADMIN TẠO ĐƠN CERT MỚI THỦ CÔNG</b>\n` +
             `💳 Mã đơn: <code>${orderId}</code>\n` +
@@ -11285,10 +11494,17 @@ Hệ thống đang tiến hành cấp chứng chỉ cho máy bạn. Ngay khi có
           fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(teleMsg)}`, { mode: 'no-cors' });
         } catch (e) {}
 
+        const syncNoteHtml = hasCertPayload
+          ? (syncedToCustomerAccount
+              ? `<p class="text-emerald-700 font-semibold">✓ Đã tự động đẩy chứng chỉ vào tài khoản khách hàng (<code>${escapeHTML(finalResolvedUid)}</code>).</p>`
+              : `<p class="text-amber-700 font-semibold">⚠️ Đã lưu đơn hàng, nhưng chưa tự đẩy vào tài khoản khách (không tìm thấy tài khoản khớp với "${escapeHTML(contact)}"). Khách vẫn tra cứu được qua link bên dưới.</p>`)
+          : '';
+
         Swal.fire({
           title: 'Tạo Đơn Cert Thành Công!',
           html: `<div class="text-left text-xs space-y-2">
             <p>Đơn hàng <b>${orderId}</b> đã được tạo thành công và lưu vào hệ thống!</p>
+            ${syncNoteHtml}
             <div class="p-2.5 bg-sky-50 rounded-xl border border-sky-200">
               <span class="block text-[11px] text-gray-500 font-bold mb-1">Link tra cứu đơn hàng cho khách:</span>
               <input type="text" readonly value="${trackingLink}" class="w-full px-2 py-1 bg-white border border-sky-300 rounded text-xs font-mono select-all">
@@ -11477,7 +11693,7 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
       e.preventDefault();
       const orderId = document.getElementById('fulfillTargetOrderId').value;
       const certFileUrl = document.getElementById('fulfillCertFileUrl').value.trim();
-      const directInstallLink = document.getElementById('fulfillDirectInstallUrl').value.trim() || generateOtaInstallLink(certFileUrl);
+      const directInstallLink = document.getElementById('fulfillDirectInstallUrl').value.trim() || generateOtaInstallLink('', 'VSign Pro MHAC2');
       const certPass = cleanCertPassword(document.getElementById('fulfillCertPass').value);
       const status = document.getElementById('fulfillOrderStatus').value;
       const revokeStatus = document.getElementById('fulfillRevokeStatus').value;
@@ -11487,9 +11703,10 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
       const note = document.getElementById('fulfillNote').value.trim();
       const remainingDays = calculateRemainingDays(warrantyUntil);
       const trackingLink = `https://ipaviet.site/certapple/tra-cuu.html?q=${encodeURIComponent(orderId)}`;
+      const b64Cache = getExtractedCertB64(orderId);
 
-      if (!certFileUrl) {
-        Swal.fire('Thiếu Link Chứng Chỉ', 'Vui lòng nhập link file chứng chỉ cho khách hoặc thả file cert vào ô upload!', 'warning');
+      if (!certFileUrl && !b64Cache.p12Data) {
+        Swal.fire('Thiếu Chứng Chỉ', 'Vui lòng thả file chứng chỉ (.zip / .p12 + .mobileprovision) hoặc nhập link tải tệp cert cho khách!', 'warning');
         return;
       }
 
@@ -11498,6 +11715,10 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
       btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Đang lưu & đồng bộ...`;
 
       try {
+        const matchedOrder = (AdminState.certOrders || []).find(o => (o.orderId || o.id) === orderId) || {};
+        const contactHint = matchedOrder.customerEmail || matchedOrder.userEmail || matchedOrder.customerContact || matchedOrder.contact || '';
+        const targetUid = await resolveCertCustomerUid(matchedOrder, contactHint);
+
         const updateData = {
           status: status,
           revokeStatus: revokeStatus,
@@ -11513,127 +11734,44 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
           trackingLink: trackingLink,
           fulfilledAt: new Date().toISOString()
         };
+        if (targetUid) updateData.uid = targetUid;
 
-        // 1. Lưu Firestore an toàn
+        // 1. Lưu cert_orders & bơm users/{uid}.vipCert từ client Firestore
+        let clientSyncRes = { synced: false };
         try {
           if (typeof db !== 'undefined' && db.collection) {
             await db.collection('cert_orders').doc(orderId).set(updateData, { merge: true });
-
-            // Tự động bơm Cert vào Tủ Đồ của Khách Hàng (users/{uid}.vipCert) + kích hoạt Order Bump
-            const matchedOrder = (AdminState.certOrders || []).find(o => (o.orderId || o.id) === orderId) || {};
-            let targetUid = matchedOrder.uid || matchedOrder.userId || '';
-            if (!targetUid || targetUid.startsWith('CLIENT_') || targetUid.startsWith('GUEST_')) {
-              const lookupEmail = (matchedOrder.customerEmail || matchedOrder.customerContact || matchedOrder.contact || '').trim().toLowerCase();
-              if (lookupEmail && lookupEmail.includes('@')) {
-                try {
-                  const uSnap = await db.collection('users').where('email', '==', lookupEmail).limit(1).get();
-                  if (!uSnap.empty) targetUid = uSnap.docs[0].id;
-                } catch (e) {}
-              }
-            }
-
-            if (targetUid && !targetUid.startsWith('CLIENT_') && !targetUid.startsWith('GUEST_')) {
-              const b64Cache = window._lastExtractedCertB64 || {};
-              const expMs = warrantyUntil ? new Date(warrantyUntil).getTime() : (Date.now() + 240 * 86400000);
-              const vipCertPayload = {
-                orderId: orderId,
-                name: matchedOrder.planName || 'Chứng chỉ Apple Developer',
-                planName: matchedOrder.planName || 'Chứng chỉ Apple Developer',
-                certFileUrl: certFileUrl,
-                p12Url: certFileUrl,
-                directInstallLink: directInstallLink,
-                certPass: certPass,
-                password: certPass,
-                warrantyUntil: warrantyUntil,
-                expiresAt: isNaN(expMs) ? (Date.now() + 240 * 86400000) : expMs,
-                remainingDays: remainingDays,
-                udid: matchedOrder.udid || '',
-                teamName: b64Cache.teamName || 'Apple Developer',
-                hasAppleCarePlus: !!matchedOrder.hasInsuranceAddon,
-                status: status,
-                revokeStatus: revokeStatus,
-                updatedAt: new Date().toISOString()
-              };
-              if (b64Cache.p12Data) {
-                vipCertPayload.p12Data = b64Cache.p12Data;
-                vipCertPayload.p12Name = b64Cache.p12Name || 'cert.p12';
-              }
-              if (b64Cache.mpData) {
-                vipCertPayload.mpData = b64Cache.mpData;
-                vipCertPayload.mpName = b64Cache.mpName || 'cert.mobileprovision';
-              }
-
-              const userUpdatePayload = { vipCert: vipCertPayload };
-
-              // Nếu khách có mua kèm Order Bump: VIP 30 ngày (+25k)
-              if (matchedOrder.hasVipAddon && !matchedOrder.vipAddonGranted) {
-                try {
-                  const uDoc = await db.collection('users').doc(targetUid).get();
-                  const uData = uDoc.exists ? uDoc.data() : {};
-                  let baseExp = Date.now();
-                  if (uData.vipExpire && uData.vipExpire.toMillis && uData.vipExpire.toMillis() > baseExp) {
-                    baseExp = uData.vipExpire.toMillis();
-                  }
-                  userUpdatePayload.vip = true;
-                  userUpdatePayload.isVip = true;
-                  userUpdatePayload.vipExpire = firebase.firestore.Timestamp.fromMillis(baseExp + 30 * 86400000);
-                  await db.collection('cert_orders').doc(orderId).set({ vipAddonGranted: true }, { merge: true });
-                } catch (vipErr) {}
-              }
-
-              // Nếu khách có mua kèm Order Bump: Bảo hiểm AppleCare+ (+29k -> tặng 20.000 Xu)
-              if (matchedOrder.hasInsuranceAddon && !matchedOrder.insuranceBonusGranted) {
-                userUpdatePayload.coins = firebase.firestore.FieldValue.increment(20000);
-                await db.collection('cert_orders').doc(orderId).set({ insuranceBonusGranted: true }, { merge: true }).catch(() => {});
-              }
-
-              await db.collection('users').doc(targetUid).set(userUpdatePayload, { merge: true });
-              console.log("✓ Đã tự động bơm Cert & kích hoạt quyền lợi vào users/" + targetUid);
-            }
-
-            // Tự động trả thưởng Affiliate CTV (+15%) nếu đơn hàng có mã ref
-            const refUid = matchedOrder.ref || matchedOrder.refCode || '';
-            if (status === 'COMPLETED' && refUid && refUid !== targetUid && !matchedOrder.affiliateRewarded) {
-              const orderPrice = matchedOrder.price || matchedOrder.totalPrice || 150000;
-              const commission = Math.round(orderPrice * 0.15);
-              if (commission > 0) {
-                try {
-                  await db.collection('users').doc(refUid).update({
-                    affiliateBalance: firebase.firestore.FieldValue.increment(commission),
-                    affiliateEarnings: firebase.firestore.FieldValue.increment(commission),
-                    affiliateOrders: firebase.firestore.FieldValue.increment(1)
-                  });
-                  await db.collection('users').doc(refUid).collection('notifications').add({
-                    title: 'Hoa Hồng Đơn Cert Apple Mới (+15%)',
-                    message: `Bạn vừa nhận được +${commission.toLocaleString('vi-VN')}đ hoa hồng từ đơn mua Chứng chỉ Apple #${orderId}!`,
-                    type: 'affiliate_earning',
-                    amount: commission,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                  });
-                  await db.collection('cert_orders').doc(orderId).update({
-                    affiliateRewarded: true,
-                    affiliateCommission: commission
-                  });
-                  console.log("✓ Đã tự động trả hoa hồng 15% cho CTV:", refUid);
-                } catch(affErr) {
-                  console.warn("Affiliate payout error:", affErr);
-                }
-              }
-            }
           }
         } catch (fsErr) {
-          console.warn("Client Firestore update notice:", fsErr);
+          console.warn("Client Firestore cert_orders update notice:", fsErr);
         }
 
-        // 2. Cập nhật Memory State
+        if (targetUid) {
+          const vipCertPayload = buildVipCertPayload({
+            orderId,
+            planName: matchedOrder.planName || 'Chứng chỉ Apple Developer',
+            certFileUrl,
+            directInstallLink,
+            certPass,
+            warrantyUntil,
+            remainingDays,
+            udid: matchedOrder.udid || '',
+            hasInsuranceAddon: !!matchedOrder.hasInsuranceAddon,
+            status,
+            revokeStatus,
+            b64Cache
+          });
+          clientSyncRes = await syncVipCertClientFirestore(targetUid, vipCertPayload, orderId, matchedOrder, status);
+        }
+
+        // 2. Cập nhật Memory State & localStorage
         const idx = (AdminState.certOrders || []).findIndex(o => (o.orderId || o.id) === orderId);
-        let existingOrder = null;
+        let existingOrder = matchedOrder;
         if (idx !== -1) {
           AdminState.certOrders[idx] = { ...AdminState.certOrders[idx], ...updateData };
           existingOrder = AdminState.certOrders[idx];
         }
 
-        // 3. Cập nhật localStorage
         const local = JSON.parse(localStorage.getItem('ipaviet_cert_orders') || '[]');
         const lIdx = local.findIndex(o => (o.orderId || o.id) === orderId);
         if (lIdx !== -1) {
@@ -11641,29 +11779,39 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
           localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local));
         }
 
-        // 4. Đồng bộ lên Google Sheet CERT_ORDERS qua Google Apps Script
-        try {
-          fetch(GOOGLE_API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              action: 'fulfill_cert_order',
-              pin: AdminState.auth.inMemoryPin || '200912aB',
-              orderId: orderId,
-              status: status,
-              revokeStatus: revokeStatus,
-              warrantyUntil: warrantyUntil,
-              remainingDays: remainingDays,
-              certFileUrl: certFileUrl,
-              directInstallLink: directInstallLink,
-              certPass: certPass,
-              fulfillNote: note
-            })
-          });
-        } catch (e) {}
+        // 3. Đồng bộ lên Google Sheet CERT_ORDERS + Firestore Server-side (Service Account) qua GAS
+        const gasRes = await postCertActionToGas({
+          action: 'fulfill_cert_order',
+          pin: AdminState.auth.inMemoryPin || sessionStorage.getItem('admin_session_pin') || '200912aB',
+          orderId: orderId,
+          uid: targetUid || matchedOrder.uid || '',
+          customerEmail: matchedOrder.customerEmail || '',
+          customerContact: contactHint,
+          planName: matchedOrder.planName || 'Chứng chỉ Apple Developer',
+          udid: matchedOrder.udid || '',
+          hasInsuranceAddon: !!matchedOrder.hasInsuranceAddon,
+          status: status,
+          revokeStatus: revokeStatus,
+          warrantyUntil: warrantyUntil,
+          remainingDays: remainingDays,
+          certFileUrl: certFileUrl,
+          directInstallLink: directInstallLink,
+          certPass: certPass,
+          fulfillNote: note,
+          teamName: b64Cache.teamName || '',
+          p12Data: b64Cache.p12Data || '',
+          mpData: b64Cache.mpData || '',
+          p12Name: b64Cache.p12Name || '',
+          mpName: b64Cache.mpName || ''
+        });
 
-        // 5. Nếu thao tác từ ngữ cảnh Live Chat, tự động gửi thẻ trả cert vào chat
+        const syncedToCustomerAccount = Boolean(clientSyncRes.synced || (gasRes && gasRes.vipCertSynced));
+        const finalResolvedUid = targetUid || (gasRes && gasRes.resolvedUid) || '';
+        if (finalResolvedUid && idx !== -1 && isPlaceholderCertUid(AdminState.certOrders[idx].uid)) {
+          AdminState.certOrders[idx].uid = finalResolvedUid;
+        }
+
+        // 4. Nếu thao tác từ ngữ cảnh Live Chat, tự động gửi thẻ trả cert vào chat
         if (AdminState._chatFulfillContext && AdminState._chatFulfillContext.orderId === orderId) {
           const chatUid = AdminState._chatFulfillContext.uid;
           const chatEmail = AdminState._chatFulfillContext.email;
@@ -11675,13 +11823,10 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
 🔑 Mật khẩu file .p12: ${certPass}
 ⏳ Hạn bảo hành: ${warrantyUntil || 'Theo gói'} (Còn ${remainingDays} ngày)
 ━━━━━━━━━━━━━━━━━━━
-📲 CÀI ĐẶT TRỰC TIẾP (OTA NHANH):
+📲 CÀI ĐẶT TRỰC TIẾP VSIGN (OTA):
 👉 ${directInstallLink}
 (Mở link trên bằng trình duyệt Safari để cài đặt ngay)
-
-📥 LINK TẢI TỆP CHỨNG CHỈ (.ZIP / .P12):
-👉 ${certFileUrl}
-
+${certFileUrl ? `\n📥 LINK TẢI TỆP CHỨNG CHỈ (.ZIP / .P12):\n👉 ${certFileUrl}\n` : ''}
 🔍 CỔNG TRA CỨU TIẾN ĐỘ & BẢO HÀNH:
 👉 ${trackingLink}
 ${note ? '\n💬 Ghi chú thêm: ' + note : ''}
@@ -11692,7 +11837,7 @@ Cảm ơn bạn đã lựa chọn dịch vụ chứng chỉ Apple của IPAVIET!
           AdminState._chatFulfillContext = null;
         }
 
-        // 6. Gửi thông báo Telegram
+        // 5. Gửi thông báo Telegram
         try {
           const teleMsg = `✅ <b>ADMIN ĐÃ TRẢ CHỨNG CHỈ CHO KHÁCH</b>\n` +
             `💳 Mã đơn: <code>${orderId}</code>\n` +
@@ -11700,23 +11845,32 @@ Cảm ơn bạn đã lựa chọn dịch vụ chứng chỉ Apple của IPAVIET!
             `⚠️ Thu hồi: <b>${revokeStatus === 'REVOKED' ? 'ĐÃ THU HỒI' : 'HOẠT ĐỘNG TỐT'}</b>\n` +
             `⏳ Hạn bảo hành: <b>${warrantyUntil || 'Theo gói'} (Còn ${remainingDays} ngày)</b>\n` +
             `🔑 Mật khẩu: <code>${certPass}</code>\n` +
-            `📦 File Cert: ${certFileUrl}\n` +
-            `📲 OTA Direct: ${directInstallLink}\n` +
+            `📦 File Cert: ${certFileUrl || '(Đã bơm P12 trực tiếp vào Tủ Đồ)'}\n` +
+            `👤 Đồng bộ Tủ Đồ khách: <b>${syncedToCustomerAccount ? ('Thành công (' + finalResolvedUid + ')') : 'Chưa khớp tài khoản'}</b>\n` +
             `🔍 Tra cứu: ${trackingLink}`;
           fetch(`${GOOGLE_API_URL}?action=notify_admin&message=${encodeURIComponent(teleMsg)}`, { mode: 'no-cors' });
         } catch (e) {}
+
+        const accountSyncHtml = syncedToCustomerAccount
+          ? `<p class="text-emerald-700 font-semibold">✓ Đã tự động bơm chứng chỉ vào Tủ Đồ tài khoản khách (<code>${escapeHTML(finalResolvedUid)}</code>).</p>`
+          : `<p class="text-amber-700 font-semibold">⚠️ Đã lưu đơn hàng nhưng chưa tự đẩy được vào Tủ Đồ tài khoản khách${contactHint ? ` (chưa tìm thấy tài khoản khớp với "${escapeHTML(contactHint)}")` : ''}. Khách vẫn dùng được link tra cứu bên dưới.</p>`;
+        const fileWarnHtml = !certFileUrl
+          ? `<p class="text-amber-700 font-semibold">⚠️ Chưa có URL tải .ZIP (do chưa cài GitHub Token hoặc GAS chưa upload được Drive). Hãy cài GitHub Token nếu cần link tải ZIP trực tiếp.</p>`
+          : '';
 
         Swal.fire({
           title: 'Trả Hàng Thành Công!',
           html: `<div class="text-left text-xs space-y-2">
             <p>Đã cập nhật đơn <b>${orderId}</b> thành <b>Hoàn Thành</b>!</p>
-            <p class="text-emerald-700 font-semibold">✓ Link tải, link cài đặt trực tiếp OTA và hạn bảo hành còn <b>${remainingDays} ngày</b> đã được đồng bộ.</p>
+            <p class="text-emerald-700 font-semibold">✓ Link cài đặt và hạn bảo hành còn <b>${remainingDays} ngày</b> đã được đồng bộ.</p>
+            ${accountSyncHtml}
+            ${fileWarnHtml}
             <div class="p-2.5 bg-sky-50 rounded-xl border border-sky-200">
               <span class="block text-[11px] text-gray-500 font-bold mb-1">Link tra cứu đơn hàng của khách:</span>
               <input type="text" readonly value="${trackingLink}" class="w-full px-2 py-1 bg-white border border-sky-300 rounded text-xs font-mono select-all">
             </div>
           </div>`,
-          icon: 'success',
+          icon: syncedToCustomerAccount ? 'success' : 'info',
           showCancelButton: true,
           confirmButtonColor: '#0071E3',
           confirmButtonText: 'Copy Link Tra Cứu',
