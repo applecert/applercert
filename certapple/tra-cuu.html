@@ -1133,47 +1133,132 @@
       btn.setAttribute('aria-expanded', String(willOpen));
     }
 
-    function startOtaInstall(edition, otaUrl, appName, iconUrl) {
+    window._traCuuOrdersMap = window._traCuuOrdersMap || {};
+
+    function loadJsZipTraCuu() {
+      if (window.JSZip) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Không tải được thư viện giải nén ZIP.'));
+        document.head.appendChild(s);
+      });
+    }
+
+    function buildWorkerOtaLinks(signedIpaUrl, appName, bundleId, iconUrl) {
+      const workerUrl = 'https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=' +
+        encodeURIComponent(signedIpaUrl) +
+        '&name=' + encodeURIComponent(appName) +
+        '&bundle=' + encodeURIComponent(bundleId) +
+        '&version=2.0&icon=' + encodeURIComponent(iconUrl);
+      return {
+        otaUrl: 'itms-services://?action=download-manifest&url=' + encodeURIComponent(workerUrl),
+        webUrl: 'https://ipaviet-installer.clonene121212.workers.dev/?ipa=' + encodeURIComponent(signedIpaUrl) + '&name=' + encodeURIComponent(appName)
+      };
+    }
+
+    function isRealSignedOtaUrl(otaUrl) {
+      if (!otaUrl || typeof otaUrl !== 'string') return false;
+      try {
+        const decoded = decodeURIComponent(otaUrl);
+        if (/raw\.githubusercontent\.com\/applecert\/applercert\/main\/VSign-(?:Pro-MHAC2|Standard)\.ipa/i.test(decoded)) {
+          return false;
+        }
+        return otaUrl.startsWith('itms-services://');
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function checkExistingSignedOtaAlive(otaUrl) {
+      if (!isRealSignedOtaUrl(otaUrl)) return false;
+      try {
+        const decoded = decodeURIComponent(otaUrl);
+        const m = decoded.match(/ipa\.ipasign\.cc\/download\/([A-Za-z0-9._-]+)/i);
+        if (!m || !m[1]) return true;
+        const r = await fetch(`https://ipa.ipasign.cc/status/${encodeURIComponent(m[1])}`);
+        if (!r || !r.ok) return false;
+        const d = await r.json().catch(() => null);
+        return !!(d && ['SUCCESS', 'ok', 'success', 'COMPLETED'].includes(d.status));
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function fetchFirstValidBlob(urls, checkZipHeader = false) {
+      let lastErr = null;
+      for (const u of urls) {
+        if (!u || u === '#') continue;
+        try {
+          const r = await fetch(u);
+          if (!r || !r.ok) continue;
+          const blob = await r.blob();
+          if (blob.size < 512) continue;
+          if (checkZipHeader) {
+            const head = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+            if (head[0] !== 0x50 || head[1] !== 0x4B) continue;
+          }
+          return blob;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Không tải được tệp cần thiết từ máy chủ.');
+    }
+
+    async function startOtaInstall(edition, orderId, appName, iconUrl) {
       if (navigator.vibrate) navigator.vibrate(60);
 
-      const btnId = (edition === 'pro') ? 'btnOtaPro' : 'btnOtaStd';
-      const btn = document.getElementById(btnId);
+      const ord = window._traCuuOrdersMap[orderId] || {};
+      const btnId = (edition === 'pro') ? `btnOtaPro_${orderId}` : `btnOtaStd_${orderId}`;
+      const btn = document.getElementById(btnId) || document.getElementById((edition === 'pro') ? 'btnOtaPro' : 'btnOtaStd');
       const originalHtml = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 mr-1.5 inline animate-spin"></i></i> Đang gửi lệnh...';
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 mr-1.5 inline animate-spin"></i> Đang chuẩn bị...';
       }
 
       const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const setProgress = (pct, text, tone = '') => {
+        const t = document.getElementById('otaProgressText');
+        const v = document.getElementById('otaProgressVal');
+        const b = document.getElementById('otaProgressBar');
+        if (t) {
+          t.textContent = text;
+          if (tone === 'error') t.className = 'text-rose-500 font-bold';
+        }
+        if (v) v.textContent = pct + '%';
+        if (b) b.style.width = pct + '%';
+      };
 
       Swal.fire({
         title: '',
         html: `
           <div class="text-left space-y-4">
-            <!-- App Header -->
             <div class="flex items-center gap-3.5 p-3 bg-fill/50 rounded-2xl border border-separator/80">
               <img src="${iconUrl}" class="w-14 h-14 rounded-[14px] shadow-md border border-separator/80 shrink-0 object-cover" alt="${appName}">
               <div class="min-w-0 flex-1">
                 <h4 class="font-black text-sm text-label leading-tight">${appName}</h4>
-                <p class="text-[11px] text-label-2 mt-0.5">Cài đặt trực tiếp qua giao thức OTA Apple</p>
-                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-500 mt-0.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> Chứng chỉ Apple Developer hợp lệ
+                <p class="text-[11px] text-label-2 mt-0.5">Ký bằng chứng chỉ riêng &amp; cài đặt OTA Apple</p>
+                <span id="otaSignBadge" class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-500 mt-0.5">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5 inline"></i> Đang xác thực chứng chỉ đơn #${orderId}
                 </span>
               </div>
             </div>
 
-            <!-- Progress Bar & Status -->
             <div class="space-y-1.5">
               <div class="flex justify-between text-xs font-semibold text-label-2">
-                <span id="otaProgressText">Đang kết nối máy chủ Apple...</span>
-                <span id="otaProgressVal" class="font-mono font-bold text-blue-500">25%</span>
+                <span id="otaProgressText">Đang kiểm tra liên kết đã ký...</span>
+                <span id="otaProgressVal" class="font-mono font-bold text-blue-500">15%</span>
               </div>
               <div class="w-full h-2.5 rounded-full bg-fill overflow-hidden border border-separator/40">
-                <div id="otaProgressBar" class="h-full bg-gradient-to-r from-blue-600 to-sky-400 transition-all duration-300 rounded-full" style="width: 25%"></div>
+                <div id="otaProgressBar" class="h-full bg-gradient-to-r from-blue-600 to-sky-400 transition-all duration-300 rounded-full" style="width: 15%"></div>
               </div>
             </div>
 
-            <!-- Hướng dẫn 3 bước thao tác trên iPhone -->
+            <div id="otaDirectActionBox" class="hidden space-y-2"></div>
+
             <div class="space-y-2 text-xs bg-fill/40 p-3 rounded-xl border border-separator/70 text-label-2">
               <div class="flex items-start gap-2">
                 <span class="w-5 h-5 rounded-full bg-blue-500/10 text-blue-600 font-black text-[11px] flex items-center justify-center shrink-0">1</span>
@@ -1181,24 +1266,24 @@
               </div>
               <div class="flex items-start gap-2">
                 <span class="w-5 h-5 rounded-full bg-blue-500/10 text-blue-600 font-black text-[11px] flex items-center justify-center shrink-0">2</span>
-                <span>Vuốt về <strong>Màn hình chính (Home Screen)</strong> để xem biểu tượng xoay tải ứng dụng.</span>
+                <span>Vuốt về <strong>Màn hình chính (Home Screen)</strong> để xem biểu tượng tải ứng dụng.</span>
               </div>
               <div class="flex items-start gap-2">
                 <span class="w-5 h-5 rounded-full bg-blue-500/10 text-blue-600 font-black text-[11px] flex items-center justify-center shrink-0">3</span>
-                <span>Nếu báo lỗi <em>"Chưa tin cậy"</em>: Vào <strong>Cài đặt > Cài đặt chung > Quản lý VPN & Thiết bị</strong> bấm <strong>Tin cậy</strong>.</span>
+                <span>Nếu báo <em>"Chưa tin cậy"</em>: Vào <strong>Cài đặt &gt; Cài đặt chung &gt; Quản lý VPN &amp; Thiết bị</strong> bấm <strong>Tin cậy</strong>.</span>
               </div>
             </div>
 
             ${!isIos ? `
               <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 text-[11px] font-medium flex items-center gap-2">
-                <i data-lucide="info" class="w-3.5 h-3.5 text-xs shrink-0 inline"></i></i>
-                <span>Bạn đang mở trên máy tính/Android. Tính năng cài OTA chỉ kích hoạt trên iPhone/iPad mở bằng Safari. Trên thiết bị này bạn hãy tải file <strong>.IPA</strong> ở nút bên dưới!</span>
+                <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 inline"></i>
+                <span>Bạn đang mở trên máy tính/Android. Tính năng cài OTA chỉ kích hoạt trên iPhone/iPad mở bằng Safari.</span>
               </div>
             ` : ''}
           </div>
         `,
         showConfirmButton: true,
-        confirmButtonText: 'Đã hiểu & Kiểm tra màn hình',
+        confirmButtonText: 'Đóng',
         confirmButtonColor: '#0A84FF',
         customClass: {
           popup: 'apple-glass-modal',
@@ -1206,32 +1291,142 @@
         }
       });
 
-      // Animate progress
-      setTimeout(() => {
-        const t = document.getElementById('otaProgressText');
-        const v = document.getElementById('otaProgressVal');
-        const b = document.getElementById('otaProgressBar');
-        if (t) t.textContent = 'Đang tải gói Plist Apple Manifest...';
-        if (v) v.textContent = '65%';
-        if (b) b.style.width = '65%';
-      }, 350);
-
-      setTimeout(() => {
-        const t = document.getElementById('otaProgressText');
-        const v = document.getElementById('otaProgressVal');
-        const b = document.getElementById('otaProgressBar');
-        if (t) t.textContent = 'Đã gửi lệnh cài đặt! Vui lòng chọn "Cài đặt"';
-        if (v) v.textContent = '100%';
-        if (b) b.style.width = '100%';
-
-        // Dispatch OTA protocol to iOS
-        window.location.href = otaUrl;
-
+      const restoreBtn = () => {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = originalHtml;
+          if (window.lucide) lucide.createIcons();
         }
-      }, 750);
+      };
+
+      const dispatchOta = (otaLink, webLink) => {
+        setProgress(100, 'Đã ký xong bằng chứng chỉ của bạn! Đang mở cài đặt...');
+        const badge = document.getElementById('otaSignBadge');
+        if (badge) {
+          badge.className = 'inline-flex items-center gap-1 text-[10px] font-bold text-emerald-500 mt-0.5';
+          badge.innerHTML = '<i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> Đã ký bằng chứng chỉ Apple Developer của bạn';
+        }
+        const actionBox = document.getElementById('otaDirectActionBox');
+        if (actionBox) {
+          actionBox.classList.remove('hidden');
+          actionBox.innerHTML = `
+            <a href="${otaLink}" class="ios-btn ios-btn-filled w-full text-center block font-bold text-xs py-2.5 text-white shadow-sm" style="background: linear-gradient(135deg, #10B981, #059669);">
+              📲 Bấm Vào Đây Để Cài Đặt Ngay Lên iPhone
+            </a>
+          `;
+        }
+        if (window.lucide) lucide.createIcons();
+        window.location.href = otaLink;
+        restoreBtn();
+      };
+
+      try {
+        // 1. Nếu là bản Pro và đơn đã có directInstallLink ký thật còn sống -> dùng ngay
+        if (edition === 'pro' && await checkExistingSignedOtaAlive(ord.directInstallLink)) {
+          dispatchOta(ord.directInstallLink, '');
+          return;
+        }
+
+        // 2. Ký trực tiếp bằng tệp chứng chỉ (.p12 + .mobileprovision) của đơn hàng
+        setProgress(25, 'Đang tải tệp chứng chỉ của đơn hàng...');
+        await loadJsZipTraCuu();
+        const certUrls = [
+          `../downloads/certs/${orderId}_cert.zip`,
+          ord._backupGitUrl,
+          ord.certFileUrl,
+          ord.p12Url,
+          `https://raw.githubusercontent.com/applecert/applercert/main/downloads/certs/${orderId}_cert.zip`,
+          `https://gh-proxy.org/https://raw.githubusercontent.com/applecert/applercert/main/downloads/certs/${orderId}_cert.zip`
+        ].filter(Boolean);
+
+        const zipBlob = await fetchFirstValidBlob(certUrls, true);
+        const zip = await window.JSZip.loadAsync(zipBlob);
+        let p12Blob = null, mpBlob = null, detectedPass = '';
+        for (const name of Object.keys(zip.files)) {
+          const entry = zip.files[name];
+          const low = name.toLowerCase();
+          if (entry.dir || low.includes('__macosx')) continue;
+          if (low.endsWith('.p12') && !p12Blob) {
+            p12Blob = await entry.async('blob');
+          } else if (low.endsWith('.mobileprovision') && !mpBlob) {
+            mpBlob = await entry.async('blob');
+          } else if ((low.endsWith('.txt') || low.includes('pass')) && !detectedPass) {
+            try {
+              const txt = await entry.async('string');
+              const m = txt.match(/(?:mật\s*khẩu|pass(?:word)?|pwd|mk)\s*[:=\-]\s*([^\r\n,;]+)/i);
+              if (m && m[1]) detectedPass = cleanCertPassword(m[1]);
+              else if (txt && txt.trim().length <= 40 && !/\s/.test(txt.trim())) detectedPass = cleanCertPassword(txt.trim());
+            } catch (e) {}
+          }
+        }
+        if (!p12Blob || !mpBlob) {
+          throw new Error('Không tìm thấy tệp .p12 và .mobileprovision trong file chứng chỉ của đơn hàng.');
+        }
+
+        const passwordToUse = cleanCertPassword(ord.certPass || detectedPass || '1');
+        const ipaFileName = (edition === 'pro') ? 'VSign-Pro-MHAC2.ipa' : 'VSign-Standard.ipa';
+        const bundleId = (edition === 'pro') ? 'com.ipaviet.vsignpro' : 'com.vsign.app';
+        const fullIconUrl = (edition === 'pro')
+          ? 'https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-pro-icon.png'
+          : 'https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-std-icon.png';
+
+        setProgress(45, `Đang nạp gói ${appName} để ký với chứng chỉ của bạn...`);
+        const ipaBlob = await fetchFirstValidBlob([
+          `../${ipaFileName}`,
+          `https://raw.githubusercontent.com/applecert/applercert/main/${ipaFileName}`,
+          `https://gh-proxy.org/https://raw.githubusercontent.com/applecert/applercert/main/${ipaFileName}`
+        ], true);
+
+        setProgress(65, 'Đang gửi lên máy chủ ký C++ (ipa.ipasign.cc)...');
+        const fd = new FormData();
+        fd.append('ipa', ipaBlob, ipaFileName);
+        fd.append('p12', new Blob([p12Blob], { type: 'application/x-pkcs12' }), 'cert.p12');
+        fd.append('mp', new Blob([mpBlob], { type: 'application/octet-stream' }), 'cert.mobileprovision');
+        fd.append('password', passwordToUse);
+        fd.append('app_name', appName);
+        fd.append('bundle_id', bundleId);
+
+        const signRes = await fetch('https://ipa.ipasign.cc/sign', { method: 'POST', body: fd });
+        const signJson = await signRes.json().catch(() => null);
+        if (!signRes.ok || !signJson) {
+          throw new Error((signJson && (signJson.error || signJson.msg)) || 'Máy chủ ký từ chối yêu cầu.');
+        }
+        const jobId = signJson.task_id || signJson.job_id;
+        if (!jobId) throw new Error('Máy chủ ký không trả về mã tác vụ.');
+
+        setProgress(78, 'Đang ký ứng dụng với chứng chỉ riêng của bạn...');
+        let signedIpaUrl = '';
+        const deadline = Date.now() + 120000;
+        while (Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 2000));
+          const stRes = await fetch(`https://ipa.ipasign.cc/status/${encodeURIComponent(jobId)}`).catch(() => null);
+          const st = stRes && stRes.ok ? await stRes.json().catch(() => null) : null;
+          if (!st) continue;
+          if (['SUCCESS', 'ok', 'success', 'COMPLETED'].includes(st.status)) {
+            signedIpaUrl = st.download || st.url || `https://ipa.ipasign.cc/download/${encodeURIComponent(jobId)}`;
+            break;
+          }
+          if (['FAILED', 'error', 'FAILURE'].includes(st.status)) {
+            throw new Error(st.log || st.msg || st.error || 'Chứng chỉ không khớp hoặc sai mật khẩu .p12.');
+          }
+        }
+        if (!signedIpaUrl) throw new Error('Quá thời gian chờ máy chủ ký.');
+
+        const links = buildWorkerOtaLinks(signedIpaUrl, appName, bundleId, fullIconUrl);
+        dispatchOta(links.otaUrl, links.webUrl);
+      } catch (err) {
+        setProgress(0, 'Không thể ký tự động: ' + (err && err.message ? err.message : 'Lỗi không xác định'), 'error');
+        const actionBox = document.getElementById('otaDirectActionBox');
+        if (actionBox) {
+          actionBox.classList.remove('hidden');
+          actionBox.innerHTML = `
+            <a href="../sign-app/index.html" target="_blank" class="ios-btn ios-btn-outline w-full text-center block font-bold text-xs py-2.5 text-label">
+              Mở Web Signer Online để tự ký bằng file .ZIP
+            </a>
+          `;
+        }
+        restoreBtn();
+      }
     }
 
     // Smart UDID Auto-Formatter & Detector
@@ -1479,23 +1674,15 @@
               backupGitUrl = `https://raw.githubusercontent.com/applecert/applercert/main/downloads/certs/${certFileNameMatch[1]}`;
             }
           }
-          
-          // URLs OTA & IPA VSign Pro MHAC2 (Mã hóa 2 lớp chuẩn Apple Manifest, kèm AppIcon thực)
-          const vsignProWorker = 'https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=' +
-            encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa') +
-            '&name=' + encodeURIComponent('VSign Pro MHAC2') +
-            '&bundle=com.ipaviet.vsignpro&version=2.0&icon=' +
-            encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-pro-icon.png');
-          const vsignProOtaUrl = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(vsignProWorker);
-          const vsignProIpaUrl = `https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa`;
 
-          // URLs OTA & IPA VSign Standard (Bản Tiêu Chuẩn)
-          const vsignStdWorker = 'https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=' +
-            encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/VSign-Standard.ipa') +
-            '&name=' + encodeURIComponent('VSign Tiêu Chuẩn') +
-            '&bundle=com.vsign.app&version=2.0&icon=' +
-            encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-std-icon.png');
-          const vsignStdOtaUrl = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(vsignStdWorker);
+          window._traCuuOrdersMap[orderId] = Object.assign({}, ord, {
+            orderId: orderId,
+            certFileUrl: certZipUrl,
+            _backupGitUrl: backupGitUrl,
+            certPass: cleanPass
+          });
+
+          const vsignProIpaUrl = `https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa`;
           const vsignStdIpaUrl = `https://raw.githubusercontent.com/applecert/applercert/main/VSign-Standard.ipa`;
 
           fulfillHtml = `
@@ -1550,7 +1737,7 @@
                       </p>
                     </div>
                     <div class="space-y-2 pt-2 border-t border-separator/60">
-                      <button type="button" id="btnOtaPro" onclick="startOtaInstall('pro', '${vsignProOtaUrl}', 'VSign Pro MHAC2', 'assets/vsign-pro-icon.png')" class="ios-btn ios-btn-filled w-full text-center block font-bold text-xs py-2.5 shadow-sm transition active:scale-95 text-white" style="background: linear-gradient(135deg, #0A84FF, #0071E3);">
+                      <button type="button" id="btnOtaPro_${orderId}" onclick="startOtaInstall('pro', '${orderId}', 'VSign Pro MHAC2', 'assets/vsign-pro-icon.png')" class="ios-btn ios-btn-filled w-full text-center block font-bold text-xs py-2.5 shadow-sm transition active:scale-95 text-white" style="background: linear-gradient(135deg, #0A84FF, #0071E3);">
                         <i data-lucide="cloud-download" class="w-3.5 h-3.5 mr-1.5 inline"></i> Cài Đặt VSign Pro (OTA)
                       </button>
                       <a href="${vsignProIpaUrl}" download="VSign-Pro-MHAC2.ipa" class="ios-btn ios-btn-outline w-full text-center block font-semibold text-[11px] py-1.5 hover:bg-fill transition text-label">
@@ -1579,7 +1766,7 @@
                       </p>
                     </div>
                     <div class="space-y-2 pt-2 border-t border-separator/60">
-                      <button type="button" id="btnOtaStd" onclick="startOtaInstall('std', '${vsignStdOtaUrl}', 'VSign Tiêu Chuẩn', 'assets/vsign-std-icon.png')" class="ios-btn ios-btn-outline w-full text-center block font-bold text-xs py-2.5 bg-fill hover:bg-fill/80 text-label transition active:scale-95">
+                      <button type="button" id="btnOtaStd_${orderId}" onclick="startOtaInstall('std', '${orderId}', 'VSign Tiêu Chuẩn', 'assets/vsign-std-icon.png')" class="ios-btn ios-btn-outline w-full text-center block font-bold text-xs py-2.5 bg-fill hover:bg-fill/80 text-label transition active:scale-95">
                         <i data-lucide="download" class="w-3.5 h-3.5 mr-1.5 inline"></i> Cài Đặt VSign Thường (OTA)
                       </button>
                       <a href="${vsignStdIpaUrl}" download="VSign-Standard.ipa" class="ios-btn ios-btn-outline w-full text-center block font-semibold text-[11px] py-1.5 hover:bg-fill transition text-label">

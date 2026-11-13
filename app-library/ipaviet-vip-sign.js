@@ -56,6 +56,7 @@
           const parsed = JSON.parse(rawUid);
           if (parsed && parsed.p12Data && parsed.mpData) return parsed;
         }
+        return null;
       }
       const rawSaved = localStorage.getItem('ipaviet_saved_cert');
       if (rawSaved) {
@@ -72,7 +73,7 @@
             mpName: s.mpName || 'cert.mobileprovision',
             p12Data: s.p12Data,
             mpData: s.mpData,
-            password: s.password || '1'
+            password: s.password !== undefined ? s.password : (s.certPass || '1')
           };
         }
       }
@@ -178,6 +179,77 @@
     return record;
   }
 
+  function extractVaultPassword(vc) {
+    if (!vc) return '1';
+    if (vc.password !== undefined && vc.password !== null) return String(vc.password);
+    if (vc.certPass !== undefined && vc.certPass !== null) return String(vc.certPass);
+    return '1';
+  }
+
+  async function hydrateCertFromZipUrl(vc, user) {
+    const rawUrl = (vc && (vc.certFileUrl || vc.p12Url) || '').trim();
+    if (!rawUrl || rawUrl === '#') return null;
+    await loadJsZip();
+    const candidates = [rawUrl];
+    const m = rawUrl.match(/downloads\/certs\/([^/?#]+)/i);
+    if (m && m[1]) {
+      candidates.push('https://raw.githubusercontent.com/' + GITHUB_REPO_OWNER + '/' + GITHUB_REPO_NAME + '/' + GITHUB_REPO_BRANCH + '/downloads/certs/' + m[1]);
+      candidates.push('https://gh-proxy.org/https://raw.githubusercontent.com/' + GITHUB_REPO_OWNER + '/' + GITHUB_REPO_NAME + '/' + GITHUB_REPO_BRANCH + '/downloads/certs/' + m[1]);
+    }
+    let zipBlob = null;
+    for (let i = 0; i < candidates.length; i++) {
+      try {
+        const res = await fetch(candidates[i]);
+        if (res && res.ok) {
+          const b = await res.blob();
+          if (b && b.size > 200) { zipBlob = b; break; }
+        }
+      } catch (e) {}
+    }
+    if (!zipBlob) return null;
+    const zip = await window.JSZip.loadAsync(zipBlob);
+    let p12 = null, mp = null;
+    const hints = extractPasswordsFromText('', rawUrl);
+    for (const name of Object.keys(zip.files)) {
+      const entry = zip.files[name];
+      const low = name.toLowerCase();
+      if (entry.dir || low.indexOf('__macosx') !== -1) continue;
+      const baseName = name.split('/').pop();
+      if (low.endsWith('.p12') && !p12) {
+        p12 = new File([await entry.async('blob')], baseName, { type: 'application/x-pkcs12' });
+        extractPasswordsFromText('', baseName).forEach((h) => hints.push(h));
+      } else if (low.endsWith('.mobileprovision') && !mp) {
+        mp = new File([await entry.async('blob')], baseName, { type: 'application/octet-stream' });
+      } else if (low.endsWith('.txt') || low.includes('pass') || low.includes('pwd') || low.includes('matkhau')) {
+        try {
+          const txt = await entry.async('string');
+          extractPasswordsFromText(txt, baseName).forEach((h) => hints.push(h));
+        } catch (x) {}
+      }
+    }
+    if (!p12 || !mp) return null;
+    const p12B64 = await fileToB64(p12);
+    const mpB64 = await fileToB64(mp);
+    const detected = await detectP12Password(p12, hints, extractVaultPassword(vc));
+    const finalPass = detected && detected.password !== undefined ? detected.password : extractVaultPassword(vc);
+    const merged = Object.assign({}, vc, {
+      p12Data: p12B64,
+      mpData: mpB64,
+      p12Name: p12.name || 'cert.p12',
+      mpName: mp.name || 'cert.mobileprovision',
+      password: finalPass,
+      certPass: finalPass,
+      updatedAt: vc.updatedAt || Date.now()
+    });
+    if (user && user.uid) {
+      saveLocalCert(user.uid, merged);
+      if (cfg && cfg.setMeta) cfg.setMeta(merged);
+      const db = getDb();
+      if (db) db.collection('users').doc(user.uid).set({ vipCert: merged }, { merge: true }).catch(() => {});
+    }
+    return { p12: p12B64, mp: mpB64, password: finalPass, p12Name: merged.p12Name, mpName: merged.mpName, meta: merged };
+  }
+
   async function loadCertVault() {
     const user = cfg && cfg.getUser && cfg.getUser();
     if (!user) throw Object.assign(new Error('Bạn cần đăng nhập.'), { code: 'AUTH' });
@@ -188,48 +260,60 @@
       return {
         p12: meta.p12Data,
         mp: meta.mpData,
-        password: meta.password || '',
+        password: extractVaultPassword(meta),
         p12Name: meta.p12Name || 'cert.p12',
         mpName: meta.mpName || 'cert.mobileprovision',
         meta
       };
     }
 
-    // 2. Kiểm tra LocalStorage
-    const local = getLocalCert(user.uid);
-    if (local && local.p12Data && local.mpData) {
-      return {
-        p12: local.p12Data,
-        mp: local.mpData,
-        password: local.password || '',
-        p12Name: local.p12Name || 'cert.p12',
-        mpName: local.mpName || 'cert.mobileprovision',
-        meta: local
-      };
-    }
-
-    // 3. Đọc trực tiếp từ Firestore users/{uid}
+    // 2. Đọc trực tiếp từ Firestore users/{uid} (ưu tiên cert mới nhất từ Admin trước cache cũ)
+    let remoteVc = null;
     const db = getDb();
     if (db) {
       try {
         const doc = await db.collection('users').doc(user.uid).get();
         if (doc && doc.exists) {
           const data = doc.data();
-          if (data && data.vipCert && data.vipCert.p12Data && data.vipCert.mpData) {
-            const vc = data.vipCert;
-            saveLocalCert(user.uid, vc);
-            if (cfg.setMeta) cfg.setMeta(vc);
-            return {
-              p12: vc.p12Data,
-              mp: vc.mpData,
-              password: vc.password || '',
-              p12Name: vc.p12Name || 'cert.p12',
-              mpName: vc.mpName || 'cert.mobileprovision',
-              meta: vc
-            };
+          if (data && data.vipCert) {
+            remoteVc = data.vipCert;
+            if (remoteVc.p12Data && remoteVc.mpData) {
+              saveLocalCert(user.uid, remoteVc);
+              if (cfg.setMeta) cfg.setMeta(remoteVc);
+              return {
+                p12: remoteVc.p12Data,
+                mp: remoteVc.mpData,
+                password: extractVaultPassword(remoteVc),
+                p12Name: remoteVc.p12Name || 'cert.p12',
+                mpName: remoteVc.mpName || 'cert.mobileprovision',
+                meta: remoteVc
+              };
+            }
           }
         }
       } catch (e) {}
+    }
+
+    // 3. Nếu Firestore có certFileUrl (file .zip) mà chưa có p12Data/mpData -> tải & giải nén tự động
+    const zipSourceMeta = (meta && (meta.certFileUrl || meta.p12Url)) ? meta : remoteVc;
+    if (zipSourceMeta && (zipSourceMeta.certFileUrl || zipSourceMeta.p12Url)) {
+      try {
+        const hydrated = await hydrateCertFromZipUrl(zipSourceMeta, user);
+        if (hydrated) return hydrated;
+      } catch (e) {}
+    }
+
+    // 4. Kiểm tra LocalStorage theo đúng UID
+    const local = getLocalCert(user.uid);
+    if (local && local.p12Data && local.mpData) {
+      return {
+        p12: local.p12Data,
+        mp: local.mpData,
+        password: extractVaultPassword(local),
+        p12Name: local.p12Name || 'cert.p12',
+        mpName: local.mpName || 'cert.mobileprovision',
+        meta: local
+      };
     }
 
     throw Object.assign(new Error('Bạn chưa thêm chứng chỉ trên thiết bị này. Hãy nạp lại file chứng chỉ 1 lần.'), { code: 'NO_CERT' });
@@ -453,7 +537,8 @@
 
     if (!user) { setBtn('Đăng nhập'); setDesc('Đăng nhập tài khoản VIP để ký & cài app tự động.'); return; }
     if (!vip) { setBtn('Nâng VIP'); setDesc('Dành cho thành viên VIP · ký ngầm bằng chứng chỉ riêng của bạn.'); return; }
-    if (!meta) { setBtn('Thêm Cert'); setDesc('Thêm chứng chỉ của bạn một lần, các app sau chỉ cần 1 chạm.', 'info'); return; }
+    const hasUsableMeta = Boolean(meta && ((meta.p12Data && meta.mpData) || (meta.certFileUrl && meta.certFileUrl !== '#')));
+    if (!hasUsableMeta) { setBtn('Thêm Cert'); setDesc('Thêm chứng chỉ của bạn một lần, các app sau chỉ cần 1 chạm.', 'info'); return; }
 
     const exp = meta.expiresAt && (meta.expiresAt.toMillis ? meta.expiresAt.toMillis() : new Date(meta.expiresAt).getTime());
     const d = exp ? daysLeft(exp) : 0;

@@ -1319,13 +1319,20 @@
                       }
                     }
                     if (foundOrder) {
+                      const rawFoundOta = (foundOrder.directInstallLink || '').trim();
+                      let safeFoundOta = rawFoundOta;
+                      try {
+                        if (/raw\.githubusercontent\.com\/applecert\/applercert\/main\/VSign-(?:Pro-MHAC2|Standard)\.ipa/i.test(decodeURIComponent(rawFoundOta))) {
+                          safeFoundOta = '';
+                        }
+                      } catch (e) {}
                       const fallbackCert = {
                         orderId: foundOrder.orderId || foundOrder.id || '',
                         name: foundOrder.planName || 'Chứng chỉ Apple Developer',
                         planName: foundOrder.planName || 'Chứng chỉ Apple Developer',
                         certFileUrl: foundOrder.certFileUrl || foundOrder.p12Url || '',
                         p12Url: foundOrder.certFileUrl || foundOrder.p12Url || '',
-                        directInstallLink: foundOrder.directInstallLink || '',
+                        directInstallLink: safeFoundOta,
                         certPass: foundOrder.certPass || '1',
                         password: foundOrder.certPass || '1',
                         warrantyUntil: foundOrder.warrantyUntil || '',
@@ -1418,6 +1425,163 @@
       if (cert.mpData) setTimeout(() => saveB64(cert.mpData, cert.mpName || 'cert.mobileprovision'), 350);
     }
 
+    function isRealSignedOtaUrl(rawOta) {
+      if (!rawOta || typeof rawOta !== 'string') return false;
+      try {
+        const decoded = decodeURIComponent(rawOta);
+        if (/\.zip(%2F|\b)/i.test(decoded)) return false;
+        if (/raw\.githubusercontent\.com\/applecert\/applercert\/main\/VSign-(?:Pro-MHAC2|Standard)\.ipa/i.test(decoded)) return false;
+        return rawOta.startsWith('itms-services://');
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function loadJsZipAccount() {
+      if (window.JSZip) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Không tải được thư viện giải nén ZIP.'));
+        document.head.appendChild(s);
+      });
+    }
+
+    async function signAndInstallVSignFromVault() {
+      const cert = window._activeVaultCert;
+      if (!cert) return;
+      const certPass = cert.certPass !== undefined && cert.certPass !== '' ? cert.certPass : (cert.password !== undefined ? cert.password : '1');
+      const existingOta = (cert.directInstallLink || '').trim();
+
+      Swal.fire({
+        title: 'Đang Ký & Cài VSign OTA',
+        html: '<p id="vaultOtaStatus" class="text-xs text-slate-600 mt-1">Đang kiểm tra liên kết đã ký bằng chứng chỉ của bạn...</p>',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+      });
+      const setMsg = (m) => { const el = document.getElementById('vaultOtaStatus'); if (el) el.textContent = m; };
+
+      try {
+        if (isRealSignedOtaUrl(existingOta)) {
+          const decoded = decodeURIComponent(existingOta);
+          const m = decoded.match(/ipa\.ipasign\.cc\/download\/([A-Za-z0-9._-]+)/i);
+          if (!m || !m[1]) {
+            Swal.close();
+            window.location.href = existingOta;
+            return;
+          }
+          const stRes = await fetch(`https://ipa.ipasign.cc/status/${encodeURIComponent(m[1])}`).catch(() => null);
+          const stJson = stRes && stRes.ok ? await stRes.json().catch(() => null) : null;
+          if (stJson && ['SUCCESS', 'ok', 'success', 'COMPLETED'].includes(stJson.status)) {
+            Swal.close();
+            window.location.href = existingOta;
+            return;
+          }
+        }
+
+        let p12Blob = null, mpBlob = null;
+        if (cert.p12Data && cert.mpData) {
+          const b64ToBlob = (b64, mime) => {
+            const bin = atob(String(b64).replace(/\s/g, ''));
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new Blob([bytes], { type: mime });
+          };
+          p12Blob = b64ToBlob(cert.p12Data, 'application/x-pkcs12');
+          mpBlob = b64ToBlob(cert.mpData, 'application/octet-stream');
+        } else if (cert.certFileUrl && cert.certFileUrl !== '#') {
+          setMsg('Đang tải tệp chứng chỉ .ZIP của bạn...');
+          await loadJsZipAccount();
+          const zipUrls = [cert.certFileUrl];
+          const m = String(cert.certFileUrl).match(/downloads\/certs\/([^/?#]+)/i);
+          if (m && m[1]) zipUrls.push(`https://raw.githubusercontent.com/applecert/applercert/main/downloads/certs/${m[1]}`);
+          let zipBlob = null;
+          for (const u of zipUrls) {
+            try {
+              const r = await fetch(u);
+              if (r && r.ok) { zipBlob = await r.blob(); break; }
+            } catch (e) {}
+          }
+          if (!zipBlob) throw new Error('Không tải được file chứng chỉ .ZIP.');
+          const zip = await window.JSZip.loadAsync(zipBlob);
+          for (const name of Object.keys(zip.files)) {
+            const entry = zip.files[name];
+            const low = name.toLowerCase();
+            if (entry.dir || low.includes('__macosx')) continue;
+            if (low.endsWith('.p12') && !p12Blob) p12Blob = await entry.async('blob');
+            else if (low.endsWith('.mobileprovision') && !mpBlob) mpBlob = await entry.async('blob');
+          }
+        }
+        if (!p12Blob || !mpBlob) throw new Error('Thiếu file .p12 hoặc .mobileprovision trong Tủ đồ.');
+
+        setMsg('Đang nạp VSign Pro MHAC2 để ký bằng chứng chỉ riêng của bạn...');
+        let ipaBlob = null;
+        for (const u of ['VSign-Pro-MHAC2.ipa', './VSign-Pro-MHAC2.ipa', 'https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa']) {
+          try {
+            const r = await fetch(u);
+            if (r && r.ok) {
+              const b = await r.blob();
+              if (b.size > 100000) { ipaBlob = b; break; }
+            }
+          } catch (e) {}
+        }
+        if (!ipaBlob) throw new Error('Không tải được tệp VSign Pro MHAC2.');
+
+        setMsg('Đang ký VSign bằng chứng chỉ Apple Developer của bạn...');
+        const fd = new FormData();
+        fd.append('ipa', ipaBlob, 'VSign-Pro-MHAC2.ipa');
+        fd.append('p12', new Blob([p12Blob], { type: 'application/x-pkcs12' }), 'cert.p12');
+        fd.append('mp', new Blob([mpBlob], { type: 'application/octet-stream' }), 'cert.mobileprovision');
+        fd.append('password', String(certPass || ''));
+        fd.append('app_name', 'VSign Pro MHAC2');
+        fd.append('bundle_id', 'com.ipaviet.vsignpro');
+
+        const sRes = await fetch('https://ipa.ipasign.cc/sign', { method: 'POST', body: fd });
+        const sJson = await sRes.json().catch(() => null);
+        if (!sRes.ok || !sJson || !(sJson.task_id || sJson.job_id)) {
+          throw new Error((sJson && (sJson.error || sJson.msg)) || 'Máy chủ ký từ chối yêu cầu.');
+        }
+        const jobId = sJson.task_id || sJson.job_id;
+        let signedIpaUrl = '';
+        const deadline = Date.now() + 120000;
+        while (Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 2000));
+          const stRes = await fetch(`https://ipa.ipasign.cc/status/${encodeURIComponent(jobId)}`).catch(() => null);
+          const st = stRes && stRes.ok ? await stRes.json().catch(() => null) : null;
+          if (!st) continue;
+          if (['SUCCESS', 'ok', 'success', 'COMPLETED'].includes(st.status)) {
+            signedIpaUrl = st.download || st.url || `https://ipa.ipasign.cc/download/${encodeURIComponent(jobId)}`;
+            break;
+          }
+          if (['FAILED', 'error', 'FAILURE'].includes(st.status)) {
+            throw new Error(st.log || st.msg || st.error || 'Chứng chỉ bị thu hồi hoặc sai mật khẩu .p12.');
+          }
+        }
+        if (!signedIpaUrl) throw new Error('Quá thời gian chờ máy chủ ký.');
+
+        const workerPlist = 'https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=' +
+          encodeURIComponent(signedIpaUrl) +
+          '&name=' + encodeURIComponent('VSign Pro MHAC2') +
+          '&bundle=com.ipaviet.vsignpro&version=2.0&icon=' +
+          encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-pro-icon.png');
+        const otaLink = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(workerPlist);
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã ký VSign xong!',
+          html: `<p class="text-xs text-slate-600 mb-3">Ứng dụng VSign Pro đã được ký bằng đúng chứng chỉ của bạn.</p>
+                 <a href="${otaLink}" class="ios-btn ios-btn-filled inline-flex items-center justify-center px-5 py-2.5 text-xs font-bold text-white" style="background:#0A84FF;">📲 Cài Đặt VSign Lên iPhone</a>`,
+          showConfirmButton: false,
+          showCloseButton: true
+        });
+        window.location.href = otaLink;
+      } catch (err) {
+        Swal.fire('Không thể ký OTA tự động', err && err.message ? err.message : 'Vui lòng thử lại hoặc dùng nút "Ký app ngay".', 'error');
+      }
+    }
+
     function renderUserCertVault(cert, uid) {
       const container = document.getElementById('userCertVaultContainer');
       if (!container) return;
@@ -1432,15 +1596,9 @@
         const rawCertUrl = (cert.certFileUrl || cert.p12Url || '').trim();
         const hasExternalUrl = Boolean(rawCertUrl && rawCertUrl !== '#');
         const certUrl = hasExternalUrl ? rawCertUrl : '#';
-        const defaultVsignOta = 'itms-services://?action=download-manifest&url=' + encodeURIComponent(
-          'https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=' +
-          encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa') +
-          '&name=' + encodeURIComponent('VSign Pro MHAC2') +
-          '&bundle=com.ipaviet.vsignpro&version=2.0&icon=' +
-          encodeURIComponent('https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-pro-icon.png')
-        );
         const rawOta = (cert.directInstallLink || '').trim();
-        const otaUrl = (rawOta && !/\.zip(%2F|\b)/i.test(decodeURIComponent(rawOta))) ? rawOta : defaultVsignOta;
+        const otaUrl = isRealSignedOtaUrl(rawOta) ? rawOta : '';
+        const canOtaSign = Boolean(otaUrl || (cert.p12Data && cert.mpData) || hasExternalUrl);
         const trackingUrl = `certapple/tra-cuu.html?q=${encodeURIComponent(cert.orderId || '')}`;
 
         try {
@@ -1499,10 +1657,10 @@
                 <a href="sign-app/index.html" class="ios-btn ios-btn-filled text-xs px-4 py-1.5 flex items-center gap-1.5" style="min-height:34px;">
                   <i data-lucide="zap" class="w-3.5 h-3.5"></i> Ký app ngay
                 </a>
-                ${otaUrl ? `
-                  <a href="${escapeHtml(otaUrl)}" class="ios-btn ios-btn-tinted text-xs px-3.5 py-1.5 flex items-center gap-1.5" style="min-height:34px;">
-                    <i data-lucide="smartphone" class="w-3.5 h-3.5 text-apple-blue"></i> Cài OTA
-                  </a>
+                ${canOtaSign ? `
+                  <button type="button" onclick="signAndInstallVSignFromVault()" class="ios-btn ios-btn-tinted text-xs px-3.5 py-1.5 flex items-center gap-1.5 cursor-pointer" style="min-height:34px;">
+                    <i data-lucide="smartphone" class="w-3.5 h-3.5 text-apple-blue"></i> Cài VSign OTA
+                  </button>
                 ` : ''}
                 ${hasExternalUrl ? `
                   <a href="${escapeHtml(certUrl)}" target="_blank" download class="ios-btn ios-btn-tinted text-xs px-3.5 py-1.5 flex items-center gap-1.5" style="min-height:34px;">

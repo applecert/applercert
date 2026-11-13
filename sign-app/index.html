@@ -2865,7 +2865,11 @@
                                         this.userData = doc.data();
                                         if (this.userData.vipCert) {
                                             this.cloudCertInfo = this.userData.vipCert;
+                                            if (!this.p12 && !this.mobileprovision) {
+                                                this.selectCloudCertMode(true);
+                                            }
                                         }
+                                        this.checkSavedCert();
                                     }
                                 });
                             }
@@ -3149,15 +3153,18 @@
                             p12Name: p12File.name,
                             mpName: mpFile.name,
                             p12Data: p12Base64,
-                            mpData: mpBase64
+                            mpData: mpBase64,
+                            password: this.password || ''
                         };
-                        localStorage.setItem('ipaviet_saved_cert', JSON.stringify(certMeta));
+                        const uidKey = this.currentUser && this.currentUser.uid ? `ipaviet_saved_cert_${this.currentUser.uid}` : 'ipaviet_saved_cert';
+                        localStorage.setItem(uidKey, JSON.stringify(certMeta));
                         this.savedCertInfo = certMeta;
                     } catch(e) {}
                 },
                 checkSavedCert() {
                     try {
-                        const raw = localStorage.getItem('ipaviet_saved_cert') || localStorage.getItem('ipaviet_vip_cert_v1');
+                        const uidKey = this.currentUser && this.currentUser.uid ? `ipaviet_saved_cert_${this.currentUser.uid}` : '';
+                        const raw = (uidKey ? localStorage.getItem(uidKey) : null) || (!this.currentUser ? (localStorage.getItem('ipaviet_saved_cert') || localStorage.getItem('ipaviet_vip_cert_v1')) : null);
                         if (raw) {
                             const parsed = JSON.parse(raw);
                             if (parsed && parsed.p12Data && parsed.mpData) {
@@ -3171,6 +3178,8 @@
                                     password: parsed.password || ''
                                 };
                             }
+                        } else {
+                            this.savedCertInfo = null;
                         }
                     } catch(e) {}
                 },
@@ -3193,6 +3202,8 @@
                     }
                 },
                 clearSavedCert() {
+                    const uidKey = this.currentUser && this.currentUser.uid ? `ipaviet_saved_cert_${this.currentUser.uid}` : 'ipaviet_saved_cert';
+                    localStorage.removeItem(uidKey);
                     localStorage.removeItem('ipaviet_saved_cert');
                     this.savedCertInfo = null;
                     this.certMode = 'zip';
@@ -3266,28 +3277,31 @@
                     return new File([arr], filename, { type: mimeType });
                 },
 
-                async selectCloudCertMode() {
+                async selectCloudCertMode(silent = false) {
+                    const isSilent = silent === true;
                     this.certMode = 'cloud';
                     if (!this.currentUser) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({
-                                title: 'Kết nối tủ đồ chứng chỉ',
-                                text: 'Vui lòng đăng nhập tài khoản IPAVIET để sử dụng chứng chỉ Apple Developer đã lưu trong Tủ đồ.',
-                                icon: 'info',
-                                showCancelButton: true,
-                                confirmButtonText: 'Đăng nhập ngay',
-                                cancelButtonText: 'Để sau'
-                            }).then(r => {
-                                if (r.isConfirmed) window.location.href = '../account.html';
-                            });
-                        } else {
-                            this.showAppleDialog('Chưa đăng nhập', 'Vui lòng đăng nhập để sử dụng chứng chỉ trong Tủ đồ.');
+                        if (!isSilent) {
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    title: 'Kết nối tủ đồ chứng chỉ',
+                                    text: 'Vui lòng đăng nhập tài khoản IPAVIET để sử dụng chứng chỉ Apple Developer đã lưu trong Tủ đồ.',
+                                    icon: 'info',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Đăng nhập ngay',
+                                    cancelButtonText: 'Để sau'
+                                }).then(r => {
+                                    if (r.isConfirmed) window.location.href = '../account.html';
+                                });
+                            } else {
+                                this.showAppleDialog('Chưa đăng nhập', 'Vui lòng đăng nhập để sử dụng chứng chỉ trong Tủ đồ.');
+                            }
                         }
                         return;
                     }
 
                     if (!this.cloudCertInfo) {
-                        if (typeof Swal !== 'undefined') {
+                        if (!isSilent && typeof Swal !== 'undefined') {
                             Swal.fire({
                                 title: 'Chưa có chứng chỉ trong Tủ đồ',
                                 text: 'Tài khoản của bạn chưa có chứng chỉ Apple Developer. Đăng ký ngay để ký và cài đặt ứng dụng tự động.',
@@ -3307,15 +3321,33 @@
                         if (this.cloudCertInfo.p12Data && this.cloudCertInfo.mpData) {
                             this.p12 = this.b64ToFile(this.cloudCertInfo.p12Data, this.cloudCertInfo.p12Name || 'cert.p12', 'application/x-pkcs12');
                             this.mobileprovision = this.b64ToFile(this.cloudCertInfo.mpData, this.cloudCertInfo.mpName || 'cert.mobileprovision', 'application/octet-stream');
-                            this.password = this.cloudCertInfo.password || this.cloudCertInfo.certPass || '1';
+                            this.password = (this.cloudCertInfo.password !== undefined && this.cloudCertInfo.password !== null)
+                                ? String(this.cloudCertInfo.password)
+                                : (this.cloudCertInfo.certPass || '1');
                         } else {
-                            const p12Url = this.cloudCertInfo.p12Url || this.cloudCertInfo.certFileUrl;
-                            if (p12Url) {
-                                const res = await axios.get(p12Url, { responseType: 'blob' });
-                                this.p12 = new File([res.data], 'cloud_cert.p12', { type: 'application/x-pkcs12' });
+                            const certUrl = (this.cloudCertInfo.certFileUrl || this.cloudCertInfo.p12Url || '').trim();
+                            if (certUrl && certUrl !== '#') {
+                                const res = await axios.get(certUrl, { responseType: 'blob' });
+                                const head = new Uint8Array(await res.data.slice(0, 4).arrayBuffer());
+                                const isZip = (head[0] === 0x50 && head[1] === 0x4B) || /\.zip(\?|$)/i.test(certUrl);
+                                if (isZip && typeof JSZip !== 'undefined') {
+                                    const zip = await JSZip.loadAsync(res.data);
+                                    for (const name of Object.keys(zip.files)) {
+                                        const entry = zip.files[name];
+                                        const low = name.toLowerCase();
+                                        if (entry.dir || low.includes('__macosx')) continue;
+                                        if (low.endsWith('.p12') && !this.p12) {
+                                            this.p12 = new File([await entry.async('blob')], name.split('/').pop(), { type: 'application/x-pkcs12' });
+                                        } else if (low.endsWith('.mobileprovision') && !this.mobileprovision) {
+                                            this.mobileprovision = new File([await entry.async('blob')], name.split('/').pop(), { type: 'application/octet-stream' });
+                                        }
+                                    }
+                                } else {
+                                    this.p12 = new File([res.data], 'cloud_cert.p12', { type: 'application/x-pkcs12' });
+                                }
                             }
                             const mpUrl = this.cloudCertInfo.mobileprovisionUrl;
-                            if (mpUrl) {
+                            if (mpUrl && !this.mobileprovision) {
                                 const mpRes = await axios.get(mpUrl, { responseType: 'blob' });
                                 this.mobileprovision = new File([mpRes.data], 'cloud_cert.mobileprovision', { type: 'application/octet-stream' });
                             }
@@ -3323,7 +3355,7 @@
                                 this.password = this.cloudCertInfo.certPass || this.cloudCertInfo.password;
                             }
                         }
-                        if (typeof Swal !== 'undefined') {
+                        if (!isSilent && this.p12 && this.mobileprovision && typeof Swal !== 'undefined') {
                             Swal.fire({
                                 toast: true,
                                 position: 'top-end',
