@@ -10344,6 +10344,18 @@
         badge: 'VIP Nhất',
         features: ['Mở chặn Apple Blacklist 100%', 'Bảo hành tối đa 300 ngày', 'Ưu tiên hỗ trợ kỹ thuật 1-1', 'Cài đặt tự động qua link OTA'],
         active: true
+      },
+      {
+        id: 'vip-2y',
+        name: 'Gói VIP 2 Năm (Tặng VIP VSign 1 Năm)',
+        price: 499000,
+        originalPrice: 690000,
+        warranty: '730 ngày',
+        duration: '2 năm',
+        vipDays: 365,
+        badge: '2 Năm + VIP VSign 1 Năm',
+        features: ['Thời hạn chứng chỉ 2 năm (730 ngày)', 'Tặng kèm VIP VSign 1 năm (365 ngày) tự động', 'Bảo hành 1 đổi 1 tối đa 730 ngày', 'Cấp siêu tốc trong 2 giờ, hỗ trợ ESign & VSign'],
+        active: true
       }
     ];
 
@@ -10394,48 +10406,208 @@
       };
     }
 
-    function cleanCertPassword(raw) {
-      if (!raw) return '1';
+    function cleanCertPassword(raw, allowEmpty = false) {
+      if (raw === undefined || raw === null) return allowEmpty ? '' : '1';
       let s = String(raw).trim();
-      const prefixRegex = /^(?:hồ\s*sơ|chứng\s*chỉ|certificate|cert|mật\s*khẩu\s*(?:cert|p12)?|mat\s*khau|password|pass|pwd|code)[\s:=]+/i;
+      const prefixRegex = /^(?:hồ\s*sơ|chứng\s*chỉ|certificate|cert|mật\s*khẩu\s*(?:cert|p12)?|mat\s*khau|password|pass|pwd|mk|code)[\s:=\-]+/i;
       while (prefixRegex.test(s)) {
         s = s.replace(prefixRegex, '').trim();
       }
       s = s.replace(/^["'`]|["'`]$/g, '').trim();
-      return s || '1';
+      if (!s) return allowEmpty ? '' : '1';
+      return s;
     }
 
-    function extractCertPasswordFromZip(files, zipName) {
+    function extractCertPasswordCandidates(files, zipName) {
+      const candidates = [];
       for (const name in files) {
         const lower = name.toLowerCase();
-        if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('pwd') || lower.includes('matkhau')) {
-          const text = files[name];
-          const match = text.match(/(?:mật\s*khẩu|mat\s*khau|pass(?:word)?|pwd)[\s:=]+([^\r\n,;]+)/i);
-          if (match && match[1].trim()) return cleanCertPassword(match[1].trim());
-          const lines = text.trim().split(/\r?\n/);
+        if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('pwd') || lower.includes('matkhau') || lower.includes('readme') || lower.includes('info')) {
+          const text = String(files[name] || '');
+          const lines = text.split(/\r?\n/);
+          for (const line of lines) {
+            const match = line.match(/(?:mật\s*khẩu|mat\s*khau|pass(?:word)?|pwd|mk|code)\s*(?:certificate|cert|p12)?\s*[:=\-]\s*([^\r\n,;]+)/i);
+            if (match && match[1] && match[1].trim()) {
+              const cleaned = cleanCertPassword(match[1].trim(), true);
+              if (cleaned) candidates.push(cleaned);
+            }
+          }
           for (const line of lines) {
             const trimmed = line.trim();
-            if (trimmed) {
-              const cleaned = cleanCertPassword(trimmed);
-              if (cleaned && cleaned.length <= 40 && !cleaned.includes(' ')) return cleaned;
+            if (!trimmed) continue;
+            const cleaned = cleanCertPassword(trimmed, true);
+            if (cleaned && cleaned.length <= 40 && !/\s/.test(cleaned) && !/^(http|udid|team|date|apple)/i.test(cleaned)) {
+              candidates.push(cleaned);
             }
           }
         }
       }
       if (zipName) {
-        const fnMatch = zipName.match(/pass[_\-\s]*([a-zA-Z0-9\.\_]+)/i);
-        if (fnMatch && fnMatch[1]) return cleanCertPassword(fnMatch[1].replace(/\.zip$/i, ''));
+        const fnMatch = zipName.match(/(?:pass(?:word)?|pwd|mk)[_\-\s:=]*([a-zA-Z0-9._@#]+)/i);
+        if (fnMatch && fnMatch[1]) {
+          const cleaned = cleanCertPassword(fnMatch[1].replace(/\.(?:zip|p12|mobileprovision)$/i, ''), true);
+          if (cleaned) candidates.push(cleaned);
+        }
       }
-      return '1';
+      return Array.from(new Set(candidates));
+    }
+
+    function extractCertPasswordFromZip(files, zipName) {
+      const candidates = extractCertPasswordCandidates(files, zipName);
+      return candidates[0] || '1';
+    }
+
+    function loadForgeScript() {
+      if (window.forge) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.src = 'https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js';
+        el.onload = resolve;
+        el.onerror = () => reject(new Error('Không tải được thư viện kiểm tra .p12'));
+        document.head.appendChild(el);
+      });
+    }
+
+    async function verifyAdminP12Password(p12Buffer, zipHints = []) {
+      const hints = (zipHints || []).filter(Boolean);
+      if (!p12Buffer) return { password: hints[0] || '1', verified: false };
+      try {
+        await loadForgeScript();
+      } catch (e) {
+        return { password: hints[0] || '1', verified: false };
+      }
+      try {
+        const bytes = new Uint8Array(p12Buffer);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        const list = Array.from(new Set([].concat(hints, ['1', '123456', '12345678', '1234', 'applep12', 'password', 'apple', 'ipaviet', '123', '0000', ''])));
+        for (const pw of list) {
+          try {
+            const asn = window.forge.asn1.fromDer(window.forge.util.createBuffer(bin));
+            window.forge.pkcs12.pkcs12FromAsn1(asn, false, pw);
+            return { password: pw, verified: true };
+          } catch (err) {
+            const msg = String(err && err.message || err || '');
+            if (!/Invalid password|MAC could not be verified|PKCS#12 MAC/i.test(msg)) {
+              // PBES2 / AES encrypted p12 not readable by forge 1.3.1
+              return { password: hints[0] || '1', verified: false };
+            }
+          }
+        }
+      } catch (e) {}
+      return { password: hints[0] || '1', verified: false };
+    }
+
+    function isValidSignedIpaUrl(url) {
+      const clean = String(url || '').trim();
+      if (!clean) return false;
+      const isRawUnsignedVsign = /(?:raw\.githubusercontent\.com\/applecert\/applercert\/main\/|^\/?|\.\.?\/)VSign-(?:Pro-MHAC2|Standard)\.ipa(?:\?|$)/i.test(clean);
+      if (isRawUnsignedVsign) return false;
+      return /^https?:\/\/ipa\.ipasign\.cc\/download\/[A-Za-z0-9._-]+/i.test(clean) || /\.ipa(\?|$)/i.test(clean);
+    }
+
+    function isValidSignedOtaUrl(url) {
+      const clean = String(url || '').trim();
+      if (!clean) return false;
+      try {
+        const decoded = decodeURIComponent(clean);
+        if (/raw\.githubusercontent\.com\/applecert\/applercert\/main\/VSign-(?:Pro-MHAC2|Standard)\.ipa(?:\?|$)/i.test(decoded)) {
+          return false;
+        }
+      } catch (e) {}
+      return clean.startsWith('itms-services://') || isValidSignedIpaUrl(clean);
     }
 
     function generateOtaInstallLink(fileUrl, appTitle = 'VSign Pro MHAC2') {
-      const defaultIpa = 'https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa';
-      const isValidIpa = typeof fileUrl === 'string' && /\.ipa(\?|$)/i.test(fileUrl.trim());
-      const ipaTarget = isValidIpa ? fileUrl.trim() : defaultIpa;
+      if (!isValidSignedIpaUrl(fileUrl)) return '';
+      const ipaTarget = String(fileUrl).trim();
       const iconUrl = 'https://raw.githubusercontent.com/applecert/applercert/main/certapple/assets/vsign-pro-icon.png';
       const workerUrl = `https://ipaviet-installer.clonene121212.workers.dev/?plist=true&ipa=${encodeURIComponent(ipaTarget)}&name=${encodeURIComponent(appTitle)}&bundle=com.ipaviet.vsignpro&version=2.0&icon=${encodeURIComponent(iconUrl)}`;
       return `itms-services://?action=download-manifest&url=${encodeURIComponent(workerUrl)}`;
+    }
+
+    async function fetchTemplateVSignIpaBlob() {
+      const candidates = [
+        'VSign-Pro-MHAC2.ipa',
+        './VSign-Pro-MHAC2.ipa',
+        'https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa',
+        'https://gh-proxy.org/https://raw.githubusercontent.com/applecert/applercert/main/VSign-Pro-MHAC2.ipa'
+      ];
+      let lastErr = null;
+      for (const url of candidates) {
+        try {
+          const res = await fetchWithTimeout(url, {}, 35000);
+          if (!res || !res.ok) continue;
+          const blob = await res.blob();
+          if (blob.size < 100000) continue;
+          const head = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+          if (head[0] === 0x50 && head[1] === 0x4B) {
+            return blob;
+          }
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Không tải được file mẫu VSign-Pro-MHAC2.ipa');
+    }
+
+    async function signVSignWithCustomerCert({ p12Buffer, provBuffer, password, appTitle = 'VSign Pro MHAC2', onStatus }) {
+      if (!p12Buffer || !provBuffer) {
+        throw new Error('Thiếu file .p12 hoặc .mobileprovision để ký tự động.');
+      }
+      if (onStatus) onStatus('Đang tải gói VSign Pro MHAC2 để ký bằng chứng chỉ của khách...');
+      const ipaBlob = await fetchTemplateVSignIpaBlob();
+
+      const fd = new FormData();
+      fd.append('ipa', ipaBlob, 'VSign-Pro-MHAC2.ipa');
+      fd.append('p12', new Blob([p12Buffer], { type: 'application/x-pkcs12' }), 'cert.p12');
+      fd.append('mp', new Blob([provBuffer], { type: 'application/octet-stream' }), 'cert.mobileprovision');
+      fd.append('password', password == null ? '' : String(password));
+      fd.append('app_name', appTitle || 'VSign Pro MHAC2');
+      fd.append('bundle_id', 'com.ipaviet.vsignpro');
+
+      if (onStatus) onStatus('Đang gửi cert thật của khách lên máy chủ ký (ipa.ipasign.cc)...');
+      const signRes = await fetchWithTimeout('https://ipa.ipasign.cc/sign', {
+        method: 'POST',
+        body: fd
+      }, 60000);
+      const signBodyText = await signRes.text();
+      let signJson = null;
+      try { signJson = JSON.parse(signBodyText); } catch (e) {}
+      if (!signRes.ok) {
+        throw new Error((signJson && (signJson.error || signJson.msg)) || `Máy chủ ký từ chối (HTTP ${signRes.status})`);
+      }
+      const jobId = (signJson && (signJson.task_id || signJson.job_id)) || (!signJson && signBodyText ? signBodyText.trim() : '');
+      if (!jobId) {
+        throw new Error('Máy chủ ký không trả về job_id.');
+      }
+
+      if (onStatus) onStatus('Đang đóng gói VSign với chứng chỉ thật của khách...');
+      const okStatuses = ['SUCCESS', 'ok', 'success', 'COMPLETED'];
+      const badStatuses = ['FAILED', 'error', 'FAILURE'];
+      const deadline = Date.now() + 120000;
+      while (Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 2000));
+        let st = null;
+        try {
+          const r = await fetchWithTimeout(`https://ipa.ipasign.cc/status/${encodeURIComponent(jobId)}`, {}, 15000);
+          if (r && r.ok) st = await r.json();
+        } catch (e) {}
+        if (!st) {
+          try {
+            const r2 = await fetchWithTimeout(`https://ipa.ipasign.cc/status?job_id=${encodeURIComponent(jobId)}`, {}, 15000);
+            if (r2 && r2.ok) st = await r2.json();
+          } catch (e) {}
+        }
+        if (!st) continue;
+        if (okStatuses.indexOf(st.status) !== -1) {
+          return st.download || st.url || `https://ipa.ipasign.cc/download/${encodeURIComponent(jobId)}`;
+        }
+        if (badStatuses.indexOf(st.status) !== -1) {
+          throw new Error(st.log || st.msg || st.error || 'Chứng chỉ bị thu hồi hoặc sai mật khẩu .p12');
+        }
+      }
+      throw new Error('Quá thời gian chờ máy chủ ký VSign.');
     }
 
     // ===================================================================
@@ -10815,15 +10987,16 @@
         }
 
         // Nếu có file ZIP, giải nén bằng JSZip
+        let zipHints = [];
         if (zipFile) {
           if (typeof JSZip !== 'undefined') {
             try {
               const zip = await JSZip.loadAsync(zipFile);
               for (const relPath in zip.files) {
                 const entry = zip.files[relPath];
-                if (entry.dir) continue;
                 const lower = entry.name.toLowerCase();
-                if (lower.endsWith('.txt') || lower.includes('pass') || lower.includes('pwd') || lower.includes('matkhau')) {
+                if (entry.dir || lower.indexOf('__macosx') !== -1) continue;
+                if (lower.endsWith('.txt') || lower.endsWith('.md') || lower.endsWith('.ini') || lower.includes('pass') || lower.includes('pwd') || lower.includes('matkhau') || lower.includes('readme') || lower.includes('info')) {
                   try {
                     textContents[entry.name] = await entry.async('string');
                   } catch (e) {}
@@ -10837,7 +11010,7 @@
                   } catch (e) {}
                 }
               }
-              detectedPass = extractCertPasswordFromZip(textContents, zipFile.name);
+              zipHints = extractCertPasswordCandidates(textContents, zipFile.name);
             } catch (zErr) {
               console.warn("JSZip load error:", zErr);
             }
@@ -10869,13 +11042,11 @@
           }
         }
 
-        // Nếu chưa có pass từ zip, tìm trong textContents hoặc tên file
-        if (!detectedPass) {
-          detectedPass = extractCertPasswordFromZip(textContents, mainFile.name);
-        }
-        if (!detectedPass) {
-          detectedPass = '1';
-        }
+        // Xác thực mật khẩu .p12 thật bằng node-forge (kết hợp gợi ý từ ZIP + danh sách phổ biến)
+        const extraHints = extractCertPasswordCandidates(textContents, mainFile ? mainFile.name : '');
+        const allHints = Array.from(new Set([].concat(zipHints || [], extraHints)));
+        const passCheck = await verifyAdminP12Password(p12Buffer, allHints);
+        detectedPass = passCheck.password;
 
         // Tính ngày hết hạn
         let formattedExpDate = '';
@@ -10929,7 +11100,28 @@
         }
 
         let downloadUrl = await uploadCertFileToBackend(zipFile || mainFile, targetOrderId);
-        const otaInstallLink = generateOtaInstallLink('', profileName || 'VSign Pro MHAC2');
+        let signedIpaUrl = '';
+        let otaInstallLink = '';
+        let signErrorMsg = '';
+        const s3TextEl = document.getElementById('swalStep3Text');
+
+        if (p12Buffer && provBuffer) {
+          try {
+            signedIpaUrl = await signVSignWithCustomerCert({
+              p12Buffer,
+              provBuffer,
+              password: detectedPass,
+              appTitle: 'VSign Pro MHAC2',
+              onStatus: (msg) => { if (s3TextEl) s3TextEl.textContent = msg; }
+            });
+            otaInstallLink = generateOtaInstallLink(signedIpaUrl, 'VSign Pro MHAC2');
+          } catch (signErr) {
+            signErrorMsg = signErr && signErr.message ? signErr.message : 'Không thể ký VSign tự động';
+            console.warn("Auto-sign VSign warning:", signErr);
+          }
+        } else {
+          signErrorMsg = 'Thiếu tệp .p12 hoặc .mobileprovision để ký VSign OTA.';
+        }
 
         // Lưu bộ đệm Base64 của .p12 và .mobileprovision để bơm thẳng vào users/{uid}.vipCert
         try {
@@ -10950,7 +11142,9 @@
             p12Name: `${targetOrderId}.p12`,
             mpName: `${targetOrderId}.mobileprovision`,
             profileName: profileName || '',
-            teamName: teamName || ''
+            teamName: teamName || '',
+            certPass: detectedPass,
+            signedIpaUrl: signedIpaUrl || ''
           };
           window._lastExtractedCertB64 = extractedObj;
           if (!window._extractedCertB64ByOrder) window._extractedCertB64ByOrder = {};
@@ -10961,10 +11155,12 @@
 
         Swal.close();
         if (typeof showToast === 'function') {
-          if (downloadUrl) {
-            showToast(`⚡ Đã bóc tách, tải file lên server & quét pass: "${detectedPass}" thành công!`, 'success');
+          if (downloadUrl && otaInstallLink) {
+            showToast(`⚡ Đã bóc tách, tải file & TỰ ĐỘNG KÝ VSign thành công (Pass: "${detectedPass}")!`, 'success');
+          } else if (signErrorMsg) {
+            showToast(`⚠️ Đã nạp cert (Pass: "${detectedPass}") nhưng ký tự động VSign OTA thất bại: ${signErrorMsg}`, 'warning');
           } else {
-            showToast(`⚠️ Đã quét pass "${detectedPass}" & nạp P12/Provision vào bộ nhớ, nhưng chưa tải được file .ZIP lên GitHub/Drive (hãy cài GitHub Token hoặc kiểm tra lại GAS)!`, 'warning');
+            showToast(`⚠️ Đã ký & nạp P12/Provision vào bộ nhớ, nhưng chưa tải được file .ZIP lên GitHub/Drive!`, 'warning');
           }
         }
 
@@ -10978,7 +11174,9 @@
           remainingDays: remainingDays,
           matchedUdid: matchedUdid,
           downloadUrl: downloadUrl,
-          otaInstallLink: otaInstallLink
+          signedIpaUrl: signedIpaUrl,
+          otaInstallLink: otaInstallLink,
+          signErrorMsg: signErrorMsg
         };
       } catch (err) {
         Swal.close();
@@ -11070,10 +11268,12 @@
       const plans = (AdminState.certProducts && AdminState.certProducts.length) ? AdminState.certProducts : DEFAULT_CERT_PRODUCTS;
       
       sel.innerHTML = plans.map(p => {
-        return `<option value="${p.id}" data-price="${p.price}" data-warranty="${p.warranty || '240 ngày'}" data-name="${p.name}">
-          ${p.name} — ${Number(p.price).toLocaleString('vi-VN')}đ (${p.warranty || '240 ngày'})
+        const vipDays = parseInt(p.vipDays, 10) || (p.id === 'vip-2y' || p.id === 'plan4' ? 365 : 0);
+        const vipTag = vipDays > 0 ? ` + VIP VSign ${vipDays}d` : '';
+        return `<option value="${p.id}" data-price="${p.price}" data-warranty="${p.warranty || '240 ngày'}" data-name="${p.name}" data-vip-days="${vipDays}">
+          ${p.name} — ${Number(p.price).toLocaleString('vi-VN')}đ (${p.warranty || '240 ngày'}${vipTag})
         </option>`;
-      }).join('') + `<option value="custom" data-price="180000" data-warranty="240 ngày" data-name="Gói Cert Tùy Chỉnh">⚙️ Gói Tùy Chỉnh (Nhập giá riêng)...</option>`;
+      }).join('') + `<option value="custom" data-price="180000" data-warranty="240 ngày" data-name="Gói Cert Tùy Chỉnh" data-vip-days="0">⚙️ Gói Tùy Chỉnh (Nhập giá riêng)...</option>`;
 
       onNewCertPlanChange();
     }
@@ -11219,8 +11419,9 @@
         certFileUrl: certFileUrl || '',
         p12Url: certFileUrl || '',
         directInstallLink: directInstallLink || '',
-        certPass: certPass || '1',
-        password: certPass || '1',
+        certPass: (certPass !== undefined && certPass !== null && certPass !== '') ? certPass : ((b64Cache && b64Cache.certPass !== undefined) ? b64Cache.certPass : '1'),
+        password: (certPass !== undefined && certPass !== null && certPass !== '') ? certPass : ((b64Cache && b64Cache.certPass !== undefined) ? b64Cache.certPass : '1'),
+        signedIpaUrl: (b64Cache && b64Cache.signedIpaUrl) || '',
         warrantyUntil: warrantyUntil || '',
         expiresAt: isNaN(expMs) ? (Date.now() + 240 * 86400000) : expMs,
         remainingDays: remainingDays || 0,
@@ -11242,6 +11443,25 @@
       return payload;
     }
 
+    function computeCertOrderVipDays(order = {}) {
+      const slug = String(order.planId || order.productId || '').trim().toLowerCase();
+      const name = String(order.planName || order.productName || '').toLowerCase();
+      const basePrice = Number(order.basePrice || order.price || 0);
+      let includedVipDays = parseInt(order.includedVipDays, 10) || 0;
+      if (!includedVipDays) {
+        if (slug === 'vip-2y' || slug === 'plan4' || (basePrice >= 499000 && (name.includes('2 năm') || name.includes('730')))) {
+          includedVipDays = 365;
+        }
+      }
+      const addonVipDays = order.hasVipAddon ? 30 : 0;
+      const explicitTotal = parseInt(order.vipDays, 10) || 0;
+      return {
+        includedVipDays,
+        addonVipDays,
+        totalVipDays: Math.max(explicitTotal, includedVipDays + addonVipDays)
+      };
+    }
+
     async function syncVipCertClientFirestore(targetUid, vipCertPayload, orderId, matchedOrder = {}, status = 'COMPLETED') {
       if (isPlaceholderCertUid(targetUid)) {
         return { synced: false, error: 'Chưa tìm thấy UID tài khoản khách' };
@@ -11252,8 +11472,9 @@
       try {
         const userUpdatePayload = { vipCert: vipCertPayload };
 
-        // Order Bump: VIP 30 ngày (+25k)
-        if (matchedOrder.hasVipAddon && !matchedOrder.vipAddonGranted) {
+        // Quyền lợi VIP kèm gói (VD: 365 ngày VIP VSign) + Order Bump (+30 ngày)
+        const { totalVipDays } = computeCertOrderVipDays(matchedOrder);
+        if (totalVipDays > 0 && !matchedOrder.vipAddonGranted) {
           try {
             const uDoc = await db.collection('users').doc(targetUid).get();
             const uData = uDoc.exists ? uDoc.data() : {};
@@ -11263,8 +11484,13 @@
             }
             userUpdatePayload.vip = true;
             userUpdatePayload.isVip = true;
-            userUpdatePayload.vipExpire = firebase.firestore.Timestamp.fromMillis(baseExp + 30 * 86400000);
-            await db.collection('cert_orders').doc(orderId).set({ vipAddonGranted: true }, { merge: true });
+            userUpdatePayload.vipExpire = firebase.firestore.Timestamp.fromMillis(baseExp + totalVipDays * 86400000);
+            await db.collection('cert_orders').doc(orderId).set({
+              vipAddonGranted: true,
+              vipGrantedDays: totalVipDays,
+              vipGrantedAt: new Date().toISOString()
+            }, { merge: true });
+            matchedOrder.vipAddonGranted = true;
           } catch (vipErr) {}
         }
 
@@ -11342,8 +11568,9 @@
       const note = document.getElementById('newCertNote').value.trim();
       
       const certFileUrl = document.getElementById('newCertFileUrl')?.value.trim() || '';
-      const directInstallLink = document.getElementById('newCertDirectInstallLink')?.value.trim() || (certFileUrl ? generateOtaInstallLink('', planName) : '');
-      const certPass = cleanCertPassword(document.getElementById('newCertPass')?.value);
+      const rawOtaLink = document.getElementById('newCertDirectInstallLink')?.value.trim() || '';
+      const directInstallLink = isValidSignedOtaUrl(rawOtaLink) ? rawOtaLink : '';
+      const certPass = cleanCertPassword(document.getElementById('newCertPass')?.value, true);
 
       if (!orderId || !contact) {
         Swal.fire('Thiếu thông tin', 'Vui lòng nhập đầy đủ Mã đơn hàng và Khách hàng liên hệ!', 'warning');
@@ -11366,6 +11593,9 @@
         const effectiveUid = resolvedUid || ('ADMIN_MANUAL_' + Date.now());
         const b64Cache = getExtractedCertB64(orderId);
 
+        const optVipDays = sel ? (parseInt(sel.options[sel.selectedIndex]?.getAttribute('data-vip-days'), 10) || 0) : 0;
+        const vipMeta = computeCertOrderVipDays({ planId, planName, basePrice: price, includedVipDays: optVipDays });
+
         const orderData = {
           orderId: orderId,
           id: orderId,
@@ -11377,7 +11607,10 @@
           planId: planId,
           planName: planName,
           productName: planName,
+          basePrice: price,
           price: price,
+          includedVipDays: vipMeta.includedVipDays,
+          vipDays: vipMeta.totalVipDays,
           udid: udid,
           note: note,
           createdAt: new Date().toISOString(),
@@ -11431,9 +11664,13 @@
           pin: AdminState.auth.inMemoryPin || sessionStorage.getItem('admin_session_pin') || '200912aB',
           orderId: orderId,
           uid: resolvedUid || effectiveUid,
+          planId: planId,
           productName: planName,
           planName: planName,
           price: price,
+          includedVipDays: orderData.includedVipDays || 0,
+          vipDays: orderData.vipDays || 0,
+          vipAddonGrantedAlready: !!orderData.vipAddonGranted,
           udid: udid,
           customerName: contact,
           customerContact: contact,
@@ -11572,7 +11809,8 @@ Hệ thống đang tiến hành cấp chứng chỉ cho máy bạn. Ngay khi có
       // Delivery fields
       document.getElementById('fulfillCertFileUrl').value = order.certFileUrl || order.p12Url || '';
       document.getElementById('fulfillCertPass').value = order.certPass || '1';
-      document.getElementById('fulfillDirectInstallUrl').value = order.directInstallLink || (order.certFileUrl ? generateOtaInstallLink(order.certFileUrl) : '');
+      const existingOta = (order.directInstallLink || '').trim();
+      document.getElementById('fulfillDirectInstallUrl').value = (existingOta && !/raw\.githubusercontent\.com%2Fapplecert%2Fapplercert%2Fmain%2FVSign-/i.test(existingOta)) ? existingOta : '';
       document.getElementById('fulfillAppLinks').value = order.appLinks || 'https://ipaviet.site/app-library/index.html\nhttps://ipaviet.site/vsign';
       document.getElementById('fulfillGuideLinks').value = order.guideLinks || 'https://ipaviet.site/certapple/index.html#faqSection\nHướng dẫn ký: Mở VSign -> Quản lý chứng chỉ -> Nhập tệp .p12 và .mobileprovision';
       document.getElementById('fulfillNote').value = order.fulfillNote || '';
@@ -11693,8 +11931,9 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
       e.preventDefault();
       const orderId = document.getElementById('fulfillTargetOrderId').value;
       const certFileUrl = document.getElementById('fulfillCertFileUrl').value.trim();
-      const directInstallLink = document.getElementById('fulfillDirectInstallUrl').value.trim() || generateOtaInstallLink('', 'VSign Pro MHAC2');
-      const certPass = cleanCertPassword(document.getElementById('fulfillCertPass').value);
+      const rawOtaLink = document.getElementById('fulfillDirectInstallUrl').value.trim();
+      const directInstallLink = isValidSignedOtaUrl(rawOtaLink) ? rawOtaLink : '';
+      const certPass = cleanCertPassword(document.getElementById('fulfillCertPass').value, true);
       const status = document.getElementById('fulfillOrderStatus').value;
       const revokeStatus = document.getElementById('fulfillRevokeStatus').value;
       const warrantyUntil = document.getElementById('fulfillWarrantyUntil').value;
@@ -11780,6 +12019,7 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
         }
 
         // 3. Đồng bộ lên Google Sheet CERT_ORDERS + Firestore Server-side (Service Account) qua GAS
+        const fulfillVipMeta = computeCertOrderVipDays(matchedOrder);
         const gasRes = await postCertActionToGas({
           action: 'fulfill_cert_order',
           pin: AdminState.auth.inMemoryPin || sessionStorage.getItem('admin_session_pin') || '200912aB',
@@ -11787,7 +12027,13 @@ Bạn có thể bấm vào link trên để xem thời hạn bảo hành còn l�
           uid: targetUid || matchedOrder.uid || '',
           customerEmail: matchedOrder.customerEmail || '',
           customerContact: contactHint,
+          planId: matchedOrder.planId || '',
           planName: matchedOrder.planName || 'Chứng chỉ Apple Developer',
+          price: matchedOrder.price || matchedOrder.basePrice || 0,
+          includedVipDays: fulfillVipMeta.includedVipDays,
+          vipDays: fulfillVipMeta.totalVipDays,
+          hasVipAddon: !!matchedOrder.hasVipAddon,
+          vipAddonGrantedAlready: !!matchedOrder.vipAddonGranted,
           udid: matchedOrder.udid || '',
           hasInsuranceAddon: !!matchedOrder.hasInsuranceAddon,
           status: status,
@@ -12953,7 +13199,12 @@ Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, t�
         }
 
         if (prods.length === 0) {
-          prods = DEFAULT_CERT_PRODUCTS;
+          prods = [...DEFAULT_CERT_PRODUCTS];
+        } else {
+          const existingIds = new Set(prods.map(p => p.id));
+          DEFAULT_CERT_PRODUCTS.forEach(def => {
+            if (!existingIds.has(def.id)) prods.push(def);
+          });
         }
 
         AdminState.certProducts = prods;
@@ -12974,6 +13225,8 @@ Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, t�
         const price = Number(p.price || 0).toLocaleString('vi-VN') + 'đ';
         const origPrice = p.originalPrice ? Number(p.originalPrice).toLocaleString('vi-VN') + 'đ' : '';
         const warranty = escapeHTML(p.warranty || '30 ngày');
+        const duration = escapeHTML(p.duration || '1 năm');
+        const vipDays = parseInt(p.vipDays, 10) || (p.id === 'vip-2y' || p.id === 'plan4' ? 365 : 0);
         const badge = escapeHTML(p.badge || '');
         const features = Array.isArray(p.features) ? p.features : String(p.features || '').split('\n').filter(Boolean);
         const isActive = p.active !== false;
@@ -12997,8 +13250,13 @@ Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, t�
               <div class="mt-3 text-xs text-gray-600 space-y-1.5 pt-3 border-t border-black/[0.04]">
                 <div class="flex items-center gap-1.5 font-semibold text-gray-800">
                   <i data-lucide="shield-check" class="w-3.5 h-3.5 text-sky-600"></i>
-                  <span>Bảo hành: ${warranty}</span>
+                  <span>Thời hạn: ${duration} · Bảo hành: ${warranty}</span>
                 </div>
+                ${vipDays > 0 ? `
+                <div class="flex items-center gap-1.5 font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200/80">
+                  <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-600"></i>
+                  <span>Tặng kèm VIP VSign ${vipDays} ngày</span>
+                </div>` : ''}
                 ${features.map(f => `
                   <div class="flex items-start gap-1.5 text-[11px] text-gray-500">
                     <i data-lucide="check" class="w-3 h-3 text-emerald-600 shrink-0 mt-0.5"></i>
@@ -13081,8 +13339,11 @@ Bạn có thể bấm vào link trên để xem hạn bảo hành còn lại, t�
       const features = document.getElementById('prodInputFeatures').value.split('\n').map(s => s.trim()).filter(Boolean);
       const active = document.getElementById('prodInputActive').checked;
 
+      const existingProd = (AdminState.certProducts || []).find(p => p.id === id);
+      const vipDays = existingProd && existingProd.vipDays ? parseInt(existingProd.vipDays, 10) : ((id === 'vip-2y' || id === 'plan4' || (price >= 499000 && duration.includes('2'))) ? 365 : 0);
+
       const prodData = {
-        id, name, price, originalPrice, warranty, duration, badge, features, active,
+        id, name, price, originalPrice, warranty, duration, vipDays, badge, features, active,
         updatedAt: new Date().toISOString()
       };
 

@@ -525,6 +525,10 @@
               <i data-lucide="shield-check" class="w-4 h-4 spec-icon"></i>
               <span>Thời hạn bảo hành: <strong class="text-label font-semibold" id="displayWarranty">240 ngày (1 đổi 1)</strong></span>
             </div>
+            <div class="spec-item hidden" id="rowIncludedVip">
+              <i data-lucide="crown" class="w-4 h-4 spec-icon text-flame"></i>
+              <span>Quyền lợi tặng kèm: <strong class="text-flame font-semibold" id="displayIncludedVip">VIP VSign 1 năm (365 ngày) tự động</strong></span>
+            </div>
             <div class="spec-item">
               <i data-lucide="file-check-2" class="w-4 h-4 spec-icon"></i>
               <span>Tệp chứng chỉ: <strong class="text-label font-semibold">Tệp .P12 &amp; .MobileProvision (26 Entitlements)</strong></span>
@@ -594,6 +598,10 @@
               <div class="step-title">Tùy chọn nâng cấp kèm đơn</div>
             </div>
             <span class="rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-flame-soft text-flame">Ưu đãi kèm đơn</span>
+          </div>
+
+          <div id="addonVipIncludedBanner" class="hidden mb-2.5 rounded-xl px-3.5 py-2.5 text-caption font-semibold text-flame bg-flame-soft">
+            ✓ Gói bạn chọn đã tặng sẵn VIP VSign 1 năm (365 ngày) tự động khi cấp chứng chỉ. Chọn thêm bên dưới nếu muốn cộng dồn +30 ngày VIP.
           </div>
 
           <div class="flex flex-col gap-2.5">
@@ -797,8 +805,22 @@
       basePrice: 199000,
       price: 199000,
       warranty: '240 Ngày',
-      waitingTime: '1 - 24 Giờ'
+      waitingTime: '1 - 24 Giờ',
+      includedVipDays: 0,
+      vipDays: 0
     };
+
+    function resolveIncludedVipDays(orderLike) {
+      if (!orderLike) return 0;
+      const explicit = parseInt(orderLike.includedVipDays, 10);
+      if (explicit > 0) return explicit;
+      const slug = String(orderLike.planId || orderLike.slug || '').toLowerCase();
+      const name = String(orderLike.planName || orderLike.name || '').toLowerCase();
+      const price = Number(orderLike.basePrice || orderLike.price || 0);
+      if (slug === 'vip-2y' || slug === 'plan4') return 365;
+      if (price >= 499000 && (name.includes('2 năm') || name.includes('730'))) return 365;
+      return 0;
+    }
 
     // ══ ORDER BUMP ADDON CHECKOUT STATE ══
     const addonsCheckout = {
@@ -869,6 +891,7 @@
       const urlWarranty = p.get('warranty');
       const urlIssue = p.get('issue');
       const urlUdid = p.get('udid');
+      const urlVipDays = p.get('vipDays') || p.get('includedVipDays');
 
       if (urlName) currentOrder.planName = urlName;
       if (urlPrice) {
@@ -878,6 +901,7 @@
       if (urlPlan) currentOrder.planId = urlPlan;
       if (urlWarranty) currentOrder.warranty = urlWarranty.indexOf('ngày') !== -1 ? urlWarranty : (urlWarranty + ' ngày');
       if (urlIssue) currentOrder.waitingTime = urlIssue;
+      if (urlVipDays) currentOrder.includedVipDays = parseInt(urlVipDays, 10) || 0;
 
       // Also check saved plan if no query
       if (!urlPlan) {
@@ -891,6 +915,9 @@
         }
       }
 
+      currentOrder.includedVipDays = resolveIncludedVipDays(currentOrder);
+      currentOrder.vipDays = currentOrder.includedVipDays + (addonsCheckout.vip ? 30 : 0);
+
       // Render UI
       document.getElementById('displayPlanName').textContent = currentOrder.planName;
       document.getElementById('displayPriceCurr').textContent = currentOrder.price.toLocaleString('vi-VN') + ' ₫';
@@ -899,6 +926,17 @@
       document.getElementById('displayWarranty').textContent = currentOrder.warranty + ' (1 đổi 1)';
       if (currentOrder.waitingTime) {
         document.getElementById('displayWaitingTime').textContent = currentOrder.waitingTime;
+      }
+      const rowIncludedVip = document.getElementById('rowIncludedVip');
+      const displayIncludedVip = document.getElementById('displayIncludedVip');
+      const vipBannerEl = document.getElementById('addonVipIncludedBanner');
+      if (currentOrder.includedVipDays > 0) {
+        if (displayIncludedVip) displayIncludedVip.textContent = `VIP VSign 1 năm (${currentOrder.includedVipDays} ngày) tự động`;
+        if (rowIncludedVip) rowIncludedVip.classList.remove('hidden');
+        if (vipBannerEl) vipBannerEl.classList.remove('hidden');
+      } else {
+        if (rowIncludedVip) rowIncludedVip.classList.add('hidden');
+        if (vipBannerEl) vipBannerEl.classList.add('hidden');
       }
 
       // Update Old Price & USD
@@ -1156,25 +1194,21 @@
       return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
-    // Tự động ghi nhận đơn tạm vào Firestore và Google Sheet ngay khi tạo hoặc nhập UDID
-    let orderListenerUnsub = null;
-    async function autoSyncPendingOrder() {
-      const input = document.getElementById('inputUdid');
-      const udid = input ? input.value.trim().toUpperCase() : '';
-      const contact = document.getElementById('inputContact')?.value.trim() || '';
-      const note = document.getElementById('inputNote')?.value.trim() || '';
+    function buildCheckoutOrderPayload(status, udid, contact, note) {
+      const warrantyDays = parseInt(currentOrder.warranty, 10) || 240;
       const warrantyDate = calculateWarrantyDate(currentOrder.warranty);
-
       const selectedAddons = [];
       if (addonsCheckout.vip) selectedAddons.push({ id: 'vip_30d', name: 'VIP Ký Tự Động 30 Ngày', price: ADDON_CHECKOUT_PRICES.vip });
       if (addonsCheckout.insurance) selectedAddons.push({ id: 'applecare_fast', name: 'Bảo Hiểm AppleCare+ FAST', price: ADDON_CHECKOUT_PRICES.insurance });
       const addonSuffix = selectedAddons.length ? (' (+ ' + selectedAddons.map(a => a.name).join(', ') + ')') : '';
+      const includedVipDays = resolveIncludedVipDays(currentOrder);
+      const totalVipDays = includedVipDays + (addonsCheckout.vip ? 30 : 0);
 
       const resolvedUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser)
         ? firebase.auth().currentUser.uid
         : ('CLIENT_' + (localStorage.getItem('ipaviet_client_uid') || Date.now()));
 
-      const pendingOrder = {
+      const payload = {
         orderId: currentOrder.orderId,
         uid: resolvedUid,
         customerEmail: contact || 'guest@ipaviet.site',
@@ -1185,6 +1219,8 @@
         productName: currentOrder.planName + addonSuffix,
         basePrice: currentOrder.basePrice || currentOrder.price,
         price: currentOrder.price,
+        includedVipDays: includedVipDays,
+        vipDays: totalVipDays,
         hasVipAddon: addonsCheckout.vip,
         hasInsuranceAddon: addonsCheckout.insurance,
         addons: selectedAddons,
@@ -1192,40 +1228,68 @@
         udid: udid,
         note: note,
         createdAt: currentOrder.createdAt || new Date().toISOString(),
-        status: 'PENDING',
+        status: status,
         revokeStatus: 'ACTIVE',
+        warrantyDays: warrantyDays,
         warrantyUntil: warrantyDate,
         certPass: '1',
         paymentMethod: 'VIETQR_BIDV_AUTO',
         ref: localStorage.getItem('ipaviet_ref') || ''
       };
+      if (status === 'PAID_PROCESSING') {
+        payload.certFileUrl = '';
+        payload.p12Url = '';
+        payload.appLinks = 'VSign: https://ipaviet.site/vsign\nESign: https://ipaviet.site/esign\nTrollStore: https://ipaviet.site/trollstore';
+        payload.guideLinks = 'Hướng dẫn cài ESign: https://ipaviet.site/guides/esign\nHướng dẫn ký IPA: https://ipaviet.site/guides/sign';
+      }
+      return payload;
+    }
+
+    function syncCheckoutOrderToGas(orderData, status) {
+      return fetch(GOOGLE_API_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          action: 'buy_cert_pending',
+          orderId: orderData.orderId,
+          uid: orderData.uid,
+          planId: orderData.planId || '',
+          productId: orderData.planId || '',
+          productName: orderData.productName || orderData.planName,
+          planName: orderData.planName,
+          price: orderData.price,
+          amount: 1,
+          udid: orderData.udid,
+          customerName: orderData.customerName,
+          customerContact: orderData.customerContact,
+          warrantyDays: orderData.warrantyDays || 240,
+          warrantyUntil: orderData.warrantyUntil,
+          includedVipDays: orderData.includedVipDays || 0,
+          vipDays: orderData.vipDays || 0,
+          hasVipAddon: orderData.hasVipAddon ? 'true' : 'false',
+          hasInsuranceAddon: orderData.hasInsuranceAddon ? 'true' : 'false',
+          note: orderData.note,
+          status: status
+        })
+      }).catch(() => {});
+    }
+
+    // Tự động ghi nhận đơn tạm vào Firestore và Google Sheet ngay khi tạo hoặc nhập UDID
+    let orderListenerUnsub = null;
+    async function autoSyncPendingOrder() {
+      const input = document.getElementById('inputUdid');
+      const udid = input ? input.value.trim().toUpperCase() : '';
+      const contact = document.getElementById('inputContact')?.value.trim() || '';
+      const note = document.getElementById('inputNote')?.value.trim() || '';
+      const pendingOrder = buildCheckoutOrderPayload('PENDING', udid, contact, note);
       currentOrder.createdAt = pendingOrder.createdAt;
 
       try {
         if (typeof db !== 'undefined' && db.collection) {
           await db.collection('cert_orders').doc(currentOrder.orderId).set(pendingOrder, { merge: true });
         }
-
-        // Đồng bộ lên Google Sheet CERT_ORDERS
-        fetch(GOOGLE_API_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            action: 'buy_cert_pending',
-            orderId: pendingOrder.orderId,
-            uid: pendingOrder.uid,
-            productName: pendingOrder.planName,
-            planName: pendingOrder.planName,
-            price: pendingOrder.price,
-            udid: pendingOrder.udid,
-            customerName: pendingOrder.customerName,
-            customerContact: pendingOrder.customerContact,
-            warrantyUntil: pendingOrder.warrantyUntil,
-            note: pendingOrder.note,
-            status: 'PENDING'
-          })
-        }).catch(() => {});
+        syncCheckoutOrderToGas(pendingOrder, 'PENDING');
       } catch(e) {}
 
       listenForOrderPayment();
@@ -1284,45 +1348,7 @@
 
       const contact = document.getElementById('inputContact').value.trim();
       const note = document.getElementById('inputNote').value.trim();
-      const warrantyDate = calculateWarrantyDate(currentOrder.warranty);
-
-      const selectedAddons = [];
-      if (addonsCheckout.vip) selectedAddons.push({ id: 'vip_30d', name: 'VIP Ký Tự Động 30 Ngày', price: ADDON_CHECKOUT_PRICES.vip });
-      if (addonsCheckout.insurance) selectedAddons.push({ id: 'applecare_fast', name: 'Bảo Hiểm AppleCare+ FAST', price: ADDON_CHECKOUT_PRICES.insurance });
-      const addonSuffix = selectedAddons.length ? (' (+ ' + selectedAddons.map(a => a.name).join(', ') + ')') : '';
-      const resolvedUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser)
-        ? firebase.auth().currentUser.uid
-        : ('CLIENT_' + (localStorage.getItem('ipaviet_client_uid') || Date.now()));
-
-      const orderData = {
-        orderId: currentOrder.orderId,
-        uid: resolvedUid,
-        customerEmail: contact || 'guest@ipaviet.site',
-        customerName: contact || 'Khách Hàng',
-        customerContact: contact,
-        planId: currentOrder.planId,
-        planName: currentOrder.planName,
-        productName: currentOrder.planName + addonSuffix,
-        basePrice: currentOrder.basePrice || currentOrder.price,
-        price: currentOrder.price,
-        hasVipAddon: addonsCheckout.vip,
-        hasInsuranceAddon: addonsCheckout.insurance,
-        addons: selectedAddons,
-        amount: 1,
-        udid: udid,
-        note: note,
-        createdAt: currentOrder.createdAt || new Date().toISOString(),
-        status: 'PAID_PROCESSING',
-        revokeStatus: 'ACTIVE',
-        warrantyUntil: warrantyDate,
-        certFileUrl: '',
-        p12Url: '',
-        certPass: '1',
-        appLinks: 'VSign: https://ipaviet.site/vsign\nESign: https://ipaviet.site/esign\nTrollStore: https://ipaviet.site/trollstore',
-        guideLinks: 'Hướng dẫn cài ESign: https://ipaviet.site/guides/esign\nHướng dẫn ký IPA: https://ipaviet.site/guides/sign',
-        paymentMethod: 'VIETQR_BIDV_AUTO',
-        ref: localStorage.getItem('ipaviet_ref') || ''
-      };
+      const orderData = buildCheckoutOrderPayload('PAID_PROCESSING', udid, contact, note);
 
       try {
         if (typeof db !== 'undefined' && db.collection) {
@@ -1333,28 +1359,7 @@
         local.unshift(orderData);
         localStorage.setItem('ipaviet_cert_orders', JSON.stringify(local.slice(0, 50)));
 
-        try {
-          fetch(GOOGLE_API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              action: 'buy_cert_pending',
-              orderId: orderData.orderId,
-              uid: orderData.uid,
-              productName: orderData.productName,
-              planName: orderData.planName,
-              price: orderData.price,
-              amount: 1,
-              udid: orderData.udid,
-              customerName: orderData.customerName,
-              customerContact: orderData.customerContact,
-              warrantyUntil: orderData.warrantyUntil,
-              note: orderData.note,
-              status: 'PAID_PROCESSING'
-            })
-          });
-        } catch(e) {}
+        syncCheckoutOrderToGas(orderData, 'PAID_PROCESSING');
 
         try {
           const teleMsg = `🛒 <b>ĐƠN HÀNG CERT MỚI (CHECKOUT)</b>\n` +
