@@ -9,9 +9,23 @@
 (function (window, document) {
   'use strict';
 
+  var SUBDIRS = ['/certapple/', '/app-library/', '/sign-app/', '/store/', '/top-up/', '/100days/'];
+  var VALID_ACCENTS = ['crimson', 'amber', 'blue', 'emerald'];
+  var dockEventsBound = false;
+
+  function getPathPrefix() {
+    var path = (window.location.pathname || '').toLowerCase();
+    for (var i = 0; i < SUBDIRS.length; i++) {
+      if (path.indexOf(SUBDIRS[i]) !== -1) {
+        return '../';
+      }
+    }
+    return '';
+  }
+
   function detectContextualAccent() {
     var p = (window.location.pathname || '').toLowerCase();
-    if (p.indexOf('dichvu') !== -1 || p.indexOf('naptien') !== -1 || p.indexOf('account') !== -1 || p.indexOf('top-up') !== -1) {
+    if (p.indexOf('dichvu') !== -1 || p.indexOf('naptien') !== -1 || p.indexOf('account') !== -1 || p.indexOf('top-up') !== -1 || p.indexOf('ipavip') !== -1) {
       return 'amber';
     }
     if (p.indexOf('app-library') !== -1 || p.indexOf('sign-app') !== -1 || p.indexOf('vsign') !== -1 || p.indexOf('phim-tat') !== -1) {
@@ -34,6 +48,16 @@
       if (saved === 'dark' || saved === 'light') return saved;
     } catch (e) {}
     return 'light'; // Chuẩn mặc định Sáng (#f6f7f9) như Cert Apple
+  }
+
+  function updateThemeToggleButton(btn, isDark) {
+    if (!btn) return;
+    btn.setAttribute('aria-label', isDark ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối');
+    btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+    btn.title = isDark ? 'Đang dùng chế độ Tối — bấm để chuyển Sáng' : 'Đang dùng chế độ Sáng — bấm để chuyển Tối';
+    btn.innerHTML = isDark
+      ? '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.9"/><path d="M12 2.5v2.2M12 19.3v2.2M4.7 4.7l1.6 1.6M17.7 17.7l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.7 19.3l1.6-1.6M17.7 6.3l1.6-1.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.2 14.4A8.2 8.2 0 0 1 9.6 3.8a8.2 8.2 0 1 0 10.6 10.6Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>';
   }
 
   function applyTheme(theme) {
@@ -60,13 +84,12 @@
     }
 
     // Cập nhật icon nút đổi theme trên thanh .thanh-duoi nếu đã render
-    var dockThemeBtn = document.getElementById('thanhDuoiThemeBtn');
-    if (dockThemeBtn) {
-      dockThemeBtn.setAttribute('aria-label', isDark ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối');
-      dockThemeBtn.title = isDark ? 'Đang dùng chế độ Tối — bấm để chuyển Sáng' : 'Đang dùng chế độ Sáng — bấm để chuyển Tối';
-      dockThemeBtn.innerHTML = isDark
-        ? '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.9"/><path d="M12 2.5v2.2M12 19.3v2.2M4.7 4.7l1.6 1.6M17.7 17.7l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.7 19.3l1.6-1.6M17.7 6.3l1.6-1.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.2 14.4A8.2 8.2 0 0 1 9.6 3.8a8.2 8.2 0 1 0 10.6 10.6Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>';
+    updateThemeToggleButton(document.getElementById('thanhDuoiThemeBtn'), isDark);
+
+    // Cập nhật các nút [data-theme-toggle-icon] trên header (nếu trang có dùng)
+    var headerThemeBtns = document.querySelectorAll('[data-theme-toggle-icon]');
+    for (var i = 0; i < headerThemeBtns.length; i++) {
+      updateThemeToggleButton(headerThemeBtns[i], isDark);
     }
   }
 
@@ -93,11 +116,20 @@
       var next = currentTheme === 'dark' ? 'light' : 'dark';
       this.set(next);
       return next;
-    }
+    },
+    getAccent: function () {
+      return document.documentElement.getAttribute('data-accent') || detectContextualAccent();
+    },
+    setAccent: function (accent) {
+      if (VALID_ACCENTS.indexOf(accent) === -1) return;
+      document.documentElement.setAttribute('data-accent', accent);
+    },
+    getPrefix: getPathPrefix,
+    initDock: initUnifiedCertAppleDock
   };
 
   document.addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-theme-toggle], .theme-toggle, .btn-theme-switch, #thanhDuoiThemeBtn');
+    var btn = e.target && e.target.closest ? e.target.closest('[data-theme-toggle], .theme-toggle, .btn-theme-switch, #thanhDuoiThemeBtn') : null;
     if (btn) {
       e.preventDefault();
       var next = window.IPAVIET_THEME.toggle();
@@ -107,24 +139,69 @@
     }
   });
 
+  function detectDockActiveKey(path) {
+    if (path.indexOf('/app-library/') !== -1 || path.indexOf('ipavip') !== -1) return 'ipa';
+    if (path.indexOf('/certapple/') !== -1 || path.indexOf('cert.html') !== -1) return 'cert';
+    if (path.indexOf('/sign-app/') !== -1 || path.indexOf('vsign') !== -1) return 'sign';
+    if (path.indexOf('account') !== -1 || path.indexOf('dichvu') !== -1 || path.indexOf('naptien') !== -1 || path.indexOf('/top-up/') !== -1) return 'account';
+    return 'home';
+  }
+
+  function bindDockViewportEvents() {
+    if (dockEventsBound) return;
+    dockEventsBound = true;
+
+    function getActiveDock() {
+      return document.getElementById('bottomNav') || document.querySelector('nav.thanh-duoi');
+    }
+
+    function updateScrollState() {
+      var nav = getActiveDock();
+      if (!nav) return;
+      if (window.scrollY > 24) {
+        nav.classList.add('thu');
+      } else {
+        nav.classList.remove('thu');
+      }
+    }
+
+    window.addEventListener('scroll', updateScrollState, { passive: true });
+    updateScrollState();
+
+    document.addEventListener('focusin', function (e) {
+      var target = e.target;
+      if (!target || !target.tagName) return;
+      var tag = target.tagName.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+        var type = (target.type || '').toLowerCase();
+        if (type === 'checkbox' || type === 'radio' || type === 'button' || type === 'submit') return;
+        var nav = getActiveDock();
+        if (nav) nav.classList.add('an-ban-phim');
+      }
+    });
+
+    document.addEventListener('focusout', function () {
+      setTimeout(function () {
+        var active = document.activeElement;
+        var tag = active && active.tagName ? active.tagName.toLowerCase() : '';
+        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+          var nav = getActiveDock();
+          if (nav) nav.classList.remove('an-ban-phim');
+        }
+      }, 60);
+    });
+  }
+
   // Khởi tạo thanh điều hướng nổi .thanh-duoi đồng bộ toàn hệ sinh thái
   function initUnifiedCertAppleDock() {
+    if (!document.body) return;
     var path = (window.location.pathname || '').toLowerCase();
-    // Không chèn trên trang quản trị admin hoặc trang nhận thưởng nhiệm vụ
+    // Không chèn trên trang quản trị admin, trang nhận thưởng nhiệm vụ, hoặc trang tắt dock chủ động
     if (path.indexOf('admin.html') !== -1 || path.indexOf('claim.html') !== -1) return;
+    if (document.body.getAttribute('data-no-dock') === 'true' || document.documentElement.getAttribute('data-no-dock') === 'true') return;
 
-    var inSubdir = path.indexOf('/certapple/') !== -1 ||
-                   path.indexOf('/app-library/') !== -1 ||
-                   path.indexOf('/sign-app/') !== -1 ||
-                   path.indexOf('/store/') !== -1 ||
-                   path.indexOf('/top-up/') !== -1;
-    var prefix = inSubdir ? '../' : '';
-
-    var activeKey = 'home';
-    if (path.indexOf('/app-library/') !== -1 || path.indexOf('ipavip') !== -1) activeKey = 'ipa';
-    else if (path.indexOf('/certapple/') !== -1 || path.indexOf('cert.html') !== -1) activeKey = 'cert';
-    else if (path.indexOf('/sign-app/') !== -1 || path.indexOf('vsign') !== -1) activeKey = 'sign';
-    else if (path.indexOf('account') !== -1 || path.indexOf('dichvu') !== -1 || path.indexOf('naptien') !== -1) activeKey = 'account';
+    var prefix = getPathPrefix();
+    var activeKey = detectDockActiveKey(path);
 
     var items = [
       {
@@ -168,17 +245,21 @@
       document.body.appendChild(nav);
     }
 
-    var html = '';
-    for (var i = 0; i < items.length; i++) {
-      var it = items[i];
-      var isCurrent = it.key === activeKey;
-      html += '<a class="thanh-duoi-muc" aria-label="' + it.label + '"' + (isCurrent ? ' aria-current="page"' : '') + ' href="' + it.href + '">' +
-              it.icon +
-              '<span class="thanh-duoi-chu">' + it.label + '</span>' +
-              '</a>';
+    nav.classList.remove('chua-biet');
+
+    if (nav.getAttribute('data-dock-preserve') !== 'true') {
+      var html = '';
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var isCurrent = it.key === activeKey;
+        html += '<a class="thanh-duoi-muc" aria-label="' + it.label + '"' + (isCurrent ? ' aria-current="page"' : '') + ' href="' + it.href + '">' +
+                it.icon +
+                '<span class="thanh-duoi-chu">' + it.label + '</span>' +
+                '</a>';
+      }
+      html += '<button type="button" class="thanh-duoi-muc" id="thanhDuoiThemeBtn" aria-label="Đổi giao diện Sáng / Tối"></button>';
+      nav.innerHTML = html;
     }
-    html += '<button type="button" class="thanh-duoi-muc" id="thanhDuoiThemeBtn" aria-label="Đổi giao diện Sáng / Tối"></button>';
-    nav.innerHTML = html;
 
     // Ẩn các thanh bottom bar cũ bị trùng lặp (nếu có)
     var legacyNavs = document.querySelectorAll('.floating-nav, .mobile-bottom-nav, #mobileBottomNav, .bottom-tabs, nav.fixed.bottom-0, nav.thanh-duoi-cu');
@@ -189,22 +270,7 @@
     }
 
     applyTheme(currentTheme);
-
-    // Hiệu ứng thu gọn thanh .thanh-duoi khi cuộn trang hoặc bật bàn phím
-    window.addEventListener('scroll', function () {
-      if (window.scrollY > 24) {
-        nav.classList.add('thu');
-      } else {
-        nav.classList.remove('thu');
-      }
-    }, { passive: true });
-
-    var inputs = document.querySelectorAll('input, textarea, select');
-    for (var k = 0; k < inputs.length; k++) {
-      inputs[k].addEventListener('focus', function () { nav.classList.add('an-ban-phim'); });
-      inputs[k].addEventListener('blur', function () { nav.classList.remove('an-ban-phim'); });
-    }
-
+    bindDockViewportEvents();
     syncGlobalHeaderAuthPill();
   }
 
@@ -266,10 +332,34 @@
     }
   }
 
+  function isEligibleGlobalAuthPill(link) {
+    if (!link) return false;
+    if (link.hasAttribute('data-no-auth-pill') || link.getAttribute('data-auth-pill') === 'off') return false;
+    if (link.id === 'navUserLink' || link.querySelector('#navUserName')) return false;
+    if (link.hasAttribute('data-auth-pill')) return true;
+    // Không ghi đè các nút đặc thù của từng trang (Vue bindings, nút CTA, pill riêng)
+    if (link.id) return false;
+    if (link.hasAttribute('v-if') || link.hasAttribute('v-else') || link.hasAttribute('v-else-if')) return false;
+    if (
+      link.classList.contains('ios-btn') ||
+      link.classList.contains('apple-user-pill') ||
+      link.classList.contains('user-pill-link') ||
+      link.classList.contains('window-nav-link') ||
+      link.classList.contains('icon-btn')
+    ) {
+      return false;
+    }
+    return link.classList.contains('w-8') && link.textContent.trim() === '';
+  }
+
   function renderHeaderPillWithUser(user) {
     if (!user || (!user.uid && !user.email)) return;
-    var shortName = (user.displayName || user.email || 'Thành viên').split(' ').slice(-1)[0] || (user.email ? user.email.split('@')[0] : 'Tôi');
-    var av = user.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(shortName) + '&background=e10e0e&color=fff&size=64');
+    var nameParts = (user.displayName || '').trim().split(/\s+/).filter(Boolean);
+    var shortName = nameParts.length > 0
+      ? nameParts[nameParts.length - 1]
+      : (user.email ? user.email.split('@')[0] : 'Tôi');
+    var fallbackAv = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(shortName) + '&background=e10e0e&color=fff&size=64';
+    var av = user.photoURL || fallbackAv;
     var coinsVal = typeof user.coins === 'number' ? user.coins : (parseInt(localStorage.getItem('cached_coins'), 10) || 0);
 
     // 1. Nếu trang có sẵn #navUserName & #navAvatar (như naptien.html)
@@ -277,24 +367,48 @@
     var navAv = document.getElementById('navAvatar');
     if (navName && navAv) {
       navName.textContent = shortName;
-      navAv.innerHTML = '<img src="' + av + '" alt="" class="w-full h-full rounded-full object-cover"/>';
+      navAv.textContent = '';
+      var navImg = document.createElement('img');
+      navImg.src = av;
+      navImg.alt = '';
+      navImg.className = 'w-full h-full rounded-full object-cover';
+      navImg.onerror = function () {
+        if (this.src !== fallbackAv) this.src = fallbackAv;
+      };
+      navAv.appendChild(navImg);
     }
 
-    // 2. Nâng cấp nút tài khoản trên Header của index.html và các trang dùng Header chuẩn
+    // 2. Nâng cấp nút tài khoản chuẩn trên Header của index.html và các trang dùng Header chuẩn
     var headerLinks = document.querySelectorAll('header a[href*="account.html"]');
     for (var i = 0; i < headerLinks.length; i++) {
       var link = headerLinks[i];
-      if (link.id === 'navUserLink' || link.querySelector('#navUserName')) continue;
+      if (!isEligibleGlobalAuthPill(link)) continue;
       link.classList.remove('w-8', 'justify-center');
       link.classList.add('px-2', 'pr-3', 'gap-2');
       link.style.width = 'auto';
-      var balanceHtml = coinsVal > 0
-        ? '<span class="text-[11px] font-bold text-flame hidden sm:inline">· ' + coinsVal.toLocaleString('vi-VN') + 'đ</span>'
-        : '';
-      link.innerHTML =
-        '<img src="' + av + '" alt="" class="h-5 w-5 rounded-full object-cover shrink-0"/>' +
-        '<span class="text-xs font-bold text-label truncate max-w-[96px]">' + shortName + '</span>' +
-        balanceHtml;
+      link.textContent = '';
+
+      var img = document.createElement('img');
+      img.src = av;
+      img.alt = '';
+      img.className = 'h-5 w-5 rounded-full object-cover shrink-0';
+      img.onerror = function () {
+        if (this.src !== fallbackAv) this.src = fallbackAv;
+      };
+      link.appendChild(img);
+
+      var nameEl = document.createElement('span');
+      nameEl.className = 'text-xs font-bold text-label truncate max-w-[96px]';
+      nameEl.textContent = shortName;
+      link.appendChild(nameEl);
+
+      if (coinsVal > 0) {
+        var balEl = document.createElement('span');
+        balEl.className = 'text-[11px] font-bold text-flame hidden sm:inline';
+        balEl.textContent = '· ' + coinsVal.toLocaleString('vi-VN') + 'đ';
+        link.appendChild(balEl);
+      }
+
       link.title = (user.email || shortName) + ' — Số dư: ' + coinsVal.toLocaleString('vi-VN') + 'đ';
     }
   }
@@ -333,6 +447,13 @@
   window.addEventListener('storage', function (e) {
     if (e.key === 'ipaviet_auth_user' || e.key === 'cached_coins') {
       syncGlobalHeaderAuthPill();
+    }
+    if (e.key === 'cc-giao-dien' || e.key === 'ipaviet_theme') {
+      var nextTheme = getStoredTheme();
+      if (nextTheme !== currentTheme) {
+        currentTheme = nextTheme;
+        applyTheme(currentTheme);
+      }
     }
   });
 

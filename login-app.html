@@ -1,40 +1,165 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-cc-xem="sang" data-accent="blue">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f7f9">
   <title>IPAVIET App Authentication</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230071e3'><path d='M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 1.01-2.87-.96.04-2.07.64-2.72 1.39-.58.65-1.09 1.72-1.03 2.76 1.07.08 2.12-.53 2.74-1.28z'/></svg>"/>
+  <link rel="apple-touch-icon" href="certapple/assets/favicon.png"/>
+
+  <link rel="stylesheet" href="certapple/applecert.css"/>
+  <link rel="stylesheet" href="lucian-tokens.css"/>
+  <link rel="stylesheet" href="lucian-motion.css?v=2"/>
+  <link rel="stylesheet" href="ipaviet-search.css"/>
+  <script src="ipaviet-theme.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      background-color: #0F172A;
-      color: #FFFFFF;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    .auth-stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px 96px;
     }
+    .auth-sheet {
+      width: 100%;
+      max-width: 420px;
+      padding: 32px 24px 28px;
+      border-radius: 24px;
+      text-align: center;
+      box-shadow: var(--lift);
+    }
+    .auth-icon-badge {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      border-radius: 20px;
+      background: var(--flame-soft);
+      border: 1px solid var(--hairline);
+      color: var(--flame);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .google-signin-btn {
+      width: 100%;
+      min-height: 52px;
+      border: 1px solid var(--hairline);
+      border-radius: 14px;
+      background: var(--btn-fill);
+      color: var(--btn-fill-label);
+      font-weight: 700;
+      font-size: 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      box-shadow: var(--lift);
+      transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.16s ease, background-color 0.16s ease;
+    }
+    .google-signin-btn:hover {
+      opacity: 0.94;
+    }
+    .google-signin-btn:active {
+      transform: scale(0.97);
+      background: var(--btn-fill-press);
+    }
+    .auth-note-box {
+      margin-top: 20px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--fill);
+      border: 1px solid var(--hairline);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--label-2);
+      text-align: left;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .auth-note-icon { flex-shrink: 0; margin-top: 2px; color: var(--flame); }
   </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4 text-center">
+<body class="ios-root flex min-h-[100dvh] flex-col">
 
-  <div class="w-20 h-20 rounded-3xl bg-blue-600 flex items-center justify-center shadow-lg mb-6">
-    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457-.315-2.84-.873-4.086"></path>
-    </svg>
-  </div>
+  <!-- Unified Apple Navigation Bar -->
+  <header class="ipa-header">
+    <div class="ipa-header-inner">
+      <a class="ios-tap ipa-brand" aria-label="IPAVIET — Trang chủ hệ sinh thái" href="index.html">
+        <div class="ipa-brand-mark">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 1.01-2.87-.96.04-2.07.64-2.72 1.39-.58.65-1.09 1.72-1.03 2.76 1.07.08 2.12-.53 2.74-1.28z"/>
+          </svg>
+        </div>
+        <span class="ipa-brand-name">IPAVIET</span>
+        <span class="ipa-brand-badge">App Auth</span>
+      </a>
 
-  <h1 class="text-2xl font-black mb-2">Xác Thực Ứng Dụng IPAVIET</h1>
-  <p class="text-gray-400 text-sm mb-8" id="statusText">Nhấn nút bên dưới để bắt đầu đăng nhập</p>
+      <div class="ipa-header-actions">
+        <button type="button" onclick="window.IPAVIET_SEARCH && window.IPAVIET_SEARCH.open()" class="ios-tap flex items-center gap-2 px-3 py-1.5 rounded-full bg-fill border border-hairline text-subhead text-label-2 hover:text-label transition" aria-label="Tìm kiếm nhanh">
+          <svg class="w-3.5 h-3.5 text-label-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span class="text-xs font-medium hidden sm:inline">Tìm app, cert, tool...</span>
+          <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] rounded bg-fill-2 font-mono text-label-3">⌘K</kbd>
+        </button>
+        <a href="account.html" data-auth-pill class="ios-tap flex items-center justify-center h-8 w-8 rounded-full bg-fill border border-hairline text-label hover:bg-fill-2 transition" aria-label="Tài khoản cá nhân" title="Tài khoản cá nhân">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+        </a>
+      </div>
+    </div>
+  </header>
 
-  <button type="button" id="googleBtn" class="w-full max-w-xs h-14 bg-white text-gray-900 font-bold rounded-2xl flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all">
-    <svg class="w-5 h-5" viewBox="0 0 24 24">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.87-2.6-2.86-4.53-5.29-4.53z"/>
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-    </svg>
-    ĐĂNG NHẬP VỚI GOOGLE
-  </button>
+  <main class="auth-stage pb-24">
+    <section class="ios-sheet auth-sheet">
+      <div class="auth-icon-badge" aria-hidden="true">
+        <svg width="34" height="34" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457-.315-2.84-.873-4.086"></path>
+        </svg>
+      </div>
+
+      <h1 class="text-title-2 font-extrabold tracking-tight text-label">Xác Thực Ứng Dụng IPAVIET</h1>
+      <p class="mt-2 text-subhead text-label-2 mb-6" id="statusText">Nhấn nút bên dưới để bắt đầu đăng nhập</p>
+
+      <button type="button" id="googleBtn" class="google-signin-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22c-.87-2.6-2.86-4.53-5.29-4.53z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        <span>ĐĂNG NHẬP VỚI GOOGLE</span>
+      </button>
+
+      <div class="auth-note-box">
+        <svg class="auth-note-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Phiên đăng nhập được mã hóa qua Google OAuth &amp; Firebase Auth, tự động trả về ứng dụng IPAVIET sau khi xác thực.</span>
+      </div>
+
+      <div class="mt-5">
+        <a href="index.html" class="text-label-2 hover:text-label transition text-footnote font-semibold">&larr; Quay lại Trang Chủ IPAVIET</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Clean Apple Footer -->
+  <footer class="ipa-footer">
+    <div class="ipa-footer-inner">
+      <div class="flex items-center gap-2">
+        <span class="font-extrabold text-label tracking-tight">IPAVIET</span>
+        <span>&copy; 2026. Chuẩn mực hệ sinh thái số Apple cho người Việt.</span>
+      </div>
+      <div class="flex items-center gap-4 flex-wrap">
+        <a href="terms-of-service.html" class="hover:text-label transition">Điều khoản</a>
+        <a href="privacy-policy.html" class="hover:text-label transition">Bảo mật</a>
+        <a href="support.html" class="hover:text-label transition">Hỗ trợ</a>
+        <a href="https://t.me/ipaviet" target="_blank" rel="noopener noreferrer" class="text-flame hover:underline font-semibold">Telegram Kênh</a>
+      </div>
+    </div>
+    <div style="height:var(--thanh-duoi-cho)" aria-hidden="true"></div>
+  </footer>
 
   <script>
     const firebaseConfig = {
@@ -101,5 +226,7 @@
       });
     });
   </script>
+  <script src="lucian-motion.js?v=2"></script>
+  <script src="ipaviet-search.js"></script>
 </body>
 </html>

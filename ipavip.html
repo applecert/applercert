@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" class="scroll-smooth antialiased">
+<html lang="vi" data-cc-xem="sang" data-accent="amber" class="scroll-smooth antialiased">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -9,17 +9,15 @@
 
   <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/96/crown.png">
 
-  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
   <!-- Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Lucian Motion System -->
+  <!-- Unified Apple HIG Stylesheets -->
+  <link rel="stylesheet" href="certapple/applecert.css">
   <link rel="stylesheet" href="lucian-tokens.css">
   <link rel="stylesheet" href="lucian-motion.css?v=2">
+  <link rel="stylesheet" href="ipaviet-search.css">
+  <script src="ipaviet-theme.js"></script>
 
   <!-- GSAP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -29,53 +27,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Initial Theme Sync delegated to ipaviet-theme.js -->
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace']
-          },
-          colors: {
-            apple: {
-              blue: '#0071E3',
-              darkBlue: '#0A84FF',
-              green: '#34C759',
-              amber: '#FF9500',
-              gold: '#F59E0B',
-              red: '#FF3B30',
-              purple: '#AF52DE',
-              gray: '#86868B',
-              grayLight: '#E5E5EA',
-              grayDark: '#1C1C1E',
-              bgLight: '#F5F5F7',
-              bgDark: '#161617',
-              cardLight: '#FFFFFF',
-              cardDark: '#1C1C1E',
-              separatorLight: 'rgba(0, 0, 0, 0.08)',
-              separatorDark: 'rgba(255, 255, 255, 0.12)'
-            }
-          },
-          boxShadow: {
-            'apple': '0 4px 24px rgba(0, 0, 0, 0.06)',
-            'apple-hover': '0 16px 36px rgba(245, 158, 11, 0.15)',
-            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.08)'
-          }
-        }
-      }
-    };
-  </script>
-
-  <!-- Initial Theme Check -->
-  <script>
-    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    if (window.IPAVIET_THEME && typeof window.IPAVIET_THEME.set === 'function') {
+      window.IPAVIET_THEME.set(window.IPAVIET_THEME.get());
     }
   </script>
 
@@ -91,11 +46,119 @@
       box-sizing: border-box;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", sans-serif;
+      font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif);
       letter-spacing: -0.015em;
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* VIP Domain Cards & Controls (Static CSS parity without Tailwind CDN) */
+    .vip-app-card {
+      background: var(--surface, #ffffff);
+      border-radius: 22px;
+      padding: 12px;
+      border: 1px solid var(--hairline, rgba(0, 0, 0, 0.06));
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      transform: translateY(0);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (min-width: 640px) {
+      .vip-app-card {
+        border-radius: 26px;
+        padding: 16px;
+      }
+    }
+    .vip-app-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(245, 158, 11, 0.4);
+      box-shadow: 0 12px 28px rgba(245, 158, 11, 0.12);
+    }
+    .vip-app-card:active {
+      transform: scale(0.97);
+    }
+    .dark .vip-app-card,
+    html[data-cc-xem="toi"] .vip-app-card {
+      background: #1C1C1E;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .dark .vip-app-card:hover,
+    html[data-cc-xem="toi"] .vip-app-card:hover {
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+    }
+    .vip-card-thumb {
+      background: #F5F5F7;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .dark .vip-card-thumb,
+    html[data-cc-xem="toi"] .vip-card-thumb {
+      background: rgba(44, 44, 46, 0.6);
+      border-color: rgba(255, 255, 255, 0.06);
+    }
+    .vip-card-img {
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .vip-app-card:hover .vip-card-img {
+      transform: scale(1.05);
+    }
+    .vip-card-title {
+      font-size: 12px;
+      min-height: 32px;
+      color: var(--label, #171717);
+      transition: color 0.2s ease;
+    }
+    @media (min-width: 640px) {
+      .vip-card-title {
+        font-size: 14px;
+        min-height: 36px;
+      }
+    }
+    .vip-app-card:hover .vip-card-title {
+      color: #F59E0B;
+    }
+    .vip-search-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 36px 0 38px;
+      border-radius: 9999px;
+      background: var(--fill, rgba(0, 0, 0, 0.05));
+      border: 1px solid var(--hairline, rgba(0, 0, 0, 0.08));
+      color: var(--label, #0f1318);
+      font-size: 13px;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .vip-search-wrap {
+      width: 100%;
+    }
+    .vip-hero-row {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    @media (min-width: 768px) {
+      .vip-hero-row {
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+      .vip-search-wrap {
+        width: 320px;
+      }
+    }
+    .vip-search-input:focus {
+      background: var(--surface, #ffffff);
+      border-color: #F59E0B;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
+    }
+    .vip-select-option {
+      background: var(--surface, #ffffff);
+      color: var(--label, #0f1318);
+    }
+    .fill-amber-500 { fill: #f59e0b; }
+    .detail-hero-bg { position: absolute; inset: 0; overflow: hidden; opacity: 0.14; pointer-events: none; }
+    .detail-info-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
     /* Apple Squircle & Glass Tokens */
     .apple-squircle {
@@ -104,23 +167,25 @@
       -webkit-corner-smoothing: antialiased;
     }
     .apple-glass {
-      background: rgba(245, 245, 247, 0.85);
+      background: var(--glass, rgba(255, 255, 255, 0.84));
       backdrop-filter: blur(25px) saturate(180%);
       -webkit-backdrop-filter: blur(25px) saturate(180%);
     }
-    .dark .apple-glass {
-      background: rgba(22, 22, 23, 0.85);
+    .dark .apple-glass,
+    html[data-cc-xem="toi"] .apple-glass {
+      background: var(--glass, rgba(20, 24, 31, 0.84));
       backdrop-filter: blur(25px) saturate(180%);
       -webkit-backdrop-filter: blur(25px) saturate(180%);
     }
     .apple-glass-card {
-      background: #FFFFFF;
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: var(--surface, #FFFFFF);
+      border: 1px solid var(--hairline, rgba(15, 19, 24, 0.11));
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     }
-    .dark .apple-glass-card {
-      background: #1C1C1E;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .dark .apple-glass-card,
+    html[data-cc-xem="toi"] .apple-glass-card {
+      background: var(--surface, #14181f);
+      border: 1px solid var(--hairline, rgba(255, 255, 255, 0.1));
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
@@ -142,23 +207,21 @@
     }
 
     /* Loading Stage */
-    .loading-stage { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #F5F5F7; transition: opacity 0.6s, visibility 0.6s; }
-    .dark .loading-stage { background: #161617; }
+    .loading-stage { position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg, #f6f7f9); transition: opacity 0.6s, visibility 0.6s; }
+    .dark .loading-stage,
+    html[data-cc-xem="toi"] .loading-stage { background: var(--bg, #0b0e14); }
     .loading-stage.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
     .loading-ring { width: 44px; height: 44px; border: 3px solid rgba(245,158,11,0.15); border-top-color: #F59E0B; border-radius: 50%; animation: spinRing 0.8s linear infinite; }
     @keyframes spinRing { to { transform: rotate(360deg); } }
-    .loading-text { font-size: 13px; font-weight: 700; color: #86868B; margin-top: 14px; letter-spacing: 0.1em; }
+    .loading-text { font-size: 13px; font-weight: 700; color: var(--label-2, #86868B); margin-top: 14px; letter-spacing: 0.1em; }
 
     /* App Detail Stage */
     #app-detail-stage { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px; }
     #app-detail-stage.active { display: flex; }
     .detail-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-    .detail-close { position: absolute; top: 18px; left: 18px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.06); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; color: inherit; }
-    .dark .detail-close { background: rgba(255,255,255,0.1); color: #fff; }
-    .detail-content { position: relative; z-index: 2; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; border-radius: 28px; background: #fff; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 24px 64px rgba(0,0,0,0.2); }
-    .dark .detail-content { background: #1C1C1E; border-color: rgba(255,255,255,0.08); }
-    .detail-hero { padding: 32px 24px 20px; text-align: center; position: relative; border-bottom: 1px solid rgba(0,0,0,0.06); }
-    .dark .detail-hero { border-color: rgba(255,255,255,0.06); }
+    .detail-close { position: absolute; top: 18px; left: 18px; width: 36px; height: 36px; border-radius: 50%; background: var(--fill, rgba(0,0,0,0.06)); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; color: var(--label, inherit); }
+    .detail-content { position: relative; z-index: 2; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; border-radius: 28px; background: var(--surface, #fff); color: var(--label, #0f1318); border: 1px solid var(--hairline, rgba(0,0,0,0.08)); box-shadow: var(--window-shadow, 0 24px 64px rgba(0,0,0,0.2)); }
+    .detail-hero { padding: 32px 24px 20px; text-align: center; position: relative; border-bottom: 1px solid var(--separator, rgba(0,0,0,0.06)); }
     .detail-icon-wrap { width: 88px; height: 88px; margin: 0 auto 16px; }
     .detail-icon-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 22.5%; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
     .detail-title { font-size: 22px; font-weight: 800; }
@@ -168,10 +231,12 @@
     .detail-btn-primary { background: linear-gradient(135deg, #F59E0B, #D97706); color: #fff; box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
     .detail-btn-primary:hover { filter: brightness(1.1); }
     .detail-btn-secondary { background: rgba(0,0,0,0.05); color: #86868B; }
-    .dark .detail-btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+    .dark .detail-btn-secondary,
+    html[data-cc-xem="toi"] .detail-btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
     .detail-body { padding: 24px; }
     .detail-info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; padding: 16px; background: rgba(0,0,0,0.02); border-radius: 18px; margin-bottom: 24px; }
-    .dark .detail-info-grid { background: rgba(255,255,255,0.03); }
+    .dark .detail-info-grid,
+    html[data-cc-xem="toi"] .detail-info-grid { background: rgba(255,255,255,0.03); }
     .detail-info-value { font-size: 17px; font-weight: 800; color: #F59E0B; }
     .detail-info-label { font-size: 11px; color: #86868B; font-weight: 600; text-transform: uppercase; margin-top: 2px; }
     .detail-section-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
@@ -179,13 +244,15 @@
     .detail-screenshots { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 24px; }
     .detail-screenshots img { height: 180px; border-radius: 14px; }
     .detail-data-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 12px; }
-    .dark .detail-data-row { border-color: rgba(255,255,255,0.04); }
+    .dark .detail-data-row,
+    html[data-cc-xem="toi"] .detail-data-row { border-color: rgba(255,255,255,0.04); }
     .detail-data-label { color: #86868B; }
     .detail-data-value { font-weight: 600; }
 
     /* Toast */
     .toast { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0; background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 9999px; font-size: 13px; font-weight: 600; pointer-events: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 9999; backdrop-filter: blur(12px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
-    .dark .toast { background: rgba(255,255,255,0.9); color: #000; }
+    .dark .toast,
+    html[data-cc-xem="toi"] .toast { background: rgba(255,255,255,0.9); color: #000; }
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
     /* Ribbon Track */
@@ -206,7 +273,8 @@
       background: rgba(0, 0, 0, 0.05);
       border: 1px solid rgba(0, 0, 0, 0.06);
     }
-    .dark .u039-tabs {
+    .dark .u039-tabs,
+    html[data-cc-xem="toi"] .u039-tabs {
       background: rgba(255, 255, 255, 0.08);
       border-color: rgba(255, 255, 255, 0.08);
     }
@@ -309,7 +377,7 @@
     }
   </style>
 </head>
-<body class="bg-[#F5F5F7] dark:bg-[#161617] text-black dark:text-white transition-colors duration-200 min-h-screen selection:bg-amber-500 selection:text-white pb-24 sm:pb-12">
+<body class="ios-root flex flex-col min-h-[100dvh] bg-[var(--bg)] text-[var(--label)] transition-colors duration-200 selection:bg-amber-500 selection:text-white">
 
   <!-- Ambient Amber Glow -->
   <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-amber-500/10 dark:from-amber-500/15 to-transparent blur-3xl pointer-events-none -z-10"></div>
@@ -320,108 +388,29 @@
     <div class="loading-text">IPAVIET VIP</div>
   </div>
 
-  <!-- ================================================================
-       APPLE FROSTED GLASS HEADER (STICKY NAVIGATION)
-       ================================================================ -->
-  <!-- ================================================================
-       APPLE FROSTED GLASS HEADER (STICKY NAVIGATION)
-       ================================================================ -->
-  <header class="sticky top-0 z-40 apple-glass border-b border-apple-separatorLight dark:border-apple-separatorDark transition-colors">
-    <div class="max-w-7xl mx-auto px-3.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-6">
-      
-      <!-- Left: Brand Logo (Apple VIP Style) -->
-      <a href="index.html" class="flex items-center gap-2 sm:gap-2.5 text-inherit no-underline group shrink-0">
-        <div class="w-8 h-8 sm:w-10 sm:h-10 apple-squircle bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-white shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform shrink-0">
-          <i data-lucide="crown" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+  <!-- Canonical Unified Header -->
+  <header class="ipa-header">
+    <div class="ipa-header-inner">
+      <a class="ios-tap ipa-brand" aria-label="IPAVIET — Trang chủ hệ sinh thái" href="index.html">
+        <div class="ipa-brand-mark">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.62-.75 1.04-1.8 1.01-2.87-.96.04-2.07.64-2.72 1.39-.58.65-1.09 1.72-1.03 2.76 1.07.08 2.12-.53 2.74-1.28z"/>
+          </svg>
         </div>
-        <div>
-          <div class="font-extrabold text-xs sm:text-base tracking-tight leading-none text-black dark:text-white flex items-center gap-1.5">
-            <span>Kho VIP</span>
-            <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">VIP CLUB</span>
-          </div>
-          <p class="text-[8px] sm:text-[10px] text-apple-gray font-semibold tracking-wider uppercase mt-0.5 hidden xs:block">IPAVIET ECOSYSTEM</p>
-        </div>
+        <span class="ipa-brand-name">IPAVIET</span>
+        <span class="ipa-brand-badge">VIP</span>
       </a>
-
-      <!-- Center: Cupertino Live Search Box (Visible on Tablet / PC) -->
-      <div class="hidden sm:flex flex-1 max-w-xl mx-2 sm:mx-6">
-        <div class="relative w-full flex items-center">
-          <i data-lucide="search" class="w-4 h-4 text-apple-gray absolute left-3.5 pointer-events-none"></i>
-          <input 
-            type="search" 
-            name="vip_search_query"
-            id="searchInput" 
-            placeholder="Tìm tên ứng dụng Hack, Mod, Crack VIP..." 
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            spellcheck="false"
-            data-form-type="other"
-            data-lpignore="true"
-            data-1p-ignore="true"
-            oninput="onSearchInput(this.value)"
-            class="w-full h-9 sm:h-10 pl-9 sm:pl-10 pr-8 rounded-full bg-black/[0.05] dark:bg-white/[0.1] text-xs sm:text-sm font-medium focus:bg-white dark:focus:bg-[#1C1C1E] border border-transparent focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition placeholder:text-apple-gray text-black dark:text-white shadow-inner"
-          >
-          <button 
-            id="clearSearchBtn" 
-            onclick="clearSearch()" 
-            class="w-5 h-5 rounded-full text-apple-gray hover:text-black dark:hover:text-white absolute right-2.5 hidden items-center justify-center transition"
-          >
-            <i data-lucide="x" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- Right: Navigation Links & Actions -->
-      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-        <a href="certapple/index.html" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-apple-blue/10 hover:bg-apple-blue/20 text-apple-blue text-xs font-bold transition active:scale-95 border border-apple-blue/20 shadow-sm">
-          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-          <span>Mua Cert</span>
-        </a>
-        <a href="app-library/index.html" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-apple-blue/10 hover:bg-apple-blue/20 text-apple-blue text-xs font-bold transition active:scale-95">
-          <i data-lucide="box" class="w-3.5 h-3.5"></i>
-          <span>Kho IPA</span>
-        </a>
-        <a href="tap-hoa-mmo.html" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/[0.05] dark:bg-white/[0.1] hover:bg-black/[0.1] text-black dark:text-white text-xs font-bold transition active:scale-95">
-          <i data-lucide="shopping-bag" class="w-3.5 h-3.5 text-apple-blue"></i>
-          <span>Chợ MMO</span>
-        </a>
-        <button onclick="toggleTheme()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/[0.05] dark:bg-white/[0.1] text-black dark:text-white flex items-center justify-center transition active:scale-95" title="Đổi giao diện">
-          <i data-lucide="sun-moon" class="w-4 h-4"></i>
+      <div class="ipa-header-actions">
+        <button type="button" onclick="window.IPAVIET_SEARCH && window.IPAVIET_SEARCH.open()" class="ios-tap flex items-center gap-2 px-3 py-1.5 rounded-full bg-fill border border-hairline text-subhead text-label-2 hover:text-label transition" aria-label="Tìm kiếm nhanh">
+          <svg class="w-3.5 h-3.5 text-label-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span class="text-xs font-medium hidden sm:inline">Tìm app, cert, tool...</span>
+          <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] rounded bg-fill-2 font-mono text-label-3">⌘K</kbd>
         </button>
-        <a href="account.html" id="headerProfileBtn" class="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-[11px] sm:text-xs font-bold shadow-sm shadow-amber-500/25 transition flex items-center gap-1 active:scale-95">
-          <i data-lucide="user" class="w-3 h-3 sm:w-3.5 sm:h-3.5"></i>
-          <span class="hidden sm:inline">Tài Khoản</span>
+        <a href="certapple/index.html" class="ios-btn ios-btn-tinted px-3 py-1.5 text-xs shrink-0 hidden sm:inline-flex items-center gap-1.5" style="padding:6px 12px;font-size:12px;">Mua Cert</a>
+        <a href="account.html" id="headerProfileBtn" data-no-auth-pill class="ios-tap flex items-center justify-center gap-1.5 h-8 px-3 rounded-full bg-fill border border-hairline text-xs font-semibold text-label hover:bg-fill-2 transition shrink-0" aria-label="Tài khoản cá nhân" title="Tài khoản cá nhân">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+          <span class="hidden sm:inline">Tài khoản</span>
         </a>
-      </div>
-    </div>
-
-    <!-- Mobile Search Bar (Row 2 on Mobile - Apple Cupertino Spotlight Style) -->
-    <div class="sm:hidden px-3.5 pb-2.5 pt-0.5">
-      <div class="relative flex items-center">
-        <i data-lucide="search" class="w-4 h-4 text-apple-gray absolute left-3.5 pointer-events-none"></i>
-        <input 
-          type="search" 
-          name="vip_search_query_mobile"
-          id="searchInputMobile" 
-          placeholder="Tìm tên ứng dụng Hack, Mod VIP..." 
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-          data-form-type="other"
-          data-lpignore="true"
-          data-1p-ignore="true"
-          oninput="onSearchInput(this.value)"
-          class="w-full h-9 pl-9 pr-8 rounded-full bg-black/[0.05] dark:bg-white/[0.1] text-xs font-medium focus:bg-white dark:focus:bg-[#1C1C1E] border border-transparent focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition placeholder:text-apple-gray text-black dark:text-white shadow-inner"
-        >
-        <button 
-          id="clearSearchBtnMobile" 
-          onclick="clearSearch()" 
-          class="w-5 h-5 rounded-full text-apple-gray hover:text-black dark:hover:text-white absolute right-2.5 hidden items-center justify-center transition"
-        >
-          <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
       </div>
     </div>
   </header>
@@ -429,20 +418,50 @@
   <!-- ================================================================
        MAIN VIP CONTENT STAGE (APPLE STORE VIP COMMERCIAL LAYOUT)
        ================================================================ -->
-  <main id="spatial-stage" class="flex-1 max-w-7xl mx-auto w-full px-3.5 sm:px-6 lg:px-8 py-5 sm:py-7 pb-24 sm:pb-16 space-y-6">
+  <main id="spatial-stage" class="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-4 sm:px-6 space-y-6">
 
-    <!-- ═══ 1. APPLE VIP HERO (MINIMAL & LUXURY) ═══ -->
-    <div class="space-y-1">
-      <div id="todayDateStr" class="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
-        <i data-lucide="crown" class="w-3.5 h-3.5"></i>
-        <span>ĐẶC QUYỀN HỘI VIÊN VIP</span>
+    <!-- ═══ 1. APPLE VIP HERO & LIVE SEARCH ═══ -->
+    <div class="vip-hero-row">
+      <div class="space-y-1">
+        <div id="todayDateStr" class="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="crown" class="w-3.5 h-3.5"></i>
+          <span>ĐẶC QUYỀN HỘI VIÊN VIP</span>
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100">
+          Kho App VIP
+        </h1>
+        <p class="text-xs sm:text-sm text-apple-gray font-normal max-w-2xl">
+          Ứng dụng iOS bản quyền &amp; Game Hack mở khóa tính năng cao cấp không giới hạn.
+        </p>
       </div>
-      <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-100">
-        Kho App VIP
-      </h1>
-      <p class="text-xs sm:text-sm text-apple-gray font-normal max-w-2xl">
-        Ứng dụng iOS bản quyền & Game Hack mở khóa tính năng cao cấp không giới hạn.
-      </p>
+
+      <!-- Domain Live Filter Search -->
+      <div class="relative vip-search-wrap flex items-center shrink-0">
+        <i data-lucide="search" class="w-4 h-4 text-apple-gray absolute left-3.5 pointer-events-none"></i>
+        <input
+          type="search"
+          name="vip_search_query"
+          id="searchInput"
+          placeholder="Lọc nhanh app VIP (Hack, Mod)..."
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          data-form-type="other"
+          data-lpignore="true"
+          data-1p-ignore="true"
+          class="vip-search-input"
+        >
+        <button
+          type="button"
+          id="clearSearchBtn"
+          onclick="clearSearch()"
+          aria-label="Xóa từ khóa lọc"
+          class="w-6 h-6 rounded-full text-apple-gray hover:text-label absolute right-2 hidden items-center justify-center transition"
+        >
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
     </div>
 
     <!-- ═══ 1.5 PRIVATE VIP REPO SOURCE FOR ESIGN / FEATHER ═══ -->
@@ -454,14 +473,14 @@
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h3 class="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white">Nguồn Repo VIP Cho ESign & Feather</h3>
+              <h3 class="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white">Nguồn Repo VIP Cho ESign &amp; Feather</h3>
               <span class="px-2 py-0.5 rounded-full bg-amber-400 text-black text-[9px] font-black uppercase tracking-wider">319+ APPS</span>
             </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Thêm nguồn vào app sideload để tải & cập nhật toàn bộ app VIP trực tiếp không cần mở Safari.</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Thêm nguồn vào app sideload để tải &amp; cập nhật toàn bộ app VIP trực tiếp không cần mở Safari.</p>
           </div>
         </div>
         <div class="flex items-center gap-2 flex-wrap shrink-0">
-          <button type="button" onclick="navigator.clipboard.writeText('https://ipaviet.site/repo/vip.json'); Swal.fire({toast:true,position:'top-end',icon:'success',title:'Đã copy URL Repo!',timer:1200,showConfirmButton:false});" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer">
+          <button type="button" onclick="if(navigator.clipboard) navigator.clipboard.writeText('https://ipaviet.site/repo/vip.json'); if(window.Swal){Swal.fire({toast:true,position:'top-end',icon:'success',title:'Đã copy URL Repo!',timer:1200,showConfirmButton:false});}else{showToast('Đã copy URL Repo!');}" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Repo URL
           </button>
           <a href="esign://addsource?url=https%3A%2F%2Fipaviet.site%2Frepo%2Fvip.json" class="px-3.5 py-2 rounded-xl bg-white dark:bg-white/10 hover:bg-black/5 dark:hover:bg-white/20 text-gray-900 dark:text-white border border-black/10 dark:border-white/15 text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
@@ -481,6 +500,22 @@
     <div id="dynamicContent" class="space-y-6"></div>
 
   </main>
+
+  <footer class="ipa-footer">
+    <div class="ipa-footer-inner">
+      <div class="flex items-center gap-2">
+        <span class="font-extrabold text-[var(--label)] tracking-tight">IPAVIET VIP</span>
+        <span>&copy; 2026. Kho Ứng Dụng &amp; Đặc Quyền Hội Viên Apple HIG.</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="index.html" class="hover:text-[var(--label)] transition">Trang chủ</a>
+        <a href="certapple/index.html" class="hover:text-[var(--label)] transition">Mua Cert</a>
+        <a href="app-library/index.html" class="hover:text-[var(--label)] transition">Kho IPA</a>
+        <a href="support.html" class="hover:text-[var(--label)] transition">Hỗ trợ</a>
+      </div>
+    </div>
+    <div style="height:var(--thanh-duoi-cho)" aria-hidden="true"></div>
+  </footer>
 
   <!-- ================================================================
        APP DETAIL MODAL
@@ -543,33 +578,6 @@
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
-
-  <!-- ================================================================
-       APPLE FROSTED GLASS MOBILE BOTTOM TAB BAR
-       ================================================================ -->
-  <div class="sm:hidden fixed bottom-0 left-0 right-0 z-40 apple-glass border-t border-apple-separatorLight dark:border-apple-separatorDark py-2 px-2 flex justify-around items-center">
-    <a href="index.html" class="flex flex-col items-center gap-0.5 text-apple-gray hover:text-black dark:hover:text-white text-[9.5px] font-semibold no-underline">
-      <i data-lucide="orbit" class="w-5 h-5"></i>
-      <span>Trang chủ</span>
-    </a>
-    <a href="app-library/index.html" class="flex flex-col items-center gap-0.5 text-apple-gray hover:text-black dark:hover:text-white text-[9.5px] font-semibold no-underline">
-      <i data-lucide="box" class="w-5 h-5"></i>
-      <span>Kho IPA</span>
-    </a>
-    <a href="certapple/index.html" class="flex flex-col items-center gap-0.5 text-sky-500 font-bold text-[9.5px] no-underline relative">
-      <i data-lucide="shield-check" class="w-5 h-5"></i>
-      <span>Mua Cert</span>
-      <span class="absolute 0 top-0.5 right-2 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-    </a>
-    <button class="flex flex-col items-center gap-0.5 text-amber-500 font-bold text-[9.5px] bg-transparent border-none p-0">
-      <i data-lucide="crown" class="w-5 h-5"></i>
-      <span>Kho VIP</span>
-    </button>
-    <a href="account.html" class="flex flex-col items-center gap-0.5 text-apple-gray hover:text-black dark:hover:text-white text-[9.5px] font-semibold no-underline">
-      <i data-lucide="user" class="w-5 h-5"></i>
-      <span>Cá nhân</span>
-    </a>
-  </div>
 
   <!-- AI Chat Widget -->
   <script src="ai-chat-widget.js?v=6" data-bottom="80px"></script>
@@ -921,7 +929,7 @@
 
     const html = `
       <!-- Apple Store Cupertino Segmented Bar -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-3.5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-hairline pb-3.5">
         
         <!-- Lucian [039] Sliding Pill Tabs Filter -->
         <div class="u039-tabs overflow-x-auto no-scrollbar py-0.5" id="vipPillTabs">
@@ -941,12 +949,12 @@
         <!-- Controls: Sort & Counter -->
         <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 text-xs">
           <span class="text-apple-gray"><b class="text-amber-500 font-bold">${items.length.toLocaleString()}</b> app VIP</span>
-          <div class="flex items-center gap-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-full px-2.5 py-1">
+          <div class="flex items-center gap-1 bg-fill rounded-full px-2.5 py-1">
             <span class="text-apple-gray text-[11px] font-medium">Xếp:</span>
             <select id="sortSelect" onchange="onSortChange(this.value)" class="bg-transparent text-neutral-900 dark:text-neutral-100 font-semibold text-xs outline-none cursor-pointer">
-              <option value="new" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'new' ? 'selected' : ''}>Mới nhất</option>
-              <option value="popular" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'popular' ? 'selected' : ''}>Tải nhiều nhất</option>
-              <option value="name" class="text-black bg-white dark:bg-[#1C1C1E] dark:text-white" ${sortMode === 'name' ? 'selected' : ''}>Tên A → Z</option>
+              <option value="new" class="vip-select-option" ${sortMode === 'new' ? 'selected' : ''}>Mới nhất</option>
+              <option value="popular" class="vip-select-option" ${sortMode === 'popular' ? 'selected' : ''}>Tải nhiều nhất</option>
+              <option value="name" class="vip-select-option" ${sortMode === 'name' ? 'selected' : ''}>Tên A → Z</option>
             </select>
           </div>
         </div>
@@ -1098,12 +1106,12 @@
 
     return `
       <div onclick="openAppView('${i._id}')" 
-           class="group bg-white dark:bg-[#1C1C1E] rounded-[22px] sm:rounded-[26px] p-3 sm:p-4 border border-black/[0.06] dark:border-white/[0.08] hover:border-amber-500/40 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_28px_rgba(245,158,11,0.12)] dark:hover:shadow-[0_12px_28px_rgba(0,0,0,0.4)] -translate-y-0 hover:-translate-y-1.5 active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col justify-between relative overflow-hidden text-inherit cursor-pointer select-none">
+           class="group vip-app-card flex flex-col justify-between relative overflow-hidden text-inherit cursor-pointer select-none">
         
         <!-- Top Image Area (True Apple Squircle) -->
         <div>
-          <div class="relative w-full aspect-square apple-squircle bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 border border-black/[0.04] dark:border-white/[0.06] shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
-            <img src="${safeIcon}" alt="${safeName}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" onerror="this.onerror=null;this.src=getAppleAppFallbackIcon('${cleanNameForJs}','VIP')">
+          <div class="relative w-full aspect-square apple-squircle vip-card-thumb overflow-hidden">
+            <img src="${safeIcon}" alt="${safeName}" loading="lazy" class="w-full h-full object-cover vip-card-img" onerror="this.onerror=null;this.src=getAppleAppFallbackIcon('${cleanNameForJs}','VIP')">
             
             <span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-amber-500 text-black text-[9px] font-black tracking-wider uppercase shadow-sm u386-vip-badge">
               VIP PRO
@@ -1117,7 +1125,7 @@
               <span class="truncate text-[10px] opacity-75">v${safeVer}</span>
             </div>
 
-            <h4 class="font-bold text-xs sm:text-[14px] text-neutral-900 dark:text-neutral-100 line-clamp-2 leading-snug group-hover:text-amber-500 transition-colors min-h-[32px] sm:min-h-[36px]" title="${safeName}">
+            <h4 class="font-bold vip-card-title line-clamp-2 leading-snug" title="${safeName}">
               ${safeName}
             </h4>
 
@@ -1131,7 +1139,7 @@
 
         <!-- Bottom: Cupertino "TẢI VIP" Pill Button -->
         <div class="pt-2.5">
-          <button class="w-full py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-95 shadow-sm shadow-amber-500/20 text-center flex items-center justify-center gap-1" onclick="event.stopPropagation();openAppView('${i._id}')">
+          <button class="w-full py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white transition active:scale-95 shadow-sm shadow-amber-500/20 text-center flex items-center justify-center gap-1" onclick="event.stopPropagation();openAppView('${i._id}')">
             <span>TẢI VIP</span>
           </button>
         </div>
@@ -1376,8 +1384,12 @@
 
   /* ─── Theme & Utilities ─── */
   function toggleTheme() {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    if (window.IPAVIET_THEME && typeof window.IPAVIET_THEME.toggle === 'function') {
+      window.IPAVIET_THEME.toggle();
+    } else {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
     if (window.lucide) lucide.createIcons();
   }
 
@@ -1459,5 +1471,6 @@
   </script>
   <script src="ipaviet-tracker.js?v=1"></script>
   <script src="lucian-motion.js?v=2"></script>
+  <script src="ipaviet-search.js"></script>
 </body>
 </html>

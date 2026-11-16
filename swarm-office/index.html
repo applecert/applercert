@@ -1,0 +1,3993 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IPAVIET — Văn Phòng 3D Đa Phòng Ban</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg-canvas: #eef2f7;
+      --glass-bg: rgba(255, 255, 255, 0.82);
+      --glass-strong: rgba(255, 255, 255, 0.94);
+      --glass-border: rgba(15, 23, 42, 0.11);
+      --text-main: #0f172a;
+      --text-sub: #475569;
+      --text-muted: #64748b;
+      --pill-bg: rgba(15, 23, 42, 0.06);
+      --pill-hover: rgba(15, 23, 42, 0.11);
+      --accent: #e10e0e;
+      --accent-soft: rgba(225, 14, 14, 0.12);
+      --shadow-lg: 0 18px 42px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06);
+      --shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.08);
+      --card-bg: rgba(255, 255, 255, 0.72);
+      --card-hover: rgba(255, 255, 255, 0.96);
+      --divider: rgba(15, 23, 42, 0.09);
+      --input-bg: rgba(255, 255, 255, 0.85);
+    }
+
+    html[data-theme="dark"] {
+      --bg-canvas: #070b14;
+      --glass-bg: rgba(15, 23, 42, 0.8);
+      --glass-strong: rgba(17, 25, 44, 0.95);
+      --glass-border: rgba(255, 255, 255, 0.13);
+      --text-main: #f1f5f9;
+      --text-sub: #cbd5e1;
+      --text-muted: #94a3b8;
+      --pill-bg: rgba(255, 255, 255, 0.08);
+      --pill-hover: rgba(255, 255, 255, 0.15);
+      --accent: #ff453a;
+      --accent-soft: rgba(255, 69, 58, 0.18);
+      --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.48), 0 2px 10px rgba(0, 0, 0, 0.32);
+      --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.36);
+      --card-bg: rgba(30, 41, 59, 0.62);
+      --card-hover: rgba(30, 41, 59, 0.92);
+      --divider: rgba(255, 255, 255, 0.1);
+      --input-bg: rgba(15, 23, 42, 0.85);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #viewport {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    #labels-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .agent-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      will-change: transform;
+      pointer-events: auto;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.22s ease;
+    }
+
+    .agent-label-inner {
+      transform: translate(-50%, -100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .agent-bubble {
+      max-width: 265px;
+      padding: 8px 11px;
+      border-radius: 14px;
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      font-size: 11.5px;
+      line-height: 1.42;
+      color: var(--text-main);
+      text-align: left;
+      animation: bubblePop 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .agent-bubble::after {
+      content: "";
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      width: 9px;
+      height: 9px;
+      transform: translateX(-50%) rotate(45deg);
+      background: var(--glass-strong);
+      border-right: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .agent-bubble-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .agent-bubble-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      border-top: 1px solid var(--divider);
+      padding-top: 4px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .bubble-full-btn {
+      appearance: none;
+      border: none;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .bubble-full-btn:hover {
+      filter: brightness(1.08);
+    }
+
+    @keyframes bubblePop {
+      from {
+        opacity: 0;
+        transform: translateY(6px) scale(0.92);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .agent-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px 4px 7px;
+      border-radius: 999px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      white-space: nowrap;
+      transition: transform 0.16s ease, border-color 0.2s ease;
+    }
+
+    .agent-label:hover .agent-tag,
+    .agent-label.is-selected .agent-tag {
+      transform: scale(1.06);
+      border-color: var(--role-color, var(--accent));
+    }
+
+    .state-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .state-dot.working {
+      background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.22);
+      animation: pulseDot 1.6s infinite;
+    }
+
+    .state-dot.waiting,
+    .state-dot.stopped {
+      background: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    }
+
+    .state-dot.killed {
+      background: #94a3b8;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% {
+        box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.28);
+      }
+      50% {
+        box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.08);
+      }
+    }
+
+    .agent-tag-name {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+    }
+
+    .agent-tag-role {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--role-color, #64748b);
+    }
+
+    .agent-tag-state {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+
+    /* Top HUD */
+    .top-hud {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 18px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(22px) saturate(1.4);
+      -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    }
+
+    .hud-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #e10e0e, #ff5e3a);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: -0.02em;
+      box-shadow: 0 6px 14px rgba(225, 14, 14, 0.28);
+      flex-shrink: 0;
+    }
+
+    .brand-text {
+      min-width: 0;
+    }
+
+    .brand-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .brand-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .sse-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.14);
+      color: #16a34a;
+      flex-shrink: 0;
+    }
+
+    html[data-theme="dark"] .sse-pill {
+      color: #4ade80;
+    }
+
+    .sse-pill.is-offline {
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+    }
+
+    .brand-sub {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 2px;
+      font-size: 11.5px;
+      color: var(--text-sub);
+      flex-wrap: wrap;
+    }
+
+    .stat-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+
+    .hud-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .hud-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 3px;
+      border-radius: 12px;
+      background: var(--pill-bg);
+      flex-wrap: wrap;
+    }
+
+    .hud-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 9px;
+      border-radius: 9px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s ease, transform 0.12s ease, color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .hud-btn:hover {
+      background: var(--pill-hover);
+    }
+
+    .hud-btn.is-active {
+      background: var(--glass-strong);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      color: var(--accent);
+    }
+
+    .hud-btn.primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(225, 14, 14, 0.25);
+    }
+
+    .hud-btn.primary:hover {
+      filter: brightness(1.07);
+      background: var(--accent);
+    }
+
+    .toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 11px;
+      background: var(--pill-bg);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+
+    .toggle-pill:hover {
+      background: var(--pill-hover);
+    }
+
+    .toggle-pill input {
+      accent-color: var(--accent);
+      margin: 0;
+      cursor: pointer;
+    }
+
+    /* Right Glassmorphic Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 90px;
+      right: 12px;
+      bottom: 12px;
+      width: 430px;
+      z-index: 18;
+      display: flex;
+      flex-direction: column;
+      border-radius: 20px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(22px) saturate(1.4);
+      -webkit-backdrop-filter: blur(22px) saturate(1.4);
+      overflow: hidden;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease, width 0.22s ease;
+    }
+
+    .sidebar.is-wide {
+      width: min(680px, 52vw);
+    }
+
+    .sidebar.is-collapsed {
+      transform: translateX(calc(100% + 20px));
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 10px 8px;
+      border-bottom: 1px solid var(--divider);
+      flex-shrink: 0;
+    }
+
+    .sidebar-tabs {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .sidebar-tab {
+      border: none;
+      background: var(--pill-bg);
+      color: var(--text-sub);
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 8px 10px;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-tab.is-active {
+      background: var(--glass-strong);
+      color: var(--text-main);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .sidebar-expand-btn {
+      border: none;
+      background: var(--pill-bg);
+      color: var(--text-sub);
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 8px 10px;
+      border-radius: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .sidebar-expand-btn:hover {
+      background: var(--pill-hover);
+      color: var(--text-main);
+    }
+
+    .sidebar-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar-panel.is-active {
+      display: flex;
+    }
+
+    /* Department Group in Roster */
+    .dept-group {
+      border-radius: 16px;
+      background: var(--pill-bg);
+      border: 1px solid var(--glass-border);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .dept-group-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 4px 2px;
+    }
+
+    .dept-group-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .dept-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .dept-group-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .dept-count-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--glass-strong);
+      color: var(--text-sub);
+    }
+
+    .dept-cam-btn {
+      appearance: none;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-strong);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .dept-cam-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .roster-card {
+      padding: 10px 11px;
+      border-radius: 13px;
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+      transition: transform 0.14s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .roster-card:hover {
+      background: var(--card-hover);
+      transform: translateY(-1px);
+    }
+
+    .roster-card.is-selected {
+      border-color: var(--role-color, var(--accent));
+      background: var(--card-hover);
+      box-shadow: 0 0 0 1px var(--role-color, var(--accent));
+    }
+
+    .roster-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .roster-id {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .role-swatch {
+      width: 11px;
+      height: 11px;
+      border-radius: 4px;
+      background: var(--role-color, #64748b);
+      flex-shrink: 0;
+    }
+
+    .roster-name {
+      font-size: 13px;
+      font-weight: 700;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .roster-badge {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+
+    .roster-badge.working {
+      background: rgba(34, 197, 94, 0.15);
+      color: #16a34a;
+    }
+
+    .roster-badge.waiting,
+    .roster-badge.stopped {
+      background: rgba(245, 158, 11, 0.16);
+      color: #d97706;
+    }
+
+    .roster-badge.killed {
+      background: rgba(148, 163, 184, 0.22);
+      color: var(--text-sub);
+    }
+
+    html[data-theme="dark"] .roster-badge.working {
+      color: #4ade80;
+    }
+
+    html[data-theme="dark"] .roster-badge.waiting,
+    html[data-theme="dark"] .roster-badge.stopped {
+      color: #fbbf24;
+    }
+
+    .roster-meta {
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+
+    .roster-snippet {
+      margin-top: 7px;
+      padding: 7px 9px;
+      border-radius: 10px;
+      background: var(--pill-bg);
+      font-size: 11.8px;
+      line-height: 1.48;
+      color: var(--text-sub);
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .roster-card-footer {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .mini-action-btn {
+      appearance: none;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-strong);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .mini-action-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Board Filter Controls */
+    .board-toolbar {
+      position: sticky;
+      top: -10px;
+      z-index: 4;
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .board-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill-btn {
+      appearance: none;
+      border: 1px solid var(--glass-border);
+      background: var(--pill-bg);
+      color: var(--text-sub);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 9px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.14s ease;
+    }
+
+    .filter-pill-btn.is-active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .board-search-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .board-search-input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--glass-border);
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      outline: none;
+    }
+
+    .board-search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .board-dept-select {
+      width: 100%;
+      border: 1px solid var(--glass-border);
+      background: var(--input-bg);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 9px;
+      border-radius: 10px;
+      outline: none;
+    }
+
+    .board-summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      gap: 8px;
+    }
+
+    .board-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .board-item {
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-left: 4px solid var(--dept-color, #64748b);
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.12s ease, border-color 0.15s ease;
+    }
+
+    .board-item:hover {
+      background: var(--card-hover);
+      transform: translateY(-1px);
+    }
+
+    .board-item.is-meeting {
+      box-shadow: 0 2px 10px rgba(255, 107, 0, 0.1);
+    }
+
+    .board-item-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .board-agent-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      flex-wrap: wrap;
+    }
+
+    .board-dept-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--dept-color, #64748b);
+    }
+
+    .meeting-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(255, 107, 0, 0.15);
+      color: #ea580c;
+    }
+
+    html[data-theme="dark"] .meeting-badge {
+      color: #fdba74;
+    }
+
+    .board-seq {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--pill-bg);
+      color: var(--text-sub);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .board-text {
+      font-size: 12.5px;
+      line-height: 1.54;
+      color: var(--text-main);
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .mention-chip {
+      display: inline-block;
+      padding: 0 5px;
+      border-radius: 6px;
+      background: rgba(10, 132, 255, 0.14);
+      color: #0284c7;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    html[data-theme="dark"] .mention-chip {
+      color: #38bdf8;
+    }
+
+    .msg-bracket-tag {
+      display: inline-block;
+      padding: 0 5px;
+      border-radius: 6px;
+      background: rgba(225, 14, 14, 0.12);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .board-time {
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid var(--divider);
+      font-size: 10.5px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Bottom-left Mini Focus Card + Legend */
+    .bottom-left-bar {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      z-index: 16;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 410px;
+    }
+
+    .focus-card {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: none;
+    }
+
+    .focus-card.is-visible {
+      display: block;
+    }
+
+    .focus-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .focus-card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13.5px;
+      font-weight: 700;
+      flex-wrap: wrap;
+    }
+
+    .focus-close {
+      border: none;
+      background: var(--pill-bg);
+      color: var(--text-sub);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .focus-card-body {
+      margin-top: 7px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-sub);
+    }
+
+    .focus-msg-full {
+      margin-top: 6px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: var(--pill-bg);
+      color: var(--text-main);
+      max-height: 185px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .hint-pill {
+      padding: 7px 12px;
+      border-radius: 12px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      font-size: 11.5px;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Message Full Detail Modal */
+    .msg-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 45;
+      background: rgba(10, 15, 28, 0.58);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .msg-modal.is-open {
+      display: flex;
+    }
+
+    .msg-sheet {
+      width: min(860px, 95vw);
+      max-height: 88vh;
+      border-radius: 22px;
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .msg-sheet-head {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .msg-sheet-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .msg-sheet-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px;
+      font-size: 14px;
+      line-height: 1.68;
+      color: var(--text-main);
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .msg-sheet-foot {
+      padding: 12px 18px;
+      border-top: 1px solid var(--divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* IPAVIET Preview Modal */
+    .preview-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(10, 15, 28, 0.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .preview-modal.is-open {
+      display: flex;
+    }
+
+    .preview-sheet {
+      width: min(1220px, 96vw);
+      height: min(860px, 90vh);
+      border-radius: 22px;
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .preview-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--divider);
+      flex-wrap: wrap;
+    }
+
+    .preview-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preview-frame {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    .webgl-fallback {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .webgl-fallback.is-visible {
+      display: flex;
+    }
+
+    .webgl-fallback-box {
+      max-width: 440px;
+      padding: 22px;
+      border-radius: 20px;
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-lg);
+    }
+
+    @media (max-width: 1120px) {
+      .sidebar {
+        width: 370px;
+        top: 132px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .sidebar {
+        left: 12px;
+        right: 12px;
+        width: auto;
+        top: auto;
+        height: 48vh;
+      }
+      .sidebar.is-wide {
+        width: auto;
+      }
+      .bottom-left-bar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="viewport" aria-label="Không gian văn phòng 3D Swarm"></div>
+  <div id="labels-layer"></div>
+
+  <div id="webglFallback" class="webgl-fallback">
+    <div class="webgl-fallback-box">
+      <h2 style="margin: 0 0 8px; font-size: 18px;">Chế độ xem 3D đang tạm chờ WebGL</h2>
+      <p id="webglFallbackMsg" style="margin: 0; font-size: 13px; color: var(--text-sub); line-height: 1.5;">
+        Trình duyệt chưa khởi tạo được WebGL hoặc thư viện Three.js CDN. Bạn vẫn có thể theo dõi đầy đủ 6 Phòng Ban và toàn bộ Bảng tin Swarm ở thanh bên phải.
+      </p>
+    </div>
+  </div>
+
+  <!-- Top HUD -->
+  <header class="top-hud">
+    <div class="hud-brand">
+      <div class="brand-mark">IPA</div>
+      <div class="brand-text">
+        <div class="brand-title-row">
+          <span id="swarmTitle" class="brand-title">Công Ty AI IPAVIET — Văn Phòng 3D Đa Phòng Ban</span>
+          <span id="ssePill" class="sse-pill">● LIVE · SSE</span>
+        </div>
+        <div class="brand-sub">
+          <span class="stat-chip">🟢 Làm việc: <strong id="statWorking">0</strong></span>
+          <span class="stat-chip">🟡 Chờ lệnh: <strong id="statWaiting">0</strong></span>
+          <span class="stat-chip">⚪ Hoàn thành: <strong id="statKilled">0</strong></span>
+          <span class="stat-chip">💬 Tin nhắn: <strong id="statMsgCount">0</strong></span>
+          <span class="stat-chip">📡 Board: <strong id="statSeq">#0</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-controls">
+      <div class="hud-group" role="group" aria-label="Góc máy theo phòng ban">
+        <button class="hud-btn is-active" data-cam="overview">Toàn cảnh</button>
+        <button class="hud-btn" data-cam="executive">Phòng Họp</button>
+        <button class="hud-btn" data-cam="analysis">Phân Tích &amp; Prompt</button>
+        <button class="hud-btn" data-cam="design">UI/UX</button>
+        <button class="hud-btn" data-cam="product">Sản Phẩm</button>
+        <button class="hud-btn" data-cam="qa">Phòng QA</button>
+        <button class="hud-btn" data-cam="infra">Hạ Tầng 3D</button>
+      </div>
+
+      <label class="toggle-pill" title="Hiện hoặc ẩn nhân sự đã hoàn thành nhiệm vụ">
+        <input id="toggleKilled" type="checkbox" checked />
+        <span>Hiện đủ nhân sự</span>
+      </label>
+
+      <button id="btnTheme" class="hud-btn" title="Chuyển chế độ Sáng / Tối">
+        <span id="themeIcon">☀️</span>
+        <span id="themeLabel">Studio Sáng</span>
+      </button>
+
+      <button id="btnSidebar" class="hud-btn" title="Ẩn/Hiện bảng Swarm">
+        <span>Bảng Swarm</span>
+      </button>
+
+      <button id="btnPreview" class="hud-btn primary">
+        <span>Xem IPAVIET Web</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Right Glassmorphic Sidebar -->
+  <aside id="sidebar" class="sidebar" aria-label="Nhân sự theo Phòng Ban và Bảng tin Swarm">
+    <div class="sidebar-header">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab is-active" data-tab="roster">Phòng Ban (<span id="rosterCount">0</span>)</button>
+        <button class="sidebar-tab" data-tab="board">Bảng tin (<span id="boardCount">0</span>)</button>
+      </div>
+      <button id="btnExpandSidebar" class="sidebar-expand-btn" title="Mở rộng khung đọc">⇔ Rộng</button>
+    </div>
+
+    <div id="panelRoster" class="sidebar-panel is-active"></div>
+
+    <div id="panelBoard" class="sidebar-panel">
+      <div class="board-toolbar">
+        <div class="board-filter-row" role="group" aria-label="Lọc bảng tin">
+          <button class="filter-pill-btn is-active" data-board-mode="all">Tất cả</button>
+          <button class="filter-pill-btn" data-board-mode="meeting">Phòng Họp &amp; Hội Thoại</button>
+          <button class="filter-pill-btn" data-board-mode="dept">Theo Phòng Ban</button>
+        </div>
+
+        <select id="deptFilterSelect" class="board-dept-select" style="display:none;" aria-label="Chọn phòng ban">
+          <option value="all">Tất cả 6 Phòng Ban</option>
+        </select>
+
+        <div class="board-search-row">
+          <input id="boardSearchInput" class="board-search-input" type="search" placeholder="Tìm nội dung, @nhân-viên, #seq..." />
+          <button id="btnBoardOrder" class="mini-action-btn" title="Đổi thứ tự tin nhắn">Mới nhất ↓</button>
+        </div>
+
+        <div class="board-summary-row">
+          <span id="boardFilterSummary">Hiển thị 0 tin nhắn (100% nguyên văn)</span>
+          <button id="btnResetFilters" class="mini-action-btn" style="display:none;">Xóa lọc</button>
+        </div>
+      </div>
+
+      <div id="boardList" class="board-list"></div>
+    </div>
+  </aside>
+
+  <!-- Bottom-left Selected Detail & Controls Hint -->
+  <div class="bottom-left-bar">
+    <div id="focusCard" class="focus-card">
+      <div class="focus-card-top">
+        <div class="focus-card-title">
+          <span id="focusSwatch" class="role-swatch"></span>
+          <span id="focusName">Nhân sự</span>
+          <span id="focusDeptBadge" class="board-dept-tag">Phòng Ban</span>
+          <span id="focusStateBadge" class="roster-badge working">Đang làm việc</span>
+        </div>
+        <button id="focusClose" class="focus-close" title="Bỏ theo dõi">×</button>
+      </div>
+      <div id="focusBody" class="focus-card-body"></div>
+    </div>
+
+    <div class="hint-pill">
+      <span>🖱️ Kéo xoay · Cuộn zoom · Click nhân sự/bong bóng 3D hoặc tin nhắn để đọc 100% toàn văn</span>
+    </div>
+  </div>
+
+  <!-- Full Message Detail Modal -->
+  <div id="msgModal" class="msg-modal" role="dialog" aria-modal="true" aria-label="Chi tiết tin nhắn Swarm">
+    <div class="msg-sheet">
+      <div class="msg-sheet-head">
+        <div class="msg-sheet-meta">
+          <span id="msgModalDept" class="board-dept-tag">Phòng Ban</span>
+          <span id="msgModalAgent" style="font-weight:800; font-size:14px;">@agent</span>
+          <span id="msgModalSeq" class="board-seq">#0</span>
+          <span id="msgModalTime" style="font-size:12px; color:var(--text-muted);"></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button id="msgModalFocusAgent" class="hud-btn">🎯 Định vị 3D</button>
+          <button id="msgModalCopy" class="hud-btn">📋 Sao chép</button>
+          <button id="msgModalClose" class="hud-btn primary">Đóng</button>
+        </div>
+      </div>
+      <div id="msgModalBody" class="msg-sheet-body"></div>
+      <div class="msg-sheet-foot">
+        <div style="display:flex; gap:8px;">
+          <button id="msgModalPrev" class="hud-btn">← Tin cũ hơn</button>
+          <button id="msgModalNext" class="hud-btn">Tin mới hơn →</button>
+        </div>
+        <span id="msgModalCounter" style="font-size:12px; color:var(--text-muted);"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- IPAVIET Live Site Preview Drawer / Modal -->
+  <div id="previewModal" class="preview-modal" role="dialog" aria-modal="true" aria-label="Xem trước trang IPAVIET">
+    <div class="preview-sheet">
+      <div class="preview-bar">
+        <div class="preview-links" id="previewTabs">
+          <button class="hud-btn is-active" data-url="/index.html">Trang chủ</button>
+          <button class="hud-btn" data-url="/certapple/index.html">CertApple</button>
+          <button class="hud-btn" data-url="/app-library/index.html">Kho App</button>
+          <button class="hud-btn" data-url="/account.html">Tài khoản</button>
+          <button class="hud-btn" data-url="/tap-hoa-mmo.html">Tạp hóa MMO</button>
+          <button class="hud-btn" data-url="/support.html">Hỗ trợ</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <a id="previewExternal" class="hud-btn" href="/index.html" target="_blank" rel="noopener" style="text-decoration:none;">Mở tab mới ↗</a>
+          <button id="previewClose" class="hud-btn primary">Đóng</button>
+        </div>
+      </div>
+      <iframe id="previewFrame" class="preview-frame" src="about:blank" title="Xem trước trang IPAVIET"></iframe>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // =========================================================================
+    // 1. 6 Phòng Ban Chuẩn & Metadata Nhân Sự
+    // =========================================================================
+    const DEPARTMENTS = [
+      {
+        id: 'executive',
+        label: 'Phòng Họp & Điều Hành',
+        shortLabel: 'Phòng Họp',
+        subtitle: 'Ban Điều Phối & Bàn Họp Kính Trung Tâm',
+        color: '#ff6b00',
+        floor: { x: 0, z: 0, w: 8.6, d: 8.6 },
+        sign: { x: 0, y: 3.65, z: -4.15, rotY: 0 },
+        cam: { pos: [4.8, 6.8, 9.2], target: [0, 1.2, 0] },
+      },
+      {
+        id: 'analysis',
+        label: 'Phòng Phân Tích & Prompt',
+        shortLabel: 'Phân Tích',
+        subtitle: 'Tiếp nhận yêu cầu Sếp & Chuẩn hóa Prompt',
+        color: '#ec4899',
+        floor: { x: -13.0, z: -8.8, w: 11.6, d: 8.8 },
+        sign: { x: -13.0, y: 3.15, z: -13.0, rotY: 0 },
+        cam: { pos: [-13.0, 7.6, 0.8], target: [-13.0, 1.0, -8.8] },
+      },
+      {
+        id: 'design',
+        label: 'Phòng UI/UX & Thiết Kế',
+        shortLabel: 'UI/UX',
+        subtitle: 'Hệ thống Design Tokens & Apple HIG',
+        color: '#e10e0e',
+        floor: { x: -14.6, z: 0.6, w: 9.6, d: 7.4 },
+        sign: { x: -14.6, y: 3.15, z: -2.95, rotY: 0 },
+        cam: { pos: [-6.4, 6.8, 7.8], target: [-14.6, 1.0, 0.6] },
+      },
+      {
+        id: 'product',
+        label: 'Phòng Phát Triển Sản Phẩm',
+        shortLabel: 'Sản Phẩm',
+        subtitle: 'CertApple · Kho App · Thương Mại · Hỗ Trợ',
+        color: '#0a84ff',
+        floor: { x: -11.6, z: 9.6, w: 16.4, d: 8.6 },
+        sign: { x: -11.6, y: 3.15, z: 5.4, rotY: 0 },
+        cam: { pos: [-11.6, 8.8, 19.6], target: [-11.6, 1.0, 9.4] },
+      },
+      {
+        id: 'qa',
+        label: 'Phòng QA & Kiểm Định',
+        shortLabel: 'Phòng QA',
+        subtitle: 'Kiểm thử tự động & Nghiệm thu chất lượng',
+        color: '#af52de',
+        floor: { x: 12.8, z: 7.8, w: 13.0, d: 9.2 },
+        sign: { x: 12.8, y: 3.15, z: 3.35, rotY: 0 },
+        cam: { pos: [12.8, 7.6, 17.2], target: [12.8, 1.0, 7.8] },
+      },
+      {
+        id: 'infra',
+        label: 'Phòng Hạ Tầng & Vận Hành',
+        shortLabel: 'Hạ Tầng 3D',
+        subtitle: 'Văn phòng 3D Studio · Server & Giám sát',
+        color: '#32ade6',
+        floor: { x: 12.8, z: -8.5, w: 13.0, d: 9.0 },
+        sign: { x: 12.8, y: 3.15, z: -12.8, rotY: 0 },
+        cam: { pos: [12.8, 7.6, 1.0], target: [12.8, 1.0, -8.5] },
+      },
+    ];
+
+    const DEPT_BY_ID = new Map(DEPARTMENTS.map((d) => [d.id, d]));
+
+    // 8 ghế quanh bàn họp kính trung tâm (0, 0) bán kính 3.05m
+    const MEETING_SEATS = Array.from({ length: 8 }, (_, idx) => {
+      const angle = (idx / 8) * Math.PI * 2;
+      return {
+        x: Math.sin(angle) * 3.05,
+        z: Math.cos(angle) * 3.05,
+        lookAt: [0, 1.2, 0],
+      };
+    });
+
+    const ROLE_META = {
+      coordinator: {
+        dept: 'executive',
+        color: '#ff6b00',
+        roleLabel: 'Điều phối trưởng',
+        desk: { x: 0, z: 3.05, lookAt: [0, 1.4, 0] },
+        lounge: { x: 0, z: 3.05, rotY: Math.PI },
+      },
+      'req-analyst': {
+        dept: 'analysis',
+        color: '#ec4899',
+        roleLabel: 'Phân tích yêu cầu',
+        desk: { x: -15.1, z: -8.2, rotY: 0 },
+        lounge: { x: -15.1, z: -6.4, rotY: 0.3 },
+      },
+      'prompt-architect': {
+        dept: 'analysis',
+        color: '#db2777',
+        roleLabel: 'Kiến trúc sư Prompt',
+        desk: { x: -10.9, z: -8.2, rotY: 0 },
+        lounge: { x: -10.9, z: -6.4, rotY: -0.3 },
+      },
+      'shell-unifier': {
+        dept: 'design',
+        color: '#e10e0e',
+        roleLabel: 'Kiến trúc Shell',
+        desk: { x: -15.4, z: -0.8, rotY: Math.PI / 2 },
+        lounge: { x: -12.4, z: -0.6, rotY: 0.5 },
+      },
+      'design-lead': {
+        dept: 'design',
+        color: '#fb7185',
+        roleLabel: 'Trưởng nhóm UI/UX',
+        desk: { x: -15.4, z: 2.2, rotY: Math.PI / 2 },
+        lounge: { x: -12.4, z: 2.0, rotY: 0.2 },
+      },
+      'apps-v2': {
+        dept: 'product',
+        color: '#0a84ff',
+        roleLabel: 'App & VSign V2',
+        desk: { x: -16.8, z: 7.7, rotY: 0 },
+        lounge: { x: -16.8, z: 9.2, rotY: 0 },
+      },
+      'commerce-v2': {
+        dept: 'product',
+        color: '#ff9f0a',
+        roleLabel: 'Thương mại V2',
+        desk: { x: -13.4, z: 7.7, rotY: 0 },
+        lounge: { x: -13.4, z: 9.2, rotY: 0 },
+      },
+      'support-v2': {
+        dept: 'product',
+        color: '#34c759',
+        roleLabel: 'Hỗ trợ & Pháp lý V2',
+        desk: { x: -10.0, z: 7.7, rotY: 0 },
+        lounge: { x: -10.0, z: 9.2, rotY: 0 },
+      },
+      'cert-ui': {
+        dept: 'product',
+        color: '#f87171',
+        roleLabel: 'CertApple UI',
+        desk: { x: -6.6, z: 7.7, rotY: 0 },
+        lounge: { x: -6.6, z: 9.2, rotY: 0 },
+      },
+      'apps-ui': {
+        dept: 'product',
+        color: '#60a5fa',
+        roleLabel: 'Kho App UI',
+        desk: { x: -15.2, z: 11.4, rotY: 0 },
+        lounge: { x: -15.2, z: 12.6, rotY: 0 },
+      },
+      'commerce-ui': {
+        dept: 'product',
+        color: '#fbbf24',
+        roleLabel: 'Thanh toán UI',
+        desk: { x: -11.6, z: 11.4, rotY: 0 },
+        lounge: { x: -11.6, z: 12.6, rotY: 0 },
+      },
+      'support-ui': {
+        dept: 'product',
+        color: '#4ade80',
+        roleLabel: 'CSKH UI',
+        desk: { x: -8.0, z: 11.4, rotY: 0 },
+        lounge: { x: -8.0, z: 12.6, rotY: 0 },
+      },
+      'qa-lead': {
+        dept: 'qa',
+        color: '#af52de',
+        roleLabel: 'Trưởng nhóm QA',
+        desk: { x: 9.2, z: 7.6, rotY: 0 },
+        lounge: { x: 9.2, z: 9.4, rotY: -0.2 },
+      },
+      'qa-v2': {
+        dept: 'qa',
+        color: '#9333ea',
+        roleLabel: 'Kiểm thử QA V2',
+        desk: { x: 12.8, z: 7.6, rotY: 0 },
+        lounge: { x: 12.8, z: 9.4, rotY: 0 },
+      },
+      verifier: {
+        dept: 'qa',
+        color: '#c084fc',
+        roleLabel: 'Thẩm định R1',
+        desk: { x: 16.4, z: 7.6, rotY: 0 },
+        lounge: { x: 16.4, z: 9.4, rotY: 0.2 },
+      },
+      'office-dev': {
+        dept: 'infra',
+        color: '#32ade6',
+        roleLabel: 'Kỹ sư 3D & Backend',
+        desk: { x: 9.2, z: -8.2, rotY: 0 },
+        lounge: { x: 9.2, z: -6.4, rotY: 0 },
+      },
+      'office-builder': {
+        dept: 'infra',
+        color: '#0ea5e9',
+        roleLabel: 'Kiến trúc Studio 3D',
+        desk: { x: 12.8, z: -8.2, rotY: 0 },
+        lounge: { x: 12.8, z: -6.4, rotY: 0 },
+      },
+      monitor: {
+        dept: 'infra',
+        color: '#6366f1',
+        roleLabel: 'Giám sát Hệ thống',
+        desk: { x: 16.4, z: -8.2, rotY: 0 },
+        lounge: { x: 16.4, z: -6.4, rotY: 0 },
+      },
+    };
+
+    const FALLBACK_PALETTE = ['#38bdf8', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c'];
+
+    function getRoleMeta(name, memberInfo = null) {
+      const known = ROLE_META[name];
+      if (known) {
+        const deptObj = DEPT_BY_ID.get(known.dept) || DEPT_BY_ID.get('product');
+        return {
+          ...known,
+          deptId: (memberInfo && memberInfo.department) || deptObj.id,
+          deptLabel: (memberInfo && memberInfo.departmentLabel) || deptObj.label,
+          deptColor: (memberInfo && memberInfo.departmentColor) || deptObj.color,
+          zoneLabel: deptObj.shortLabel,
+        };
+      }
+      let hash = 0;
+      for (let i = 0; i < name.length; i += 1) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+      const idx = Math.abs(hash);
+      const deptId = (memberInfo && memberInfo.department) || 'product';
+      const deptObj = DEPT_BY_ID.get(deptId) || DEPT_BY_ID.get('product');
+      return {
+        dept: deptObj.id,
+        deptId: deptObj.id,
+        deptLabel: (memberInfo && memberInfo.departmentLabel) || deptObj.label,
+        deptColor: (memberInfo && memberInfo.departmentColor) || deptObj.color,
+        color: FALLBACK_PALETTE[idx % FALLBACK_PALETTE.length],
+        roleLabel: 'Chuyên viên',
+        zoneLabel: deptObj.shortLabel,
+        desk: {
+          x: deptObj.floor.x + ((idx % 3) - 1) * 2.2,
+          z: deptObj.floor.z,
+          rotY: 0,
+        },
+        lounge: {
+          x: deptObj.floor.x + ((idx % 3) - 1) * 1.6,
+          z: deptObj.floor.z + 1.8,
+          rotY: 0,
+        },
+      };
+    }
+
+    function statusVi(status) {
+      if (status === 'working') return 'Đang làm việc';
+      if (status === 'killed') return 'Hoàn thành';
+      if (status === 'stopped') return 'Tạm dừng';
+      return 'Đang chờ';
+    }
+
+    function parseBoardTimeMs(timeStr) {
+      if (!timeStr) return 0;
+      const iso = String(timeStr).trim().replace(' ', 'T');
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+    }
+
+    function isMeetingMessage(text) {
+      if (!text) return false;
+      return /(\bhọp\b|\bmeeting\b|phòng họp|\[họp|@[a-z0-9-]+)/i.test(String(text));
+    }
+
+    function extractMentions(text) {
+      if (!text) return [];
+      const found = new Set();
+      const re = /@([a-z0-9-]+)/gi;
+      let match;
+      while ((match = re.exec(String(text))) !== null) {
+        const target = match[1].toLowerCase();
+        if (target && target !== 'all') {
+          found.add(target);
+        }
+      }
+      return Array.from(found);
+    }
+
+    function bubblePreviewText(text, maxLen = 110) {
+      if (!text) return 'Đang đồng bộ bảng tin.';
+      const compact = String(text).replace(/\s+/g, ' ').trim();
+      return compact.length > maxLen ? `${compact.slice(0, maxLen - 1)}…` : compact;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatRichBoardText(rawText) {
+      let html = escapeHtml(rawText || '');
+      html = html.replace(
+        /(@[a-z0-9-]+)/gi,
+        '<span class="mention-chip" data-mention="$1">$1</span>'
+      );
+      html = html.replace(
+        /(\[[A-Za-z0-9\u00C0-\u024F\u1E00-\u1EFF _\-·,/]{2,56}\])/g,
+        '<span class="msg-bracket-tag">$1</span>'
+      );
+      return html;
+    }
+
+    // =========================================================================
+    // 2. App State & Camera Presets
+    // =========================================================================
+    const appState = {
+      theme: 'light',
+      showKilled: true,
+      selectedAgent: null,
+      boardMode: 'all', // 'all' | 'meeting' | 'dept'
+      boardDept: 'all',
+      boardSearch: '',
+      boardNewestFirst: true,
+      modalSeq: null,
+      swarm: {
+        title: 'Công Ty AI IPAVIET — Văn Phòng 3D Đa Phòng Ban',
+        headSeq: 0,
+        departments: DEPARTMENTS,
+        members: [],
+        messages: [],
+      },
+      seenSeqs: new Set(),
+      initialHydrated: false,
+      pulseUntilByAgent: new Map(), // agentName -> { expiresAt, text, seq, targets }
+      meetingUntilByAgent: new Map(), // agentName -> { expiresAt, seatIdx, targets, seq }
+      latestMessageByAgent: new Map(),
+      lastRosterRenderSig: '',
+      lastBoardRenderSig: '',
+    };
+
+    const CAMERA_PRESETS = {
+      overview: { pos: [0, 19.8, 26.2], target: [0, 0.8, 0.2] },
+      executive: DEPARTMENTS[0].cam,
+      analysis: DEPARTMENTS[1].cam,
+      design: DEPARTMENTS[2].cam,
+      product: DEPARTMENTS[3].cam,
+      qa: DEPARTMENTS[4].cam,
+      infra: DEPARTMENTS[5].cam,
+    };
+
+    // =========================================================================
+    // 3. Procedural Canvas Textures (Floor, Wood, Monitors, Wall Sign, Dept Signs)
+    // =========================================================================
+    function createFloorTexture(isDark) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = isDark ? '#0d1424' : '#eceae4';
+      ctx.fillRect(0, 0, 512, 512);
+
+      for (let i = 0; i < 650; i += 1) {
+        const x = (Math.sin(i * 12.9898) * 43758.5453) % 1;
+        const y = (Math.sin(i * 78.233) * 28471.135) % 1;
+        const px = Math.abs(x) * 512;
+        const py = Math.abs(y) * 512;
+        const r = 1 + (i % 3) * 0.7;
+        ctx.fillStyle = isDark
+          ? i % 3 === 0
+            ? 'rgba(56, 189, 248, 0.08)'
+            : 'rgba(148, 163, 184, 0.06)'
+          : i % 3 === 0
+            ? 'rgba(180, 168, 150, 0.24)'
+            : 'rgba(255, 255, 255, 0.45)';
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.14)' : 'rgba(15, 23, 42, 0.08)';
+      ctx.lineWidth = 2;
+      const step = 128;
+      for (let x = 0; x <= 512; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 512);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= 512; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(512, y);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(11, 8);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createWoodTexture(isDark) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = isDark ? '#2a221d' : '#d7b996';
+      ctx.fillRect(0, 0, 256, 256);
+      for (let y = 0; y < 256; y += 32) {
+        ctx.fillStyle = isDark ? 'rgba(0,0,0,0.22)' : 'rgba(120,76,34,0.12)';
+        ctx.fillRect(0, y, 256, 2);
+        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.12)';
+        ctx.fillRect(0, y + 6, 256, 4);
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(3, 2);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createMonitorTexture(accentColor, title, isWorking = true) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#090e1a';
+      ctx.fillRect(0, 0, 512, 256);
+
+      ctx.fillStyle = '#11192c';
+      ctx.fillRect(0, 0, 512, 28);
+      ['#ff5f57', '#febc2e', '#28c840'].forEach((c, idx) => {
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        ctx.arc(16 + idx * 14, 14, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'bold 12px -apple-system, sans-serif';
+      ctx.fillText(title, 66, 18);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 28, 120, 228);
+      for (let i = 0; i < 8; i += 1) {
+        ctx.fillStyle = i === 1 ? accentColor : 'rgba(148,163,184,0.26)';
+        ctx.fillRect(14, 44 + i * 22, 72 + ((i * 19) % 24), 8);
+      }
+
+      for (let row = 0; row < 10; row += 1) {
+        const y = 44 + row * 19;
+        const indent = ((row % 3) * 16) + 138;
+        ctx.fillStyle = row % 4 === 0 ? accentColor : 'rgba(226, 232, 240, 0.35)';
+        ctx.fillRect(indent, y, 70 + ((row * 37) % 140), 7);
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.fillRect(indent + 120, y, 48 + ((row * 23) % 70), 7);
+      }
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.fillRect(356, 44, 138, 186);
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(356, 44, 138, 186);
+      ctx.fillStyle = accentColor;
+      ctx.fillRect(370, 62, 110, 28);
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.fillRect(370, 104, 110, 14);
+      ctx.fillRect(370, 126, 86, 14);
+      ctx.fillRect(370, 160, 110, 44);
+
+      if (!isWorking) {
+        ctx.fillStyle = 'rgba(9, 14, 26, 0.55)';
+        ctx.fillRect(0, 0, 512, 256);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createWallSignTexture(isDark) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = isDark ? '#0c1324' : '#ffffff';
+      ctx.fillRect(0, 0, 1024, 256);
+
+      const grad = ctx.createLinearGradient(0, 0, 1024, 256);
+      grad.addColorStop(0, 'rgba(225, 14, 14, 0.16)');
+      grad.addColorStop(0.5, 'rgba(10, 132, 255, 0.12)');
+      grad.addColorStop(1, 'rgba(175, 82, 222, 0.16)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1024, 256);
+
+      ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.12)';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(12, 12, 1000, 232);
+
+      ctx.fillStyle = '#e10e0e';
+      ctx.beginPath();
+      ctx.roundRect(56, 72, 112, 112, 26);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 44px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('IPA', 112, 143);
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+      ctx.font = '800 50px -apple-system, sans-serif';
+      ctx.fillText('IPAVIET SWARM STUDIO', 198, 122);
+
+      ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+      ctx.font = '600 25px -apple-system, sans-serif';
+      ctx.fillText('6 Phòng Ban Chuyên Môn · Giao Tiếp Tiếng Việt 100%', 198, 168);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function createDeptSignTexture(dept, isDark) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 240;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = isDark ? 'rgba(13, 21, 38, 0.96)' : 'rgba(255, 255, 255, 0.97)';
+      ctx.fillRect(0, 0, 1024, 240);
+
+      // Colored accent bar on left
+      ctx.fillStyle = dept.color;
+      ctx.fillRect(0, 0, 34, 240);
+
+      ctx.strokeStyle = dept.color;
+      ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, 1016, 232);
+
+      ctx.fillStyle = dept.color;
+      ctx.font = '800 24px -apple-system, sans-serif';
+      ctx.fillText('PHÒNG BAN CHUYÊN MÔN', 66, 62);
+
+      ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+      ctx.font = '800 48px -apple-system, sans-serif';
+      ctx.fillText(dept.label.toUpperCase(), 66, 128);
+
+      ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+      ctx.font = '600 26px -apple-system, sans-serif';
+      ctx.fillText(dept.subtitle, 66, 182);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    // Dynamic Holographic Hub Screen Canvas
+    const holoCanvas = document.createElement('canvas');
+    holoCanvas.width = 820;
+    holoCanvas.height = 410;
+    const holoCtx = holoCanvas.getContext('2d');
+    const holoTexture = new THREE.CanvasTexture(holoCanvas);
+    holoTexture.colorSpace = THREE.SRGBColorSpace;
+
+    function redrawHoloScreen() {
+      const w = holoCanvas.width;
+      const h = holoCanvas.height;
+      holoCtx.clearRect(0, 0, w, h);
+
+      const bg = holoCtx.createLinearGradient(0, 0, w, h);
+      bg.addColorStop(0, 'rgba(8, 22, 46, 0.95)');
+      bg.addColorStop(1, 'rgba(15, 34, 68, 0.93)');
+      holoCtx.fillStyle = bg;
+      holoCtx.fillRect(0, 0, w, h);
+
+      holoCtx.strokeStyle = '#38bdf8';
+      holoCtx.lineWidth = 5;
+      holoCtx.strokeRect(10, 10, w - 20, h - 20);
+
+      holoCtx.fillStyle = '#38bdf8';
+      holoCtx.font = '700 21px -apple-system, sans-serif';
+      holoCtx.fillText('PHÒNG HỌP KÍNH · ĐIỀU PHỐI 6 PHÒNG BAN', 36, 52);
+
+      holoCtx.fillStyle = '#ffffff';
+      holoCtx.font = '800 28px -apple-system, sans-serif';
+      const title = appState.swarm.title || 'Công Ty AI IPAVIET';
+      holoCtx.fillText(title.slice(0, 44), 36, 94);
+
+      const members = appState.swarm.members || [];
+      const active = members.filter((m) => !m.killed);
+      const workingCount = active.filter((m) => m.status === 'working').length;
+      const doneCount = members.length - active.length;
+
+      const cards = [
+        { label: 'ĐANG LÀM VIỆC', val: String(workingCount), color: '#22c55e', x: 36 },
+        { label: 'HOÀN THÀNH', val: String(doneCount), color: '#38bdf8', x: 292 },
+        { label: 'TỔNG TIN NHẮN', val: String(appState.swarm.messages.length || 0), color: '#ff6b00', x: 548 },
+      ];
+      for (const c of cards) {
+        holoCtx.fillStyle = 'rgba(255,255,255,0.08)';
+        holoCtx.fillRect(c.x, 124, 228, 112);
+        holoCtx.strokeStyle = c.color;
+        holoCtx.lineWidth = 3;
+        holoCtx.strokeRect(c.x, 124, 228, 112);
+
+        holoCtx.fillStyle = c.color;
+        holoCtx.font = '800 44px -apple-system, sans-serif';
+        holoCtx.fillText(c.val, c.x + 18, 184);
+
+        holoCtx.fillStyle = '#cbd5e1';
+        holoCtx.font = '700 16px -apple-system, sans-serif';
+        holoCtx.fillText(c.label, c.x + 18, 218);
+      }
+
+      const lastMsg = appState.swarm.messages[appState.swarm.messages.length - 1];
+      holoCtx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+      holoCtx.fillRect(36, 260, w - 72, 114);
+      holoCtx.fillStyle = '#7dd3fc';
+      holoCtx.font = '700 18px -apple-system, sans-serif';
+      holoCtx.fillText(
+        lastMsg ? `Tin mới #${lastMsg.seq} · @${lastMsg.agent} (${lastMsg.departmentLabel || ''})` : 'Đang đồng bộ Board...',
+        54,
+        294
+      );
+      holoCtx.fillStyle = '#f8fafc';
+      holoCtx.font = '500 20px -apple-system, sans-serif';
+      const snippet = lastMsg
+        ? bubblePreviewText(lastMsg.text, 58)
+        : 'Sẵn sàng nhận tín hiệu SSE...';
+      holoCtx.fillText(snippet, 54, 334);
+
+      holoTexture.needsUpdate = true;
+    }
+
+    // =========================================================================
+    // 4. Three.js Scene Construction (6 Phòng Ban + Phòng Họp Kính)
+    // =========================================================================
+    const viewport = document.getElementById('viewport');
+    let renderer;
+    let scene;
+    let camera;
+    let controls;
+    let webglReady = false;
+
+    const themeManaged = {
+      ambient: null,
+      hemi: null,
+      sun: null,
+      fillLight: null,
+      floorMat: null,
+      woodMat: null,
+      wallMat: null,
+      wallSignMat: null,
+      gridHelper: null,
+      lampGlowMats: [],
+      deskMaterials: [],
+      deptSigns: [], // { dept, mat }
+    };
+
+    const holoParts = {
+      ring1: null,
+      ring2: null,
+      core: null,
+      screen: null,
+    };
+
+    const deskMonitorMap = new Map();
+    const qaLedMeshes = [];
+    const agentEntities = new Map();
+    const pulseEffects = [];
+    const clickableMeshes = [];
+
+    const cameraGlide = {
+      active: false,
+      targetPos: new THREE.Vector3(),
+      targetLook: new THREE.Vector3(),
+    };
+
+    function focusCameraTo(posArr, lookArr) {
+      cameraGlide.targetPos.set(posArr[0], posArr[1], posArr[2]);
+      cameraGlide.targetLook.set(lookArr[0], lookArr[1], lookArr[2]);
+      cameraGlide.active = true;
+    }
+
+    function buildPlant(x, z, scale = 1) {
+      const g = new THREE.Group();
+      const pot = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32 * scale, 0.24 * scale, 0.48 * scale, 16),
+        new THREE.MeshStandardMaterial({ color: '#e2e8f0', roughness: 0.65 })
+      );
+      pot.position.y = 0.24 * scale;
+      pot.castShadow = true;
+      pot.receiveShadow = true;
+      g.add(pot);
+
+      const soil = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.28 * scale, 0.28 * scale, 0.04 * scale, 16),
+        new THREE.MeshStandardMaterial({ color: '#3b2f2f', roughness: 0.95 })
+      );
+      soil.position.y = 0.47 * scale;
+      g.add(soil);
+
+      const leafMat = new THREE.MeshStandardMaterial({ color: '#2e8b57', roughness: 0.55 });
+      for (let i = 0; i < 6; i += 1) {
+        const leaf = new THREE.Mesh(
+          new THREE.SphereGeometry(0.24 * scale, 12, 10),
+          leafMat
+        );
+        const angle = (i / 6) * Math.PI * 2;
+        leaf.scale.set(1.15, 0.55, 0.72);
+        leaf.position.set(
+          Math.cos(angle) * 0.22 * scale,
+          (0.68 + (i % 2) * 0.14) * scale,
+          Math.sin(angle) * 0.22 * scale
+        );
+        leaf.rotation.y = -angle;
+        leaf.rotation.z = 0.35;
+        leaf.castShadow = true;
+        g.add(leaf);
+      }
+
+      g.position.set(x, 0, z);
+      return g;
+    }
+
+    function buildDepartmentZone(dept) {
+      const { x, z, w, d } = dept.floor;
+      const zoneGroup = new THREE.Group();
+
+      // Colored Department Carpet
+      const carpetMat = new THREE.MeshStandardMaterial({
+        color: dept.color,
+        transparent: true,
+        opacity: 0.12,
+        roughness: 0.85,
+      });
+      const carpet = new THREE.Mesh(new THREE.PlaneGeometry(w, d), carpetMat);
+      carpet.rotation.x = -Math.PI / 2;
+      carpet.position.set(x, 0.012, z);
+      carpet.receiveShadow = true;
+      zoneGroup.add(carpet);
+
+      // Glowing Colored Perimeter Frame
+      const borderMat = new THREE.MeshStandardMaterial({
+        color: dept.color,
+        emissive: dept.color,
+        emissiveIntensity: 0.45,
+        roughness: 0.35,
+      });
+      const t = 0.08;
+      const topBar = new THREE.Mesh(new THREE.BoxGeometry(w, 0.025, t), borderMat);
+      topBar.position.set(x, 0.02, z - d / 2);
+      const botBar = new THREE.Mesh(new THREE.BoxGeometry(w, 0.025, t), borderMat);
+      botBar.position.set(x, 0.02, z + d / 2);
+      const leftBar = new THREE.Mesh(new THREE.BoxGeometry(t, 0.025, d), borderMat);
+      leftBar.position.set(x - w / 2, 0.02, z);
+      const rightBar = new THREE.Mesh(new THREE.BoxGeometry(t, 0.025, d), borderMat);
+      rightBar.position.set(x + w / 2, 0.02, z);
+      zoneGroup.add(topBar, botBar, leftBar, rightBar);
+
+      // Low Architectural Glass Partitions (keep doorways open)
+      const glassMat = new THREE.MeshPhysicalMaterial({
+        color: dept.color,
+        transparent: true,
+        opacity: 0.16,
+        roughness: 0.12,
+        metalness: 0.08,
+      });
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: '#64748b',
+        metalness: 0.7,
+        roughness: 0.35,
+      });
+
+      const halfGlassW = w * 0.36;
+      const backGlass = new THREE.Mesh(new THREE.BoxGeometry(w - 0.6, 1.05, 0.06), glassMat);
+      backGlass.position.set(x, 0.54, z - d / 2);
+      zoneGroup.add(backGlass);
+
+      const leftGlass = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.05, halfGlassW), glassMat);
+      leftGlass.position.set(x - w / 2, 0.54, z - d / 2 + halfGlassW / 2 + 0.2);
+      zoneGroup.add(leftGlass);
+
+      const rightGlass = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.05, halfGlassW), glassMat);
+      rightGlass.position.set(x + w / 2, 0.54, z - d / 2 + halfGlassW / 2 + 0.2);
+      zoneGroup.add(rightGlass);
+
+      // 4 Corner Posts
+      [
+        [x - w / 2, z - d / 2],
+        [x + w / 2, z - d / 2],
+        [x - w / 2, z + d / 2],
+        [x + w / 2, z + d / 2],
+      ].forEach(([px, pz]) => {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.15, 10), frameMat);
+        post.position.set(px, 0.58, pz);
+        zoneGroup.add(post);
+      });
+
+      // 3D Vietnamese Department Sign Board on Dual Pillars
+      const signTex = createDeptSignTexture(dept, false);
+      const signMat = new THREE.MeshBasicMaterial({
+        map: signTex,
+        side: THREE.DoubleSide,
+      });
+      themeManaged.deptSigns.push({ dept, mat: signMat });
+
+      const signW = dept.id === 'product' ? 5.6 : 4.8;
+      const signH = 1.15;
+      const signGroup = new THREE.Group();
+      signGroup.position.set(dept.sign.x, dept.sign.y, dept.sign.z);
+      signGroup.rotation.y = dept.sign.rotY || 0;
+
+      const signBacking = new THREE.Mesh(
+        new THREE.BoxGeometry(signW + 0.14, signH + 0.14, 0.1),
+        new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.4, metalness: 0.5 })
+      );
+      signGroup.add(signBacking);
+
+      const signFront = new THREE.Mesh(new THREE.PlaneGeometry(signW, signH), signMat);
+      signFront.position.z = 0.055;
+      signGroup.add(signFront);
+
+      const signBack = new THREE.Mesh(new THREE.PlaneGeometry(signW, signH), signMat);
+      signBack.position.z = -0.055;
+      signBack.rotation.y = Math.PI;
+      signGroup.add(signBack);
+
+      // Supporting pillars down to floor
+      const pillarH = dept.sign.y - signH / 2;
+      [-signW * 0.38, signW * 0.38].forEach((px) => {
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, pillarH, 10), frameMat);
+        p.position.set(px, -signH / 2 - pillarH / 2, 0);
+        signGroup.add(p);
+      });
+
+      zoneGroup.add(signGroup);
+      scene.add(zoneGroup);
+    }
+
+    function buildConferenceChair(x, z, lookAtTarget, colorHex) {
+      const chairGroup = new THREE.Group();
+      chairGroup.position.set(x, 0, z);
+      chairGroup.lookAt(lookAtTarget[0], 0, lookAtTarget[2]);
+
+      const metalMat = new THREE.MeshStandardMaterial({ color: '#94a3b8', metalness: 0.7, roughness: 0.3 });
+      const seatMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.65 });
+      const trimMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
+
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.28, 0.04, 12), metalMat);
+      base.position.y = 0.03;
+      chairGroup.add(base);
+
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.38, 8), metalMat);
+      stem.position.y = 0.22;
+      chairGroup.add(stem);
+
+      const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.07, 16), seatMat);
+      seat.position.y = 0.43;
+      seat.castShadow = true;
+      chairGroup.add(seat);
+
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.44, 0.06), trimMat);
+      back.position.set(0, 0.68, -0.22);
+      back.castShadow = true;
+      chairGroup.add(back);
+
+      return chairGroup;
+    }
+
+    function buildWorkstation(agentName, x, z, rotY, accentHex, labelTitle, isQa = false) {
+      const group = new THREE.Group();
+      group.position.set(x, 0, z);
+      group.rotation.y = rotY;
+
+      const deskMat = new THREE.MeshStandardMaterial({
+        color: '#f8fafc',
+        roughness: 0.42,
+        metalness: 0.08,
+      });
+      themeManaged.deskMaterials.push(deskMat);
+
+      const metalMat = new THREE.MeshStandardMaterial({
+        color: '#94a3b8',
+        roughness: 0.3,
+        metalness: 0.75,
+      });
+
+      const top = new THREE.Mesh(new THREE.BoxGeometry(2.25, 0.08, 1.0), deskMat);
+      top.position.set(0, 0.76, -0.55);
+      top.castShadow = true;
+      top.receiveShadow = true;
+      group.add(top);
+
+      const accentEdge = new THREE.Mesh(
+        new THREE.BoxGeometry(2.26, 0.025, 0.03),
+        new THREE.MeshStandardMaterial({
+          color: accentHex,
+          emissive: accentHex,
+          emissiveIntensity: 0.55,
+          roughness: 0.3,
+        })
+      );
+      accentEdge.position.set(0, 0.76, -0.04);
+      group.add(accentEdge);
+
+      const legGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.74, 12);
+      [
+        [-0.98, -0.92],
+        [0.98, -0.92],
+        [-0.98, -0.16],
+        [0.98, -0.16],
+      ].forEach(([lx, lz]) => {
+        const leg = new THREE.Mesh(legGeo, metalMat);
+        leg.position.set(lx, 0.37, lz);
+        leg.castShadow = true;
+        group.add(leg);
+      });
+
+      const texWorking = createMonitorTexture(accentHex, labelTitle, true);
+      const texIdle = createMonitorTexture(accentHex, labelTitle, false);
+      const screenMat = new THREE.MeshStandardMaterial({
+        map: texWorking,
+        emissive: '#ffffff',
+        emissiveMap: texWorking,
+        emissiveIntensity: 0.85,
+        roughness: 0.25,
+      });
+      deskMonitorMap.set(agentName, { screenMat, texWorking, texIdle });
+
+      const monitorStand = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.34, 0.08), metalMat);
+      monitorStand.position.set(0, 0.96, -0.82);
+      group.add(monitorStand);
+
+      const monitorBack = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.7, 1.7, 0.62, 24, 1, true, Math.PI - 0.5, 1.0),
+        new THREE.MeshStandardMaterial({
+          color: '#1e293b',
+          roughness: 0.35,
+          metalness: 0.6,
+          side: THREE.DoubleSide,
+        })
+      );
+      monitorBack.position.set(0, 1.24, 0.9);
+      monitorBack.castShadow = true;
+      group.add(monitorBack);
+
+      const monitorScreen = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.67, 1.67, 0.56, 24, 1, true, Math.PI - 0.47, 0.94),
+        screenMat
+      );
+      monitorScreen.material.side = THREE.BackSide;
+      monitorScreen.position.set(0, 1.24, 0.9);
+      group.add(monitorScreen);
+
+      const pad = new THREE.Mesh(
+        new THREE.BoxGeometry(0.88, 0.012, 0.4),
+        new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.85 })
+      );
+      pad.position.set(0, 0.806, -0.35);
+      group.add(pad);
+
+      const kb = new THREE.Mesh(
+        new THREE.BoxGeometry(0.44, 0.022, 0.16),
+        new THREE.MeshStandardMaterial({ color: '#e2e8f0', roughness: 0.4 })
+      );
+      kb.position.set(-0.08, 0.82, -0.36);
+      group.add(kb);
+
+      const mouse = new THREE.Mesh(
+        new THREE.BoxGeometry(0.07, 0.02, 0.11),
+        new THREE.MeshStandardMaterial({ color: '#cbd5e1', roughness: 0.35 })
+      );
+      mouse.position.set(0.26, 0.82, -0.36);
+      group.add(mouse);
+
+      const lampGlowMat = new THREE.MeshStandardMaterial({
+        color: '#fef3c7',
+        emissive: '#fbbf24',
+        emissiveIntensity: 0.8,
+      });
+      themeManaged.lampGlowMats.push(lampGlowMat);
+      const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 0.03, 12), metalMat);
+      lampBase.position.set(0.88, 0.815, -0.76);
+      const lampArm = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.42, 8), metalMat);
+      lampArm.position.set(0.88, 1.01, -0.76);
+      lampArm.rotation.z = 0.25;
+      const lampHead = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.13, 12), lampGlowMat);
+      lampHead.position.set(0.8, 1.2, -0.71);
+      lampHead.rotation.z = -0.35;
+      group.add(lampBase, lampArm, lampHead);
+
+      const chairGroup = new THREE.Group();
+      chairGroup.position.set(0, 0, 0.26);
+      const chairMat = new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.7 });
+      const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.08, 16), chairMat);
+      seat.position.y = 0.45;
+      seat.castShadow = true;
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.38, 10), metalMat);
+      stem.position.y = 0.22;
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.04, 5), metalMat);
+      base.position.y = 0.03;
+      const backRest = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.54, 0.07), chairMat);
+      backRest.position.set(0, 0.76, 0.24);
+      backRest.rotation.x = 0.1;
+      backRest.castShadow = true;
+      chairGroup.add(seat, stem, base, backRest);
+      group.add(chairGroup);
+
+      if (isQa) {
+        const rack = new THREE.Mesh(
+          new THREE.BoxGeometry(0.68, 1.75, 0.6),
+          new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.4, metalness: 0.5 })
+        );
+        rack.position.set(-1.35, 0.875, -0.75);
+        rack.castShadow = true;
+        group.add(rack);
+
+        for (let i = 0; i < 6; i += 1) {
+          const ledMat = new THREE.MeshStandardMaterial({
+            color: i % 2 === 0 ? '#a855f7' : '#22c55e',
+            emissive: i % 2 === 0 ? '#a855f7' : '#22c55e',
+            emissiveIntensity: 1.2,
+          });
+          const led = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.045, 0.03), ledMat);
+          led.position.set(-1.35, 0.4 + i * 0.22, -0.43);
+          group.add(led);
+          qaLedMeshes.push(ledMat);
+        }
+      }
+
+      scene.add(group);
+    }
+
+    function buildOfficeEnvironment() {
+      themeManaged.ambient = new THREE.AmbientLight('#ffffff', 0.75);
+      scene.add(themeManaged.ambient);
+
+      themeManaged.hemi = new THREE.HemisphereLight('#f8fafc', '#cbd5e1', 0.85);
+      themeManaged.hemi.position.set(0, 22, 0);
+      scene.add(themeManaged.hemi);
+
+      themeManaged.sun = new THREE.DirectionalLight('#fffaf0', 1.35);
+      themeManaged.sun.position.set(14, 22, 16);
+      themeManaged.sun.castShadow = true;
+      themeManaged.sun.shadow.mapSize.set(2048, 2048);
+      themeManaged.sun.shadow.camera.near = 2;
+      themeManaged.sun.shadow.camera.far = 70;
+      themeManaged.sun.shadow.camera.left = -24;
+      themeManaged.sun.shadow.camera.right = 24;
+      themeManaged.sun.shadow.camera.top = 20;
+      themeManaged.sun.shadow.camera.bottom = -20;
+      themeManaged.sun.shadow.bias = -0.0005;
+      scene.add(themeManaged.sun);
+
+      themeManaged.fillLight = new THREE.PointLight('#38bdf8', 0.75, 34);
+      themeManaged.fillLight.position.set(0, 6.2, 0);
+      scene.add(themeManaged.fillLight);
+
+      // Expanded 44 x 32 Studio Floor
+      themeManaged.floorMat = new THREE.MeshStandardMaterial({
+        map: createFloorTexture(false),
+        roughness: 0.78,
+        metalness: 0.05,
+      });
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(44, 32), themeManaged.floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      themeManaged.gridHelper = new THREE.GridHelper(44, 44, '#94a3b8', '#cbd5e1');
+      themeManaged.gridHelper.position.y = 0.006;
+      themeManaged.gridHelper.material.transparent = true;
+      themeManaged.gridHelper.material.opacity = 0.2;
+      scene.add(themeManaged.gridHelper);
+
+      // Back Architectural Wall & Studio Banner
+      themeManaged.wallMat = new THREE.MeshStandardMaterial({ color: '#f1f5f9', roughness: 0.8 });
+      const backWallLeft = new THREE.Mesh(new THREE.BoxGeometry(12, 5.8, 0.35), themeManaged.wallMat);
+      backWallLeft.position.set(-15, 2.9, -15.4);
+      scene.add(backWallLeft);
+
+      const backWallRight = new THREE.Mesh(new THREE.BoxGeometry(12, 5.8, 0.35), themeManaged.wallMat);
+      backWallRight.position.set(15, 2.9, -15.4);
+      scene.add(backWallRight);
+
+      const backGlassWall = new THREE.Mesh(
+        new THREE.BoxGeometry(18, 5.0, 0.08),
+        new THREE.MeshPhysicalMaterial({ color: '#bae6fd', transparent: true, opacity: 0.24, roughness: 0.08 })
+      );
+      backGlassWall.position.set(0, 2.5, -15.3);
+      scene.add(backGlassWall);
+
+      themeManaged.wallSignMat = new THREE.MeshStandardMaterial({
+        map: createWallSignTexture(false),
+        emissive: '#ffffff',
+        emissiveMap: createWallSignTexture(false),
+        emissiveIntensity: 0.3,
+        roughness: 0.35,
+      });
+      const wallSign = new THREE.Mesh(new THREE.PlaneGeometry(10.2, 2.55), themeManaged.wallSignMat);
+      wallSign.position.set(0, 3.8, -15.1);
+      scene.add(wallSign);
+
+      // Build all 6 Department Zones & 3D Vietnamese Signs
+      DEPARTMENTS.forEach((dept) => buildDepartmentZone(dept));
+
+      // Central Glass Conference Table (Phòng Họp & Điều Hành)
+      const pedestal = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.9, 1.15, 0.72, 32),
+        new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.35, metalness: 0.15 })
+      );
+      pedestal.position.set(0, 0.36, 0);
+      pedestal.castShadow = true;
+      themeManaged.deskMaterials.push(pedestal.material);
+      scene.add(pedestal);
+
+      const glassTableTop = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.15, 2.15, 0.08, 48),
+        new THREE.MeshPhysicalMaterial({
+          color: '#e0f2fe',
+          transparent: true,
+          opacity: 0.62,
+          roughness: 0.08,
+          metalness: 0.12,
+        })
+      );
+      glassTableTop.position.set(0, 0.76, 0);
+      glassTableTop.castShadow = true;
+      glassTableTop.receiveShadow = true;
+      scene.add(glassTableTop);
+
+      const hubRim = new THREE.Mesh(
+        new THREE.TorusGeometry(2.18, 0.045, 16, 64),
+        new THREE.MeshStandardMaterial({
+          color: '#38bdf8',
+          emissive: '#0ea5e9',
+          emissiveIntensity: 0.9,
+        })
+      );
+      hubRim.rotation.x = Math.PI / 2;
+      hubRim.position.set(0, 0.77, 0);
+      scene.add(hubRim);
+
+      // 8 Glass Conference Chairs around (0, 0)
+      MEETING_SEATS.forEach((seat, idx) => {
+        scene.add(
+          buildConferenceChair(
+            seat.x,
+            seat.z,
+            seat.lookAt,
+            idx === 0 ? '#ff6b00' : '#38bdf8'
+          )
+        );
+      });
+
+      // Holographic Rings & Live Screen above Glass Conference Table
+      holoParts.ring1 = new THREE.Mesh(
+        new THREE.TorusGeometry(1.15, 0.025, 12, 64),
+        new THREE.MeshStandardMaterial({
+          color: '#38bdf8',
+          emissive: '#38bdf8',
+          emissiveIntensity: 1.2,
+          transparent: true,
+          opacity: 0.72,
+        })
+      );
+      holoParts.ring1.position.set(0, 1.55, 0);
+      holoParts.ring1.rotation.x = Math.PI / 2.4;
+      scene.add(holoParts.ring1);
+
+      holoParts.ring2 = new THREE.Mesh(
+        new THREE.TorusGeometry(0.86, 0.02, 12, 48),
+        new THREE.MeshStandardMaterial({
+          color: '#ff6b00',
+          emissive: '#ff6b00',
+          emissiveIntensity: 1.1,
+          transparent: true,
+          opacity: 0.75,
+        })
+      );
+      holoParts.ring2.position.set(0, 1.55, 0);
+      holoParts.ring2.rotation.x = -Math.PI / 2.6;
+      scene.add(holoParts.ring2);
+
+      holoParts.core = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.26, 0),
+        new THREE.MeshStandardMaterial({
+          color: '#7dd3fc',
+          emissive: '#0ea5e9',
+          emissiveIntensity: 1.5,
+          transparent: true,
+          opacity: 0.88,
+        })
+      );
+      holoParts.core.position.set(0, 1.55, 0);
+      scene.add(holoParts.core);
+
+      redrawHoloScreen();
+      holoParts.screen = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.6, 1.8),
+        new THREE.MeshBasicMaterial({
+          map: holoTexture,
+          transparent: true,
+          opacity: 0.95,
+          side: THREE.DoubleSide,
+        })
+      );
+      holoParts.screen.position.set(0, 2.75, 0);
+      scene.add(holoParts.screen);
+
+      // Build Workstations for ALL Members across the 5 Specialist Rooms
+      Object.entries(ROLE_META).forEach(([agentName, meta]) => {
+        if (agentName === 'coordinator') return;
+        const isQa = agentName === 'qa-lead' || agentName === 'qa-v2';
+        buildWorkstation(
+          agentName,
+          meta.desk.x,
+          meta.desk.z,
+          meta.desk.rotY || 0,
+          meta.color,
+          `${agentName} · ${meta.roleLabel}`,
+          isQa
+        );
+      });
+
+      // Coffee Lounge / Chill Corner (South Center between Product & QA)
+      themeManaged.woodMat = new THREE.MeshStandardMaterial({
+        map: createWoodTexture(false),
+        roughness: 0.72,
+      });
+      const loungeDeck = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.04, 4.4), themeManaged.woodMat);
+      loungeDeck.position.set(1.2, 0.02, 11.2);
+      loungeDeck.receiveShadow = true;
+      scene.add(loungeDeck);
+
+      const sofaMat = new THREE.MeshStandardMaterial({ color: '#475569', roughness: 0.85 });
+      const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.42, 0.98), sofaMat);
+      sofaBase.position.set(1.0, 0.25, 12.4);
+      sofaBase.castShadow = true;
+      const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.54, 0.2), sofaMat);
+      sofaBack.position.set(1.0, 0.64, 12.8);
+      sofaBack.castShadow = true;
+      const coffeeTable = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.68, 0.68, 0.34, 24),
+        new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.35 })
+      );
+      coffeeTable.position.set(1.0, 0.19, 10.9);
+      coffeeTable.castShadow = true;
+      scene.add(sofaBase, sofaBack, coffeeTable);
+
+      // Potted Studio Plants at Department Corners
+      [
+        [-19.5, -13.2, 1.3],
+        [19.5, -13.2, 1.3],
+        [-19.8, 13.8, 1.25],
+        [19.5, 12.8, 1.25],
+        [-5.2, -4.4, 1.05],
+        [5.2, -4.4, 1.05],
+        [-5.2, 4.4, 1.05],
+        [5.2, 4.4, 1.05],
+      ].forEach(([px, pz, sc]) => {
+        scene.add(buildPlant(px, pz, sc));
+      });
+    }
+
+    // =========================================================================
+    // 5. Stylized 3D Swarm Characters + Meeting AI + Mention Beams
+    // =========================================================================
+    function createCharacterMesh(name, meta) {
+      const root = new THREE.Group();
+      const accent = new THREE.Color(meta.color);
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: '#f8fafc',
+        roughness: 0.38,
+        metalness: 0.1,
+      });
+      const accentMat = new THREE.MeshStandardMaterial({
+        color: accent,
+        emissive: accent,
+        emissiveIntensity: 0.35,
+        roughness: 0.3,
+      });
+      const visorMat = new THREE.MeshStandardMaterial({
+        color: '#0f172a',
+        roughness: 0.12,
+        metalness: 0.75,
+      });
+      const eyeMat = new THREE.MeshStandardMaterial({
+        color: accent,
+        emissive: accent,
+        emissiveIntensity: 1.5,
+      });
+
+      const legGeo = new THREE.CapsuleGeometry(0.085, 0.24, 6, 10);
+      const leftHip = new THREE.Group();
+      leftHip.position.set(-0.14, 0.46, 0);
+      const leftLeg = new THREE.Mesh(legGeo, bodyMat);
+      leftLeg.position.y = -0.2;
+      leftLeg.castShadow = true;
+      leftHip.add(leftLeg);
+      root.add(leftHip);
+
+      const rightHip = new THREE.Group();
+      rightHip.position.set(0.14, 0.46, 0);
+      const rightLeg = new THREE.Mesh(legGeo, bodyMat);
+      rightLeg.position.y = -0.2;
+      rightLeg.castShadow = true;
+      rightHip.add(rightLeg);
+      root.add(rightHip);
+
+      const torsoGroup = new THREE.Group();
+      torsoGroup.position.set(0, 0.84, 0);
+      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 0.3, 8, 16), bodyMat);
+      torso.castShadow = true;
+      torsoGroup.add(torso);
+
+      const chestCore = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.11, 0.11, 0.05, 18),
+        accentMat
+      );
+      chestCore.rotation.x = Math.PI / 2;
+      chestCore.position.set(0, 0.06, 0.22);
+      torsoGroup.add(chestCore);
+
+      const armGeo = new THREE.CapsuleGeometry(0.072, 0.26, 6, 10);
+      const leftShoulder = new THREE.Group();
+      leftShoulder.position.set(-0.31, 0.14, 0);
+      const leftArm = new THREE.Mesh(armGeo, bodyMat);
+      leftArm.position.y = -0.16;
+      leftArm.castShadow = true;
+      const leftCuff = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.078, 0.078, 0.06, 12),
+        accentMat
+      );
+      leftCuff.position.y = -0.27;
+      leftShoulder.add(leftArm, leftCuff);
+      torsoGroup.add(leftShoulder);
+
+      const rightShoulder = new THREE.Group();
+      rightShoulder.position.set(0.31, 0.14, 0);
+      const rightArm = new THREE.Mesh(armGeo, bodyMat);
+      rightArm.position.y = -0.16;
+      rightArm.castShadow = true;
+      const rightCuff = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.078, 0.078, 0.06, 12),
+        accentMat
+      );
+      rightCuff.position.y = -0.27;
+      rightShoulder.add(rightArm, rightCuff);
+      torsoGroup.add(rightShoulder);
+
+      const headGroup = new THREE.Group();
+      headGroup.position.set(0, 0.56, 0);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 20, 16), bodyMat);
+      head.scale.set(1.08, 0.96, 1.0);
+      head.castShadow = true;
+      headGroup.add(head);
+
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.14, 0.14), visorMat);
+      visor.position.set(0, 0.02, 0.18);
+      headGroup.add(visor);
+
+      const eyeGeo = new THREE.SphereGeometry(0.032, 10, 10);
+      const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+      eyeL.position.set(-0.085, 0.02, 0.25);
+      const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+      eyeR.position.set(0.085, 0.02, 0.25);
+      headGroup.add(eyeL, eyeR);
+
+      if (name === 'coordinator') {
+        const crown = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.024, 10, 24), eyeMat);
+        crown.rotation.x = Math.PI / 2;
+        crown.position.y = 0.29;
+        headGroup.add(crown);
+      }
+
+      torsoGroup.add(headGroup);
+      root.add(torsoGroup);
+
+      const statusRing = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.018, 8, 32), accentMat);
+      statusRing.rotation.x = Math.PI / 2;
+      statusRing.position.y = 1.82;
+      root.add(statusRing);
+
+      const groundRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.42, 0.52, 32),
+        new THREE.MeshBasicMaterial({
+          color: meta.color,
+          transparent: true,
+          opacity: 0.45,
+          side: THREE.DoubleSide,
+        })
+      );
+      groundRing.rotation.x = -Math.PI / 2;
+      groundRing.position.y = 0.02;
+      root.add(groundRing);
+
+      const hitMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.48, 0.48, 2.0, 10),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      hitMesh.position.y = 1.0;
+      hitMesh.userData.agentName = name;
+      root.add(hitMesh);
+      clickableMeshes.push(hitMesh);
+
+      return {
+        root,
+        torsoGroup,
+        headGroup,
+        leftShoulder,
+        rightShoulder,
+        leftHip,
+        rightHip,
+        statusRing,
+        groundRing,
+        eyeMat,
+        accentMat,
+      };
+    }
+
+    const labelsLayer = document.getElementById('labels-layer');
+
+    function createAgentLabel(name, meta) {
+      const el = document.createElement('div');
+      el.className = 'agent-label';
+      el.style.setProperty('--role-color', meta.color);
+      el.innerHTML = `
+        <div class="agent-label-inner">
+          <div class="agent-bubble" style="display:none;">
+            <div class="agent-bubble-text"></div>
+            <div class="agent-bubble-actions">
+              <span class="agent-bubble-seq">#0</span>
+              <button type="button" class="bubble-full-btn">Xem full ↗</button>
+            </div>
+          </div>
+          <div class="agent-tag">
+            <span class="state-dot waiting"></span>
+            <span class="agent-tag-name">${escapeHtml(name)}</span>
+            <span class="agent-tag-role">${escapeHtml(meta.zoneLabel)}</span>
+            <span class="agent-tag-state">Đang chờ</span>
+          </div>
+        </div>
+      `;
+      el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        selectAgent(name);
+      });
+      const fullBtn = el.querySelector('.bubble-full-btn');
+      fullBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const pulse = appState.pulseUntilByAgent.get(name);
+        const lastMsg = appState.latestMessageByAgent.get(name);
+        const seq = (pulse && pulse.seq) || (lastMsg && lastMsg.seq);
+        if (seq) openMessageModal(seq);
+      });
+
+      labelsLayer.appendChild(el);
+      return {
+        el,
+        bubble: el.querySelector('.agent-bubble'),
+        bubbleText: el.querySelector('.agent-bubble-text'),
+        bubbleSeq: el.querySelector('.agent-bubble-seq'),
+        dot: el.querySelector('.state-dot'),
+        stateSpan: el.querySelector('.agent-tag-state'),
+      };
+    }
+
+    function ensureAgentEntity(member) {
+      if (agentEntities.has(member.name)) {
+        const existing = agentEntities.get(member.name);
+        existing.meta = getRoleMeta(member.name, member);
+        return existing;
+      }
+      const meta = getRoleMeta(member.name, member);
+      const mesh = createCharacterMesh(member.name, meta);
+      const startPos = member.status === 'working' ? meta.desk : meta.lounge;
+      mesh.root.position.set(startPos.x, 0, startPos.z);
+      scene.add(mesh.root);
+
+      const label = createAgentLabel(member.name, meta);
+      const entity = {
+        name: member.name,
+        meta,
+        mesh,
+        label,
+        member,
+        wanderSeed: Math.random() * 100,
+        lastPulseTriggerAt: 0,
+      };
+      agentEntities.set(member.name, entity);
+      return entity;
+    }
+
+    function spawnBeamBetween(fromPos, toPos, colorHex) {
+      const start = new THREE.Vector3(fromPos.x, 1.38, fromPos.z);
+      const end = new THREE.Vector3(toPos.x, 1.45, toPos.z);
+      if (start.distanceTo(end) < 0.2) {
+        end.set(0, 1.75, 0);
+      }
+      const mid = start.clone().lerp(end, 0.5);
+      mid.y += 1.45;
+
+      const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+      const tubeGeo = new THREE.TubeGeometry(curve, 24, 0.042, 8, false);
+      const tubeMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0.92,
+      });
+      const beam = new THREE.Mesh(tubeGeo, tubeMat);
+      scene.add(beam);
+
+      const ringGeo = new THREE.RingGeometry(0.34, 0.48, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0.85,
+        side: THREE.DoubleSide,
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(fromPos.x, 0.04, fromPos.z);
+      scene.add(ring);
+
+      pulseEffects.push({
+        beam,
+        ring,
+        startedAt: performance.now(),
+        duration: 2400,
+      });
+    }
+
+    function spawnBeamsForMessage(senderName, targets, colorHex) {
+      const senderEnt = agentEntities.get(senderName);
+      if (!senderEnt || !senderEnt.mesh.root.visible) return;
+      const fromPos = senderEnt.mesh.root.position;
+      const validTargets = (targets || [])
+        .map((t) => agentEntities.get(t))
+        .filter((e) => e && e.name !== senderName && e.mesh.root.visible);
+
+      if (validTargets.length === 0) {
+        spawnBeamBetween(fromPos, { x: 0, z: 0 }, colorHex);
+        return;
+      }
+      validTargets.slice(0, 4).forEach((targetEnt) => {
+        spawnBeamBetween(fromPos, targetEnt.mesh.root.position, colorHex);
+      });
+    }
+
+    function assignMeetingSeat(agentName) {
+      if (agentName === 'coordinator') return 0;
+      const existing = appState.meetingUntilByAgent.get(agentName);
+      if (existing && typeof existing.seatIdx === 'number') return existing.seatIdx;
+
+      const usedSeats = new Set([0]);
+      const now = Date.now();
+      appState.meetingUntilByAgent.forEach((info, key) => {
+        if (key !== agentName && info.expiresAt > now && typeof info.seatIdx === 'number') {
+          usedSeats.add(info.seatIdx);
+        }
+      });
+
+      for (let i = 1; i < MEETING_SEATS.length; i += 1) {
+        if (!usedSeats.has(i)) return i;
+      }
+      let hash = 0;
+      for (let i = 0; i < agentName.length; i += 1) hash = (hash * 31 + agentName.charCodeAt(i)) | 0;
+      return 1 + (Math.abs(hash) % (MEETING_SEATS.length - 1));
+    }
+
+    function triggerPulseForAgent(agentName, text, seq, durationMs = 20000) {
+      const now = Date.now();
+      const targets = extractMentions(text);
+      appState.pulseUntilByAgent.set(agentName, {
+        expiresAt: now + durationMs,
+        text: bubblePreviewText(text, 112),
+        seq,
+        targets,
+      });
+
+      if (isMeetingMessage(text)) {
+        const seatIdx = assignMeetingSeat(agentName);
+        appState.meetingUntilByAgent.set(agentName, {
+          expiresAt: now + Math.max(durationMs, 45000),
+          seatIdx,
+          targets,
+          seq,
+        });
+        // Mentioned peers also gather at the glass conference table if active
+        targets.forEach((targetName) => {
+          const targetEnt = agentEntities.get(targetName);
+          if (targetEnt && !targetEnt.member.killed) {
+            const tSeat = assignMeetingSeat(targetName);
+            const prev = appState.meetingUntilByAgent.get(targetName);
+            if (!prev || prev.expiresAt < now + 30000) {
+              appState.meetingUntilByAgent.set(targetName, {
+                expiresAt: now + 30000,
+                seatIdx: tSeat,
+                targets: [agentName],
+                seq,
+              });
+            }
+          }
+        });
+      }
+
+      const ent = agentEntities.get(agentName);
+      if (ent && ent.mesh.root.visible) {
+        spawnBeamsForMessage(agentName, targets, ent.meta.color);
+      }
+    }
+
+    // =========================================================================
+    // 6. Theme Switching (Day Studio Bright <-> Night Cyber Midnight)
+    // =========================================================================
+    function applyTheme(theme) {
+      appState.theme = theme;
+      const isDark = theme === 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      document.getElementById('themeIcon').textContent = isDark ? '🌙' : '☀️';
+      document.getElementById('themeLabel').textContent = isDark
+        ? 'Cyber Đêm'
+        : 'Studio Sáng';
+
+      if (!webglReady) return;
+
+      scene.background = new THREE.Color(isDark ? '#070b14' : '#e6ebf2');
+      scene.fog = new THREE.FogExp2(isDark ? '#070b14' : '#e6ebf2', 0.012);
+
+      themeManaged.ambient.intensity = isDark ? 0.36 : 0.75;
+      themeManaged.hemi.color.set(isDark ? '#1e3a8a' : '#f8fafc');
+      themeManaged.hemi.groundColor.set(isDark ? '#090d16' : '#cbd5e1');
+      themeManaged.hemi.intensity = isDark ? 0.55 : 0.85;
+      themeManaged.sun.color.set(isDark ? '#93c5fd' : '#fffaf0');
+      themeManaged.sun.intensity = isDark ? 0.65 : 1.35;
+      themeManaged.fillLight.intensity = isDark ? 1.85 : 0.75;
+
+      themeManaged.floorMat.map = createFloorTexture(isDark);
+      themeManaged.floorMat.needsUpdate = true;
+
+      themeManaged.woodMat.map = createWoodTexture(isDark);
+      themeManaged.woodMat.needsUpdate = true;
+
+      themeManaged.wallMat.color.set(isDark ? '#131c31' : '#f1f5f9');
+      themeManaged.gridHelper.material.opacity = isDark ? 0.3 : 0.2;
+
+      const signTex = createWallSignTexture(isDark);
+      themeManaged.wallSignMat.map = signTex;
+      themeManaged.wallSignMat.emissiveMap = signTex;
+      themeManaged.wallSignMat.emissiveIntensity = isDark ? 0.85 : 0.3;
+      themeManaged.wallSignMat.needsUpdate = true;
+
+      themeManaged.deptSigns.forEach(({ dept, mat }) => {
+        mat.map = createDeptSignTexture(dept, isDark);
+        mat.needsUpdate = true;
+      });
+
+      themeManaged.lampGlowMats.forEach((m) => {
+        m.emissiveIntensity = isDark ? 2.1 : 0.8;
+      });
+      themeManaged.deskMaterials.forEach((m) => {
+        m.color.set(isDark ? '#1e293b' : '#f8fafc');
+      });
+    }
+
+    // =========================================================================
+    // 7. Full-Text Modal, Filters, Search & Anti-Jitter Render
+    // =========================================================================
+    function getFilteredMessages() {
+      const messages = appState.swarm.messages || [];
+      const q = appState.boardSearch.trim().toLowerCase();
+
+      const filtered = messages.filter((msg) => {
+        if (!msg) return false;
+        const agentName = msg.agent || 'coordinator';
+        const meta = getRoleMeta(agentName);
+        const msgDept = msg.department || meta.deptId;
+
+        if (appState.boardMode === 'meeting' && !isMeetingMessage(msg.text)) {
+          return false;
+        }
+        if (appState.boardDept !== 'all' && msgDept !== appState.boardDept) {
+          return false;
+        }
+        if (q) {
+          const hay = `#${msg.seq || 0} @${agentName} ${meta.deptLabel} ${msg.text || ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      return appState.boardNewestFirst ? [...filtered].reverse() : filtered;
+    }
+
+    function openMessageModal(seq) {
+      const allMsgs = appState.swarm.messages || [];
+      const found = allMsgs.find((m) => Number(m.seq) === Number(seq));
+      if (!found) return;
+
+      appState.modalSeq = Number(found.seq);
+      const agentName = found.agent || 'coordinator';
+      const meta = getRoleMeta(agentName);
+      const deptLabel = found.departmentLabel || meta.deptLabel;
+      const deptColor = found.departmentColor || meta.deptColor;
+
+      const deptEl = document.getElementById('msgModalDept');
+      deptEl.textContent = deptLabel;
+      deptEl.style.background = deptColor;
+
+      document.getElementById('msgModalAgent').textContent = `@${agentName}`;
+      document.getElementById('msgModalSeq').textContent = `#${found.seq || 0}`;
+      document.getElementById('msgModalTime').textContent = found.time || '';
+
+      const bodyEl = document.getElementById('msgModalBody');
+      bodyEl.innerHTML = formatRichBoardText(found.text || '');
+      bodyEl.querySelectorAll('.mention-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          const target = chip.dataset.mention.replace(/^@/, '');
+          if (target && target !== 'all') {
+            closeMessageModal();
+            selectAgent(target);
+          }
+        });
+      });
+
+      const listForNav = getFilteredMessages();
+      const navList = listForNav.some((m) => Number(m.seq) === appState.modalSeq)
+        ? listForNav
+        : [...allMsgs].sort((a, b) => (a.seq || 0) - (b.seq || 0));
+
+      const ascList = [...navList].sort((a, b) => (a.seq || 0) - (b.seq || 0));
+      const idx = ascList.findIndex((m) => Number(m.seq) === appState.modalSeq);
+
+      const prevBtn = document.getElementById('msgModalPrev');
+      const nextBtn = document.getElementById('msgModalNext');
+      prevBtn.disabled = idx <= 0;
+      nextBtn.disabled = idx < 0 || idx >= ascList.length - 1;
+      prevBtn.dataset.targetSeq = idx > 0 ? String(ascList[idx - 1].seq) : '';
+      nextBtn.dataset.targetSeq =
+        idx >= 0 && idx < ascList.length - 1 ? String(ascList[idx + 1].seq) : '';
+
+      document.getElementById('msgModalCounter').textContent =
+        idx >= 0 ? `Tin ${idx + 1} / ${ascList.length}` : '';
+
+      document.getElementById('msgModal').classList.add('is-open');
+    }
+
+    function closeMessageModal() {
+      appState.modalSeq = null;
+      document.getElementById('msgModal').classList.remove('is-open');
+    }
+
+    function selectAgent(agentName) {
+      appState.selectedAgent = agentName;
+      const ent = agentEntities.get(agentName);
+      if (ent) {
+        if (ent.member.killed && !appState.showKilled) {
+          appState.showKilled = true;
+          document.getElementById('toggleKilled').checked = true;
+        }
+        const p = ent.mesh.root.position;
+        focusCameraTo([p.x + 3.6, 3.8, p.z + 4.8], [p.x, 1.15, p.z]);
+      }
+      renderUiPanels(true);
+      renderFocusCard();
+    }
+
+    function renderFocusCard() {
+      const card = document.getElementById('focusCard');
+      const name = appState.selectedAgent;
+      if (!name) {
+        card.classList.remove('is-visible');
+        return;
+      }
+      const member = appState.swarm.members.find((m) => m.name === name);
+      if (!member) {
+        card.classList.remove('is-visible');
+        return;
+      }
+      const meta = getRoleMeta(name, member);
+      document.getElementById('focusSwatch').style.background = meta.color;
+      document.getElementById('focusName').textContent = name;
+      const deptBadge = document.getElementById('focusDeptBadge');
+      deptBadge.textContent = meta.deptLabel;
+      deptBadge.style.background = meta.deptColor;
+
+      const badge = document.getElementById('focusStateBadge');
+      badge.className = `roster-badge ${member.status}`;
+      badge.textContent = statusVi(member.status);
+
+      const lastMsg = appState.latestMessageByAgent.get(name);
+      const msgHtml = lastMsg
+        ? `<div class="focus-msg-full"><strong>#${lastMsg.seq} (${escapeHtml(lastMsg.time || '')}):</strong>\n${formatRichBoardText(lastMsg.text || '')}</div>
+           <div style="margin-top:6px; display:flex; justify-content:flex-end;">
+             <button type="button" id="focusOpenModalBtn" class="mini-action-btn">Phóng to toàn văn #${lastMsg.seq} ↗</button>
+           </div>`
+        : '<div style="margin-top:6px;">Chưa có bài đăng trên bảng tin.</div>';
+
+      document.getElementById('focusBody').innerHTML = `
+        <div><strong>Vai trò:</strong> ${escapeHtml(meta.roleLabel)} · <strong>Phòng:</strong> ${escapeHtml(meta.deptLabel)}</div>
+        <div><strong>Model:</strong> ${escapeHtml(member.model || 'Mặc định')} · Workspace: ${escapeHtml(member.workspaceMode)}</div>
+        ${msgHtml}
+      `;
+
+      const openBtn = document.getElementById('focusOpenModalBtn');
+      if (openBtn && lastMsg) {
+        openBtn.addEventListener('click', () => openMessageModal(lastMsg.seq));
+      }
+      card.classList.add('is-visible');
+    }
+
+    function renderRosterPanel(force = false) {
+      const members = appState.swarm.members || [];
+      const activeMembers = members.filter((m) => !m.killed);
+      const visibleMembers = appState.showKilled ? members : activeMembers;
+
+      const sig = [
+        appState.showKilled ? '1' : '0',
+        appState.selectedAgent || '',
+        appState.swarm.headSeq,
+        visibleMembers.map((m) => `${m.name}:${m.status}:${m.lastPostSeq}`).join(','),
+      ].join('|');
+
+      if (!force && sig === appState.lastRosterRenderSig) return;
+      appState.lastRosterRenderSig = sig;
+
+      const rosterEl = document.getElementById('panelRoster');
+      const prevScroll = rosterEl.scrollTop;
+
+      const depts = (appState.swarm.departments && appState.swarm.departments.length)
+        ? appState.swarm.departments
+        : DEPARTMENTS;
+
+      const html = depts
+        .map((dept) => {
+          const deptMembers = visibleMembers.filter((m) => {
+            const meta = getRoleMeta(m.name, m);
+            return (m.department || meta.deptId) === dept.id;
+          });
+          if (deptMembers.length === 0) return '';
+
+          const workingInDept = deptMembers.filter((m) => m.status === 'working').length;
+          const cardsHtml = deptMembers
+            .map((m) => {
+              const meta = getRoleMeta(m.name, m);
+              const isSel = appState.selectedAgent === m.name ? 'is-selected' : '';
+              const lastMsg = appState.latestMessageByAgent.get(m.name);
+              const fullText = lastMsg
+                ? `#${lastMsg.seq}: ${lastMsg.text || ''}`
+                : `Đã đọc tới seq #${m.lastReadSeq || 0}`;
+
+              return `
+                <div class="roster-card ${isSel}" data-agent="${escapeHtml(m.name)}" style="--role-color:${meta.color}">
+                  <div class="roster-head">
+                    <div class="roster-id">
+                      <span class="role-swatch" style="background:${meta.color}"></span>
+                      <span class="roster-name">${escapeHtml(m.name)}</span>
+                    </div>
+                    <span class="roster-badge ${m.status}">${statusVi(m.status)}</span>
+                  </div>
+                  <div class="roster-meta">
+                    <span>${escapeHtml(meta.roleLabel)}</span>
+                    <span>${escapeHtml(m.workspaceMode || 'inherit')}</span>
+                  </div>
+                  <div class="roster-snippet">${formatRichBoardText(fullText)}</div>
+                  ${
+                    lastMsg
+                      ? `<div class="roster-card-footer">
+                           <button type="button" class="mini-action-btn roster-open-msg" data-seq="${lastMsg.seq}">Xem full #${lastMsg.seq} ↗</button>
+                         </div>`
+                      : ''
+                  }
+                </div>
+              `;
+            })
+            .join('');
+
+          return `
+            <section class="dept-group">
+              <div class="dept-group-head">
+                <div class="dept-group-title">
+                  <span class="dept-dot" style="background:${dept.color}"></span>
+                  <span>${escapeHtml(dept.label)}</span>
+                </div>
+                <div class="dept-group-actions">
+                  <span class="dept-count-pill">${workingInDept > 0 ? `${workingInDept} làm · ` : ''}${deptMembers.length} NS</span>
+                  <button type="button" class="dept-cam-btn" data-dept-cam="${escapeHtml(dept.id)}">Xem 3D</button>
+                </div>
+              </div>
+              ${cardsHtml}
+            </section>
+          `;
+        })
+        .join('');
+
+      rosterEl.innerHTML = html;
+      rosterEl.scrollTop = prevScroll;
+
+      rosterEl.querySelectorAll('.dept-cam-btn').forEach((btn) => {
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const preset = CAMERA_PRESETS[btn.dataset.deptCam];
+          if (preset && webglReady) {
+            focusCameraTo(preset.pos, preset.target);
+            document.querySelectorAll('[data-cam]').forEach((b) => {
+              b.classList.toggle('is-active', b.dataset.cam === btn.dataset.deptCam);
+            });
+          }
+        });
+      });
+
+      rosterEl.querySelectorAll('.roster-card').forEach((card) => {
+        card.addEventListener('click', () => selectAgent(card.dataset.agent));
+      });
+
+      rosterEl.querySelectorAll('.roster-open-msg').forEach((btn) => {
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          openMessageModal(Number(btn.dataset.seq));
+        });
+      });
+    }
+
+    function renderBoardPanel(force = false) {
+      const allMessages = appState.swarm.messages || [];
+      const filtered = getFilteredMessages();
+
+      const sig = [
+        appState.boardMode,
+        appState.boardDept,
+        appState.boardSearch,
+        appState.boardNewestFirst ? 'desc' : 'asc',
+        allMessages.length,
+        appState.swarm.headSeq,
+      ].join('|');
+
+      if (!force && sig === appState.lastBoardRenderSig) return;
+      appState.lastBoardRenderSig = sig;
+
+      const panelBoard = document.getElementById('panelBoard');
+      const prevScroll = panelBoard.scrollTop;
+
+      const isFiltered =
+        appState.boardMode !== 'all' ||
+        appState.boardDept !== 'all' ||
+        appState.boardSearch.trim() !== '';
+
+      document.getElementById('boardFilterSummary').textContent =
+        `Hiển thị ${filtered.length} / ${allMessages.length} tin nhắn (100% nguyên văn)`;
+      document.getElementById('btnResetFilters').style.display = isFiltered ? 'inline-flex' : 'none';
+
+      const boardListEl = document.getElementById('boardList');
+      if (filtered.length === 0) {
+        boardListEl.innerHTML = `
+          <div class="board-item" style="text-align:center; cursor:default;">
+            <div class="board-text" style="color:var(--text-muted);">Không có tin nhắn nào khớp bộ lọc hiện tại.</div>
+          </div>
+        `;
+      } else {
+        boardListEl.innerHTML = filtered
+          .map((msg) => {
+            const agentName = msg.agent || 'coordinator';
+            const meta = getRoleMeta(agentName);
+            const deptLabel = msg.departmentLabel || meta.deptLabel;
+            const deptColor = msg.departmentColor || meta.deptColor;
+            const isMeeting = isMeetingMessage(msg.text);
+
+            return `
+              <article class="board-item ${isMeeting ? 'is-meeting' : ''}" data-agent="${escapeHtml(agentName)}" data-seq="${msg.seq || 0}" style="--dept-color:${deptColor}">
+                <div class="board-item-head">
+                  <div class="board-agent-pill">
+                    <span class="role-swatch" style="background:${meta.color}"></span>
+                    <span>@${escapeHtml(agentName)}</span>
+                    <span class="board-dept-tag" style="background:${deptColor}">${escapeHtml(deptLabel)}</span>
+                    ${isMeeting ? '<span class="meeting-badge">Họp / Trao đổi</span>' : ''}
+                  </div>
+                  <span class="board-seq">#${msg.seq || 0}</span>
+                </div>
+                <div class="board-text">${formatRichBoardText(msg.text || '')}</div>
+                <div class="board-time">
+                  <span>${escapeHtml(meta.roleLabel)} · ${escapeHtml(msg.time || '')}</span>
+                  <button type="button" class="mini-action-btn board-zoom-btn" data-seq="${msg.seq || 0}">Phóng to đọc ↗</button>
+                </div>
+              </article>
+            `;
+          })
+          .join('');
+      }
+
+      panelBoard.scrollTop = prevScroll;
+
+      boardListEl.querySelectorAll('.board-item[data-seq]').forEach((item) => {
+        item.addEventListener('click', (ev) => {
+          const mentionTarget = ev.target && ev.target.dataset && ev.target.dataset.mention;
+          if (mentionTarget) {
+            ev.stopPropagation();
+            const cleanTarget = mentionTarget.replace(/^@/, '');
+            if (cleanTarget && cleanTarget !== 'all') {
+              selectAgent(cleanTarget);
+            }
+            return;
+          }
+          const ag = item.dataset.agent;
+          const seq = Number(item.dataset.seq || 0);
+          const found = allMessages.find((m) => m.seq === seq);
+          if (found) {
+            triggerPulseForAgent(ag, found.text, seq, 20000);
+          }
+          openMessageModal(seq);
+        });
+      });
+
+      boardListEl.querySelectorAll('.board-zoom-btn').forEach((btn) => {
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          openMessageModal(Number(btn.dataset.seq));
+        });
+      });
+    }
+
+    function renderUiPanels(force = false) {
+      const members = appState.swarm.members || [];
+      const messages = appState.swarm.messages || [];
+
+      const activeMembers = members.filter((m) => !m.killed);
+      const workingCount = activeMembers.filter((m) => m.status === 'working').length;
+      const waitingCount = activeMembers.length - workingCount;
+      const killedCount = members.length - activeMembers.length;
+
+      document.getElementById('swarmTitle').textContent =
+        appState.swarm.title || 'Công Ty AI IPAVIET — Văn Phòng 3D Đa Phòng Ban';
+      document.getElementById('statWorking').textContent = String(workingCount);
+      document.getElementById('statWaiting').textContent = String(waitingCount);
+      document.getElementById('statKilled').textContent = String(killedCount);
+      document.getElementById('statMsgCount').textContent = String(messages.length);
+      document.getElementById('statSeq').textContent = `#${appState.swarm.headSeq || 0}`;
+
+      const visibleMembers = appState.showKilled ? members : activeMembers;
+      document.getElementById('rosterCount').textContent = String(visibleMembers.length);
+      document.getElementById('boardCount').textContent = String(messages.length);
+
+      renderRosterPanel(force);
+      renderBoardPanel(force);
+      renderFocusCard();
+    }
+
+    function syncDepartmentDropdown() {
+      const select = document.getElementById('deptFilterSelect');
+      const depts = (appState.swarm.departments && appState.swarm.departments.length)
+        ? appState.swarm.departments
+        : DEPARTMENTS;
+      const currentVal = appState.boardDept;
+      select.innerHTML = [
+        '<option value="all">Tất cả 6 Phòng Ban</option>',
+        ...depts.map((d) => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.label)}</option>`),
+      ].join('');
+      select.value = currentVal;
+    }
+
+    function applySwarmState(nextState) {
+      if (!nextState || typeof nextState !== 'object') return;
+      appState.swarm = {
+        title: nextState.title || 'Công Ty AI IPAVIET — Văn Phòng 3D Đa Phòng Ban',
+        headSeq: Number(nextState.headSeq || 0),
+        departments: Array.isArray(nextState.departments) && nextState.departments.length
+          ? nextState.departments
+          : DEPARTMENTS,
+        members: Array.isArray(nextState.members) ? nextState.members : [],
+        messages: Array.isArray(nextState.messages) ? nextState.messages : [],
+      };
+
+      syncDepartmentDropdown();
+
+      if (webglReady) {
+        for (const member of appState.swarm.members) {
+          const ent = ensureAgentEntity(member);
+          ent.member = member;
+
+          const mon = deskMonitorMap.get(member.name);
+          if (mon) {
+            const isWorking = member.status === 'working';
+            mon.screenMat.map = isWorking ? mon.texWorking : mon.texIdle;
+            mon.screenMat.emissiveMap = isWorking ? mon.texWorking : mon.texIdle;
+            mon.screenMat.emissiveIntensity = isWorking ? 0.95 : 0.35;
+            mon.screenMat.needsUpdate = true;
+          }
+        }
+      }
+
+      const now = Date.now();
+      appState.latestMessageByAgent.clear();
+      const totalMsgs = appState.swarm.messages.length;
+
+      appState.swarm.messages.forEach((msg, index) => {
+        if (!msg || !msg.agent) return;
+        appState.latestMessageByAgent.set(msg.agent, msg);
+
+        const isNewLive = appState.initialHydrated && !appState.seenSeqs.has(msg.seq);
+        const msgTime = parseBoardTimeMs(msg.time);
+        const isRecentLive = msgTime > 0 && Math.abs(now - msgTime) <= 180000;
+        const isTailMeeting = !appState.initialHydrated && index >= Math.max(0, totalMsgs - 5) && isMeetingMessage(msg.text);
+
+        if (isNewLive) {
+          triggerPulseForAgent(msg.agent, msg.text, msg.seq, 20000);
+        } else if (!appState.initialHydrated && (isRecentLive || isTailMeeting)) {
+          triggerPulseForAgent(msg.agent, msg.text, msg.seq, 18000);
+        }
+
+        if (typeof msg.seq === 'number') {
+          appState.seenSeqs.add(msg.seq);
+        }
+      });
+      appState.initialHydrated = true;
+
+      if (webglReady) {
+        redrawHoloScreen();
+      }
+      renderUiPanels(false);
+    }
+
+    // =========================================================================
+    // 8. SSE Live Stream + Initial Fetch
+    // =========================================================================
+    function startTelemetry() {
+      const ssePill = document.getElementById('ssePill');
+
+      fetch('/api/swarm-state')
+        .then((r) => r.json())
+        .then((data) => applySwarmState(data))
+        .catch(() => {});
+
+      const es = new EventSource('/api/swarm-stream');
+      es.addEventListener('state', (ev) => {
+        ssePill.classList.remove('is-offline');
+        ssePill.textContent = '● LIVE · SSE';
+        try {
+          applySwarmState(JSON.parse(ev.data));
+        } catch {
+          // ignore malformed event
+        }
+      });
+
+      es.onopen = () => {
+        ssePill.classList.remove('is-offline');
+        ssePill.textContent = '● LIVE · SSE';
+      };
+
+      es.onerror = () => {
+        ssePill.classList.add('is-offline');
+        ssePill.textContent = '○ Đang kết nối lại...';
+      };
+    }
+
+    // =========================================================================
+    // 9. Animation Loop & Projection
+    // =========================================================================
+    const projVec = new THREE.Vector3();
+    const tmpDir = new THREE.Vector3();
+
+    function animate(nowMs) {
+      requestAnimationFrame(animate);
+      if (!webglReady) return;
+
+      const t = nowMs * 0.001;
+      const dt = Math.min(0.05, animate._last ? (nowMs - animate._last) * 0.001 : 0.016);
+      animate._last = nowMs;
+
+      if (holoParts.ring1) holoParts.ring1.rotation.z = t * 0.65;
+      if (holoParts.ring2) holoParts.ring2.rotation.z = -t * 0.9;
+      if (holoParts.core) {
+        holoParts.core.rotation.y = t * 1.1;
+        holoParts.core.position.y = 1.55 + Math.sin(t * 2.2) * 0.08;
+      }
+      if (holoParts.screen) {
+        holoParts.screen.lookAt(camera.position.x, 2.75, camera.position.z);
+      }
+
+      qaLedMeshes.forEach((mat, idx) => {
+        mat.emissiveIntensity = 0.75 + 0.65 * Math.sin(t * 4.5 + idx * 1.3);
+      });
+
+      if (cameraGlide.active) {
+        camera.position.lerp(cameraGlide.targetPos, 0.085);
+        controls.target.lerp(cameraGlide.targetLook, 0.085);
+        if (
+          camera.position.distanceTo(cameraGlide.targetPos) < 0.06 &&
+          controls.target.distanceTo(cameraGlide.targetLook) < 0.06
+        ) {
+          cameraGlide.active = false;
+        }
+      }
+      controls.update();
+
+      for (let i = pulseEffects.length - 1; i >= 0; i -= 1) {
+        const fx = pulseEffects[i];
+        const progress = (nowMs - fx.startedAt) / fx.duration;
+        if (progress >= 1) {
+          scene.remove(fx.beam);
+          scene.remove(fx.ring);
+          fx.beam.geometry.dispose();
+          fx.beam.material.dispose();
+          fx.ring.geometry.dispose();
+          fx.ring.material.dispose();
+          pulseEffects.splice(i, 1);
+        } else {
+          fx.beam.material.opacity = (1 - progress) * 0.9;
+          const sc = 1 + progress * 3.8;
+          fx.ring.scale.set(sc, sc, 1);
+          fx.ring.material.opacity = (1 - progress) * 0.85;
+        }
+      }
+
+      const nowEpoch = Date.now();
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      agentEntities.forEach((ent) => {
+        const { member, meta, mesh, label } = ent;
+        const visible = !member.killed || appState.showKilled;
+        mesh.root.visible = visible;
+        label.el.style.display = visible ? 'block' : 'none';
+        if (!visible) return;
+
+        const pulseInfo = appState.pulseUntilByAgent.get(member.name);
+        const isBroadcasting = pulseInfo && pulseInfo.expiresAt > nowEpoch;
+
+        const meetingInfo = appState.meetingUntilByAgent.get(member.name);
+        const isInMeeting = !member.killed && meetingInfo && meetingInfo.expiresAt > nowEpoch;
+
+        if (isBroadcasting) {
+          label.bubble.style.display = 'flex';
+          if (label.bubbleText.textContent !== pulseInfo.text) {
+            label.bubbleText.textContent = pulseInfo.text;
+          }
+          label.bubbleSeq.textContent = `#${pulseInfo.seq || 0}`;
+          if (nowEpoch - ent.lastPulseTriggerAt > 4600) {
+            ent.lastPulseTriggerAt = nowEpoch;
+            spawnBeamsForMessage(member.name, pulseInfo.targets, meta.color);
+          }
+        } else {
+          label.bubble.style.display = 'none';
+        }
+
+        label.dot.className = `state-dot ${member.status}`;
+        label.stateSpan.textContent = isInMeeting ? 'Đang họp' : statusVi(member.status);
+        label.el.classList.toggle('is-selected', appState.selectedAgent === member.name);
+
+        let tx = meta.desk.x;
+        let tz = meta.desk.z;
+        let faceAngle = (meta.desk.rotY || 0) + Math.PI;
+
+        if (isInMeeting) {
+          const seat = MEETING_SEATS[meetingInfo.seatIdx % MEETING_SEATS.length];
+          tx = seat.x;
+          tz = seat.z;
+          faceAngle = Math.atan2(-tx, -tz);
+        } else if (member.status === 'working') {
+          tx = meta.desk.x;
+          tz = meta.desk.z;
+          if (meta.desk.lookAt) {
+            faceAngle = Math.atan2(
+              meta.desk.lookAt[0] - tx,
+              meta.desk.lookAt[2] - tz
+            );
+          } else {
+            faceAngle = (meta.desk.rotY || 0) + Math.PI;
+          }
+        } else if (member.status === 'waiting') {
+          tx = meta.lounge.x + Math.sin(t * 0.38 + ent.wanderSeed) * 0.65;
+          tz = meta.lounge.z + Math.cos(t * 0.3 + ent.wanderSeed) * 0.45;
+          faceAngle = meta.lounge.rotY || 0;
+        } else {
+          // Killed / Hoàn thành: đứng gọn tại bàn thuộc Phòng Ban của mình
+          tx = meta.desk.x;
+          tz = meta.desk.z;
+          faceAngle = (meta.desk.rotY || 0) + Math.PI;
+        }
+
+        const dx = tx - mesh.root.position.x;
+        const dz = tz - mesh.root.position.z;
+        const dist = Math.hypot(dx, dz);
+
+        if (dist > 0.08) {
+          const speed = isInMeeting || member.status === 'working' ? 3.2 : 1.35;
+          const step = Math.min(dist, speed * dt);
+          mesh.root.position.x += (dx / dist) * step;
+          mesh.root.position.z += (dz / dist) * step;
+
+          const walkYaw = Math.atan2(dx, dz);
+          let diff = walkYaw - mesh.root.rotation.y;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          mesh.root.rotation.y += diff * 0.16;
+
+          const stride = Math.sin(t * 9 + ent.wanderSeed);
+          mesh.leftHip.rotation.x = stride * 0.55;
+          mesh.rightHip.rotation.x = -stride * 0.55;
+          mesh.leftShoulder.rotation.x = -stride * 0.45;
+          mesh.rightShoulder.rotation.x = stride * 0.45;
+          mesh.torsoGroup.position.y = 0.84 + Math.abs(stride) * 0.035;
+        } else {
+          let diff = faceAngle - mesh.root.rotation.y;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          mesh.root.rotation.y += diff * 0.14;
+
+          mesh.leftHip.rotation.x *= 0.85;
+          mesh.rightHip.rotation.x *= 0.85;
+
+          if (isInMeeting || isBroadcasting) {
+            mesh.leftShoulder.rotation.x = -0.45 + Math.sin(t * 4.5 + ent.wanderSeed) * 0.22;
+            mesh.rightShoulder.rotation.x = -0.65 + Math.cos(t * 4.5 + ent.wanderSeed) * 0.22;
+            mesh.torsoGroup.position.y = 0.84 + Math.sin(t * 3.5) * 0.02;
+            mesh.headGroup.rotation.y = Math.sin(t * 1.6 + ent.wanderSeed) * 0.16;
+          } else if (member.status === 'working') {
+            mesh.leftShoulder.rotation.x = -0.92 + Math.sin(t * 14 + ent.wanderSeed) * 0.14;
+            mesh.rightShoulder.rotation.x = -0.92 + Math.cos(t * 15 + ent.wanderSeed) * 0.14;
+            mesh.torsoGroup.position.y = 0.8 + Math.sin(t * 3 + ent.wanderSeed) * 0.015;
+            mesh.headGroup.rotation.y = Math.sin(t * 1.4 + ent.wanderSeed) * 0.1;
+          } else {
+            mesh.leftShoulder.rotation.x = Math.sin(t * 1.2 + ent.wanderSeed) * 0.08;
+            mesh.rightShoulder.rotation.x = -Math.sin(t * 1.2 + ent.wanderSeed) * 0.08;
+            mesh.torsoGroup.position.y = 0.84 + Math.sin(t * 1.8 + ent.wanderSeed) * 0.015;
+            mesh.headGroup.rotation.y = Math.sin(t * 0.7 + ent.wanderSeed) * 0.14;
+          }
+        }
+
+        mesh.statusRing.visible = !member.killed;
+        mesh.statusRing.rotation.z = t * (member.status === 'working' ? 2.4 : 0.6);
+        mesh.groundRing.material.opacity =
+          appState.selectedAgent === member.name ? 0.92 : isInMeeting ? 0.68 : 0.32;
+
+        projVec.set(
+          mesh.root.position.x,
+          mesh.root.position.y + 2.1,
+          mesh.root.position.z
+        );
+        projVec.project(camera);
+
+        tmpDir.copy(mesh.root.position).sub(camera.position);
+        const isBehind = projVec.z > 1;
+        if (isBehind) {
+          label.el.style.opacity = '0';
+          label.el.style.pointerEvents = 'none';
+        } else {
+          const sx = (projVec.x * 0.5 + 0.5) * width;
+          const sy = (-projVec.y * 0.5 + 0.5) * height;
+          label.el.style.opacity = '1';
+          label.el.style.pointerEvents = 'auto';
+          label.el.style.transform = `translate3d(${sx.toFixed(1)}px, ${sy.toFixed(1)}px, 0)`;
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    // =========================================================================
+    // 10. UI Event Listeners & Init
+    // =========================================================================
+    function initScene() {
+      try {
+        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
+        viewport.appendChild(renderer.domElement);
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(
+          46,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          160
+        );
+        camera.position.set(...CAMERA_PRESETS.overview.pos);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.maxPolarAngle = Math.PI / 2 - 0.04;
+        controls.minDistance = 3.5;
+        controls.maxDistance = 46;
+        controls.target.set(...CAMERA_PRESETS.overview.target);
+
+        controls.addEventListener('start', () => {
+          cameraGlide.active = false;
+        });
+
+        buildOfficeEnvironment();
+        webglReady = true;
+        applyTheme('light');
+
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        let downXY = null;
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+          downXY = [e.clientX, e.clientY];
+        });
+        renderer.domElement.addEventListener('pointerup', (e) => {
+          if (!downXY) return;
+          const moved = Math.hypot(e.clientX - downXY[0], e.clientY - downXY[1]);
+          if (moved > 6) return;
+          pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+          pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(pointer, camera);
+          const hits = raycaster.intersectObjects(clickableMeshes, false);
+          if (hits.length > 0) {
+            const ag = hits[0].object.userData.agentName;
+            if (ag) selectAgent(ag);
+          }
+        });
+
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        requestAnimationFrame(animate);
+      } catch (err) {
+        webglReady = false;
+        document.getElementById('webglFallback').classList.add('is-visible');
+        document.getElementById('webglFallbackMsg').textContent =
+          `Không thể khởi tạo WebGL (${err && err.message ? err.message : 'lỗi trình duyệt'}). Danh sách 6 Phòng Ban và Bảng tin Swarm vẫn đang chạy trực tiếp.`;
+      }
+    }
+
+    function bindUi() {
+      document.querySelectorAll('[data-cam]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-cam]').forEach((b) => b.classList.remove('is-active'));
+          btn.classList.add('is-active');
+          const preset = CAMERA_PRESETS[btn.dataset.cam] || CAMERA_PRESETS.overview;
+          if (webglReady) {
+            focusCameraTo(preset.pos, preset.target);
+          }
+        });
+      });
+
+      document.getElementById('toggleKilled').addEventListener('change', (e) => {
+        appState.showKilled = Boolean(e.target.checked);
+        renderUiPanels(true);
+      });
+
+      document.getElementById('btnTheme').addEventListener('click', () => {
+        applyTheme(appState.theme === 'light' ? 'dark' : 'light');
+      });
+
+      const sidebar = document.getElementById('sidebar');
+      document.getElementById('btnSidebar').addEventListener('click', () => {
+        sidebar.classList.toggle('is-collapsed');
+      });
+
+      document.getElementById('btnExpandSidebar').addEventListener('click', (e) => {
+        const isWide = sidebar.classList.toggle('is-wide');
+        e.currentTarget.textContent = isWide ? '⇔ Thu gọn' : '⇔ Rộng';
+      });
+
+      document.querySelectorAll('.sidebar-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.sidebar-tab').forEach((t) => t.classList.remove('is-active'));
+          tab.classList.add('is-active');
+          const isRoster = tab.dataset.tab === 'roster';
+          document.getElementById('panelRoster').classList.toggle('is-active', isRoster);
+          document.getElementById('panelBoard').classList.toggle('is-active', !isRoster);
+        });
+      });
+
+      // Board filters & search
+      const deptSelect = document.getElementById('deptFilterSelect');
+      document.querySelectorAll('[data-board-mode]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-board-mode]').forEach((b) => b.classList.remove('is-active'));
+          btn.classList.add('is-active');
+          appState.boardMode = btn.dataset.boardMode;
+          deptSelect.style.display = appState.boardMode === 'dept' ? 'block' : 'none';
+          if (appState.boardMode !== 'dept') {
+            appState.boardDept = 'all';
+            deptSelect.value = 'all';
+          }
+          renderBoardPanel(true);
+        });
+      });
+
+      deptSelect.addEventListener('change', (e) => {
+        appState.boardDept = e.target.value || 'all';
+        renderBoardPanel(true);
+      });
+
+      const searchInput = document.getElementById('boardSearchInput');
+      searchInput.addEventListener('input', (e) => {
+        appState.boardSearch = e.target.value || '';
+        renderBoardPanel(true);
+      });
+
+      document.getElementById('btnBoardOrder').addEventListener('click', (e) => {
+        appState.boardNewestFirst = !appState.boardNewestFirst;
+        e.currentTarget.textContent = appState.boardNewestFirst ? 'Mới nhất ↓' : 'Cũ nhất ↑';
+        renderBoardPanel(true);
+      });
+
+      document.getElementById('btnResetFilters').addEventListener('click', () => {
+        appState.boardMode = 'all';
+        appState.boardDept = 'all';
+        appState.boardSearch = '';
+        searchInput.value = '';
+        deptSelect.value = 'all';
+        deptSelect.style.display = 'none';
+        document.querySelectorAll('[data-board-mode]').forEach((b) => {
+          b.classList.toggle('is-active', b.dataset.boardMode === 'all');
+        });
+        renderBoardPanel(true);
+      });
+
+      document.getElementById('focusClose').addEventListener('click', () => {
+        appState.selectedAgent = null;
+        renderUiPanels(true);
+        renderFocusCard();
+      });
+
+      // Message Detail Modal events
+      const msgModal = document.getElementById('msgModal');
+      document.getElementById('msgModalClose').addEventListener('click', closeMessageModal);
+      msgModal.addEventListener('click', (e) => {
+        if (e.target === msgModal) closeMessageModal();
+      });
+
+      document.getElementById('msgModalPrev').addEventListener('click', (e) => {
+        const seq = Number(e.currentTarget.dataset.targetSeq || 0);
+        if (seq) openMessageModal(seq);
+      });
+
+      document.getElementById('msgModalNext').addEventListener('click', (e) => {
+        const seq = Number(e.currentTarget.dataset.targetSeq || 0);
+        if (seq) openMessageModal(seq);
+      });
+
+      document.getElementById('msgModalCopy').addEventListener('click', (e) => {
+        const btn = e.currentTarget;
+        const msg = (appState.swarm.messages || []).find((m) => Number(m.seq) === appState.modalSeq);
+        if (!msg) return;
+        const text = msg.text || '';
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = '✓ Đã chép';
+            setTimeout(() => { btn.textContent = '📋 Sao chép'; }, 1500);
+          }).catch(() => {});
+        }
+      });
+
+      document.getElementById('msgModalFocusAgent').addEventListener('click', () => {
+        const msg = (appState.swarm.messages || []).find((m) => Number(m.seq) === appState.modalSeq);
+        if (!msg || !msg.agent) return;
+        closeMessageModal();
+        triggerPulseForAgent(msg.agent, msg.text, msg.seq, 25000);
+        selectAgent(msg.agent);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && msgModal.classList.contains('is-open')) {
+          closeMessageModal();
+        }
+      });
+
+      // IPAVIET Preview Modal
+      const previewModal = document.getElementById('previewModal');
+      const previewFrame = document.getElementById('previewFrame');
+      const previewExternal = document.getElementById('previewExternal');
+
+      const loadPreviewUrl = (url) => {
+        previewFrame.src = url;
+        previewExternal.href = url;
+        document.querySelectorAll('#previewTabs .hud-btn').forEach((b) => {
+          b.classList.toggle('is-active', b.dataset.url === url);
+        });
+      };
+
+      document.getElementById('btnPreview').addEventListener('click', () => {
+        previewModal.classList.add('is-open');
+        if (previewFrame.src === 'about:blank') {
+          loadPreviewUrl('/index.html');
+        }
+      });
+
+      document.getElementById('previewClose').addEventListener('click', () => {
+        previewModal.classList.remove('is-open');
+      });
+
+      previewModal.addEventListener('click', (e) => {
+        if (e.target === previewModal) previewModal.classList.remove('is-open');
+      });
+
+      document.querySelectorAll('#previewTabs .hud-btn').forEach((btn) => {
+        btn.addEventListener('click', () => loadPreviewUrl(btn.dataset.url));
+      });
+    }
+
+    initScene();
+    bindUi();
+    startTelemetry();
+  </script>
+</body>
+</html>
